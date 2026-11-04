@@ -1,0 +1,201 @@
+<template>
+    <span
+        class="hw"
+        onmouseenter={handleEnter}
+        onmouseleave={handleLeave}
+        onfocusin={handleFocusIn}
+        onfocusout={handleFocusOut}
+        onkeydown={handleKeydown}
+    >
+        <lightning-button-icon
+            class="hw-trigger"
+            icon-name="utility:info"
+            variant="bare"
+            alternative-text="How it works"
+            title="How it works"
+            aria-expanded={expanded}
+            aria-controls="hw-panel"
+            onclick={handleClick}
+        ></lightning-button-icon>
+        <template lwc:if={open}>
+            <div
+                id="hw-panel"
+                class="hw-panel"
+                role="group"
+                aria-label="How it works"
+            >
+                <p class="hw-title">How it works</p>
+                <ol class="hw-steps">
+                    <template for:each={steps} for:item="s">
+                        <li key={s.key} class="hw-step">
+                            <svg
+                                class="hw-art"
+                                viewBox="0 0 40 40"
+                                aria-hidden="true"
+                            >
+                                <template lwc:if={s.isMapping}>
+                                    <template lwc:if={s.isFirst}>
+                                        <rect
+                                            class="hw-paper"
+                                            x="7"
+                                            y="5"
+                                            width="26"
+                                            height="30"
+                                            rx="3"
+                                        ></rect>
+                                        <path
+                                            class="hw-weak"
+                                            d="M11 11h12M11 23h12"
+                                        ></path>
+                                        <rect
+                                            class="hw-box"
+                                            x="11"
+                                            y="15"
+                                            width="18"
+                                            height="4"
+                                            rx="1.5"
+                                        ></rect>
+                                        <rect
+                                            class="hw-soft"
+                                            x="11"
+                                            y="27"
+                                            width="18"
+                                            height="4"
+                                            rx="1.5"
+                                        ></rect>
+                                    </template>
+                                    <template lwc:if={s.isSecond}>
+                                        <rect
+                                            class="hw-paper"
+                                            x="4"
+                                            y="6"
+                                            width="14"
+                                            height="14"
+                                            rx="3"
+                                        ></rect>
+                                        <rect
+                                            class="hw-paper"
+                                            x="22"
+                                            y="20"
+                                            width="14"
+                                            height="14"
+                                            rx="3"
+                                        ></rect>
+                                        <path
+                                            class="hw-link"
+                                            d="M18 13h5a3 3 0 0 1 3 3v3"
+                                        ></path>
+                                        <path
+                                            class="hw-weak"
+                                            d="M8 11h6M8 15h4M26 25h6M26 29h4"
+                                        ></path>
+                                    </template>
+                                    <template lwc:if={s.isThird}>
+                                        <rect
+                                            class="hw-paper"
+                                            x="5"
+                                            y="8"
+                                            width="30"
+                                            height="24"
+                                            rx="3"
+                                        ></rect>
+                                        <path
+                                            class="hw-weak"
+                                            d="M9 15h9M9 23h9"
+                                        ></path>
+                                        <rect
+                                            class="hw-soft"
+                                            x="21"
+                                            y="13"
+                                            width="11"
+                                            height="4.5"
+                                            rx="1.5"
+                                        ></rect>
+                                        <rect
+                                            class="hw-soft"
+                                            x="21"
+                                            y="21"
+                                            width="11"
+                                            height="4.5"
+                                            rx="1.5"
+                                        ></rect>
+                                    </template>
+                                </template>
+                                <template lwc:else>
+                                    <template lwc:if={s.isFirst}>
+                                        <rect
+                                            class="hw-paper"
+                                            x="4"
+                                            y="12"
+                                            width="32"
+                                            height="16"
+                                            rx="8"
+                                        ></rect>
+                                        <path
+                                            class="hw-accent"
+                                            d="M14 20h12"
+                                        ></path>
+                                        <circle
+                                            class="hw-dot"
+                                            cx="12"
+                                            cy="20"
+                                            r="3"
+                                        ></circle>
+                                    </template>
+                                    <template lwc:if={s.isSecond}>
+                                        <rect
+                                            class="hw-paper"
+                                            x="8"
+                                            y="6"
+                                            width="24"
+                                            height="28"
+                                            rx="3"
+                                        ></rect>
+                                        <path
+                                            class="hw-weak"
+                                            d="M13 13h14M13 19h10M13 25h12"
+                                        ></path>
+                                    </template>
+                                    <template lwc:if={s.isThird}>
+                                        <rect
+                                            class="hw-paper"
+                                            x="7"
+                                            y="5"
+                                            width="26"
+                                            height="30"
+                                            rx="3"
+                                        ></rect>
+                                        <path
+                                            class="hw-weak"
+                                            d="M11 11h10M11 23h10"
+                                        ></path>
+                                        <rect
+                                            class="hw-soft"
+                                            x="11"
+                                            y="15"
+                                            width="18"
+                                            height="4"
+                                            rx="1.5"
+                                        ></rect>
+                                        <rect
+                                            class="hw-soft"
+                                            x="11"
+                                            y="27"
+                                            width="18"
+                                            height="4"
+                                            rx="1.5"
+                                        ></rect>
+                                    </template>
+                                </template>
+                            </svg>
+                            <span class="hw-text">
+                                <strong>{s.title}</strong>
+                                <span>{s.text}</span>
+                            </span>
+                        </li>
+                    </template>
+                </ol>
+            </div>
+        </template>
+    </span>
+</template>

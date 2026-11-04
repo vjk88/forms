@@ -1,0 +1,121 @@
+@import 'c/finalStudioStyles';
+
+/* How it works (DESIGN_SYSTEM 5.26): an info icon by a dialog title with a
+   small floating panel of three steps. */
+:host {
+    display: inline-flex;
+}
+
+/* A quiet grey icon (DESIGN_SYSTEM 5.2) on both hosts. */
+.hw-trigger {
+    --slds-c-icon-color-foreground: var(--c-studio-text-weak);
+    --slds-c-icon-color-foreground-default: var(--c-studio-text-weak);
+    --slds-s-button-color: var(--c-studio-text-weak);
+}
+
+.hw {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.hw-panel {
+    position: absolute;
+    top: calc(100% + var(--c-studio-space-2));
+    left: 0;
+    z-index: var(--c-studio-z-popover);
+    width: 22rem;
+    padding: var(--c-studio-space-4) var(--c-studio-space-5);
+    border: 1px solid var(--c-studio-border);
+    border-radius: var(--c-studio-radius-md);
+    background: var(--c-studio-surface);
+    box-shadow: var(--c-studio-shadow-2);
+}
+
+.hw-title {
+    margin: 0 0 var(--c-studio-space-3);
+    font-size: var(--c-studio-fs-body);
+    font-weight: var(--c-studio-fw-strong);
+    color: var(--c-studio-text);
+}
+
+.hw-steps {
+    display: flex;
+    flex-direction: column;
+    gap: var(--c-studio-space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.hw-step {
+    display: flex;
+    align-items: center;
+    gap: var(--c-studio-space-4);
+}
+
+.hw-art {
+    flex: none;
+    width: 40px;
+    height: 40px;
+}
+
+.hw-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    font-size: var(--c-studio-fs-body);
+    font-weight: var(--c-studio-fw-regular);
+    color: var(--c-studio-text);
+}
+
+.hw-text strong {
+    font-weight: var(--c-studio-fw-strong);
+}
+
+.hw-text span {
+    font-size: var(--c-studio-fs-small);
+    color: var(--c-studio-text-weak);
+}
+
+/* The little drawings (decoration only) */
+.hw-paper {
+    fill: var(--c-studio-surface);
+    stroke: var(--c-studio-border-strong);
+    stroke-width: 1.5;
+}
+
+.hw-weak {
+    fill: none;
+    stroke: var(--c-studio-border-strong);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+}
+
+.hw-box {
+    fill: var(--c-studio-border-subtle);
+    stroke: var(--c-studio-border-strong);
+}
+
+.hw-soft {
+    fill: var(--c-studio-accent-surface);
+    stroke: var(--c-studio-accent);
+}
+
+.hw-accent {
+    fill: none;
+    stroke: var(--c-studio-accent);
+    stroke-width: 2;
+    stroke-linecap: round;
+}
+
+.hw-dot {
+    fill: var(--c-studio-accent);
+}
+
+.hw-link {
+    fill: none;
+    stroke: var(--c-studio-border-strong);
+    stroke-width: 1.5;
+    stroke-dasharray: 3 3;
+}

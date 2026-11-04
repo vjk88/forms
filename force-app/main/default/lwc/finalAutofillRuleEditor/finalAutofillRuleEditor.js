@@ -59,6 +59,7 @@ export default class FinalAutofillRuleEditor extends LightningElement {
     testBusy = false;
     testError = '';
     testValues = null;
+    _status;
 
     @api
     get rule() {
@@ -281,10 +282,25 @@ export default class FinalAutofillRuleEditor extends LightningElement {
             {
                 label: 'The record in the link',
                 value: 'link',
+                desc: 'The link you send carries one record.',
+                art: 'link',
+                wide: true,
                 disabled: this.linkDisabled
             },
-            { label: 'A record picked in a lookup', value: 'lookup' },
-            { label: 'The signed-in person', value: 'user' }
+            {
+                label: 'A record picked in a lookup',
+                value: 'lookup',
+                desc: `Whatever they pick in a lookup ${this.answerNoun}.`,
+                art: 'lookup',
+                wide: true
+            },
+            {
+                label: 'The signed-in person',
+                value: 'user',
+                desc: 'Their own details, Contact, Account or Manager.',
+                art: 'user',
+                wide: true
+            }
         ];
     }
 
@@ -654,8 +670,20 @@ export default class FinalAutofillRuleEditor extends LightningElement {
 
     get policyOptions() {
         return [
-            { label: 'Keep what they typed', value: 'preserveEdits' },
-            { label: 'Always replace it', value: 'alwaysReplace' }
+            {
+                label: 'Keep what they typed',
+                value: 'preserveEdits',
+                desc: 'Only empty answers are filled.',
+                art: 'keep',
+                wide: true
+            },
+            {
+                label: 'Always replace it',
+                value: 'alwaysReplace',
+                desc: 'The record’s value wins, every time.',
+                art: 'replace',
+                wide: true
+            }
         ];
     }
 
@@ -671,16 +699,19 @@ export default class FinalAutofillRuleEditor extends LightningElement {
     }
 
     /** Every answer this rule gives people who aren't signed in. */
-    get guestSummary() {
+    get guestNames() {
         if (!this.isLink) {
-            return '';
+            return [];
         }
         const byId = new Map(this.destinations.map((d) => [d.id, d.label]));
-        const names = (this.draft?.mappings || [])
+        return (this.draft?.mappings || [])
             .filter((m) => m.guestAllowed && m.from && m.to)
-            .map((m) => byId.get(m.to) || m.to);
-        return names.length
-            ? `People who aren’t signed in get: ${names.join(', ')}.`
+            .map((m, i) => ({ key: `g${i}`, label: byId.get(m.to) || m.to }));
+    }
+
+    get guestLead() {
+        return this.guestNames.length
+            ? 'People who aren’t signed in get:'
             : 'People who aren’t signed in get nothing from this rule.';
     }
 
@@ -790,5 +821,102 @@ export default class FinalAutofillRuleEditor extends LightningElement {
 
     get hasShownProblems() {
         return this.shownProblems.length > 0;
+    }
+
+    // ---- the page around the rule ----
+
+    /** The object a row reads, as people know it. */
+    get sourceLabel() {
+        const objectApi = this.sourceObject;
+        const hit = (this.objects || []).find((o) => o.value === objectApi);
+        return hit ? hit.label : objectApi;
+    }
+
+    get fieldHeading() {
+        return this.sourceLabel
+            ? `Field on ${this.sourceLabel}`
+            : 'Salesforce field';
+    }
+
+    get fillsHelp() {
+        const one = `Each row copies one ${this.sourceLabel} field into one answer.`;
+        return this.showGuestColumn
+            ? `${one} Tick Guests to fill it for people who aren’t signed in.`
+            : one;
+    }
+
+    get headClass() {
+        return `am-row am-head${this.showGuestColumn ? ' am-row--guests' : ''}`;
+    }
+
+    get rowClass() {
+        return `am-row${this.showGuestColumn ? ' am-row--guests' : ''}`;
+    }
+
+    /**
+     * What a ready rule does, short enough for the footer line by Apply
+     * (DESIGN_SYSTEM 5.25): counts, never the questions' own labels.
+     */
+    get footerSummary() {
+        const filled = (this.draft?.mappings || []).filter(
+            (m) => m.from && m.to
+        );
+        const n = filled.length;
+        let from = 'the signed-in person';
+        if (this.isLookup) {
+            const lookup = this.selectedLookup;
+            from = lookup
+                ? `the record picked in “${lookup.label}”`
+                : 'the record picked in a lookup';
+        } else if (this.isLink) {
+            from = `the ${this.sourceLabel || 'record'} in the link`;
+        }
+        const parts = [`Fills ${n} answer${n === 1 ? '' : 's'} from ${from}`];
+        if (this.isLink) {
+            const guests = filled.filter((m) => m.guestAllowed).length;
+            let who = `${guests} of ${n}`;
+            if (guests === 0) {
+                who = 'none';
+            } else if (guests === n) {
+                who = n === 1 ? 'it' : 'all';
+            }
+            parts.push(`guests get ${who}`);
+        }
+        parts.push(
+            this.draft.policy === 'alwaysReplace'
+                ? 'typed answers are replaced'
+                : 'typed answers are kept'
+        );
+        return parts.join(' · ');
+    }
+
+    /**
+     * Where the rule stands, for the dialog's footer (DESIGN_SYSTEM 3): sent
+     * as `statuschange` whenever it changes.
+     */
+    get status() {
+        if (!this.draft) {
+            return { text: '', tone: '' };
+        }
+        if (!this.draft.enabled) {
+            return { text: 'Off: this rule fills nothing.', tone: '' };
+        }
+        const problems = this.problems;
+        if (problems.length) {
+            return { text: problems[0].message, tone: 'warn' };
+        }
+        return { text: this.footerSummary, tone: 'ok' };
+    }
+
+    renderedCallback() {
+        const { text, tone } = this.status;
+        const key = `${tone}|${text}`;
+        if (key === this._status) {
+            return;
+        }
+        this._status = key;
+        this.dispatchEvent(
+            new CustomEvent('statuschange', { detail: { text, tone } })
+        );
     }
 }

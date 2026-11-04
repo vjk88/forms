@@ -1,0 +1,1299 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Autofill rule mock</title>
+        <style>
+            /* Real Studio token names, as in mapping-dialog-v2-mock.html. Desktop only. */
+            :root {
+                --c-studio-surface: #ffffff;
+                --c-studio-surface-subtle: #f8fafc;
+                --c-studio-workspace: #f1f5f9;
+                --c-studio-hover: #eef2f6;
+                --c-studio-text: #1f2937;
+                --c-studio-text-weak: #526071;
+                --c-studio-border: #dce2e9;
+                --c-studio-border-subtle: #e8edf2;
+                --c-studio-border-strong: #7c8999;
+                --c-studio-accent: #0f766e;
+                --c-studio-accent-hover: #115e59;
+                --c-studio-accent-text: #115e59;
+                --c-studio-accent-surface: #e8f5f2;
+                --c-studio-error-text: #8e2018;
+                --c-studio-warning-text: #73510d;
+                --c-studio-warning-surface: #fff5df;
+                --c-studio-warning-border: #caa24c;
+                --c-studio-success-text: #21613f;
+                --c-studio-success-surface: #eaf6ee;
+                --obj-contact: #9602c7;
+                --pin: #c2410c;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                background: #5d6673;
+                font:
+                    13px/1.45 -apple-system,
+                    'Segoe UI',
+                    system-ui,
+                    Roboto,
+                    Arial,
+                    sans-serif;
+                color: var(--c-studio-text);
+            }
+            button {
+                font: inherit;
+                color: inherit;
+            }
+            .stage {
+                padding: 24px 16px 40px;
+            }
+            .dialog {
+                max-width: 1040px;
+                margin: 0 auto;
+                background: #fff;
+                border-radius: 12px;
+                box-shadow: 0 20px 48px rgb(0 0 0 / 28%);
+                overflow: hidden;
+            }
+
+            .d-head {
+                display: flex;
+                gap: 16px;
+                align-items: flex-start;
+                padding: 16px 24px;
+                border-bottom: 1px solid var(--c-studio-border);
+                position: relative;
+            }
+            .d-head h1 {
+                margin: 0;
+                font-size: 16px;
+                font-weight: 600;
+                line-height: 1.25;
+            }
+            .d-head p {
+                margin: 4px 0 0;
+                font-size: 12px;
+                color: var(--c-studio-text-weak);
+            }
+            .ibtn {
+                margin-left: auto;
+                width: 32px;
+                height: 32px;
+                display: grid;
+                place-items: center;
+                border: 0;
+                border-radius: 8px;
+                background: transparent;
+                color: var(--c-studio-text-weak);
+                cursor: pointer;
+            }
+            .ibtn.sm {
+                width: 24px;
+                height: 24px;
+                margin: 4px 0 0;
+            }
+
+            .intro {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+                gap: 16px;
+                align-items: center;
+                padding: 12px 24px;
+                background: var(--c-studio-surface-subtle);
+                border-bottom: 1px solid var(--c-studio-border);
+                position: relative;
+            }
+            .intro-item {
+                display: flex;
+                gap: 12px;
+                align-items: center;
+            }
+            .intro-item b {
+                display: block;
+                font-weight: 600;
+            }
+            .intro-item span {
+                font-size: 12px;
+                color: var(--c-studio-text-weak);
+            }
+            .quiet {
+                border: 0;
+                background: transparent;
+                color: var(--c-studio-accent-text);
+                font-weight: 600;
+                cursor: pointer;
+                padding: 0 8px;
+                height: 32px;
+                border-radius: 8px;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .body {
+                padding: 24px;
+                display: grid;
+                gap: 24px;
+            }
+            .top {
+                display: flex;
+                align-items: flex-end;
+                gap: 16px;
+                position: relative;
+            }
+            .field {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                flex: 1;
+            }
+            .field label {
+                font-size: 13px;
+            }
+            .ctl {
+                height: 32px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 0 12px;
+                border: 1px solid var(--c-studio-border-strong);
+                border-radius: 8px;
+                background: #fff;
+                min-width: 0;
+                white-space: nowrap;
+                overflow: hidden;
+            }
+            .ctl.ph {
+                color: var(--c-studio-text-weak);
+            }
+            .ctl.sel {
+                padding-right: 32px;
+                background: #fff
+                    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23526071' stroke-width='1.5'/%3E%3C/svg%3E")
+                    no-repeat right 12px center;
+            }
+            .toggle {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                height: 32px;
+            }
+            .sw {
+                width: 32px;
+                height: 18px;
+                border-radius: 999px;
+                background: var(--c-studio-accent);
+                position: relative;
+            }
+            .sw::after {
+                content: '';
+                position: absolute;
+                right: 2px;
+                top: 2px;
+                width: 14px;
+                height: 14px;
+                border-radius: 50%;
+                background: #fff;
+            }
+
+            .summary {
+                display: flex;
+                gap: 8px;
+                padding: 12px 16px;
+                border: 1px solid var(--c-studio-border-subtle);
+                border-radius: 8px;
+                background: var(--c-studio-surface-subtle);
+                position: relative;
+            }
+            .summary svg {
+                flex: none;
+                margin-top: 2px;
+                color: var(--c-studio-text-weak);
+            }
+
+            .group {
+                position: relative;
+            }
+            .group-h {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            .group-h h2 {
+                margin: 0;
+                font-size: 13px;
+                font-weight: 600;
+                white-space: nowrap;
+            }
+            .group-h::after {
+                content: '';
+                flex: 1;
+                height: 1px;
+                background: var(--c-studio-border);
+                order: 1;
+            }
+            .group-h .act {
+                order: 2;
+            }
+            .help {
+                margin: 4px 0 12px;
+                font-size: 12px;
+                color: var(--c-studio-text-weak);
+                max-width: 80ch;
+            }
+
+            .tiles {
+                display: grid;
+                gap: 12px;
+            }
+            .tiles.three {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+            .tiles.two {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                max-width: 760px;
+            }
+            .tile {
+                position: relative;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px;
+                text-align: left;
+                border: 1px solid var(--c-studio-border-strong);
+                border-radius: 8px;
+                background: #fff;
+                cursor: pointer;
+            }
+            .tile[aria-checked='true'] {
+                border: 2px solid var(--c-studio-accent);
+                padding: 11px;
+                background: var(--c-studio-accent-surface);
+            }
+            .tile svg.art {
+                flex: none;
+                width: 64px;
+                height: 40px;
+            }
+            .tile b {
+                display: block;
+                font-weight: 600;
+                padding-right: 20px;
+            }
+            .tile .d {
+                display: block;
+                font-size: 12px;
+                color: var(--c-studio-text-weak);
+            }
+            .tile[aria-checked='true'] .d {
+                color: var(--c-studio-accent-text);
+            }
+            .tick {
+                position: absolute;
+                top: 8px;
+                right: 8px;
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                background: var(--c-studio-accent);
+                color: #fff;
+                display: none;
+                place-items: center;
+            }
+            .tile[aria-checked='true'] .tick {
+                display: grid;
+            }
+            .p {
+                fill: #fff;
+                stroke: var(--c-studio-border-strong);
+                stroke-width: 1.5;
+            }
+            .w {
+                stroke: var(--c-studio-border-strong);
+                stroke-width: 2.5;
+                stroke-linecap: round;
+                fill: none;
+            }
+            .a {
+                stroke: var(--c-studio-accent);
+                stroke-width: 2;
+                fill: none;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+            }
+            .af {
+                fill: var(--c-studio-accent-surface);
+                stroke: var(--c-studio-accent);
+                stroke-width: 1.5;
+            }
+
+            .objrow {
+                display: flex;
+                align-items: flex-end;
+                gap: 12px;
+                margin-top: 16px;
+                max-width: 480px;
+            }
+            .oicon {
+                flex: none;
+                width: 24px;
+                height: 24px;
+                border-radius: 4px;
+                display: grid;
+                place-items: center;
+                color: #fff;
+                background: var(--obj-contact);
+            }
+
+            .table {
+                border: 1px solid var(--c-studio-border);
+                border-radius: 8px;
+                overflow: hidden;
+            }
+            .tr {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) 28px minmax(
+                        0,
+                        1fr
+                    ) 64px 24px;
+                gap: 8px;
+                align-items: start;
+                padding: 8px 12px;
+                border-top: 1px solid var(--c-studio-border-subtle);
+            }
+            .tr:first-child {
+                border-top: 0;
+            }
+            .th {
+                background: var(--c-studio-surface-subtle);
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--c-studio-text-weak);
+                align-items: center;
+            }
+            .arrow {
+                height: 32px;
+                display: grid;
+                place-items: center;
+                color: var(--c-studio-border-strong);
+            }
+            .guest {
+                height: 32px;
+                display: grid;
+                place-items: center;
+            }
+            .cb {
+                width: 16px;
+                height: 16px;
+                border: 1px solid var(--c-studio-border-strong);
+                border-radius: 4px;
+                background: #fff;
+                display: grid;
+                place-items: center;
+            }
+            .cb.on {
+                background: var(--c-studio-accent);
+                border-color: var(--c-studio-accent);
+                color: #fff;
+            }
+            .api {
+                display: block;
+                margin-top: 2px;
+                font:
+                    12px ui-monospace,
+                    Consolas,
+                    monospace;
+                color: var(--c-studio-text-weak);
+            }
+            .test {
+                grid-column: 1 / 4;
+                margin-top: -2px;
+                font-size: 12px;
+                color: var(--c-studio-success-text);
+            }
+            .badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                min-height: 20px;
+                padding: 2px 8px;
+                border-radius: 4px;
+                font-size: 11px;
+                font-weight: 600;
+                background: var(--c-studio-workspace);
+                color: var(--c-studio-text-weak);
+            }
+            .guests-line {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 8px;
+                margin-top: 12px;
+                font-size: 12px;
+                color: var(--c-studio-text-weak);
+            }
+
+            .trybox {
+                display: flex;
+                align-items: flex-end;
+                gap: 8px;
+                max-width: 560px;
+            }
+            .btn {
+                height: 32px;
+                padding: 0 12px;
+                border-radius: 8px;
+                border: 1px solid var(--c-studio-border-strong);
+                background: #fff;
+                color: var(--c-studio-accent-text);
+                font-weight: 600;
+                cursor: pointer;
+            }
+            .btn.primary {
+                background: var(--c-studio-accent);
+                border-color: var(--c-studio-accent);
+                color: #fff;
+            }
+
+            .d-foot {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                padding: 12px 24px;
+                border-top: 1px solid var(--c-studio-border);
+                position: relative;
+            }
+            .d-foot .st {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                font-weight: 600;
+                color: var(--c-studio-warning-text);
+            }
+            .d-foot .btns {
+                margin-left: auto;
+                display: flex;
+                gap: 8px;
+            }
+
+            .pin {
+                position: absolute;
+                z-index: 5;
+                width: 22px;
+                height: 22px;
+                border-radius: 50%;
+                background: var(--pin);
+                color: #fff;
+                font-size: 12px;
+                font-weight: 700;
+                display: grid;
+                place-items: center;
+                box-shadow: 0 0 0 3px #fff;
+            }
+            .notes {
+                max-width: 1040px;
+                margin: 24px auto 0;
+                background: #fff;
+                border-radius: 12px;
+                padding: 24px;
+            }
+            .notes h2 {
+                margin: 0 0 12px;
+                font-size: 16px;
+            }
+            .notes ol {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 12px 24px;
+            }
+            .notes li {
+                display: grid;
+                grid-template-columns: 22px 1fr;
+                gap: 12px;
+            }
+            .notes li .pin {
+                position: static;
+                box-shadow: none;
+            }
+            .notes li b {
+                display: block;
+            }
+            .notes li > div > span {
+                color: var(--c-studio-text-weak);
+            }
+            .notes .ask {
+                margin: 16px 0 0;
+                color: var(--c-studio-warning-text);
+            }
+        </style>
+    </head>
+    <body>
+        <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+            <symbol id="i-contact" viewBox="0 0 24 24">
+                <rect
+                    x="3.5"
+                    y="5"
+                    width="17"
+                    height="14"
+                    rx="2"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                />
+                <circle cx="9" cy="11" r="2.2" fill="currentColor" />
+                <path
+                    d="M5.8 16.2c.6-1.7 1.8-2.5 3.2-2.5s2.6.8 3.2 2.5"
+                    fill="currentColor"
+                />
+                <path
+                    d="M14.5 10h3.5M14.5 13.5h3.5"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                />
+            </symbol>
+            <symbol id="i-x" viewBox="0 0 16 16">
+                <path
+                    d="M4 4l8 8M12 4l-8 8"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                />
+            </symbol>
+            <symbol id="i-plus" viewBox="0 0 16 16">
+                <path
+                    d="M8 3v10M3 8h10"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                />
+            </symbol>
+            <symbol id="i-check" viewBox="0 0 16 16">
+                <path
+                    d="M3.5 8.4l3 3 6-6.4"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                />
+            </symbol>
+            <symbol id="i-warn" viewBox="0 0 16 16">
+                <circle
+                    cx="8"
+                    cy="8"
+                    r="6.6"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.3"
+                />
+                <path
+                    d="M8 4.6v4"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                />
+                <circle cx="8" cy="11.2" r="1" fill="currentColor" />
+            </symbol>
+            <symbol id="i-lines" viewBox="0 0 16 16">
+                <path
+                    d="M2.5 4h11M2.5 8h11M2.5 12h7"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                />
+            </symbol>
+            <symbol id="i-search" viewBox="0 0 16 16">
+                <circle
+                    cx="7"
+                    cy="7"
+                    r="4.3"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                />
+                <path
+                    d="M10.2 10.2l3.3 3.3"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                />
+            </symbol>
+            <symbol id="i-arrow" viewBox="0 0 22 12">
+                <path
+                    d="M1 6h18M15 2l4 4-4 4"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                />
+            </symbol>
+        </svg>
+
+        <div class="stage">
+            <div class="dialog" role="dialog" aria-labelledby="t">
+                <header class="d-head">
+                    <span class="pin" style="left: 134px; top: 12px">A</span>
+                    <div>
+                        <h1 id="t">Autofill rule</h1>
+                        <p>
+                            Fill answers in before someone starts, from a
+                            Salesforce record. They can still change them.
+                        </p>
+                    </div>
+                    <button class="ibtn" type="button" aria-label="Close">
+                        <svg width="16" height="16"><use href="#i-x" /></svg>
+                    </button>
+                </header>
+
+                <section class="intro" aria-label="How autofill works">
+                    <span class="pin" style="left: 4px; top: 4px">B</span>
+                    <div class="intro-item">
+                        <svg
+                            width="40"
+                            height="40"
+                            viewBox="0 0 40 40"
+                            aria-hidden="true"
+                        >
+                            <rect
+                                class="p"
+                                x="4"
+                                y="12"
+                                width="32"
+                                height="16"
+                                rx="8"
+                            />
+                            <path class="a" d="M14 20h12" />
+                            <circle cx="12" cy="20" r="3" fill="#0f766e" />
+                        </svg>
+                        <div>
+                            <b>Someone opens the form</b
+                            ><span
+                                >From a link, a lookup, or while signed
+                                in.</span
+                            >
+                        </div>
+                    </div>
+                    <div class="intro-item">
+                        <svg
+                            width="40"
+                            height="40"
+                            viewBox="0 0 40 40"
+                            aria-hidden="true"
+                        >
+                            <rect
+                                x="8"
+                                y="8"
+                                width="24"
+                                height="24"
+                                rx="4"
+                                fill="#9602c7"
+                            />
+                            <circle cx="17" cy="18" r="3" fill="#fff" />
+                            <path
+                                d="M12.5 26c.8-2.3 2.4-3.4 4.5-3.4s3.7 1.1 4.5 3.4"
+                                fill="#fff"
+                            />
+                            <path
+                                d="M24 17h4M24 22h4"
+                                stroke="#fff"
+                                stroke-width="1.6"
+                                stroke-linecap="round"
+                            />
+                        </svg>
+                        <div>
+                            <b>We read one record</b
+                            ><span
+                                >Only the fields you list, with the right
+                                access.</span
+                            >
+                        </div>
+                    </div>
+                    <div class="intro-item">
+                        <svg
+                            width="40"
+                            height="40"
+                            viewBox="0 0 40 40"
+                            aria-hidden="true"
+                        >
+                            <rect
+                                class="p"
+                                x="7"
+                                y="5"
+                                width="26"
+                                height="30"
+                                rx="3"
+                            />
+                            <path class="w" d="M11 11h10M11 23h10" />
+                            <rect
+                                class="af"
+                                x="11"
+                                y="15"
+                                width="18"
+                                height="4"
+                                rx="1.5"
+                            />
+                            <rect
+                                class="af"
+                                x="11"
+                                y="27"
+                                width="18"
+                                height="4"
+                                rx="1.5"
+                            />
+                        </svg>
+                        <div>
+                            <b>Answers start filled in</b
+                            ><span>They can still change any of them.</span>
+                        </div>
+                    </div>
+                    <button class="quiet" type="button">Hide</button>
+                </section>
+
+                <div class="body">
+                    <div class="top">
+                        <span class="pin" style="left: -12px; top: -8px"
+                            >C</span
+                        >
+                        <div class="field">
+                            <label>Rule name</label
+                            ><span class="ctl">Contact from the link</span>
+                        </div>
+                        <span class="toggle"
+                            ><span class="sw" aria-hidden="true"></span>On</span
+                        >
+                    </div>
+
+                    <div class="summary">
+                        <span class="pin" style="right: -10px; top: -10px"
+                            >D</span
+                        >
+                        <svg width="16" height="16">
+                            <use href="#i-lines" />
+                        </svg>
+                        <span
+                            ><b>In plain words:</b> When someone opens a link
+                            that carries a Contact, it fills
+                            <b>Full name</b> and <b>Email address</b>. People
+                            who aren't signed in get Email address only. If they
+                            already typed an answer, it's kept.</span
+                        >
+                    </div>
+
+                    <section class="group">
+                        <span class="pin" style="left: -34px; top: 0">E</span>
+                        <div class="group-h"><h2>Fill from</h2></div>
+                        <p class="help">Where the record comes from.</p>
+                        <div
+                            class="tiles three"
+                            role="radiogroup"
+                            aria-label="Fill from"
+                        >
+                            <button
+                                class="tile"
+                                type="button"
+                                role="radio"
+                                aria-checked="true"
+                            >
+                                <svg
+                                    class="art"
+                                    viewBox="0 0 64 40"
+                                    aria-hidden="true"
+                                >
+                                    <rect
+                                        class="p"
+                                        x="4"
+                                        y="10"
+                                        width="38"
+                                        height="14"
+                                        rx="7"
+                                    />
+                                    <path class="w" d="M12 17h18" />
+                                    <path class="a" d="M44 17h8" />
+                                    <rect
+                                        class="af"
+                                        x="52"
+                                        y="10"
+                                        width="10"
+                                        height="16"
+                                        rx="2"
+                                    />
+                                </svg>
+                                <span
+                                    ><b>The record in the link</b
+                                    ><span class="d"
+                                        >The link you send carries one
+                                        record.</span
+                                    ></span
+                                >
+                                <span class="tick"
+                                    ><svg width="12" height="12">
+                                        <use href="#i-check" /></svg
+                                ></span>
+                            </button>
+                            <button
+                                class="tile"
+                                type="button"
+                                role="radio"
+                                aria-checked="false"
+                            >
+                                <svg
+                                    class="art"
+                                    viewBox="0 0 64 40"
+                                    aria-hidden="true"
+                                >
+                                    <rect
+                                        class="p"
+                                        x="4"
+                                        y="8"
+                                        width="40"
+                                        height="12"
+                                        rx="3"
+                                    />
+                                    <circle class="a" cx="37" cy="14" r="3" />
+                                    <rect
+                                        class="p"
+                                        x="4"
+                                        y="22"
+                                        width="40"
+                                        height="12"
+                                        rx="3"
+                                    />
+                                    <rect
+                                        class="af"
+                                        x="6"
+                                        y="24"
+                                        width="36"
+                                        height="8"
+                                        rx="2"
+                                    />
+                                    <path class="a" d="M46 28h6" />
+                                    <rect
+                                        class="af"
+                                        x="52"
+                                        y="20"
+                                        width="10"
+                                        height="16"
+                                        rx="2"
+                                    />
+                                </svg>
+                                <span
+                                    ><b>A record picked in a lookup</b
+                                    ><span class="d"
+                                        >Whatever they pick in a lookup
+                                        question.</span
+                                    ></span
+                                >
+                                <span class="tick"
+                                    ><svg width="12" height="12">
+                                        <use href="#i-check" /></svg
+                                ></span>
+                            </button>
+                            <button
+                                class="tile"
+                                type="button"
+                                role="radio"
+                                aria-checked="false"
+                            >
+                                <svg
+                                    class="art"
+                                    viewBox="0 0 64 40"
+                                    aria-hidden="true"
+                                >
+                                    <circle class="af" cx="22" cy="15" r="7" />
+                                    <path
+                                        class="af"
+                                        d="M10 34c2-7 6-10 12-10s10 3 12 10z"
+                                    />
+                                    <path class="a" d="M40 22h8" />
+                                    <rect
+                                        class="af"
+                                        x="50"
+                                        y="14"
+                                        width="10"
+                                        height="16"
+                                        rx="2"
+                                    />
+                                </svg>
+                                <span
+                                    ><b>The signed-in person</b
+                                    ><span class="d"
+                                        >Their own details, Contact, Account or
+                                        Manager.</span
+                                    ></span
+                                >
+                                <span class="tick"
+                                    ><svg width="12" height="12">
+                                        <use href="#i-check" /></svg
+                                ></span>
+                            </button>
+                        </div>
+                        <div class="objrow">
+                            <span class="oicon" aria-hidden="true"
+                                ><svg width="16" height="16">
+                                    <use href="#i-contact" /></svg
+                            ></span>
+                            <div class="field">
+                                <label>Object in the link</label
+                                ><span class="ctl"
+                                    ><svg width="14" height="14">
+                                        <use href="#i-search" /></svg
+                                    >Contact</span
+                                >
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="group">
+                        <span class="pin" style="left: -34px; top: 0">F</span>
+                        <div class="group-h"><h2>What it fills</h2></div>
+                        <p class="help">
+                            Each row copies one Contact field into one answer.
+                            Tick Guests to fill it for people who aren't signed
+                            in.
+                        </p>
+                        <div
+                            class="table"
+                            role="table"
+                            aria-label="What it fills"
+                        >
+                            <div class="tr th" role="row">
+                                <span>Field on Contact</span><span></span
+                                ><span>Fills this answer</span
+                                ><span style="text-align: center">Guests</span
+                                ><span></span>
+                            </div>
+                            <div class="tr" role="row">
+                                <div>
+                                    <span class="ctl"
+                                        ><svg width="14" height="14">
+                                            <use href="#i-search" /></svg
+                                        >Full Name</span
+                                    ><span class="api">Name</span>
+                                </div>
+                                <span class="arrow"
+                                    ><svg width="22" height="12">
+                                        <use href="#i-arrow" /></svg
+                                ></span>
+                                <span class="ctl sel">Full name (text)</span>
+                                <span class="guest"
+                                    ><span class="cb"></span
+                                ></span>
+                                <button
+                                    class="ibtn sm"
+                                    type="button"
+                                    aria-label="Remove Full Name"
+                                >
+                                    <svg width="14" height="14">
+                                        <use href="#i-x" />
+                                    </svg>
+                                </button>
+                                <span class="test"
+                                    >Fills "Jane Rivera" for the test
+                                    record.</span
+                                >
+                            </div>
+                            <div class="tr" role="row">
+                                <div>
+                                    <span class="ctl"
+                                        ><svg width="14" height="14">
+                                            <use href="#i-search" /></svg
+                                        >Email</span
+                                    ><span class="api">Email</span>
+                                </div>
+                                <span class="arrow"
+                                    ><svg width="22" height="12">
+                                        <use href="#i-arrow" /></svg
+                                ></span>
+                                <span class="ctl sel"
+                                    >Email address (email)</span
+                                >
+                                <span class="guest"
+                                    ><span class="cb on"
+                                        ><svg width="12" height="12">
+                                            <use href="#i-check" /></svg></span
+                                ></span>
+                                <button
+                                    class="ibtn sm"
+                                    type="button"
+                                    aria-label="Remove Email"
+                                >
+                                    <svg width="14" height="14">
+                                        <use href="#i-x" />
+                                    </svg>
+                                </button>
+                                <span class="test"
+                                    >Fills "jane@rivera.co" for the test
+                                    record.</span
+                                >
+                            </div>
+                        </div>
+                        <button
+                            class="quiet"
+                            type="button"
+                            style="margin-top: 8px"
+                        >
+                            <svg width="14" height="14">
+                                <use href="#i-plus" /></svg
+                            >Add a field
+                        </button>
+                        <div class="guests-line">
+                            <span>People who aren't signed in get:</span
+                            ><span class="badge">Email address</span>
+                        </div>
+                    </section>
+
+                    <section class="group">
+                        <span class="pin" style="left: -34px; top: 0">G</span>
+                        <div class="group-h">
+                            <h2>When someone has already typed an answer</h2>
+                        </div>
+                        <p class="help">
+                            This matters when the record arrives after they
+                            started, like a lookup they pick halfway through.
+                        </p>
+                        <div
+                            class="tiles two"
+                            role="radiogroup"
+                            aria-label="When someone has already typed an answer"
+                        >
+                            <button
+                                class="tile"
+                                type="button"
+                                role="radio"
+                                aria-checked="true"
+                            >
+                                <svg
+                                    class="art"
+                                    viewBox="0 0 64 40"
+                                    aria-hidden="true"
+                                >
+                                    <rect
+                                        class="af"
+                                        x="6"
+                                        y="12"
+                                        width="40"
+                                        height="16"
+                                        rx="3"
+                                    />
+                                    <path class="w" d="M12 20h20" />
+                                    <path class="a" d="M36 15v10" />
+                                    <rect
+                                        x="48"
+                                        y="16"
+                                        width="12"
+                                        height="10"
+                                        rx="2"
+                                        fill="#0f766e"
+                                    />
+                                    <path
+                                        d="M51 16v-3a3 3 0 0 1 6 0v3"
+                                        fill="none"
+                                        stroke="#0f766e"
+                                        stroke-width="1.8"
+                                    />
+                                </svg>
+                                <span
+                                    ><b>Keep what they typed</b
+                                    ><span class="d"
+                                        >Only empty answers are filled.</span
+                                    ></span
+                                >
+                                <span class="tick"
+                                    ><svg width="12" height="12">
+                                        <use href="#i-check" /></svg
+                                ></span>
+                            </button>
+                            <button
+                                class="tile"
+                                type="button"
+                                role="radio"
+                                aria-checked="false"
+                            >
+                                <svg
+                                    class="art"
+                                    viewBox="0 0 64 40"
+                                    aria-hidden="true"
+                                >
+                                    <rect
+                                        class="p"
+                                        x="6"
+                                        y="12"
+                                        width="40"
+                                        height="16"
+                                        rx="3"
+                                    />
+                                    <path
+                                        class="w"
+                                        d="M12 20h8"
+                                        stroke-dasharray="2 3"
+                                    />
+                                    <rect
+                                        class="af"
+                                        x="22"
+                                        y="16"
+                                        width="20"
+                                        height="8"
+                                        rx="2"
+                                    />
+                                    <path class="a" d="M50 14a8 8 0 1 1-2 9" />
+                                    <path class="a" d="M47 11v5h5" />
+                                </svg>
+                                <span
+                                    ><b>Always replace it</b
+                                    ><span class="d"
+                                        >The record's value wins, every
+                                        time.</span
+                                    ></span
+                                >
+                                <span class="tick"
+                                    ><svg width="12" height="12">
+                                        <use href="#i-check" /></svg
+                                ></span>
+                            </button>
+                        </div>
+                    </section>
+
+                    <section class="group">
+                        <span class="pin" style="left: -34px; top: 0">H</span>
+                        <div class="group-h"><h2>Try it with a record</h2></div>
+                        <p class="help">
+                            Paste the Id of a record you can see. Each row above
+                            shows what it would fill.
+                        </p>
+                        <div class="trybox">
+                            <div class="field">
+                                <label>Record Id</label
+                                ><span class="ctl">003hk00000AbCdE</span>
+                            </div>
+                            <button class="btn" type="button">
+                                Show what it fills
+                            </button>
+                        </div>
+                    </section>
+                </div>
+
+                <footer class="d-foot">
+                    <span class="pin" style="left: 4px; top: -11px">I</span>
+                    <span class="st" style="color: var(--c-studio-success-text)"
+                        ><svg width="16" height="16">
+                            <use href="#i-check" /></svg
+                        >Ready: fills 2 answers</span
+                    >
+                    <div class="btns">
+                        <button class="btn" type="button">Cancel</button
+                        ><button class="btn primary" type="button">
+                            Apply
+                        </button>
+                    </div>
+                </footer>
+            </div>
+
+            <section class="notes">
+                <h2>What changed</h2>
+                <ol>
+                    <li>
+                        <span class="pin">A</span>
+                        <div>
+                            <b>One line under the title</b
+                            ><span
+                                >What autofill does, and that people can still
+                                change answers.</span
+                            >
+                        </div>
+                    </li>
+                    <li>
+                        <span class="pin">B</span>
+                        <div>
+                            <b>How it works strip</b
+                            ><span
+                                >Opens the form, we read one record, answers
+                                start filled in (5.26).</span
+                            >
+                        </div>
+                    </li>
+                    <li>
+                        <span class="pin">C</span>
+                        <div>
+                            <b>Name and On, unchanged</b
+                            ><span>Same text box and switch.</span>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="pin">D</span>
+                        <div>
+                            <b>In plain words</b
+                            ><span
+                                >What the rule fills, what guests get, and what
+                                happens to typed answers (5.25).</span
+                            >
+                        </div>
+                    </li>
+                    <li>
+                        <span class="pin">E</span>
+                        <div>
+                            <b>Fill from as picture cards</b
+                            ><span
+                                >Same three choices, now with drawings; the
+                                object box gets the object's own icon.</span
+                            >
+                        </div>
+                    </li>
+                    <li>
+                        <span class="pin">F</span>
+                        <div>
+                            <b>Field → answer table</b
+                            ><span
+                                >API name under each field, an arrow to the
+                                answer, Guests column, test results under each
+                                row, and a "guests get" badge line.</span
+                            >
+                        </div>
+                    </li>
+                    <li>
+                        <span class="pin">G</span>
+                        <div>
+                            <b>Typed answers as picture cards</b
+                            ><span
+                                >Same two choices with a lock and a replace
+                                drawing, plus when it matters.</span
+                            >
+                        </div>
+                    </li>
+                    <li>
+                        <span class="pin">H</span>
+                        <div>
+                            <b>Try it, unchanged</b
+                            ><span
+                                >Same box and button; group title instead of ALL
+                                CAPS.</span
+                            >
+                        </div>
+                    </li>
+                    <li>
+                        <span class="pin">I</span>
+                        <div>
+                            <b>Footer says where it stands</b
+                            ><span
+                                >"Ready: fills 2 answers", or the first thing to
+                                fix.</span
+                            >
+                        </div>
+                    </li>
+                </ol>
+                <p class="ask">
+                    Desktop only. Same rule data, same behavior; the changes are
+                    words, pictures and layout.
+                </p>
+            </section>
+        </div>
+    </body>
+</html>

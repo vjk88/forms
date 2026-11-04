@@ -16,45 +16,6 @@
     background: var(--c-studio-surface);
 }
 
-/* ---- How it works strip (5.26) ---- */
-.me-intro {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
-    gap: var(--c-studio-space-5);
-    align-items: center;
-    padding: var(--c-studio-space-4) var(--c-studio-space-6);
-    background: var(--c-studio-surface-subtle);
-    border-bottom: 1px solid var(--c-studio-border);
-}
-
-.me-intro-item {
-    display: flex;
-    align-items: center;
-    gap: var(--c-studio-space-4);
-    min-width: 0;
-}
-
-.me-intro-art {
-    flex: none;
-    width: 40px;
-    height: 40px;
-}
-
-.me-intro-text {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-}
-
-.me-intro-text strong {
-    font-weight: var(--c-studio-fw-strong);
-}
-
-.me-intro-text span {
-    font-size: var(--c-studio-fs-small);
-    color: var(--c-studio-text-weak);
-}
-
 /* The little drawings (decoration only) */
 .me-art-paper {
     fill: var(--c-studio-surface);

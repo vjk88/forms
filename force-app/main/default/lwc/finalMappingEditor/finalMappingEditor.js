@@ -25,17 +25,6 @@ function plural(n, word) {
     return `${n} ${word}${n === 1 ? '' : 's'}`;
 }
 
-/** The "How it works" strip stays hidden once this person hides it. */
-const INTRO_KEY = 'c.finalMapping.introHidden';
-
-function readIntroHidden() {
-    try {
-        return window.localStorage.getItem(INTRO_KEY) === '1';
-    } catch {
-        return false;
-    }
-}
-
 /**
  * finalMappingEditor — the Mapping page (FREEFORM_F2_MAPPING_SPEC section
  * 5): the steps in run order, the selected step, and where every answer
@@ -58,7 +47,6 @@ export default class FinalMappingEditor extends LightningElement {
     /** objectApi -> { apiName: label }, for the answers index. */
     fieldLabels = {};
     _labelsLoading = new Set();
-    introHidden = readIntroHidden();
     _status;
 
     /** { actionId, n }: open that step (the publish dialog's Go there). */
@@ -244,10 +232,6 @@ export default class FinalMappingEditor extends LightningElement {
         ];
     }
 
-    get showIntro() {
-        return !this.introHidden;
-    }
-
     get showEmptyAdd() {
         return !this.adding && !this.atCap;
     }
@@ -275,15 +259,6 @@ export default class FinalMappingEditor extends LightningElement {
                 }))
             };
         });
-    }
-
-    handleHideIntro() {
-        this.introHidden = true;
-        try {
-            window.localStorage.setItem(INTRO_KEY, '1');
-        } catch {
-            // Private windows can refuse storage: it's hidden for this visit.
-        }
     }
 
     /**

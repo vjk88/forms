@@ -13,9 +13,12 @@
         <div class="sd-container">
             <header class="sd-header">
                 <div class="sd-heading-text">
-                    <h1 id="sd-heading" class="sd-title" tabindex="-1">
-                        {label}
-                    </h1>
+                    <div class="sd-title-row">
+                        <h1 id="sd-heading" class="sd-title" tabindex="-1">
+                            {label}
+                        </h1>
+                        <slot name="heading-end"></slot>
+                    </div>
                     <template lwc:if={description}>
                         <p class="sd-description">{description}</p>
                     </template>
