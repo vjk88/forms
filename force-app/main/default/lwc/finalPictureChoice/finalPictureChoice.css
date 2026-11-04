@@ -279,3 +279,14 @@
 .pc[aria-disabled='true'] .pc-tile {
     cursor: default;
 }
+
+/* One option that can't be picked right now (the screen says why). */
+.pc-tile:disabled {
+    cursor: not-allowed;
+    border-color: var(--c-studio-border);
+    color: var(--c-studio-text-weak);
+}
+
+.pc-tile:disabled .pc-art-record {
+    opacity: 0.5;
+}

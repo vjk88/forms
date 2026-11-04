@@ -104,12 +104,12 @@ function mount(props = {}) {
 
 const $ = (el, sel) => el.shadowRoot.querySelector(sel);
 const $$ = (el, sel) => [...el.shadowRoot.querySelectorAll(sel)];
-// "Fill from" is a c-final-button-group (DESIGN_SYSTEM 5.7)
+// "Fill from" is picture tiles (c-final-picture-choice, DESIGN_SYSTEM 5.24)
 const sourceButtons = (el) => [
     ...$(
         el,
-        'c-final-button-group[data-group="source"]'
-    ).shadowRoot.querySelectorAll('button')
+        'c-final-picture-choice[data-group="source"]'
+    ).shadowRoot.querySelectorAll('button[role="radio"]')
 ];
 
 beforeEach(() => {
@@ -603,8 +603,15 @@ describe('c-final-autofill-rule-editor', () => {
             ])
         });
         await flush();
-        expect($(el, '.am-guest-summary').textContent).toBe(
-            'People who aren’t signed in get: Company.'
+        expect($(el, '.am-guest-summary').textContent).toContain(
+            'People who aren’t signed in get:'
+        );
+        expect(
+            $$(el, '.am-guest-summary .am-badge').map((n) => n.textContent)
+        ).toEqual(['Company']);
+        // The plain summary says it too (DESIGN_SYSTEM 5.25).
+        expect($(el, '.am-summary').textContent).toContain(
+            'People who aren’t signed in get Company only.'
         );
     });
 });

@@ -1,5 +1,108 @@
 <template>
     <div class="am">
+        <template lwc:if={showIntro}>
+            <section class="am-intro" aria-label="How autofill works">
+                <div class="am-intro-item">
+                    <svg
+                        class="am-intro-art"
+                        viewBox="0 0 40 40"
+                        aria-hidden="true"
+                    >
+                        <rect
+                            class="am-art-paper"
+                            x="4"
+                            y="12"
+                            width="32"
+                            height="16"
+                            rx="8"
+                        ></rect>
+                        <path class="am-art-accent" d="M14 20h12"></path>
+                        <circle
+                            class="am-art-dot"
+                            cx="12"
+                            cy="20"
+                            r="3"
+                        ></circle>
+                    </svg>
+                    <span class="am-intro-text">
+                        <strong>Someone opens the form</strong>
+                        <span>From a link, a lookup, or while signed in.</span>
+                    </span>
+                </div>
+                <div class="am-intro-item">
+                    <svg
+                        class="am-intro-art"
+                        viewBox="0 0 40 40"
+                        aria-hidden="true"
+                    >
+                        <rect
+                            class="am-art-paper"
+                            x="8"
+                            y="6"
+                            width="24"
+                            height="28"
+                            rx="3"
+                        ></rect>
+                        <path
+                            class="am-art-weak"
+                            d="M13 13h14M13 19h10M13 25h12"
+                        ></path>
+                    </svg>
+                    <span class="am-intro-text">
+                        <strong>We read one record</strong>
+                        <span
+                            >Only the fields you list, with the right
+                            access.</span
+                        >
+                    </span>
+                </div>
+                <div class="am-intro-item">
+                    <svg
+                        class="am-intro-art"
+                        viewBox="0 0 40 40"
+                        aria-hidden="true"
+                    >
+                        <rect
+                            class="am-art-paper"
+                            x="7"
+                            y="5"
+                            width="26"
+                            height="30"
+                            rx="3"
+                        ></rect>
+                        <path class="am-art-weak" d="M11 11h10M11 23h10"></path>
+                        <rect
+                            class="am-art-soft"
+                            x="11"
+                            y="15"
+                            width="18"
+                            height="4"
+                            rx="1.5"
+                        ></rect>
+                        <rect
+                            class="am-art-soft"
+                            x="11"
+                            y="27"
+                            width="18"
+                            height="4"
+                            rx="1.5"
+                        ></rect>
+                    </svg>
+                    <span class="am-intro-text">
+                        <strong>Answers start filled in</strong>
+                        <span>They can still change any of them.</span>
+                    </span>
+                </div>
+                <lightning-button
+                    class="am-intro-hide"
+                    variant="base"
+                    label="Hide"
+                    aria-label="Hide how autofill works"
+                    onclick={handleHideIntro}
+                ></lightning-button>
+            </section>
+        </template>
+
         <div class="am-top">
             <lightning-input
                 class="am-name"
@@ -19,15 +122,25 @@
             ></lightning-input>
         </div>
 
+        <p class="am-summary">
+            <lightning-icon
+                icon-name="utility:richtextbulletedlist"
+                size="x-small"
+            ></lightning-icon>
+            <span><strong>In plain words:</strong> {plainSummary}</span>
+        </p>
+
         <section class="am-section">
             <h2 class="am-heading">Fill from</h2>
-            <c-final-button-group
+            <p class="am-help">Where the record comes from.</p>
+            <c-final-picture-choice
+                class="am-source"
                 data-group="source"
                 label="Fill from"
                 options={sourceOptions}
                 value={sourceType}
                 onchange={handleSource}
-            ></c-final-button-group>
+            ></c-final-picture-choice>
             <template lwc:if={linkDisabled}>
                 <p class="am-hint">
                     Another link rule is on. A link carries one record, so turn
@@ -48,13 +161,20 @@
                     </template>
                 </template>
                 <template lwc:else>
-                    <c-final-object-picker
-                        class="am-object"
-                        label="Object in the link"
-                        objects={objects}
-                        value={draft.source.objectApiName}
-                        onpick={handleObjectPick}
-                    ></c-final-object-picker>
+                    <div class="am-objrow">
+                        <template lwc:if={hasSourceObject}>
+                            <c-final-object-icon
+                                object-api={sourceObject}
+                            ></c-final-object-icon>
+                        </template>
+                        <c-final-object-picker
+                            class="am-object"
+                            label="Object in the link"
+                            objects={objects}
+                            value={draft.source.objectApiName}
+                            onpick={handleObjectPick}
+                        ></c-final-object-picker>
+                    </div>
                 </template>
             </template>
             <template lwc:if={isUser}>
@@ -96,29 +216,42 @@
         <section class="am-section">
             <h2 class="am-heading">What it fills</h2>
             <template lwc:if={hasSourceObject}>
+                <p class="am-help">{fillsHelp}</p>
                 <div class="am-grid" role="list">
-                    <div class="am-row am-head" aria-hidden="true">
-                        <span>Salesforce field</span>
-                        <span>Fills</span>
+                    <div class={headClass} aria-hidden="true">
+                        <span>{fieldHeading}</span>
+                        <span></span>
+                        <span>Fills this answer</span>
                         <template lwc:if={showGuestColumn}>
-                            <span>Guests</span>
+                            <span class="am-center">Guests</span>
                         </template>
                         <span></span>
                     </div>
                     <template for:each={rows} for:item="r">
-                        <div key={r.key} class="am-row" role="listitem">
-                            <c-final-field-picker
-                                label={r.fieldLabel}
-                                variant="label-hidden"
-                                object-api={sourceObject}
-                                purpose="read"
-                                max-depth={maxDepth}
-                                allowed-relationships={allowedRelationships}
-                                allowed-types={allowedTypes}
-                                value={r.from}
-                                data-index={r.index}
-                                onfieldchange={handleFromPick}
-                            ></c-final-field-picker>
+                        <div key={r.key} class={rowClass} role="listitem">
+                            <div class="am-from">
+                                <c-final-field-picker
+                                    label={r.fieldLabel}
+                                    variant="label-hidden"
+                                    object-api={sourceObject}
+                                    purpose="read"
+                                    max-depth={maxDepth}
+                                    allowed-relationships={allowedRelationships}
+                                    allowed-types={allowedTypes}
+                                    value={r.from}
+                                    data-index={r.index}
+                                    onfieldchange={handleFromPick}
+                                ></c-final-field-picker>
+                                <template lwc:if={r.from}>
+                                    <span class="am-api">{r.from}</span>
+                                </template>
+                            </div>
+                            <span class="am-arrow" aria-hidden="true">
+                                <lightning-icon
+                                    icon-name="utility:forward"
+                                    size="xx-small"
+                                ></lightning-icon>
+                            </span>
                             <lightning-combobox
                                 label={r.toLabel}
                                 variant="label-hidden"
@@ -140,7 +273,7 @@
                                 ></lightning-input>
                             </template>
                             <lightning-button-icon
-                                icon-name="utility:delete"
+                                icon-name="utility:close"
                                 variant="bare"
                                 alternative-text={r.removeLabel}
                                 title={r.removeLabel}
@@ -159,13 +292,17 @@
                 <lightning-button
                     class="am-add"
                     variant="base"
-                    label="Add a row"
+                    label="Add a field"
                     icon-name="utility:add"
                     onclick={handleAddRow}
                 ></lightning-button>
                 <template lwc:if={guestNote}>
-                    <p class="am-hint">{guestNote}</p>
-                    <p class="am-hint am-guest-summary">{guestSummary}</p>
+                    <div class="am-guest-summary">
+                        <span>{guestLead}</span>
+                        <template for:each={guestNames} for:item="g">
+                            <span key={g.key} class="am-badge">{g.label}</span>
+                        </template>
+                    </div>
                 </template>
             </template>
             <template lwc:else>
@@ -174,18 +311,26 @@
         </section>
 
         <section class="am-section">
-            <lightning-radio-group
+            <h2 class="am-heading">When someone has already typed an answer</h2>
+            <p class="am-help">
+                This matters when the record arrives after they started, like a
+                lookup they pick halfway through.
+            </p>
+            <c-final-picture-choice
                 class="am-policy"
                 label="When someone has already typed an answer"
                 options={policyOptions}
                 value={draft.policy}
                 onchange={handlePolicy}
-            ></lightning-radio-group>
+            ></c-final-picture-choice>
         </section>
 
         <section class="am-section">
             <template lwc:if={isUser}>
                 <h2 class="am-heading">Try it on yourself</h2>
+                <p class="am-help">
+                    Each row above shows what it would fill for you.
+                </p>
                 <div class="am-test">
                     <lightning-button
                         class="am-test-me"
@@ -197,6 +342,10 @@
             </template>
             <template lwc:else>
                 <h2 class="am-heading">Try it with a record</h2>
+                <p class="am-help">
+                    Paste the Id of a record you can see. Each row above shows
+                    what it would fill.
+                </p>
                 <div class="am-test">
                     <lightning-input
                         class="am-test-id"

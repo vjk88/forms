@@ -17,6 +17,30 @@ function mintId(prefix) {
     return `${prefix}_${suffix}`;
 }
 
+/** The "How it works" strip stays hidden once this person hides it. */
+const INTRO_KEY = 'c.finalAutofill.introHidden';
+
+function readIntroHidden() {
+    try {
+        return window.localStorage.getItem(INTRO_KEY) === '1';
+    } catch {
+        return false;
+    }
+}
+
+/** "a Contact", "an Account". */
+function withArticle(label) {
+    return `${/^[aeiou]/i.test(label || '') ? 'an' : 'a'} ${label}`;
+}
+
+/** "A", "A and B", "A, B and C". */
+function listWords(names) {
+    if (names.length <= 1) {
+        return names.join('');
+    }
+    return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+}
+
 const ANSWER_WORDS = {
     Text: 'text',
     Email: 'email',
@@ -59,6 +83,8 @@ export default class FinalAutofillRuleEditor extends LightningElement {
     testBusy = false;
     testError = '';
     testValues = null;
+    introHidden = readIntroHidden();
+    _status;
 
     @api
     get rule() {
@@ -281,10 +307,25 @@ export default class FinalAutofillRuleEditor extends LightningElement {
             {
                 label: 'The record in the link',
                 value: 'link',
+                desc: 'The link you send carries one record.',
+                art: 'link',
+                wide: true,
                 disabled: this.linkDisabled
             },
-            { label: 'A record picked in a lookup', value: 'lookup' },
-            { label: 'The signed-in person', value: 'user' }
+            {
+                label: 'A record picked in a lookup',
+                value: 'lookup',
+                desc: `Whatever they pick in a lookup ${this.answerNoun}.`,
+                art: 'lookup',
+                wide: true
+            },
+            {
+                label: 'The signed-in person',
+                value: 'user',
+                desc: 'Their own details, Contact, Account or Manager.',
+                art: 'user',
+                wide: true
+            }
         ];
     }
 
@@ -654,8 +695,20 @@ export default class FinalAutofillRuleEditor extends LightningElement {
 
     get policyOptions() {
         return [
-            { label: 'Keep what they typed', value: 'preserveEdits' },
-            { label: 'Always replace it', value: 'alwaysReplace' }
+            {
+                label: 'Keep what they typed',
+                value: 'preserveEdits',
+                desc: 'Only empty answers are filled.',
+                art: 'keep',
+                wide: true
+            },
+            {
+                label: 'Always replace it',
+                value: 'alwaysReplace',
+                desc: 'The record’s value wins, every time.',
+                art: 'replace',
+                wide: true
+            }
         ];
     }
 
@@ -671,16 +724,19 @@ export default class FinalAutofillRuleEditor extends LightningElement {
     }
 
     /** Every answer this rule gives people who aren't signed in. */
-    get guestSummary() {
+    get guestNames() {
         if (!this.isLink) {
-            return '';
+            return [];
         }
         const byId = new Map(this.destinations.map((d) => [d.id, d.label]));
-        const names = (this.draft?.mappings || [])
+        return (this.draft?.mappings || [])
             .filter((m) => m.guestAllowed && m.from && m.to)
-            .map((m) => byId.get(m.to) || m.to);
-        return names.length
-            ? `People who aren’t signed in get: ${names.join(', ')}.`
+            .map((m, i) => ({ key: `g${i}`, label: byId.get(m.to) || m.to }));
+    }
+
+    get guestLead() {
+        return this.guestNames.length
+            ? 'People who aren’t signed in get:'
             : 'People who aren’t signed in get nothing from this rule.';
     }
 
@@ -790,5 +846,135 @@ export default class FinalAutofillRuleEditor extends LightningElement {
 
     get hasShownProblems() {
         return this.shownProblems.length > 0;
+    }
+
+    // ---- the page around the rule (DESIGN_SYSTEM 5.25, 5.26) ----
+
+    get showIntro() {
+        return !this.introHidden;
+    }
+
+    handleHideIntro() {
+        this.introHidden = true;
+        try {
+            window.localStorage.setItem(INTRO_KEY, '1');
+        } catch {
+            // Private windows can refuse storage: it's hidden for this visit.
+        }
+    }
+
+    /** The object a row reads, as people know it. */
+    get sourceLabel() {
+        const objectApi = this.sourceObject;
+        const hit = (this.objects || []).find((o) => o.value === objectApi);
+        return hit ? hit.label : objectApi;
+    }
+
+    get fieldHeading() {
+        return this.sourceLabel
+            ? `Field on ${this.sourceLabel}`
+            : 'Salesforce field';
+    }
+
+    get fillsHelp() {
+        const one = `Each row copies one ${this.sourceLabel} field into one answer.`;
+        return this.showGuestColumn
+            ? `${one} Tick Guests to fill it for people who aren’t signed in.`
+            : one;
+    }
+
+    get headClass() {
+        return `am-row am-head${this.showGuestColumn ? ' am-row--guests' : ''}`;
+    }
+
+    get rowClass() {
+        return `am-row${this.showGuestColumn ? ' am-row--guests' : ''}`;
+    }
+
+    /** The answers this rule fills, by name. */
+    get _filledNames() {
+        const byId = new Map(this.destinations.map((d) => [d.id, d.label]));
+        return (this.draft?.mappings || [])
+            .filter((m) => m.from && m.to)
+            .map((m) => byId.get(m.to) || m.to);
+    }
+
+    /** What this rule will do, in one sentence (DESIGN_SYSTEM 5.25). */
+    get plainSummary() {
+        if (!this.draft) {
+            return '';
+        }
+        if (!this.sourceType) {
+            return 'Choose where the values come from first.';
+        }
+        const names = this._filledNames;
+        const fills = names.length
+            ? `it fills ${listWords(names)}.`
+            : `it fills nothing yet: add a field below.`;
+        let when;
+        if (this.isUser) {
+            when = 'When someone signed in opens the form,';
+        } else if (this.isLookup) {
+            const lookup = this.selectedLookup;
+            when = lookup
+                ? `When someone picks a record in “${lookup.label}”,`
+                : 'When someone picks a record in a lookup,';
+        } else {
+            when = this.sourceLabel
+                ? `When someone opens a link that carries ${withArticle(this.sourceLabel)},`
+                : 'When someone opens a link that carries a record,';
+        }
+        const parts = [`${when} ${fills}`];
+        if (this.isLink && names.length) {
+            const guests = this.guestNames.map((g) => g.label);
+            parts.push(
+                guests.length
+                    ? `People who aren’t signed in get ${listWords(guests)} only.`
+                    : 'People who aren’t signed in get nothing.'
+            );
+        }
+        parts.push(
+            this.draft.policy === 'alwaysReplace'
+                ? 'It replaces anything they already typed.'
+                : 'If they already typed an answer, it’s kept.'
+        );
+        if (!this.draft.enabled) {
+            parts.unshift('This rule is off.');
+        }
+        return parts.join(' ');
+    }
+
+    /**
+     * Where the rule stands, for the dialog's footer (DESIGN_SYSTEM 3): sent
+     * as `statuschange` whenever it changes.
+     */
+    get status() {
+        if (!this.draft) {
+            return { text: '', tone: '' };
+        }
+        if (!this.draft.enabled) {
+            return { text: 'Off: this rule fills nothing.', tone: '' };
+        }
+        const problems = this.problems;
+        if (problems.length) {
+            return { text: problems[0].message, tone: 'warn' };
+        }
+        const n = this._filledNames.length;
+        return {
+            text: `Ready: fills ${n} ${this.answerNoun}${n === 1 ? '' : 's'}`,
+            tone: 'ok'
+        };
+    }
+
+    renderedCallback() {
+        const { text, tone } = this.status;
+        const key = `${tone}|${text}`;
+        if (key === this._status) {
+            return;
+        }
+        this._status = key;
+        this.dispatchEvent(
+            new CustomEvent('statuschange', { detail: { text, tone } })
+        );
     }
 }

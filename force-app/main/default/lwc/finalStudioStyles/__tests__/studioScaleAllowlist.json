@@ -37,14 +37,6 @@
     ".ap-stop-title || raw font weight": 1,
     ":host || raw font size": 1
   },
-  "finalAutofillRuleEditor": {
-    ".am-head || raw font size": 1,
-    ".am-heading || ALL CAPS": 1,
-    ".am-heading || raw font size": 1,
-    ".am-heading || raw font weight": 1,
-    ".am-hint || raw font size": 1,
-    ".am-row-problem, .am-row-test || raw font size": 1
-  },
   "finalBrandInputs": {
     ".bd-btn || raw radius": 1,
     ".bd-check || raw font size": 1,

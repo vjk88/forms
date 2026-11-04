@@ -729,7 +729,8 @@ button.st-mode.on:focus-visible {
     border-color: var(--c-studio-accent-hover);
 }
 
-/* The Mapping dialog's footer says what's left (DESIGN_SYSTEM 3). */
+/* The Mapping and Autofill dialogs' footers say where things stand
+   (DESIGN_SYSTEM 3). */
 .st-map-status {
     font-size: var(--c-studio-fs-body);
     color: var(--c-studio-text-weak);
@@ -738,4 +739,9 @@ button.st-mode.on:focus-visible {
 .st-map-status--warn {
     font-weight: var(--c-studio-fw-strong);
     color: var(--c-studio-warning-text);
+}
+
+.st-map-status--ok {
+    font-weight: var(--c-studio-fw-strong);
+    color: var(--c-studio-success-text);
 }

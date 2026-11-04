@@ -3,6 +3,8 @@ import { LightningElement, api } from 'lwc';
 const ARTS = ['select', 'radio', 'checkbox', 'chips', 'cards'];
 /** Drawings of what a record step does (Mapping), for wide tiles. */
 const RECORD_ARTS = ['create', 'find', 'reuse', 'update'];
+/** Drawings for an Autofill rule: where values come from, typed answers. */
+const AUTOFILL_ARTS = ['link', 'lookup', 'user', 'keep', 'replace'];
 
 /**
  * Picture tiles (DESIGN_SYSTEM 5.24): pick one option by a small drawing of
@@ -11,7 +13,9 @@ const RECORD_ARTS = ['create', 'find', 'reuse', 'update'];
  * options: [{ value, label, art, desc?, wide? }]
  *   art  - which drawing: 'select' | 'radio' | 'checkbox' | 'chips' | 'cards',
  *          or, on a wide tile, what a record step does: 'create' | 'find' |
- *          'reuse' | 'update'
+ *          'reuse' | 'update'; or an Autofill rule's 'link' | 'lookup' |
+ *          'user' | 'keep' | 'replace'
+ *   disabled - this one option can't be picked (it says why elsewhere)
  *   wide - a tile with a description, above the grid; wide tiles sit side
  *          by side when there's room
  * Fires `change` with `detail.value` on a click, and when an arrow key, Home or
@@ -33,7 +37,9 @@ export default class FinalPictureChoice extends LightningElement {
         return (this.options || []).map((o, index) => {
             const on = o.value === this.value;
             const record = RECORD_ARTS.includes(o.art) ? o.art : '';
-            const art = ARTS.includes(o.art) || record ? o.art : 'select';
+            const fill = AUTOFILL_ARTS.includes(o.art) ? o.art : '';
+            const art =
+                ARTS.includes(o.art) || record || fill ? o.art : 'select';
             return {
                 key: `${index}-${String(o.value)}`,
                 index,
@@ -53,7 +59,14 @@ export default class FinalPictureChoice extends LightningElement {
                 isCreate: record === 'create',
                 isFind: record === 'find',
                 isReuse: record === 'reuse',
-                isUpdate: record === 'update'
+                isUpdate: record === 'update',
+                isFill: Boolean(fill),
+                isLink: fill === 'link',
+                isLookup: fill === 'lookup',
+                isUser: fill === 'user',
+                isKeep: fill === 'keep',
+                isReplace: fill === 'replace',
+                optionDisabled: Boolean(o.disabled) || this.disabled
             };
         });
     }
@@ -79,7 +92,10 @@ export default class FinalPictureChoice extends LightningElement {
     }
 
     handleClick(event) {
-        if (this.disabled) {
+        const o = (this.options || [])[
+            Number(event.currentTarget.dataset.index)
+        ];
+        if (this.disabled || !o || o.disabled) {
             return;
         }
         this._pick(Number(event.currentTarget.dataset.index), false);

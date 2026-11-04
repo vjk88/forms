@@ -1,86 +1,289 @@
 @import 'c/finalStudioStyles';
 
+/* One Autofill rule (DESIGN_SYSTEM 3): a "How it works" strip (5.26), the
+   name, a plain summary (5.25), then groups (5.5): title + hairline. */
 .am {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: var(--c-studio-space-6);
 }
 
+/* ---- How it works strip (5.26) ---- */
+.am-intro {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+    gap: var(--c-studio-space-5);
+    align-items: center;
+    padding: var(--c-studio-space-4) var(--c-studio-space-5);
+    border: 1px solid var(--c-studio-border-subtle);
+    border-radius: var(--c-studio-radius-md);
+    background: var(--c-studio-surface-subtle);
+}
+
+.am-intro-item {
+    display: flex;
+    align-items: center;
+    gap: var(--c-studio-space-4);
+    min-width: 0;
+}
+
+.am-intro-art {
+    flex: none;
+    width: 40px;
+    height: 40px;
+}
+
+.am-intro-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.am-intro-text strong {
+    font-weight: var(--c-studio-fw-strong);
+}
+
+.am-intro-text span {
+    font-size: var(--c-studio-fs-small);
+    color: var(--c-studio-text-weak);
+}
+
+.am-art-paper {
+    fill: var(--c-studio-surface);
+    stroke: var(--c-studio-border-strong);
+    stroke-width: 1.5;
+}
+
+.am-art-weak {
+    fill: none;
+    stroke: var(--c-studio-border-strong);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+}
+
+.am-art-soft {
+    fill: var(--c-studio-accent-surface);
+    stroke: var(--c-studio-accent);
+}
+
+.am-art-accent {
+    fill: none;
+    stroke: var(--c-studio-accent);
+    stroke-width: 2;
+    stroke-linecap: round;
+}
+
+.am-art-dot {
+    fill: var(--c-studio-accent);
+}
+
+/* ---- Name and On ---- */
 .am-top {
     display: flex;
     align-items: flex-end;
-    gap: 1rem;
+    gap: var(--c-studio-space-5);
 }
 
 .am-name {
     flex: 1;
 }
 
+/* ---- Plain summary (5.25) ---- */
+.am-summary {
+    display: flex;
+    gap: var(--c-studio-space-3);
+    margin: 0;
+    padding: var(--c-studio-space-4) var(--c-studio-space-5);
+    border: 1px solid var(--c-studio-border-subtle);
+    border-radius: var(--c-studio-radius-md);
+    background: var(--c-studio-surface-subtle);
+}
+
+.am-summary strong {
+    font-weight: var(--c-studio-fw-strong);
+}
+
+/* ---- Groups (5.5) ---- */
 .am-section {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
 }
 
 .am-heading {
+    display: flex;
+    align-items: center;
+    gap: var(--c-studio-space-4);
     margin: 0;
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.025rem;
-    text-transform: uppercase;
+    font-size: var(--c-studio-fs-body);
+    font-weight: var(--c-studio-fw-strong);
+    color: var(--c-studio-text);
+}
+
+.am-heading::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--c-studio-border);
+}
+
+.am-help {
+    margin: var(--c-studio-space-2) 0 var(--c-studio-space-4);
+    max-width: 80ch;
+    font-size: var(--c-studio-fs-small);
     color: var(--c-studio-text-weak);
 }
 
+.am-hint {
+    margin: var(--c-studio-space-3) 0 0;
+    font-size: var(--c-studio-fs-small);
+    color: var(--c-studio-text-weak);
+}
+
+.am-objrow {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--c-studio-space-4);
+    max-width: 30rem;
+    margin-top: var(--c-studio-space-5);
+}
+
+.am-objrow c-final-object-icon {
+    margin-bottom: var(--c-studio-space-2);
+}
+
+.am-object {
+    flex: 1;
+    min-width: 0;
+}
+
+.am-lookup,
+.am-poly {
+    display: block;
+    max-width: 30rem;
+    margin-top: var(--c-studio-space-5);
+}
+
+/* ---- What it fills: a data table (5.21) ---- */
 .am-grid {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    border: 1px solid var(--c-studio-border);
+    border-radius: var(--c-studio-radius-md);
 }
 
 .am-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto auto;
-    gap: 0.5rem;
-    align-items: center;
+    grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1fr) 24px;
+    gap: var(--c-studio-space-3);
+    align-items: start;
+    padding: var(--c-studio-space-3) var(--c-studio-space-4);
+    border-top: 1px solid var(--c-studio-border-subtle);
+}
+
+.am-row--guests {
+    grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1fr) 56px 24px;
 }
 
 .am-head {
-    font-size: 0.75rem;
+    align-items: center;
+    border-top: 0;
+    border-radius: var(--c-studio-radius-md) var(--c-studio-radius-md) 0 0;
+    background: var(--c-studio-surface-subtle);
+    font-size: var(--c-studio-fs-small);
+    font-weight: var(--c-studio-fw-strong);
     color: var(--c-studio-text-weak);
+}
+
+.am-center {
+    text-align: center;
+}
+
+.am-from {
+    min-width: 0;
+}
+
+.am-api {
+    display: block;
+    margin-top: var(--c-studio-space-1);
+    font-family: var(--c-studio-font-mono);
+    font-size: var(--c-studio-fs-small);
+    color: var(--c-studio-text-weak);
+    overflow-wrap: anywhere;
+}
+
+.am-arrow {
+    display: grid;
+    place-items: center;
+    height: var(--c-studio-control-h);
+    --slds-c-icon-color-foreground-default: var(--c-studio-border-strong);
+}
+
+.am-guest {
+    display: grid;
+    place-items: center;
+    height: var(--c-studio-control-h);
 }
 
 .am-row-problem,
 .am-row-test {
     grid-column: 1 / -1;
     margin: 0;
-    font-size: 0.75rem;
+    font-size: var(--c-studio-fs-small);
 }
 
 .am-row-problem {
-    color: var(--c-studio-error);
+    color: var(--c-studio-error-text);
 }
 
 .am-row-test {
-    color: var(--c-studio-text-weak);
+    color: var(--c-studio-success-text);
 }
 
 .am-add {
     align-self: flex-start;
+    margin-top: var(--c-studio-space-3);
 }
 
-.am-hint {
-    margin: 0;
-    font-size: 0.75rem;
+/* People who aren't signed in get: [badge] [badge] (5.22) */
+.am-guest-summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--c-studio-space-3);
+    margin-top: var(--c-studio-space-4);
+    font-size: var(--c-studio-fs-small);
     color: var(--c-studio-text-weak);
 }
 
+.am-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 20px;
+    padding: var(--c-studio-space-1) var(--c-studio-space-3);
+    border-radius: var(--c-studio-radius-sm);
+    background: var(--c-studio-workspace);
+    font-size: var(--c-studio-fs-caption);
+    font-weight: var(--c-studio-fw-strong);
+    color: var(--c-studio-text-weak);
+}
+
+.am-source,
+.am-policy {
+    max-width: 60rem;
+}
+
+/* ---- Try it ---- */
 .am-test {
     display: flex;
     align-items: flex-end;
-    gap: 0.5rem;
+    gap: var(--c-studio-space-3);
 }
 
 .am-test-id {
     flex: 1;
     max-width: 24rem;
+}
+
+.am-problems:empty {
+    display: none;
 }

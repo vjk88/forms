@@ -589,6 +589,7 @@
             <c-final-studio-dialog
                 size="large"
                 label="Autofill rule"
+                description="Fill answers in before someone starts, from a Salesforce record. They can still change them."
                 confirm-label="Apply"
                 discard-text="Your changes to this rule haven’t been applied to the form yet."
                 dirty={autofillDirty}
@@ -604,7 +605,13 @@
                     is-public={isPublic}
                     has-other-link-rule={autofillHasOtherLinkRule}
                     onrulechange={handleAutofillDraft}
+                    onstatuschange={handleAutofillStatus}
                 ></c-final-autofill-rule-editor>
+                <template lwc:if={autofillStatus}>
+                    <span slot="footer-start" class={autofillStatusClass}
+                        >{autofillStatus}</span
+                    >
+                </template>
             </c-final-studio-dialog>
         </template>
 
