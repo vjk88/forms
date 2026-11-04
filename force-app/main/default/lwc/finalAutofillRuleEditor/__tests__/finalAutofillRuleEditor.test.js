@@ -609,9 +609,40 @@ describe('c-final-autofill-rule-editor', () => {
         expect(
             $$(el, '.am-guest-summary .am-badge').map((n) => n.textContent)
         ).toEqual(['Company']);
-        // The plain summary says it too (DESIGN_SYSTEM 5.25).
-        expect($(el, '.am-summary').textContent).toContain(
-            'People who aren’t signed in get Company only.'
+    });
+
+    it('sums the rule up in one short footer line', async () => {
+        // Built by hand: the line is sent on the first render, so listen first.
+        const el = createElement('c-final-autofill-rule-editor', {
+            is: FinalAutofillRuleEditor
+        });
+        Object.assign(el, {
+            spec: SPEC,
+            rule: linkRule([
+                {
+                    id: 'm1',
+                    from: 'Name',
+                    to: 'el_company',
+                    guestAllowed: true
+                },
+                {
+                    id: 'm2',
+                    from: 'AnnualRevenue',
+                    to: 'el_revenue',
+                    guestAllowed: false
+                }
+            ])
+        });
+        const said = [];
+        el.addEventListener('statuschange', (e) => said.push(e.detail));
+        document.body.appendChild(el);
+        await flush();
+        const last = said[said.length - 1];
+        expect(last.tone).toBe('ok');
+        // Counts, never the questions' own (often long) labels.
+        expect(last.text).toBe(
+            'Fills 2 answers from the Account in the link · guests get 1 of 2 · typed answers are kept'
         );
+        expect($(el, '.am-summary')).toBeNull();
     });
 });

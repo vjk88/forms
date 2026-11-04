@@ -1,7 +1,8 @@
 @import 'c/finalStudioStyles';
 
 /* One Autofill rule (DESIGN_SYSTEM 3): a "How it works" strip (5.26), the
-   name, a plain summary (5.25), then groups (5.5): title + hairline. */
+   name, then groups (5.5): title + hairline. Its plain summary (5.25)
+   is the footer line by Apply. */
 .am {
     display: flex;
     flex-direction: column;
@@ -88,21 +89,6 @@
     flex: 1;
 }
 
-/* ---- Plain summary (5.25) ---- */
-.am-summary {
-    display: flex;
-    gap: var(--c-studio-space-3);
-    margin: 0;
-    padding: var(--c-studio-space-4) var(--c-studio-space-5);
-    border: 1px solid var(--c-studio-border-subtle);
-    border-radius: var(--c-studio-radius-md);
-    background: var(--c-studio-surface-subtle);
-}
-
-.am-summary strong {
-    font-weight: var(--c-studio-fw-strong);
-}
-
 /* ---- Groups (5.5) ---- */
 .am-section {
     display: flex;
@@ -128,7 +114,6 @@
 
 .am-help {
     margin: var(--c-studio-space-2) 0 var(--c-studio-space-4);
-    max-width: 80ch;
     font-size: var(--c-studio-fs-small);
     color: var(--c-studio-text-weak);
 }

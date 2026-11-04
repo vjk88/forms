@@ -28,19 +28,6 @@ function readIntroHidden() {
     }
 }
 
-/** "a Contact", "an Account". */
-function withArticle(label) {
-    return `${/^[aeiou]/i.test(label || '') ? 'an' : 'a'} ${label}`;
-}
-
-/** "A", "A and B", "A, B and C". */
-function listWords(names) {
-    if (names.length <= 1) {
-        return names.join('');
-    }
-    return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
-}
-
 const ANSWER_WORDS = {
     Text: 'text',
     Email: 'email',
@@ -891,57 +878,41 @@ export default class FinalAutofillRuleEditor extends LightningElement {
         return `am-row${this.showGuestColumn ? ' am-row--guests' : ''}`;
     }
 
-    /** The answers this rule fills, by name. */
-    get _filledNames() {
-        const byId = new Map(this.destinations.map((d) => [d.id, d.label]));
-        return (this.draft?.mappings || [])
-            .filter((m) => m.from && m.to)
-            .map((m) => byId.get(m.to) || m.to);
-    }
-
-    /** What this rule will do, in one sentence (DESIGN_SYSTEM 5.25). */
-    get plainSummary() {
-        if (!this.draft) {
-            return '';
-        }
-        if (!this.sourceType) {
-            return 'Choose where the values come from first.';
-        }
-        const names = this._filledNames;
-        const fills = names.length
-            ? `it fills ${listWords(names)}.`
-            : `it fills nothing yet: add a field below.`;
-        let when;
-        if (this.isUser) {
-            when = 'When someone signed in opens the form,';
-        } else if (this.isLookup) {
+    /**
+     * What a ready rule does, short enough for the footer line by Apply
+     * (DESIGN_SYSTEM 5.25): counts, never the questions' own labels.
+     */
+    get footerSummary() {
+        const filled = (this.draft?.mappings || []).filter(
+            (m) => m.from && m.to
+        );
+        const n = filled.length;
+        let from = 'the signed-in person';
+        if (this.isLookup) {
             const lookup = this.selectedLookup;
-            when = lookup
-                ? `When someone picks a record in “${lookup.label}”,`
-                : 'When someone picks a record in a lookup,';
-        } else {
-            when = this.sourceLabel
-                ? `When someone opens a link that carries ${withArticle(this.sourceLabel)},`
-                : 'When someone opens a link that carries a record,';
+            from = lookup
+                ? `the record picked in “${lookup.label}”`
+                : 'the record picked in a lookup';
+        } else if (this.isLink) {
+            from = `the ${this.sourceLabel || 'record'} in the link`;
         }
-        const parts = [`${when} ${fills}`];
-        if (this.isLink && names.length) {
-            const guests = this.guestNames.map((g) => g.label);
-            parts.push(
-                guests.length
-                    ? `People who aren’t signed in get ${listWords(guests)} only.`
-                    : 'People who aren’t signed in get nothing.'
-            );
+        const parts = [`Fills ${n} answer${n === 1 ? '' : 's'} from ${from}`];
+        if (this.isLink) {
+            const guests = filled.filter((m) => m.guestAllowed).length;
+            let who = `${guests} of ${n}`;
+            if (guests === 0) {
+                who = 'none';
+            } else if (guests === n) {
+                who = n === 1 ? 'it' : 'all';
+            }
+            parts.push(`guests get ${who}`);
         }
         parts.push(
             this.draft.policy === 'alwaysReplace'
-                ? 'It replaces anything they already typed.'
-                : 'If they already typed an answer, it’s kept.'
+                ? 'typed answers are replaced'
+                : 'typed answers are kept'
         );
-        if (!this.draft.enabled) {
-            parts.unshift('This rule is off.');
-        }
-        return parts.join(' ');
+        return parts.join(' · ');
     }
 
     /**
@@ -959,11 +930,7 @@ export default class FinalAutofillRuleEditor extends LightningElement {
         if (problems.length) {
             return { text: problems[0].message, tone: 'warn' };
         }
-        const n = this._filledNames.length;
-        return {
-            text: `Ready: fills ${n} ${this.answerNoun}${n === 1 ? '' : 's'}`,
-            tone: 'ok'
-        };
+        return { text: this.footerSummary, tone: 'ok' };
     }
 
     renderedCallback() {
