@@ -17,17 +17,6 @@ function mintId(prefix) {
     return `${prefix}_${suffix}`;
 }
 
-/** The "How it works" strip stays hidden once this person hides it. */
-const INTRO_KEY = 'c.finalAutofill.introHidden';
-
-function readIntroHidden() {
-    try {
-        return window.localStorage.getItem(INTRO_KEY) === '1';
-    } catch {
-        return false;
-    }
-}
-
 const ANSWER_WORDS = {
     Text: 'text',
     Email: 'email',
@@ -70,7 +59,6 @@ export default class FinalAutofillRuleEditor extends LightningElement {
     testBusy = false;
     testError = '';
     testValues = null;
-    introHidden = readIntroHidden();
     _status;
 
     @api
@@ -835,20 +823,7 @@ export default class FinalAutofillRuleEditor extends LightningElement {
         return this.shownProblems.length > 0;
     }
 
-    // ---- the page around the rule (DESIGN_SYSTEM 5.25, 5.26) ----
-
-    get showIntro() {
-        return !this.introHidden;
-    }
-
-    handleHideIntro() {
-        this.introHidden = true;
-        try {
-            window.localStorage.setItem(INTRO_KEY, '1');
-        } catch {
-            // Private windows can refuse storage: it's hidden for this visit.
-        }
-    }
+    // ---- the page around the rule ----
 
     /** The object a row reads, as people know it. */
     get sourceLabel() {

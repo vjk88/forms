@@ -596,6 +596,10 @@
                 onconfirm={handleAutofillApply}
                 ondismiss={handleAutofillDismiss}
             >
+                <c-final-how-it-works
+                    slot="heading-end"
+                    topic="autofill"
+                ></c-final-how-it-works>
                 <c-final-autofill-rule-editor
                     slot="body"
                     rule={autofillDraft}
@@ -626,6 +630,10 @@
                 onconfirm={handleMappingDone}
                 ondismiss={handleMappingDismiss}
             >
+                <c-final-how-it-works
+                    slot="heading-end"
+                    topic="mapping"
+                ></c-final-how-it-works>
                 <c-final-mapping-editor
                     slot="body"
                     spec={mappingDraft}

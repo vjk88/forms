@@ -54,6 +54,13 @@
     min-width: 0;
 }
 
+/* The title, and anything slotted after it (a How it works icon, 5.26). */
+.sd-title-row {
+    display: flex;
+    align-items: center;
+    gap: var(--c-studio-space-2);
+}
+
 .sd-title {
     margin: 0;
     font-size: var(--c-studio-fs-title);

@@ -1,81 +1,11 @@
 @import 'c/finalStudioStyles';
 
-/* One Autofill rule (DESIGN_SYSTEM 3): a "How it works" strip (5.26), the
-   name, then groups (5.5): title + hairline. Its plain summary (5.25)
+/* One Autofill rule (DESIGN_SYSTEM 3): the name, then groups (5.5): title + hairline. Its plain summary (5.25)
    is the footer line by Apply. */
 .am {
     display: flex;
     flex-direction: column;
     gap: var(--c-studio-space-6);
-}
-
-/* ---- How it works strip (5.26) ---- */
-.am-intro {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
-    gap: var(--c-studio-space-5);
-    align-items: center;
-    padding: var(--c-studio-space-4) var(--c-studio-space-5);
-    border: 1px solid var(--c-studio-border-subtle);
-    border-radius: var(--c-studio-radius-md);
-    background: var(--c-studio-surface-subtle);
-}
-
-.am-intro-item {
-    display: flex;
-    align-items: center;
-    gap: var(--c-studio-space-4);
-    min-width: 0;
-}
-
-.am-intro-art {
-    flex: none;
-    width: 40px;
-    height: 40px;
-}
-
-.am-intro-text {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-}
-
-.am-intro-text strong {
-    font-weight: var(--c-studio-fw-strong);
-}
-
-.am-intro-text span {
-    font-size: var(--c-studio-fs-small);
-    color: var(--c-studio-text-weak);
-}
-
-.am-art-paper {
-    fill: var(--c-studio-surface);
-    stroke: var(--c-studio-border-strong);
-    stroke-width: 1.5;
-}
-
-.am-art-weak {
-    fill: none;
-    stroke: var(--c-studio-border-strong);
-    stroke-width: 2.5;
-    stroke-linecap: round;
-}
-
-.am-art-soft {
-    fill: var(--c-studio-accent-surface);
-    stroke: var(--c-studio-accent);
-}
-
-.am-art-accent {
-    fill: none;
-    stroke: var(--c-studio-accent);
-    stroke-width: 2;
-    stroke-linecap: round;
-}
-
-.am-art-dot {
-    fill: var(--c-studio-accent);
 }
 
 /* ---- Name and On ---- */
