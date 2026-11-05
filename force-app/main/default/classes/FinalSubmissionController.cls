@@ -109,18 +109,30 @@ public with sharing class FinalSubmissionController {
      * saved, the file to open. Null when the form doesn't save copies.
      */
     private static Map<String, Object> copyInfo(Form_Submission__c sub) {
+        return copyInfo(
+            sub.Copy_Status__c,
+            sub.Copy_Message__c,
+            sub.Copy_File_Id__c
+        );
+    }
+
+    private static Map<String, Object> copyInfo(
+        String status,
+        String message,
+        String fileId
+    ) {
         if (
-            String.isBlank(sub.Copy_Status__c) ||
-            sub.Copy_Status__c == FinalSubmissionCopy.STATUS_NOT_NEEDED
+            String.isBlank(status) ||
+            status == FinalSubmissionCopy.STATUS_NOT_NEEDED
         ) {
             return null;
         }
         Id documentId = null;
-        if (String.isNotBlank(sub.Copy_File_Id__c)) {
+        if (String.isNotBlank(fileId)) {
             for (ContentVersion cv : [
                 SELECT ContentDocumentId
                 FROM ContentVersion
-                WHERE Id = :sub.Copy_File_Id__c
+                WHERE Id = :fileId
                 WITH USER_MODE
                 LIMIT 1
             ]) {
@@ -128,39 +140,56 @@ public with sharing class FinalSubmissionController {
             }
         }
         return new Map<String, Object>{
-            'status' => sub.Copy_Status__c,
-            'message' => sub.Copy_Message__c,
+            'status' => status,
+            'message' => message,
             'documentId' => documentId
         };
     }
 
     /**
-     * Makes the submission's PDF copy now, as the person asking: for a copy
-     * that failed, or one that was never made. They must be able to read the
-     * submission (USER_MODE); the copy itself is built from what they can
-     * already see on the Answers card.
+     * Makes a PDF copy now, as the person asking: for a copy that failed, or
+     * one that was never made. Works for a Freeform submission and a survey
+     * response (the two answer stores written once at submit). The person
+     * must be able to read the record (USER_MODE); the copy holds only what
+     * that record already shows.
      * @return the refreshed copy info
      */
     @AuraEnabled
     public static Map<String, Object> saveCopy(Id submissionId) {
-        List<Form_Submission__c> found = [
-            SELECT Id
-            FROM Form_Submission__c
-            WHERE Id = :submissionId
-            WITH USER_MODE
-            LIMIT 1
-        ];
+        if (submissionId == null) {
+            throw new AuraHandledException('That submission is not available.');
+        }
+        SObjectType type = submissionId.getSObjectType();
+        if (
+            type != Form_Submission__c.SObjectType &&
+            type != Form_Response__c.SObjectType
+        ) {
+            throw new AuraHandledException(
+                'PDF copies are made for submissions and survey responses only.'
+            );
+        }
+        String objectName = type.getDescribe().getName();
+        List<SObject> found = Database.queryWithBinds(
+            'SELECT Id FROM ' + objectName + ' WHERE Id = :recordId LIMIT 1',
+            new Map<String, Object>{ 'recordId' => submissionId },
+            AccessLevel.USER_MODE
+        );
         if (found.isEmpty()) {
             throw new AuraHandledException('That submission is not available.');
         }
         FinalSubmissionCopy.save(submissionId, true);
-        Form_Submission__c sub = [
-            SELECT Copy_Status__c, Copy_Message__c, Copy_File_Id__c
-            FROM Form_Submission__c
-            WHERE Id = :submissionId
-            WITH SYSTEM_MODE
-        ];
-        return copyInfo(sub);
+        SObject row = Database.queryWithBinds(
+            'SELECT Copy_Status__c, Copy_Message__c, Copy_File_Id__c FROM ' +
+                objectName +
+                ' WHERE Id = :recordId',
+            new Map<String, Object>{ 'recordId' => submissionId },
+            AccessLevel.SYSTEM_MODE
+        )[0];
+        return copyInfo(
+            (String) row.get('Copy_Status__c'),
+            (String) row.get('Copy_Message__c'),
+            (String) row.get('Copy_File_Id__c')
+        );
     }
 
     /** Files attached to the submission itself, newest first — never the

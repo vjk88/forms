@@ -1438,16 +1438,17 @@ const AREAS = [
                         ]
                     },
                     // A PDF copy built on the server and kept in the
-                    // submission's Files (IMPL_PLAN_FORM_PDF §6.4). Freeform
-                    // only for now: its stored answers ARE the snapshot.
+                    // record's Files (IMPL_PLAN_FORM_PDF §6.4). Freeform and
+                    // Survey: their stored answers ARE the snapshot. Classic
+                    // forms wait for the receipt.
                     {
                         key: 'asSaveCopy',
                         label: 'Save a PDF copy on each submission',
                         type: 'toggle',
                         path: 'settings.documents.saveCopy',
                         fallback: false,
-                        hint: 'Staff find it in the submission’s Files and on its Answers card. Applies to responses received after you publish.',
-                        appliesTo: { formTypes: ['freeform'] }
+                        hint: 'Staff find it in the record’s Files (and on the Answers card for Freeform). Applies to responses received after you publish.',
+                        appliesTo: { formTypes: ['freeform', 'survey'] }
                     },
                     // Toast & go: same destination slots, its own gate — two
                     // registry rows over ONE path is the OR of the mode gates.

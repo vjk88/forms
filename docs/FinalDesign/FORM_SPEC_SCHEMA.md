@@ -73,7 +73,7 @@ Version records are never edited in place. "Fix the live form" = edit records �
       "delivery": "link" // "email" | "link"
     },
     "documents": {
-      // PDF copies built on the server (IMPL_PLAN_FORM_PDF §6.4). Freeform only for now.
+      // PDF copies built on the server (IMPL_PLAN_FORM_PDF §6.4). Freeform and Survey; classic forms wait for the receipt.
       "saveCopy": false // true = each new submission gets a PDF copy in its Files
     },
     "completion": {

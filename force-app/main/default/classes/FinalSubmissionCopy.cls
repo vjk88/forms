@@ -1,5 +1,6 @@
 /**
- * FinalSubmissionCopy — the PDF copy saved on a Freeform submission
+ * FinalSubmissionCopy — the PDF copy saved on a Freeform submission or a
+ * survey response
  * (IMPL_PLAN_FORM_PDF §6.4).
  *
  * Built on the server from what was STORED: the submission's answer rows and
@@ -18,6 +19,11 @@
  * Never throws: a failure is recorded on the submission, never lost.
  */
 public without sharing class FinalSubmissionCopy {
+    // Serves both answer stores that are written once at submit and never
+    // changed: Freeform (Form_Submission__c + Form_Submission_Answer__c) and
+    // Survey (Form_Response__c + Form_Response_Answer__c). Classic forms write
+    // business records that can change later, so they wait for the receipt
+    // (PLAN_DOCUMENTS_AND_PAYMENTS M0).
     public static final String STATUS_NOT_NEEDED = 'Not needed';
     public static final String STATUS_QUEUED = 'Queued';
     public static final String STATUS_SAVED = 'Saved';
@@ -67,40 +73,40 @@ public without sharing class FinalSubmissionCopy {
     }
 
     /**
-     * Builds the PDF and saves it on the submission. Records the outcome on
-     * the submission (Saved with the file, or Failed with why).
+     * Builds the PDF and saves it on the record (a Freeform submission or a
+     * survey response). Records the outcome there (Saved with the file, or
+     * Failed with why).
      * @param force true = make a new copy even when one is already saved
      * @return the new ContentVersion Id, or null when nothing was saved
      */
-    public static Id save(Id submissionId, Boolean force) {
-        Form_Submission__c sub;
+    public static Id save(Id recordId, Boolean force) {
         try {
-            sub = load(submissionId);
-            if (sub == null) {
+            Source src = sourceOf(recordId);
+            if (src == null) {
                 return null;
             }
             if (
                 !force &&
-                sub.Copy_Status__c == STATUS_SAVED &&
-                String.isNotBlank(sub.Copy_File_Id__c)
+                src.copyStatus == STATUS_SAVED &&
+                String.isNotBlank(src.copyFileId)
             ) {
                 return null; // a retried job: the copy already exists
             }
             Blob pdf = Blob.toPdf(
-                html(sub, answers(submissionId), attachmentNames(submissionId))
+                html(src, answers(recordId), attachmentNames(recordId))
             );
             ContentVersion cv = new ContentVersion(
-                Title = title(sub),
-                PathOnClient = fileName(sub),
+                Title = title(src),
+                PathOnClient = fileName(src),
                 VersionData = pdf,
-                FirstPublishLocationId = submissionId
+                FirstPublishLocationId = recordId
             );
             Database.insert(cv, AccessLevel.SYSTEM_MODE);
-            record(submissionId, STATUS_SAVED, null, cv.Id);
+            record(recordId, STATUS_SAVED, null, cv.Id);
             return cv.Id;
         } catch (Exception e) {
             record(
-                submissionId,
+                recordId,
                 STATUS_FAILED,
                 'The PDF copy couldn’t be saved: ' + e.getMessage(),
                 null
@@ -109,36 +115,87 @@ public without sharing class FinalSubmissionCopy {
         }
     }
 
+    /** Status fields are the same on both objects; set them generically. */
     private static void record(
-        Id submissionId,
+        Id recordId,
         String status,
         String message,
         Id fileId
     ) {
         try {
-            Database.update(
-                new Form_Submission__c(
-                    Id = submissionId,
-                    Copy_Status__c = status,
-                    Copy_Message__c = message == null
-                        ? null
-                        : message.abbreviate(255),
-                    Copy_File_Id__c = fileId
-                ),
-                true,
-                AccessLevel.SYSTEM_MODE
+            SObject row = recordId.getSObjectType().newSObject(recordId);
+            row.put('Copy_Status__c', status);
+            row.put(
+                'Copy_Message__c',
+                message == null ? null : message.abbreviate(255)
             );
+            row.put('Copy_File_Id__c', fileId);
+            Database.update(row, true, AccessLevel.SYSTEM_MODE);
         } catch (Exception ignored) {
             // nothing more to do: the job's own log keeps the reason
         }
     }
 
+    /** What the copy needs to know about the record, from either object. */
+    public class Source {
+        public Id id;
+        public String recordNumber;
+        public Datetime submitted;
+        public String submittedBy;
+        public String formName;
+        public Decimal versionNumber;
+        public String specJson;
+        public String copyStatus;
+        public String copyFileId;
+    }
+
     // -------------------------------------------------------------- data --
 
-    private static Form_Submission__c load(Id submissionId) {
+    @TestVisible
+    static Source sourceOf(Id recordId) {
+        Source src = new Source();
+        src.id = recordId;
+        if (recordId.getSObjectType() == Form_Response__c.SObjectType) {
+            List<Form_Response__c> rows = [
+                SELECT
+                    Name,
+                    Submitted_Date__c,
+                    Submitted_By__r.Name,
+                    Form_Version__r.Form__r.Name,
+                    Form_Version__r.Version_Number__c,
+                    Form_Version__r.Spec_JSON__c,
+                    Copy_Status__c,
+                    Copy_File_Id__c
+                FROM Form_Response__c
+                WHERE Id = :recordId
+                WITH SYSTEM_MODE
+                LIMIT 1
+            ];
+            if (rows.isEmpty()) {
+                return null;
+            }
+            Form_Response__c r = rows[0];
+            src.recordNumber = r.Name;
+            src.submitted = r.Submitted_Date__c;
+            src.submittedBy = r.Submitted_By__r == null
+                ? null
+                : r.Submitted_By__r.Name;
+            src.formName = r.Form_Version__r == null ||
+                r.Form_Version__r.Form__r == null
+                ? null
+                : r.Form_Version__r.Form__r.Name;
+            src.versionNumber = r.Form_Version__r == null
+                ? null
+                : r.Form_Version__r.Version_Number__c;
+            src.specJson = r.Form_Version__r == null
+                ? null
+                : r.Form_Version__r.Spec_JSON__c;
+            src.copyStatus = r.Copy_Status__c;
+            src.copyFileId = r.Copy_File_Id__c;
+            return src;
+        }
         List<Form_Submission__c> rows = [
             SELECT
-                Id,
                 Name,
                 Submitted_Date__c,
                 Submitted_By__r.Name,
@@ -148,20 +205,59 @@ public without sharing class FinalSubmissionCopy {
                 Copy_Status__c,
                 Copy_File_Id__c
             FROM Form_Submission__c
-            WHERE Id = :submissionId
+            WHERE Id = :recordId
             WITH SYSTEM_MODE
             LIMIT 1
         ];
-        return rows.isEmpty() ? null : rows[0];
+        if (rows.isEmpty()) {
+            return null;
+        }
+        Form_Submission__c f = rows[0];
+        src.recordNumber = f.Name;
+        src.submitted = f.Submitted_Date__c;
+        src.submittedBy = f.Submitted_By__r == null
+            ? null
+            : f.Submitted_By__r.Name;
+        src.formName = f.Form__r == null ? null : f.Form__r.Name;
+        src.versionNumber = f.Form_Version__r == null
+            ? null
+            : f.Form_Version__r.Version_Number__c;
+        src.specJson = f.Form_Version__r == null
+            ? null
+            : f.Form_Version__r.Spec_JSON__c;
+        src.copyStatus = f.Copy_Status__c;
+        src.copyFileId = f.Copy_File_Id__c;
+        return src;
     }
 
-    private static List<Form_Submission_Answer__c> answers(Id submissionId) {
-        return [
+    /** Answer rows as Form_Submission_Answer__c, whichever object holds them. */
+    @TestVisible
+    static List<Form_Submission_Answer__c> answers(Id recordId) {
+        if (recordId.getSObjectType() != Form_Response__c.SObjectType) {
+            return [
+                SELECT
+                    Element_Key__c,
+                    Label_Snapshot__c,
+                    Answer_Type__c,
+                    Value_Unparsed__c,
+                    Entry_Index__c,
+                    Text_Value__c,
+                    Numeric_Value__c,
+                    Boolean_Value__c,
+                    Date_Value__c,
+                    DateTime_Value__c,
+                    Selected_Options_JSON__c
+                FROM Form_Submission_Answer__c
+                WHERE Form_Submission__c = :recordId
+                WITH SYSTEM_MODE
+                ORDER BY Entry_Index__c NULLS FIRST, Element_Key__c
+            ];
+        }
+        List<Form_Submission_Answer__c> out = new List<Form_Submission_Answer__c>();
+        for (Form_Response_Answer__c r : [
             SELECT
                 Element_Key__c,
                 Label_Snapshot__c,
-                Answer_Type__c,
-                Value_Unparsed__c,
                 Entry_Index__c,
                 Text_Value__c,
                 Numeric_Value__c,
@@ -169,11 +265,51 @@ public without sharing class FinalSubmissionCopy {
                 Date_Value__c,
                 DateTime_Value__c,
                 Selected_Options_JSON__c
-            FROM Form_Submission_Answer__c
-            WHERE Form_Submission__c = :submissionId
+            FROM Form_Response_Answer__c
+            WHERE Form_Response__c = :recordId
             WITH SYSTEM_MODE
             ORDER BY Entry_Index__c NULLS FIRST, Element_Key__c
-        ];
+        ]) {
+            out.add(asSubmissionAnswer(r));
+        }
+        return out;
+    }
+
+    /**
+     * A survey answer row in the Freeform shape. Survey rows carry no
+     * Answer_Type__c: the survey writer picks the column from the value's own
+     * shape (FinalSubmitService.writeUntypedValue) and only writes a row for a
+     * real answer, so the one column holding a value names the type. A row
+     * with none of them set holds a yes/no in the checkbox column.
+     */
+    @TestVisible
+    static Form_Submission_Answer__c asSubmissionAnswer(
+        Form_Response_Answer__c r
+    ) {
+        String type = 'Boolean';
+        if (String.isNotBlank(r.Selected_Options_JSON__c)) {
+            type = 'Options';
+        } else if (r.Numeric_Value__c != null) {
+            type = 'Number';
+        } else if (r.DateTime_Value__c != null) {
+            type = 'DateTime';
+        } else if (r.Date_Value__c != null) {
+            type = 'Date';
+        } else if (String.isNotBlank(r.Text_Value__c)) {
+            type = 'Text';
+        }
+        return new Form_Submission_Answer__c(
+            Element_Key__c = r.Element_Key__c,
+            Label_Snapshot__c = r.Label_Snapshot__c,
+            Answer_Type__c = type,
+            Entry_Index__c = r.Entry_Index__c,
+            Text_Value__c = r.Text_Value__c,
+            Numeric_Value__c = r.Numeric_Value__c,
+            Boolean_Value__c = r.Boolean_Value__c,
+            Date_Value__c = r.Date_Value__c,
+            DateTime_Value__c = r.DateTime_Value__c,
+            Selected_Options_JSON__c = r.Selected_Options_JSON__c
+        );
     }
 
     /** Files the respondent attached (by name only: never merged or linked). */
@@ -213,28 +349,30 @@ public without sharing class FinalSubmissionCopy {
     }
 
     @TestVisible
-    static String title(Form_Submission__c sub) {
-        String form = sub.Form__r == null ? 'Form' : sub.Form__r.Name;
-        return (form + ' - ' + sub.Name + ' (saved copy)').abbreviate(255);
+    static String title(Source src) {
+        String form = String.isBlank(src.formName) ? 'Form' : src.formName;
+        return (form +
+            ' - ' +
+            src.recordNumber +
+            ' (saved copy)')
+            .abbreviate(255);
     }
 
-    private static String fileName(Form_Submission__c sub) {
-        return title(sub).replaceAll('[\\\\/:*?"<>|]+', ' ') + '.pdf';
+    private static String fileName(Source src) {
+        return title(src).replaceAll('[\\\\/:*?"<>|]+', ' ') + '.pdf';
     }
 
     // -------------------------------------------------------------- html --
 
     @TestVisible
     static String html(
-        Form_Submission__c sub,
+        Source sub,
         List<Form_Submission_Answer__c> rows,
         List<String> files
     ) {
         Map<String, Object> spec = new Map<String, Object>();
         try {
-            spec = (Map<String, Object>) JSON.deserializeUntyped(
-                sub.Form_Version__r.Spec_JSON__c
-            );
+            spec = (Map<String, Object>) JSON.deserializeUntyped(sub.specJson);
         } catch (Exception e) {
             spec = new Map<String, Object>();
         }
@@ -242,10 +380,10 @@ public without sharing class FinalSubmissionCopy {
         Map<String, Object> header = FinalAnswerWords.asMap(spec.get('header'));
         String formTitle = firstNonBlank(
             (String) header.get('title'),
-            sub.Form__r == null ? null : sub.Form__r.Name,
+            sub.formName,
             'Form'
         );
-        String footer = cssString(formTitle + ' · ' + sub.Name);
+        String footer = cssString(formTitle + ' · ' + sub.recordNumber);
 
         // answers by element key (matrix rows keep their composite key)
         Map<String, List<Form_Submission_Answer__c>> byKey = new Map<String, List<Form_Submission_Answer__c>>();
@@ -395,7 +533,7 @@ public without sharing class FinalSubmissionCopy {
     }
 
     private static String headerHtml(
-        Form_Submission__c sub,
+        Source sub,
         Map<String, Object> header,
         String formTitle,
         Map<String, String> c
@@ -428,22 +566,18 @@ public without sharing class FinalSubmissionCopy {
                 esc((String) header.get('description')) +
                 '</div>';
         }
-        List<String> meta = new List<String>{ sub.Name };
-        if (sub.Submitted_By__r != null) {
-            meta.add(sub.Submitted_By__r.Name);
+        List<String> meta = new List<String>{ sub.recordNumber };
+        if (String.isNotBlank(sub.submittedBy)) {
+            meta.add(sub.submittedBy);
         }
-        String line2 = sub.Submitted_Date__c == null
+        String line2 = sub.submitted == null
             ? ''
-            : 'Submitted ' +
-              FinalAnswerWords.formatDateTime(sub.Submitted_Date__c);
-        if (
-            sub.Form_Version__r != null &&
-            sub.Form_Version__r.Version_Number__c != null
-        ) {
+            : 'Submitted ' + FinalAnswerWords.formatDateTime(sub.submitted);
+        if (sub.versionNumber != null) {
             line2 +=
                 (line2 == '' ? '' : ' · ') +
                 'Version ' +
-                FinalAnswerWords.plain(sub.Form_Version__r.Version_Number__c);
+                FinalAnswerWords.plain(sub.versionNumber);
         }
         out +=
             '<div class="meta">' +

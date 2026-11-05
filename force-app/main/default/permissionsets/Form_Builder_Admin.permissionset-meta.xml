@@ -29,6 +29,10 @@
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
+        <apexClass>FinalSaveCopyAction</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>FinalSpecController</apexClass>
         <enabled>true</enabled>
     </classAccesses>
@@ -295,6 +299,21 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Form_Response__c.Completion_Time_Seconds__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Form_Response__c.Copy_File_Id__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Form_Response__c.Copy_Message__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Form_Response__c.Copy_Status__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

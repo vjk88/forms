@@ -119,34 +119,10 @@ private class FinalSubmissionCopyTest {
     static void htmlEscapesEveryAnswerAndRejectsNonHexColors() {
         Id v = version(false, null);
         Form_Submission__c sub = submit(v);
-        Form_Submission__c full = [
-            SELECT
-                Id,
-                Name,
-                Submitted_Date__c,
-                Submitted_By__r.Name,
-                Form__r.Name,
-                Form_Version__r.Version_Number__c,
-                Form_Version__r.Spec_JSON__c
-            FROM Form_Submission__c
-            WHERE Id = :sub.Id
-        ];
-        List<Form_Submission_Answer__c> rows = [
-            SELECT
-                Element_Key__c,
-                Label_Snapshot__c,
-                Answer_Type__c,
-                Value_Unparsed__c,
-                Entry_Index__c,
-                Text_Value__c,
-                Numeric_Value__c,
-                Boolean_Value__c,
-                Date_Value__c,
-                DateTime_Value__c,
-                Selected_Options_JSON__c
-            FROM Form_Submission_Answer__c
-            WHERE Form_Submission__c = :sub.Id
-        ];
+        FinalSubmissionCopy.Source full = FinalSubmissionCopy.sourceOf(sub.Id);
+        List<Form_Submission_Answer__c> rows = FinalSubmissionCopy.answers(
+            sub.Id
+        );
         String html = FinalSubmissionCopy.html(
             full,
             rows,
@@ -247,5 +223,174 @@ private class FinalSubmissionCopyTest {
         );
         Assert.areEqual('#1f2937', c.get('text'));
         Assert.areEqual('true', c.get('headerIsPaper'));
+    }
+
+    // ----- survey responses (Form_Response__c) -----
+
+    private static Id surveyVersion(Boolean saveCopy) {
+        Form__c form = new Form__c(
+            Name = 'Survey copy test',
+            Form_Type__c = 'Survey'
+        );
+        insert form;
+        Form_Version__c v = new Form_Version__c(
+            Form__c = form.Id,
+            Version_Number__c = 2,
+            Is_Active__c = true,
+            Engine_Version__c = 1,
+            Spec_JSON__c = '{"specVersion":1,"form":{"type":"survey"},' +
+                '"settings":{"documents":{"saveCopy":' +
+                saveCopy +
+                '}},' +
+                '"pages":[{"id":"pg_1","sections":[{"id":"sec_1","title":"Feedback","elements":[' +
+                '{"id":"el_nps","type":"nps","label":"Recommend us?"},' +
+                '{"id":"el_yn","type":"yesNo","label":"Would you return?"},' +
+                '{"id":"el_pick","type":"field","label":"Perks","config":{"inputType":"multipicklist","renderAs":"Checkbox_Group","options":[{"value":"g","label":"Gym"},{"value":"l","label":"Lunch"}]}},' +
+                '{"id":"el_mx","type":"matrix","label":"Rate","config":{"rows":[{"value":"a","label":"Speed"}]}}' +
+                ']}]}]}'
+        );
+        insert v;
+        return v.Id;
+    }
+
+    private static Form_Response__c respond(Id versionId) {
+        Form_Response__c r = new Form_Response__c(
+            Form_Version__c = versionId,
+            Status__c = 'Completed',
+            Submitted_Date__c = Datetime.now()
+        );
+        insert r;
+        insert new List<Form_Response_Answer__c>{
+            new Form_Response_Answer__c(
+                Form_Response__c = r.Id,
+                Element_Key__c = 'el_nps',
+                Numeric_Value__c = 9
+            ),
+            new Form_Response_Answer__c(
+                Form_Response__c = r.Id,
+                Element_Key__c = 'el_yn',
+                Boolean_Value__c = false
+            ),
+            new Form_Response_Answer__c(
+                Form_Response__c = r.Id,
+                Element_Key__c = 'el_pick',
+                Selected_Options_JSON__c = '["l","g"]'
+            ),
+            new Form_Response_Answer__c(
+                Form_Response__c = r.Id,
+                Element_Key__c = 'el_mx:a',
+                Numeric_Value__c = 3
+            )
+        };
+        return r;
+    }
+
+    @IsTest
+    static void surveyResponsesGetSavedCopiesToo() {
+        Id v = surveyVersion(true);
+        Test.startTest();
+        Form_Response__c r = respond(v);
+        Assert.areEqual(
+            'Queued',
+            [SELECT Copy_Status__c FROM Form_Response__c WHERE Id = :r.Id]
+            .Copy_Status__c
+        );
+        Test.stopTest();
+        Form_Response__c after = [
+            SELECT Copy_Status__c, Copy_Message__c, Copy_File_Id__c
+            FROM Form_Response__c
+            WHERE Id = :r.Id
+        ];
+        Assert.areEqual(
+            'Saved',
+            after.Copy_Status__c,
+            'saved: ' + after.Copy_Message__c
+        );
+        Assert.areEqual(
+            r.Id,
+            [
+                SELECT FirstPublishLocationId
+                FROM ContentVersion
+                WHERE Id = :after.Copy_File_Id__c
+            ]
+            .FirstPublishLocationId
+        );
+    }
+
+    @IsTest
+    static void surveyRowsReadWithTheSameWording() {
+        Form_Response__c r = respond(surveyVersion(false));
+        Assert.areEqual(
+            'Not needed',
+            [SELECT Copy_Status__c FROM Form_Response__c WHERE Id = :r.Id]
+            .Copy_Status__c
+        );
+        String html = FinalSubmissionCopy.html(
+            FinalSubmissionCopy.sourceOf(r.Id),
+            FinalSubmissionCopy.answers(r.Id),
+            new List<String>()
+        );
+        Assert.isTrue(
+            html.contains('9 out of 10'),
+            'number column → scale words'
+        );
+        Assert.isTrue(
+            html.contains('Would you return?') && html.contains('>No<'),
+            'no column set → yes/no'
+        );
+        Assert.isTrue(html.contains('Lunch, Gym'), 'options column → labels');
+        Assert.isTrue(html.contains('Agree'), 'matrix point label');
+        Assert.isTrue(html.contains('Version 2'), 'version from the response');
+    }
+
+    @IsTest
+    static void surveyTypeIsReadFromTheColumnThatHoldsTheValue() {
+        Assert.areEqual(
+            'Options',
+            FinalSubmissionCopy.asSubmissionAnswer(
+                    new Form_Response_Answer__c(
+                        Selected_Options_JSON__c = '["a"]'
+                    )
+                )
+                .Answer_Type__c
+        );
+        Assert.areEqual(
+            'Number',
+            FinalSubmissionCopy.asSubmissionAnswer(
+                    new Form_Response_Answer__c(Numeric_Value__c = 1)
+                )
+                .Answer_Type__c
+        );
+        Assert.areEqual(
+            'Date',
+            FinalSubmissionCopy.asSubmissionAnswer(
+                    new Form_Response_Answer__c(Date_Value__c = Date.today())
+                )
+                .Answer_Type__c
+        );
+        Assert.areEqual(
+            'Text',
+            FinalSubmissionCopy.asSubmissionAnswer(
+                    new Form_Response_Answer__c(Text_Value__c = 'x')
+                )
+                .Answer_Type__c
+        );
+        Assert.areEqual(
+            'Boolean',
+            FinalSubmissionCopy.asSubmissionAnswer(
+                    new Form_Response_Answer__c(Boolean_Value__c = true)
+                )
+                .Answer_Type__c
+        );
+    }
+
+    @IsTest
+    static void saveCopyRefusesOtherRecords() {
+        try {
+            FinalSubmissionController.saveCopy(UserInfo.getUserId());
+            Assert.fail('should refuse');
+        } catch (AuraHandledException e) {
+            Assert.isTrue(true, 'only submissions and survey responses');
+        }
     }
 }
