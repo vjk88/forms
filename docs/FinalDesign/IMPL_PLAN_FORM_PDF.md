@@ -202,6 +202,18 @@ None of these can run outside an org. Record results in `qa/` with dates.
 7. Iframe embed: the download works inside the embed snippet's iframe (if a browser blocks
    downloads from cross-site iframes, note it in GUEST_SITE_SETUP).
 
+### 8.1 Results so far (2026-11-05, RevCloudDev, Developer Edition)
+
+- Org copies of every shared file matched `main` before deploy (line endings aside), so the deploy
+  overwrote nothing newer. `main` was merged into the branch first.
+- Deployed with targeted `--source-dir` (24 components): **succeeded**.
+- Apex in the org: `FinalPdfImageServiceTest`, `FinalPdfControllerTest`, `FinalGuestPdfTest`,
+  `FinalGuestControllerTest`, `FinalSubmissionControllerTest`: **36 of 36 pass** (one test was changed
+  to avoid inserting an Account; this org has a BillingState validation rule).
+- Browser checks (items 2–7): **not yet done.** A headless browser in the cloud session could not load
+  Lightning itself (Lightning's own framework files returned 400 on both a record page and
+  `/apex/FinalStudio`), so the PDF code was never reached. These need a person at a real browser.
+
 ## 9. Later
 
 - Non-Latin answers: a fallback font family (Noto Sans with Cyrillic, Greek and Vietnamese, then CJK
