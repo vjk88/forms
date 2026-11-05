@@ -159,3 +159,39 @@ describe('keepLine (page breaks)', () => {
         expect(keepLine(n - 1, n)).toBe(false);
     });
 });
+
+describe('fallback fonts (other alphabets)', () => {
+    it('draws Cyrillic, Greek, Polish and Vietnamese with the Noto fallbacks', async () => {
+        const { lib, fontkit } = loadLib();
+        const theme = pdfTheme(TOKENS);
+        const fallbackFonts = [
+            'latin-ext',
+            'vietnamese',
+            'cyrillic',
+            'greek'
+        ].map((k) => ({
+            regular: fontBytes(`fallback/NotoSans-${k}-400.ttf`),
+            bold: fontBytes(`fallback/NotoSans-${k}-700.ttf`)
+        }));
+        const doc = buildFormDocument({
+            spec: SPEC,
+            answers: {
+                el_name: 'Иван Петров · Ελένη · Łukasz Żółć · Nguyễn Thị',
+                el_notes: 'Привет! Καλημέρα. Dziękuję. Cảm ơn.\n日本語 stays ?'
+            }
+        });
+        const bytes = await renderPdf({
+            lib,
+            fontkit,
+            doc,
+            theme,
+            fonts: brandFonts(theme),
+            fallbackFonts
+        });
+        if (process.env.PDF_OUT) {
+            fs.writeFileSync(`${process.env.PDF_OUT}/languages.pdf`, bytes);
+        }
+        const back = await lib.PDFDocument.load(bytes);
+        expect(back.getPageCount()).toBeGreaterThanOrEqual(1);
+    });
+});

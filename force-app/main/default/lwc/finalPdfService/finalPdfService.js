@@ -102,6 +102,48 @@ async function loadFonts(theme) {
     return { body, display: display || body };
 }
 
+/**
+ * Noto Sans fallbacks (formPdfFonts/fallback) and the letters each covers.
+ * Tried in this order for a letter the brand font lacks; one is downloaded
+ * only when the document contains a letter in its ranges.
+ */
+const FALLBACKS = [
+    { key: 'latin-ext', re: /[\u0100-\u024f\u1e00-\u1eff]/u },
+    {
+        key: 'vietnamese',
+        re: /[\u0102\u0103\u0110\u0111\u0128\u0129\u0168\u0169\u01a0\u01a1\u01af\u01b0\u1ea0-\u1ef9]/u
+    },
+    {
+        key: 'cyrillic',
+        re: /[\u0400-\u052f\u1c80-\u1c8f\ua640-\ua69f]/u
+    },
+    { key: 'greek', re: /[\u0370-\u03ff\u1f00-\u1fff]/u }
+];
+
+/** The fallback alphabets a document needs, in try order. */
+export function fallbackSubsetsFor(doc) {
+    const text = JSON.stringify(doc || {});
+    return FALLBACKS.filter((f) => f.re.test(text)).map((f) => f.key);
+}
+
+async function loadFallbacks(doc) {
+    const subsets = fallbackSubsetsFor(doc);
+    const list = await Promise.all(
+        subsets.map(async (key) => {
+            try {
+                const [regular, bold] = await Promise.all([
+                    fetchBytes(`${PDF_FONTS}/fallback/NotoSans-${key}-400.ttf`),
+                    fetchBytes(`${PDF_FONTS}/fallback/NotoSans-${key}-700.ttf`)
+                ]);
+                return { regular, bold };
+            } catch {
+                return null;
+            }
+        })
+    );
+    return list.filter(Boolean);
+}
+
 /** Every image the document draws: [{ url, versionId }]. */
 export function imageRefs(doc) {
     const refs = [];
@@ -258,8 +300,9 @@ export async function downloadPdf(opts) {
     try {
         const { lib, fontkit } = await loadLibs(opts.component);
         const theme = pdfTheme(opts.tokens || {});
-        const [fonts, images] = await Promise.all([
+        const [fonts, fallbackFonts, images] = await Promise.all([
             loadFonts(theme),
+            loadFallbacks(opts.doc),
             loadImages(opts.doc, opts.loadImages)
         ]);
         const bytes = await renderPdf({
@@ -268,6 +311,7 @@ export async function downloadPdf(opts) {
             doc: opts.doc,
             theme,
             fonts,
+            fallbackFonts,
             images,
             locale: LOCALE,
             pageSize: pageSizeFor(LOCALE)

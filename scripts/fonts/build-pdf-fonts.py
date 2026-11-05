@@ -38,6 +38,12 @@ OUT = os.path.join(ROOT, 'force-app/main/default/staticresources/formPdfFonts')
 DATA = os.path.join(
     ROOT, 'force-app/main/default/lwc/finalFontFamilies/bundledFontData.js'
 )
+# Noto Sans (OFL), from the @fontsource/noto-sans npm package, one file per
+# alphabet. They fill in letters the Latin brand fonts lack (Cyrillic, Greek,
+# Latin Extended, Vietnamese); the writer picks per character. Kept as
+# separate files on purpose: merging them breaks shared glyphs.
+FALLBACK_SRC = os.path.join(ROOT, 'scripts/fonts/pdf-fallback')
+FALLBACK_SUBSETS = ['latin-ext', 'cyrillic', 'greek', 'vietnamese']
 
 
 def faces():
@@ -88,6 +94,18 @@ def build(target):
                     os.path.join(SRC, lic_dir, lic),
                     os.path.join(target, lic_dir, lic),
                 )
+    os.makedirs(os.path.join(target, 'fallback'), exist_ok=True)
+    for sub in FALLBACK_SUBSETS:
+        for w in (400, 700):
+            src = os.path.join(FALLBACK_SRC, f'noto-sans-{sub}-{w}-normal.woff2')
+            name = f'fallback/NotoSans-{sub}-{w}.ttf'
+            convert(src, None).save(os.path.join(target, name))
+            with open(os.path.join(target, name), 'rb') as fh:
+                manifest[name] = hashlib.sha256(fh.read()).hexdigest()
+    shutil.copy(
+        os.path.join(FALLBACK_SRC, 'OFL.txt'),
+        os.path.join(target, 'fallback', 'OFL.txt'),
+    )
     notices = os.path.join(SRC, 'THIRD-PARTY-NOTICES.txt')
     if os.path.exists(notices):
         shutil.copy(notices, os.path.join(target, 'THIRD-PARTY-NOTICES.txt'))

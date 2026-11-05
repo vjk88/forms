@@ -78,27 +78,21 @@ function tint(c, amount) {
     };
 }
 
-/** Characters the font can draw; anything else becomes '?' (never tofu). */
-function sanitizer(font) {
-    let set = null;
+/** Invisible and awkward characters normalized before measuring/drawing. */
+function normalize(text) {
+    return String(text ?? '')
+        .replace(/\u00a0/g, ' ')
+        .replace(/[\u200b-\u200d\ufeff]/g, '')
+        .replace(/\t/g, '    ');
+}
+
+/** The code points a font can draw (null = unknown: assume everything). */
+function charSet(font) {
     try {
-        set = new Set(font.getCharacterSet());
+        return new Set(font.getCharacterSet());
     } catch {
-        set = null;
+        return null;
     }
-    return (text) => {
-        const s = String(text ?? '')
-            .replace(/\u00a0/g, ' ')
-            .replace(/[\u200b-\u200d\ufeff]/g, '')
-            .replace(/\t/g, '    ');
-        if (!set) return s;
-        let out = '';
-        for (const ch of s) {
-            const cp = ch.codePointAt(0);
-            out += set.has(cp) || cp === 10 ? ch : '?';
-        }
-        return out;
-    };
 }
 
 /** Rounded rectangle as an SVG path (origin top-left, y down). */
@@ -154,16 +148,45 @@ export async function renderPdf(opts) {
 
     // ---- fonts: brand TrueType when we have it, Helvetica otherwise ----
     const fonts = await embedFonts(lib, fontkit, pdf, opts.fonts);
-    const clean = {
-        body: sanitizer(fonts.body),
-        bodyBold: sanitizer(fonts.bodyBold),
-        display: sanitizer(fonts.display)
+    // Letters the brand font lacks (Cyrillic, Greek, Latin Extended,
+    // Vietnamese) come from the Noto Sans fallbacks, chosen per character;
+    // a character no font has prints as '?', never as an empty box.
+    const fallback = await embedFallbacks(fontkit, pdf, opts.fallbackFonts);
+    const sets = new Map();
+    const setOf = (font) => {
+        if (!sets.has(font)) sets.set(font, charSet(font));
+        return sets.get(font);
     };
-    const cleanFor = (font) => {
-        if (font === fonts.bodyBold) return clean.bodyBold;
-        if (font === fonts.display) return clean.display;
-        return clean.body;
+    const has = (font, cp) => {
+        const set = setOf(font);
+        return !set || set.has(cp);
     };
+    /** `str` as [{ text, font }]: each character in the first font that has it. */
+    function runsOf(str, font) {
+        const bold = font !== fonts.body;
+        const chain = bold ? fallback.bold : fallback.regular;
+        const runs = [];
+        for (const ch of normalize(str)) {
+            const cp = ch.codePointAt(0);
+            let use = font;
+            let out = ch;
+            if (cp !== 10 && !has(font, cp)) {
+                use = chain.find((f) => has(f, cp)) || font;
+                if (use === font) out = '?';
+            }
+            const last = runs[runs.length - 1];
+            if (last && last.font === use) last.text += out;
+            else runs.push({ text: out, font: use });
+        }
+        return runs;
+    }
+    function measure(str, font, size) {
+        let w = 0;
+        for (const r of runsOf(str, font)) {
+            w += r.font.widthOfTextAtSize(r.text, size);
+        }
+        return w;
+    }
 
     // ---- images: embedded once each ----
     const embedded = new Map();
@@ -202,30 +225,30 @@ export async function renderPdf(opts) {
 
     // ---- text measuring + wrapping ----
     function width(str, font, size) {
-        return font.widthOfTextAtSize(cleanFor(font)(str), size);
+        return measure(str, font, size);
     }
 
     function wrap(str, font, size, maxW) {
         const out = [];
-        const paragraphs = cleanFor(font)(str).split('\n');
+        const paragraphs = normalize(str).split('\n');
         for (const para of paragraphs) {
             const words = para.split(/(\s+)/);
             let line = '';
             for (const piece of words) {
                 if (!piece) continue;
                 const next = line + piece;
-                if (font.widthOfTextAtSize(next.trimEnd(), size) <= maxW) {
+                if (measure(next.trimEnd(), font, size) <= maxW) {
                     line = next;
                     continue;
                 }
                 if (line.trim()) out.push(line.trimEnd());
                 line = /^\s+$/.test(piece) ? '' : piece;
                 // one word longer than the line: break it by characters
-                while (font.widthOfTextAtSize(line, size) > maxW) {
+                while (measure(line, font, size) > maxW) {
                     let cut = line.length - 1;
                     while (
                         cut > 1 &&
-                        font.widthOfTextAtSize(line.slice(0, cut), size) > maxW
+                        measure(line.slice(0, cut), font, size) > maxW
                     ) {
                         cut--;
                     }
@@ -244,10 +267,10 @@ export async function renderPdf(opts) {
         let lineW = 0;
         for (const run of runs) {
             const font = run.bold ? fonts.bodyBold : fonts.body;
-            const pieces = cleanFor(font)(run.text).split(/(\s+)/);
+            const pieces = normalize(run.text).split(/(\s+)/);
             for (const piece of pieces) {
                 if (!piece) continue;
-                const w = font.widthOfTextAtSize(piece, size);
+                const w = measure(piece, font, size);
                 const isSpace = /^\s+$/.test(piece);
                 if (lineW + w > maxW && lineW > 0 && !isSpace) {
                     lines.push([]);
@@ -261,7 +284,7 @@ export async function renderPdf(opts) {
                 } else {
                     line.push({ text: isSpace ? ' ' : piece, font });
                 }
-                lineW += isSpace ? font.widthOfTextAtSize(' ', size) : w;
+                lineW += isSpace ? measure(' ', font, size) : w;
             }
         }
         return lines.filter((l) => l.length);
@@ -291,13 +314,17 @@ export async function renderPdf(opts) {
     }
 
     function text(str, x, top, font, size, col) {
-        page.drawText(cleanFor(font)(str), {
-            x,
-            y: pageH - top - size,
-            size,
-            font,
-            color: col
-        });
+        let cx = x;
+        for (const r of runsOf(str, font)) {
+            page.drawText(r.text, {
+                x: cx,
+                y: pageH - top - size,
+                size,
+                font: r.font,
+                color: col
+            });
+            cx += r.font.widthOfTextAtSize(r.text, size);
+        }
     }
 
     function rule(x, top, w, col, thickness = 0.75) {
@@ -560,7 +587,7 @@ export async function renderPdf(opts) {
                         let cx = x + indent;
                         for (const seg of line) {
                             text(seg.text, cx, top, seg.font, s, col);
-                            cx += seg.font.widthOfTextAtSize(seg.text, s);
+                            cx += measure(seg.text, seg.font, s);
                         }
                     },
                     {
@@ -1128,6 +1155,33 @@ export async function renderPdf(opts) {
     });
 
     return pdf.save();
+}
+
+/**
+ * Fallback fonts for letters the brand font lacks: `[{ regular, bold }]`
+ * TrueType bytes, in the order they are tried. Skipped without fontkit.
+ */
+async function embedFallbacks(fontkit, pdf, list) {
+    const out = { regular: [], bold: [] };
+    if (!fontkit || !Array.isArray(list) || !list.length) {
+        return out;
+    }
+    pdf.registerFontkit(fontkit);
+    const embedOne = async (b) => {
+        if (!b) return null;
+        try {
+            return await pdf.embedFont(b, { subset: true });
+        } catch {
+            return null; // a broken fallback is skipped; its letters print '?'
+        }
+    };
+    const regular = await Promise.all(
+        list.map((f) => embedOne(f && f.regular))
+    );
+    const bold = await Promise.all(list.map((f) => embedOne(f && f.bold)));
+    out.regular = regular.filter(Boolean);
+    out.bold = bold.filter(Boolean);
+    return out;
 }
 
 /** Brand fonts when their bytes are here and embed; Helvetica otherwise. */

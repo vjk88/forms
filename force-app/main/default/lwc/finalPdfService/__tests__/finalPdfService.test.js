@@ -1,5 +1,6 @@
 import {
     downloadPdf,
+    fallbackSubsetsFor,
     pageSizeFor,
     imageRefs,
     resetForTests,
@@ -149,5 +150,39 @@ describe('c/finalPdfService', () => {
             { url: '/b', versionId: '068B' },
             { url: '/c', versionId: null }
         ]);
+    });
+
+    it('downloads only the alphabets a document uses', () => {
+        expect(
+            fallbackSubsetsFor({ blocks: [{ lines: ['Plain English, café'] }] })
+        ).toEqual([]);
+        expect(
+            fallbackSubsetsFor({ blocks: [{ lines: ['Привет', 'Łódź'] }] })
+        ).toEqual(['latin-ext', 'cyrillic']);
+        expect(fallbackSubsetsFor({ title: 'Ελληνικά · Việt' })).toEqual([
+            'latin-ext',
+            'vietnamese',
+            'greek'
+        ]);
+    });
+
+    it('fetches the fallback fonts a Russian answer needs', async () => {
+        const doc = buildFormDocument({
+            spec: SPEC,
+            answers: { el_name: 'Иван' }
+        });
+        await downloadPdf({
+            component: {},
+            doc,
+            tokens: TOKENS,
+            fileName: 'ru.pdf'
+        });
+        const fetched = global.fetch.mock.calls.map((c) => c[0]);
+        expect(
+            fetched.some((u) =>
+                u.includes('fallback/NotoSans-cyrillic-400.ttf')
+            )
+        ).toBe(true);
+        expect(fetched.some((u) => u.includes('greek'))).toBe(false);
     });
 });

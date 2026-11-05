@@ -116,9 +116,12 @@ same rule.
   under it.
 - Fonts: the bundled family a `--c-font-*` stack names first. Uploaded fonts and the installed-font
   ("system") stack can't be embedded: sans → Inter, serif → Noto Serif, mono → IBM Plex Mono.
-- Characters the chosen font lacks print as `?`, never as an empty box. **Known limit:** the bundled
-  fonts are Latin subsets, so Cyrillic, Greek, CJK, Arabic and similar answers print as `?` today
-  (§9).
+- Characters the brand font lacks are drawn, letter by letter, from Noto Sans fallbacks (OFL, from
+  `@fontsource/noto-sans`, built into `formPdfFonts/fallback/` by the font script): Latin Extended,
+  Vietnamese, Cyrillic and Greek. Only the alphabets a document uses are downloaded. A character no
+  font has prints as `?`, never as an empty box. **Known limit:** Chinese, Japanese, Korean, Arabic and
+  Hebrew still print as `?` in the browser copy (their fonts are megabytes, and Arabic/Hebrew need
+  shaping pdf-lib doesn't do); the server copy (§8.2) prints CJK.
 - Page size: Letter for US, CA, MX, PH, CL, CO, VE locales, A4 everywhere else.
 
 ## 5. Images and security
@@ -256,8 +259,7 @@ the plumbing (Apex only, no page, works in a background job), not the look. Cons
 
 ## 9. Later
 
-- Non-Latin answers: a fallback font family (Noto Sans with Cyrillic, Greek and Vietnamese, then CJK
-  on demand) and per-character font runs in the writer.
+- CJK in the browser copy, on demand (large font downloads); right-to-left scripts need a shaper.
 - Uploaded brand fonts: convert the uploaded WOFF2 to TrueType at upload time.
 - Signature images in the copy, once `formSignature` ships.
 - Optional content blocks in a copy (author toggle), and page size as an author setting.
