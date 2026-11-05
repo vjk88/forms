@@ -16,18 +16,22 @@
     );
 }
 
+/* The stage's pane header (DESIGN_SYSTEM 5.14): 56px like every pane header.
+   Tokens only; the toolbar's groups, options and behavior stay as built. */
 .ps-bar {
     position: sticky;
     top: 0;
-    z-index: 2;
+    z-index: var(--c-studio-z-raised);
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
-    padding: 6px 10px;
+    gap: var(--c-studio-space-3);
+    box-sizing: border-box;
+    min-height: var(--c-studio-bar-h);
+    padding: var(--c-studio-space-3) var(--c-studio-space-4);
     background: var(--c-studio-surface);
-    border-bottom: 1px solid var(--c-studio-border-subtle);
+    border-bottom: 1px solid var(--c-studio-border);
 }
 
 /* Screen, phone width and host: one wrapping group, so a narrow pane wraps the
@@ -36,17 +40,17 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
+    gap: var(--c-studio-space-3);
 }
 
 /* "Page margin": which page the form sits in decides the margin around it. A
    swatch of the same stripes the margin bands use makes the toolbar its own
-   legend; the dropdown wears the same quiet outline as the other controls. */
+   legend; the dropdown wears the same outline as the other controls. */
 .ps-hostbox {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    font-size: 12px;
+    gap: var(--c-studio-space-3);
+    font-size: var(--c-studio-fs-small);
     color: var(--c-studio-text-weak);
 }
 
@@ -55,7 +59,7 @@
     width: 20px;
     height: 12px;
     border: 1px solid var(--c-studio-border-strong);
-    border-radius: 2px;
+    border-radius: var(--c-studio-radius-sm);
     background:
         repeating-linear-gradient(
             135deg,
@@ -80,21 +84,23 @@
     white-space: nowrap;
 }
 
+/* Kept native (swap plan: its spoken description), drawn as a control (5.3). */
 .ps-host {
+    min-height: var(--c-studio-control-h);
     border: 1px solid var(--c-studio-border-strong);
-    border-radius: 8px;
+    border-radius: var(--c-studio-radius-md);
     background: var(--c-studio-surface);
     font: inherit;
-    font-size: 12px;
-    color: var(--c-studio-text-weak);
-    padding: 4px 8px;
+    font-size: var(--c-studio-fs-body);
+    color: var(--c-studio-text);
+    padding: 0 var(--c-studio-space-3);
     cursor: pointer;
 }
 
 .ps-tools {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--c-studio-space-3);
     margin-left: auto;
 }
 
@@ -109,7 +115,7 @@
 
 .ps-scale {
     min-width: 4ch;
-    font-size: 12px;
+    font-size: var(--c-studio-fs-small);
     font-variant-numeric: tabular-nums;
     color: var(--c-studio-text-weak);
     text-align: right;

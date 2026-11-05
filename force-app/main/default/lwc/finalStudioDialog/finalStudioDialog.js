@@ -20,6 +20,8 @@ export default class FinalStudioDialog extends LightningElement {
     /** 'full' (fills the window) or 'large'. */
     @api size = 'large';
     @api label;
+    /** One line under the title saying what the dialog is for (DESIGN_SYSTEM 3). */
+    @api description;
     /** The brand button, e.g. "Done" or "Apply". */
     @api confirmLabel = 'Done';
     /** Unsaved changes: leaving asks first. */

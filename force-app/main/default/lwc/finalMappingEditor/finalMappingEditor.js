@@ -47,6 +47,7 @@ export default class FinalMappingEditor extends LightningElement {
     /** objectApi -> { apiName: label }, for the answers index. */
     fieldLabels = {};
     _labelsLoading = new Set();
+    _status;
 
     /** { actionId, n }: open that step (the publish dialog's Go there). */
     @api
@@ -65,6 +66,7 @@ export default class FinalMappingEditor extends LightningElement {
     _reveal = null;
 
     renderedCallback() {
+        this._emitStatus();
         if (!this._reveal) {
             return;
         }
@@ -186,9 +188,12 @@ export default class FinalMappingEditor extends LightningElement {
             return {
                 id: a.id,
                 index: i,
-                title: `${i + 1}  ${labels.get(a.object) || a.object}`,
-                detail: `${a.operation === 'findOrCreate' ? 'Find or create' : 'Create'} · ${plural((a.fields || []).length, 'field')}`,
-                stateText: STATE_TEXT[state] || '',
+                number: i + 1,
+                objectApi: a.object,
+                title: labels.get(a.object) || a.object,
+                detail: `${a.operation === 'findOrCreate' ? 'Find or create' : 'Always create'} · ${plural((a.fields || []).length, 'field')}`,
+                stateText: STATE_TEXT[state] || 'Ready',
+                badgeCls: `me-badge ${state === 'ok' ? 'me-badge--ok' : 'me-badge--warn'}`,
                 cls: `me-card${selected ? ' me-card--on' : ''}${state !== 'ok' ? ' me-card--warn' : ''}`,
                 ariaCurrent: selected ? 'true' : 'false',
                 draggable: this.readOnly ? 'false' : 'true',
@@ -210,9 +215,25 @@ export default class FinalMappingEditor extends LightningElement {
 
     get operationOptions() {
         return [
-            { label: 'Always create', value: 'create' },
-            { label: 'Find or create', value: 'findOrCreate' }
+            {
+                label: 'Always create',
+                value: 'create',
+                desc: 'A new record every time.',
+                art: 'create',
+                wide: true
+            },
+            {
+                label: 'Find or create',
+                value: 'findOrCreate',
+                desc: 'Use a match if there is one.',
+                art: 'find',
+                wide: true
+            }
         ];
+    }
+
+    get showEmptyAdd() {
+        return !this.adding && !this.atCap;
     }
 
     get addDisabled() {
@@ -227,24 +248,48 @@ export default class FinalMappingEditor extends LightningElement {
             return {
                 key: q.elementKey,
                 label: q.label,
-                where: uses.length
-                    ? uses
-                          .map(
-                              (u) =>
-                                  `${labels.get(u.object) || u.object} · ${describeUse(
-                                      u,
-                                      (this.fieldLabels[u.object] || {})[
-                                          u.field
-                                      ] || u.field
-                                  )}`
-                          )
-                          .join(', ')
-                    : 'Stored only',
-                cls: uses.length
-                    ? 'me-index-where me-index-where--mapped'
-                    : 'me-index-where'
+                storedOnly: uses.length === 0,
+                uses: uses.map((u, i) => ({
+                    key: `${i}-${u.object}-${u.field}`,
+                    objectApi: u.object,
+                    text: `${labels.get(u.object) || u.object} · ${describeUse(
+                        u,
+                        (this.fieldLabels[u.object] || {})[u.field] || u.field
+                    )}`
+                }))
             };
         });
+    }
+
+    /**
+     * What's left, for the dialog's footer (DESIGN_SYSTEM 3: help on the
+     * left): sent as `statuschange` whenever it changes.
+     */
+    get statusText() {
+        const all = this.actions;
+        if (!all.length) {
+            return 'Nothing is sent to Salesforce until you add a record.';
+        }
+        const open = this.cards.filter((c) => c.stateText !== 'Ready');
+        if (!open.length) {
+            return '';
+        }
+        return open.length === 1
+            ? `${open[0].title} isn\u2019t finished`
+            : `${open.length} records aren\u2019t finished`;
+    }
+
+    _emitStatus() {
+        const text = this.statusText;
+        if (text === this._status) {
+            return;
+        }
+        this._status = text;
+        this.dispatchEvent(
+            new CustomEvent('statuschange', {
+                detail: { text, warn: this.actions.length > 0 && Boolean(text) }
+            })
+        );
     }
 
     handleSelect(event) {

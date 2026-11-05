@@ -115,6 +115,12 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
      */
     mappingOpen = false;
     mappingDraft = null;
+    /** Where the Autofill rule stands, said in its dialog's footer. */
+    autofillStatus = '';
+    autofillStatusTone = '';
+    /** What's left in the mapping, said in the dialog's footer. */
+    mappingStatus = '';
+    mappingStatusWarn = false;
     mappingFocus = null;
     mappingDirty = false;
     _mappingOriginal = null;
@@ -859,6 +865,30 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         this.mappingDraft = event.detail.spec;
         this.mappingDirty =
             JSON.stringify(this.mappingDraft) !== this._mappingOriginal;
+    }
+
+    handleAutofillStatus(event) {
+        event.stopPropagation();
+        this.autofillStatus = event.detail.text || '';
+        this.autofillStatusTone = event.detail.tone || '';
+    }
+
+    get autofillStatusClass() {
+        return this.autofillStatusTone
+            ? `st-map-status st-map-status--${this.autofillStatusTone}`
+            : 'st-map-status';
+    }
+
+    handleMappingStatus(event) {
+        event.stopPropagation();
+        this.mappingStatus = event.detail.text || '';
+        this.mappingStatusWarn = Boolean(event.detail.warn);
+    }
+
+    get mappingStatusClass() {
+        return this.mappingStatusWarn
+            ? 'st-map-status st-map-status--warn'
+            : 'st-map-status';
     }
 
     /** Done: the draft becomes the form, as one undo step. */

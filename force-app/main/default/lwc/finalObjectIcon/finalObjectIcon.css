@@ -1,0 +1,35 @@
+@import 'c/finalStudioStyles';
+
+:host {
+    display: inline-flex;
+    flex: none;
+}
+
+/* An object without a tab: its first letter on its own color (DESIGN_SYSTEM 8). */
+.oi-letter {
+    display: inline-grid;
+    place-items: center;
+    border-radius: var(--c-studio-radius-sm);
+    background-color: var(--c-studio-text-weak);
+    color: var(--c-studio-on-accent);
+    font-weight: var(--c-studio-fw-strong);
+    line-height: 1;
+}
+
+.oi-small {
+    width: 16px;
+    height: 16px;
+    font-size: var(--c-studio-fs-caption);
+}
+
+.oi-medium {
+    width: 24px;
+    height: 24px;
+    font-size: var(--c-studio-fs-small);
+}
+
+.oi-large {
+    width: 32px;
+    height: 32px;
+    font-size: var(--c-studio-fs-subhead);
+}

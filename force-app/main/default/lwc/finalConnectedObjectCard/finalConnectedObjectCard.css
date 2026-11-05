@@ -10,8 +10,8 @@
 
 .oc-heading {
     margin: 0 0 0.75rem;
-    font-size: 0.875rem;
-    font-weight: 700;
+    font-size: var(--c-studio-fs-subhead);
+    font-weight: var(--c-studio-fw-strong);
 }
 
 .oc-title,
@@ -21,15 +21,15 @@
 
 .oc-title {
     margin: 0;
-    font-size: 0.875rem;
-    font-weight: 700;
+    font-size: var(--c-studio-fs-subhead);
+    font-weight: var(--c-studio-fw-strong);
     overflow-wrap: anywhere;
 }
 
 .oc-help {
     margin: 0.125rem 0 0;
     color: var(--c-studio-text-weak);
-    font-size: 0.75rem;
+    font-size: var(--c-studio-fs-small);
     line-height: 1.45;
 }
 
@@ -39,7 +39,7 @@
     align-items: flex-start;
     padding: 0.875rem;
     border: 1px solid var(--c-studio-border);
-    border-radius: 0.5rem;
+    border-radius: var(--c-studio-radius-md);
     background: var(--c-studio-surface);
 }
 
@@ -49,18 +49,18 @@
     width: 2rem;
     height: 2rem;
     place-items: center;
-    border-radius: 0.375rem;
+    border-radius: var(--c-studio-radius-md);
     background: var(--c-studio-accent);
     color: var(--c-studio-on-accent);
-    font-size: 0.625rem;
-    font-weight: 800;
+    font-size: var(--c-studio-fs-caption);
+    font-weight: var(--c-studio-fw-strong);
 }
 
 .oc-empty,
 .oc-confirm {
     padding: 1rem;
     border: 1px solid var(--c-studio-border);
-    border-radius: 0.5rem;
+    border-radius: var(--c-studio-radius-md);
     background: var(--c-studio-surface);
 }
 
@@ -73,7 +73,7 @@
 
 .oc-message {
     margin: 0 0 0.75rem;
-    font-size: 0.75rem;
+    font-size: var(--c-studio-fs-small);
     line-height: 1.4;
 }
 
@@ -84,7 +84,7 @@
 .oc-list {
     margin: 0 0 0.75rem;
     padding-left: 1.25rem;
-    font-size: 0.75rem;
+    font-size: var(--c-studio-fs-small);
 }
 
 .oc-object-list {
@@ -93,7 +93,7 @@
     padding: 0;
     overflow-y: auto;
     border: 1px solid var(--c-studio-border);
-    border-radius: 0.5rem;
+    border-radius: var(--c-studio-radius-md);
     list-style: none;
 }
 
@@ -120,11 +120,11 @@
 }
 
 .oc-object-label {
-    font-size: 0.8125rem;
-    font-weight: 700;
+    font-size: var(--c-studio-fs-body);
+    font-weight: var(--c-studio-fw-strong);
 }
 
 .oc-object-api {
     color: var(--c-studio-text-weak);
-    font-size: 0.6875rem;
+    font-size: var(--c-studio-fs-caption);
 }

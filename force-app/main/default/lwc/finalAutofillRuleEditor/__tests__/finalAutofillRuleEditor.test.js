@@ -104,12 +104,12 @@ function mount(props = {}) {
 
 const $ = (el, sel) => el.shadowRoot.querySelector(sel);
 const $$ = (el, sel) => [...el.shadowRoot.querySelectorAll(sel)];
-// "Fill from" is a c-final-button-group (DESIGN_SYSTEM 5.7)
+// "Fill from" is picture tiles (c-final-picture-choice, DESIGN_SYSTEM 5.24)
 const sourceButtons = (el) => [
     ...$(
         el,
-        'c-final-button-group[data-group="source"]'
-    ).shadowRoot.querySelectorAll('button')
+        'c-final-picture-choice[data-group="source"]'
+    ).shadowRoot.querySelectorAll('button[role="radio"]')
 ];
 
 beforeEach(() => {
@@ -603,8 +603,46 @@ describe('c-final-autofill-rule-editor', () => {
             ])
         });
         await flush();
-        expect($(el, '.am-guest-summary').textContent).toBe(
-            'People who aren’t signed in get: Company.'
+        expect($(el, '.am-guest-summary').textContent).toContain(
+            'People who aren’t signed in get:'
         );
+        expect(
+            $$(el, '.am-guest-summary .am-badge').map((n) => n.textContent)
+        ).toEqual(['Company']);
+    });
+
+    it('sums the rule up in one short footer line', async () => {
+        // Built by hand: the line is sent on the first render, so listen first.
+        const el = createElement('c-final-autofill-rule-editor', {
+            is: FinalAutofillRuleEditor
+        });
+        Object.assign(el, {
+            spec: SPEC,
+            rule: linkRule([
+                {
+                    id: 'm1',
+                    from: 'Name',
+                    to: 'el_company',
+                    guestAllowed: true
+                },
+                {
+                    id: 'm2',
+                    from: 'AnnualRevenue',
+                    to: 'el_revenue',
+                    guestAllowed: false
+                }
+            ])
+        });
+        const said = [];
+        el.addEventListener('statuschange', (e) => said.push(e.detail));
+        document.body.appendChild(el);
+        await flush();
+        const last = said[said.length - 1];
+        expect(last.tone).toBe('ok');
+        // Counts, never the questions' own (often long) labels.
+        expect(last.text).toBe(
+            'Fills 2 answers from the Account in the link · guests get 1 of 2 · typed answers are kept'
+        );
+        expect($(el, '.am-summary')).toBeNull();
     });
 });

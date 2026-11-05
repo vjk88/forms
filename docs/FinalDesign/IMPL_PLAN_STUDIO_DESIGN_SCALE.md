@@ -90,10 +90,19 @@ Branch `feat/studio-foundations`. What shipped:
   Each of these restyles every screen at once, which doesn't belong in a no-visible-change PR.
 - **Not done:** moving `IMPL_PLAN_DESIGN_RAIL.md` and `IMPL_PLAN_THEME_CREATOR.md` to `archive/`. They are the owner's uncommitted files.
 
-## Step 2: Build look
+## Step 2: Build look: BUILT 2026-11-02, PR open
 
-Branch `feat/studio-build-consistency`.
-Also lands here first (moved from step 1): the shared recipe classes, the base-component hook settings, and the reduced-motion rule.
+Branch `feat/restyle-build`. It follows the Build swap (PR 430).
+
+**What shipped:**
+- **Shared bundle:**
+  - Salesforce styling hooks for Studio controls: 8px corners, Studio edges and focus, and teal checked state for checkboxes and switches. Scoped by element, so the form preview never picks them up.
+  - The reduced-motion rule.
+  - Two selected-state tokens, `selected-ring` and `selected-bar`.
+- **Not added:** the shared recipe classes. Nothing uses them yet, so each later restyle adds the ones its screen needs.
+- **Restyled onto tokens:** the shell and top bar (looks only), rail (12px labels), field list, inspector, preview toolbar, picture tiles, and the structure pane.
+  - The structure pane keeps its own cards and drag and drop. Its private `--c-studio-canvas*` colors were swapped for the shared tokens, and its ALL CAPS is gone.
+- **Guard:** the allowlist went from 909 to 723. The Build components keep 5 entries: four drag-and-drop indicator lines, plus the preview's `z-index: -1` margin bands.
 Components: `finalFormStudio` (shell, top bar, save status), `finalStudioRail`, `finalFieldPalette`, `finalPropertyPanel`, `finalPreviewStage` (header only).
 
 - **Top bar: styling only.** Same contents, same controls, same order, same behavior:
@@ -118,9 +127,14 @@ Components: `finalFormStudio` (shell, top bar, save status), `finalStudioRail`, 
 - **"ADDED" badges** become "Added" (`finalFieldPalette.html:101`, `finalPropertyPanel.html:1387`).
 - **The preview stage header: styling only.** Desktop / Tablet / Mobile, phone widths and zoom keep their options and behavior and are drawn with the segmented recipe.
 
-## Step 3: Mapping
+## Step 3: Mapping: BUILT 2026-11-02, PR open
 
-Branch `feat/studio-mapping-consistency`.
+Branch `feat/mapping-swap-restyle`. The Mapping swap and this restyle ship in one PR because the swap is only 4 buttons.
+
+- Built: 9 Mapping style files moved onto Studio tokens; ALL CAPS removed; the picker box now matches Studio inputs (32px tall, 8px corners).
+- `finalFieldPicker` and `finalObjectPicker` had nothing to restyle: they draw through `finalTypeahead`.
+- Salesforce radio and checkbox groups now get the teal hooks too (on LEX, a Mapping radio was still Salesforce blue).
+- Guard allowlist 723 → 576. Left on purpose: 4 focus and error ring shadows (`finalTypeahead`, `finalMappingSoql`, `finalConnectedObjectCard`).
 Components: `finalMappingEditor`, `finalMappingAction`, `finalMappingSoql`, `finalMappingSummary`, `finalTypeahead`, `finalFieldPicker`, `finalObjectPicker`, `finalLookupFilter`, `finalRelationshipPicker`, `finalConnectedObjectCard`, `finalSubmissionReader`.
 
 - **Colors:** Salesforce blue and greys become Studio tokens.

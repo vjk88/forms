@@ -1,34 +1,251 @@
 <template>
-    <div class="pc" role="radiogroup" aria-label={label} onkeydown={handleKey}>
-        <template for:each={wideTiles} for:item="t">
-            <button
-                key={t.key}
-                type="button"
-                role="radio"
-                class={t.cls}
-                aria-checked={t.checked}
-                tabindex={t.tabindex}
-                data-index={t.index}
-                data-value={t.dataValue}
-                onclick={handleClick}
-            >
-                <span class="pc-art" aria-hidden="true">
-                    <template lwc:if={t.isSelect}>
-                        <span class="pc-art-select">
-                            <span class="pc-art-bar"></span>
-                            <span class="pc-art-chev"></span>
+    <div
+        class="pc"
+        role="radiogroup"
+        aria-label={label}
+        aria-disabled={ariaDisabled}
+        onkeydown={handleKey}
+    >
+        <template lwc:if={hasWide}>
+            <div class="pc-wides">
+                <template for:each={wideTiles} for:item="t">
+                    <button
+                        key={t.key}
+                        type="button"
+                        role="radio"
+                        class={t.cls}
+                        aria-checked={t.checked}
+                        tabindex={t.tabindex}
+                        data-index={t.index}
+                        data-value={t.dataValue}
+                        disabled={t.optionDisabled}
+                        onclick={handleClick}
+                    >
+                        <span class="pc-art" aria-hidden="true">
+                            <template lwc:if={t.isSelect}>
+                                <span class="pc-art-select">
+                                    <span class="pc-art-bar"></span>
+                                    <span class="pc-art-chev"></span>
+                                </span>
+                            </template>
+                            <template lwc:if={t.isRecord}>
+                                <svg
+                                    class="pc-art-record"
+                                    viewBox="0 0 56 36"
+                                    focusable="false"
+                                >
+                                    <rect
+                                        class="pc-svg-paper"
+                                        x="16"
+                                        y="3"
+                                        width="22"
+                                        height="30"
+                                        rx="3"
+                                    ></rect>
+                                    <path
+                                        class="pc-svg-weak"
+                                        d="M20 10h14M20 15h10"
+                                    ></path>
+                                    <template lwc:if={t.isCreate}>
+                                        <circle
+                                            class="pc-svg-accent-fill"
+                                            cx="40"
+                                            cy="26"
+                                            r="8"
+                                        ></circle>
+                                        <path
+                                            class="pc-svg-on-accent"
+                                            d="M40 22v8M36 26h8"
+                                        ></path>
+                                    </template>
+                                    <template lwc:if={t.isFind}>
+                                        <circle
+                                            class="pc-svg-accent-soft"
+                                            cx="27"
+                                            cy="21"
+                                            r="7"
+                                        ></circle>
+                                        <path
+                                            class="pc-svg-accent"
+                                            d="M32 26l6 6"
+                                        ></path>
+                                    </template>
+                                    <template lwc:if={t.isReuse}>
+                                        <path
+                                            class="pc-svg-accent"
+                                            d="M37 22v-3a3.5 3.5 0 0 1 7 0v3"
+                                        ></path>
+                                        <rect
+                                            class="pc-svg-accent-fill"
+                                            x="34"
+                                            y="22"
+                                            width="13"
+                                            height="10"
+                                            rx="2"
+                                        ></rect>
+                                    </template>
+                                    <template lwc:if={t.isUpdate}>
+                                        <path
+                                            class="pc-svg-accent-soft"
+                                            d="M34 32l2-6 9-9 4 4-9 9z"
+                                        ></path>
+                                    </template>
+                                </svg>
+                            </template>
+                            <template lwc:if={t.isFill}>
+                                <svg
+                                    class="pc-art-record"
+                                    viewBox="0 0 64 40"
+                                    focusable="false"
+                                >
+                                    <template lwc:if={t.isLink}>
+                                        <rect
+                                            class="pc-svg-paper"
+                                            x="4"
+                                            y="10"
+                                            width="38"
+                                            height="14"
+                                            rx="7"
+                                        ></rect>
+                                        <path
+                                            class="pc-svg-weak"
+                                            d="M12 17h18"
+                                        ></path>
+                                        <path
+                                            class="pc-svg-accent"
+                                            d="M44 17h8"
+                                        ></path>
+                                        <rect
+                                            class="pc-svg-accent-soft"
+                                            x="52"
+                                            y="10"
+                                            width="10"
+                                            height="16"
+                                            rx="2"
+                                        ></rect>
+                                    </template>
+                                    <template lwc:if={t.isLookup}>
+                                        <rect
+                                            class="pc-svg-paper"
+                                            x="4"
+                                            y="8"
+                                            width="40"
+                                            height="12"
+                                            rx="3"
+                                        ></rect>
+                                        <circle
+                                            class="pc-svg-accent"
+                                            cx="37"
+                                            cy="14"
+                                            r="3"
+                                        ></circle>
+                                        <rect
+                                            class="pc-svg-accent-soft"
+                                            x="4"
+                                            y="22"
+                                            width="40"
+                                            height="12"
+                                            rx="3"
+                                        ></rect>
+                                        <path
+                                            class="pc-svg-accent"
+                                            d="M46 28h6"
+                                        ></path>
+                                        <rect
+                                            class="pc-svg-accent-soft"
+                                            x="52"
+                                            y="20"
+                                            width="10"
+                                            height="16"
+                                            rx="2"
+                                        ></rect>
+                                    </template>
+                                    <template lwc:if={t.isUser}>
+                                        <circle
+                                            class="pc-svg-accent-soft"
+                                            cx="22"
+                                            cy="15"
+                                            r="7"
+                                        ></circle>
+                                        <path
+                                            class="pc-svg-accent-soft"
+                                            d="M10 34c2-7 6-10 12-10s10 3 12 10z"
+                                        ></path>
+                                        <path
+                                            class="pc-svg-accent"
+                                            d="M40 22h8"
+                                        ></path>
+                                        <rect
+                                            class="pc-svg-accent-soft"
+                                            x="50"
+                                            y="14"
+                                            width="10"
+                                            height="16"
+                                            rx="2"
+                                        ></rect>
+                                    </template>
+                                    <template lwc:if={t.isKeep}>
+                                        <rect
+                                            class="pc-svg-accent-soft"
+                                            x="6"
+                                            y="12"
+                                            width="40"
+                                            height="16"
+                                            rx="3"
+                                        ></rect>
+                                        <path
+                                            class="pc-svg-weak"
+                                            d="M12 20h20"
+                                        ></path>
+                                        <path
+                                            class="pc-svg-accent"
+                                            d="M51 16v-3a3 3 0 0 1 6 0v3"
+                                        ></path>
+                                        <rect
+                                            class="pc-svg-accent-fill"
+                                            x="48"
+                                            y="16"
+                                            width="12"
+                                            height="10"
+                                            rx="2"
+                                        ></rect>
+                                    </template>
+                                    <template lwc:if={t.isReplace}>
+                                        <rect
+                                            class="pc-svg-paper"
+                                            x="6"
+                                            y="12"
+                                            width="40"
+                                            height="16"
+                                            rx="3"
+                                        ></rect>
+                                        <rect
+                                            class="pc-svg-accent-soft"
+                                            x="22"
+                                            y="16"
+                                            width="20"
+                                            height="8"
+                                            rx="2"
+                                        ></rect>
+                                        <path
+                                            class="pc-svg-accent"
+                                            d="M50 14a8 8 0 1 1-2 9M47 11v5h5"
+                                        ></path>
+                                    </template>
+                                </svg>
+                            </template>
                         </span>
-                    </template>
-                </span>
-                <span class="pc-text">
-                    <span class="pc-title">{t.label}</span>
-                    <span class="pc-desc">{t.desc}</span>
-                </span>
-                <span class="pc-tick" aria-hidden="true"
-                    ><svg viewBox="0 0 16 16" focusable="false">
-                        <path d="M3.5 8.5l3 3 6-7"></path></svg
-                ></span>
-            </button>
+                        <span class="pc-text">
+                            <span class="pc-title">{t.label}</span>
+                            <span class="pc-desc">{t.desc}</span>
+                        </span>
+                        <span class="pc-tick" aria-hidden="true"
+                            ><svg viewBox="0 0 16 16" focusable="false">
+                                <path d="M3.5 8.5l3 3 6-7"></path></svg
+                        ></span>
+                    </button>
+                </template>
+            </div>
         </template>
         <template lwc:if={hasGrid}>
             <div class="pc-grid">

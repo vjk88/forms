@@ -1,3 +1,5 @@
+@import 'c/finalStudioStyles';
+
 .lf-root {
     display: flex;
     flex-direction: column;
@@ -6,16 +8,16 @@
 
 .lf-hint {
     margin: -0.375rem 0 0;
-    font-size: 0.75rem;
-    color: #5c5c5c;
+    font-size: var(--c-studio-fs-small);
+    color: var(--c-studio-text-weak);
 }
 
 .lf-error {
     padding: 0.5rem;
-    font-size: 0.8125rem;
-    color: #ba0517;
-    background: #fef1f1;
-    border-radius: 0.25rem;
+    font-size: var(--c-studio-fs-body);
+    color: var(--c-studio-error-text);
+    background: var(--c-studio-error-surface);
+    border-radius: var(--c-studio-radius-sm);
 }
 
 .lf-inline {

@@ -589,12 +589,17 @@
             <c-final-studio-dialog
                 size="large"
                 label="Autofill rule"
+                description="Fill answers in before someone starts, from a Salesforce record. They can still change them."
                 confirm-label="Apply"
                 discard-text="Your changes to this rule haven’t been applied to the form yet."
                 dirty={autofillDirty}
                 onconfirm={handleAutofillApply}
                 ondismiss={handleAutofillDismiss}
             >
+                <c-final-how-it-works
+                    slot="heading-end"
+                    topic="autofill"
+                ></c-final-how-it-works>
                 <c-final-autofill-rule-editor
                     slot="body"
                     rule={autofillDraft}
@@ -604,7 +609,13 @@
                     is-public={isPublic}
                     has-other-link-rule={autofillHasOtherLinkRule}
                     onrulechange={handleAutofillDraft}
+                    onstatuschange={handleAutofillStatus}
                 ></c-final-autofill-rule-editor>
+                <template lwc:if={autofillStatus}>
+                    <span slot="footer-start" class={autofillStatusClass}
+                        >{autofillStatus}</span
+                    >
+                </template>
             </c-final-studio-dialog>
         </template>
 
@@ -612,12 +623,17 @@
             <c-final-studio-dialog
                 size="full"
                 label="Mapping"
+                description="Send this form's answers into Salesforce records. Each record is made or found in order, every time someone submits."
                 confirm-label="Done"
                 discard-text="Your mapping changes haven’t been applied to the form yet."
                 dirty={mappingDirty}
                 onconfirm={handleMappingDone}
                 ondismiss={handleMappingDismiss}
             >
+                <c-final-how-it-works
+                    slot="heading-end"
+                    topic="mapping"
+                ></c-final-how-it-works>
                 <c-final-mapping-editor
                     slot="body"
                     spec={mappingDraft}
@@ -625,7 +641,13 @@
                     is-public={isPublic}
                     focus-action={mappingFocus}
                     onspecchange={handleMappingDraft}
+                    onstatuschange={handleMappingStatus}
                 ></c-final-mapping-editor>
+                <template lwc:if={mappingStatus}>
+                    <span slot="footer-start" class={mappingStatusClass}
+                        >{mappingStatus}</span
+                    >
+                </template>
             </c-final-studio-dialog>
         </template>
 

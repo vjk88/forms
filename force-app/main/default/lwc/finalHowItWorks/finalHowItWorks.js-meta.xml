@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description
+    >How it works (DESIGN_SYSTEM 5.26): an info icon by a dialog's title that shows three small steps on hover, focus or click.</description>
+</LightningComponentBundle>

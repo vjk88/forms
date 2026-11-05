@@ -37,15 +37,13 @@
                  here, and every change saves, like the rest of the step. -->
             <div class="lf-inline">
                 <template lwc:if={allowTyped}>
-                    <lightning-radio-group
+                    <c-final-button-group
                         class="lf-mode"
                         label="Write the conditions as"
-                        variant="label-hidden"
-                        type="button"
                         options={modeOptions}
                         value={modeValue}
                         onchange={handleMode}
-                    ></lightning-radio-group>
+                    ></c-final-button-group>
                 </template>
                 <template lwc:if={loading}>
                     <p class="lf-hint lf-loading" role="status">

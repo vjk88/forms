@@ -1,0 +1,17 @@
+<template>
+    <template lwc:if={hasIcon}>
+        <lightning-icon
+            icon-name={iconName}
+            size={iconSize}
+            alternative-text={label}
+        ></lightning-icon>
+    </template>
+    <template lwc:else>
+        <span class={letterClass} style={letterStyle} aria-hidden="true"
+            >{letter}</span
+        >
+        <template lwc:if={label}>
+            <span class="slds-assistive-text">{label}</span>
+        </template>
+    </template>
+</template>

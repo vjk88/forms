@@ -64,6 +64,9 @@
     --c-studio-radius-pill: 999px;
     --c-studio-shadow-2: 0 10px 24px rgb(15 23 42 / 12%);
     --c-studio-shadow-3: 0 20px 48px rgb(0 0 0 / 28%);
+    /* Selected (DESIGN_SYSTEM §2): a ring around cards, a leading bar on rows. */
+    --c-studio-selected-ring: 0 0 0 1px var(--c-studio-accent);
+    --c-studio-selected-bar: inset 3px 0 0 var(--c-studio-accent);
     --c-studio-z-raised: 2;
     --c-studio-z-dropdown: 20;
     --c-studio-z-menu: 30;
@@ -74,21 +77,6 @@
     --c-studio-z-popover: 9500;
     --c-studio-duration: 150ms;
     --c-studio-ease: ease;
-    /* Structure panel (the blueprint): light authoring surfaces with a darker
-       teal selection and focus color (2026-09-29; it was dark). Only the
-       structure panel reads these; respondent theme tokens are untouched. */
-    --c-studio-canvas: #f1f5f9;
-    --c-studio-canvas-surface: #f8fafc;
-    --c-studio-canvas-card: #ffffff;
-    --c-studio-canvas-text: #1f2937;
-    --c-studio-canvas-text-weak: #526071;
-    --c-studio-canvas-border: #7c8999;
-    --c-studio-canvas-divider: #dce2e9;
-    --c-studio-canvas-accent: #0f766e;
-    --c-studio-canvas-accent-text: #115e59;
-    --c-studio-canvas-error: #b42318;
-    --c-studio-canvas-drop: rgb(15 118 110 / 8%);
-    --c-studio-canvas-drop-gap: rgb(15 118 110 / 35%);
 }
 
 /* Scoped to native authoring controls in each importing component's template.
@@ -129,4 +117,68 @@ lightning-button {
     --slds-c-button-text-color-hover: var(--c-studio-accent-hover);
     --slds-c-button-shadow-focus:
         0 0 0 2px var(--c-studio-surface), 0 0 0 4px var(--c-studio-focus);
+}
+
+/* DESIGN_SYSTEM 5.1-5.8: Salesforce controls in Studio templates get the
+   Studio corner, edges, focus and teal "on" state through their own styling
+   hooks. Element selectors keep it inside each importing component's template,
+   so the form preview (a respondent component tree) is never touched. */
+lightning-button,
+lightning-button-icon,
+lightning-button-menu {
+    --slds-c-button-radius-border: var(--c-studio-radius-md);
+    /* The LEX tab runs the newer Salesforce design system, which reads this
+       global colour instead of the --slds-c-* hooks (measured 2026-11-02). */
+    --slds-g-color-accent-container-1: var(--c-studio-accent);
+}
+
+/* Icon buttons are a quiet grey icon (DESIGN_SYSTEM 5.2), never Salesforce
+   blue. VF reads the component hook; the LEX tab's newer SLDS colors them
+   with the shared button hook. */
+lightning-button-icon {
+    --slds-c-icon-color-foreground-default: var(--c-studio-text-weak);
+    --slds-s-button-color: var(--c-studio-text-weak);
+}
+
+lightning-input,
+lightning-combobox,
+lightning-textarea,
+lightning-radio-group,
+lightning-checkbox-group {
+    --slds-c-input-radius-border: var(--c-studio-radius-md);
+    --slds-c-input-color-border: var(--c-studio-border-strong);
+    --slds-c-input-color-border-focus: var(--c-studio-focus);
+    --slds-c-input-shadow-focus: 0 0 0 1px var(--c-studio-focus);
+    --slds-c-textarea-radius-border: var(--c-studio-radius-md);
+    --slds-c-textarea-color-border: var(--c-studio-border-strong);
+    --slds-c-textarea-color-border-focus: var(--c-studio-focus);
+    --slds-c-textarea-shadow-focus: 0 0 0 1px var(--c-studio-focus);
+    --slds-c-checkbox-color-background-checked: var(--c-studio-accent);
+    --slds-c-checkbox-color-border-checked: var(--c-studio-accent);
+    --slds-c-checkbox-mark-color-foreground: var(--c-studio-on-accent);
+    --slds-c-checkbox-toggle-color-background-checked: var(--c-studio-accent);
+    --slds-c-checkbox-toggle-color-border-checked: var(--c-studio-accent);
+    --slds-c-radio-color-background-checked: var(--c-studio-accent);
+    --slds-c-radio-color-border-checked: var(--c-studio-accent);
+    --slds-c-checkbox-toggle-color-background-checked-focus: var(
+        --c-studio-accent-hover
+    );
+    --slds-c-checkbox-toggle-color-border-checked-focus: var(
+        --c-studio-accent-hover
+    );
+    /* LEX (newer design system): the checked switch and checkbox read this. */
+    --slds-g-color-accent-container-1: var(--c-studio-accent);
+}
+
+/* DESIGN_SYSTEM §4.4: motion turns off for people who ask their system for
+   less of it. Scoped like the rules above, to this component's own template. */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }

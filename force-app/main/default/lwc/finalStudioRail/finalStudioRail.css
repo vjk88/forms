@@ -1,7 +1,8 @@
 @import 'c/finalStudioStyles';
 
-/* Vertical icon rail (owner 2026-07-08, shared 2026-10-31): icons + tiny
-   labels stacked on the left edge, the same in Build and Design. */
+/* Vertical icon rail (owner 2026-07-08, shared 2026-10-31): icons + labels
+   stacked on the left edge, the same in Build and Design. DESIGN_SYSTEM 5.9:
+   72px wide, 12px labels, selected = accent surface + 3px leading bar. */
 :host {
     display: flex;
     flex: none;
@@ -10,15 +11,16 @@
 .rail {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    padding: 10px 6px;
+    gap: var(--c-studio-space-2);
+    padding: var(--c-studio-space-3) var(--c-studio-space-2);
     border-right: 1px solid var(--c-studio-border);
+    background: var(--c-studio-surface-subtle);
 }
 
 .rail-item {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--c-studio-space-2);
 }
 
 .rail-tab {
@@ -26,22 +28,25 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 3px;
-    width: 58px;
+    gap: var(--c-studio-space-2);
+    width: 64px;
     border: 0;
-    border-radius: 8px;
+    border-radius: var(--c-studio-radius-md);
     background: none;
     font: inherit;
-    font-size: 9.5px;
-    font-weight: 600;
+    font-size: var(--c-studio-fs-small);
+    font-weight: var(--c-studio-fw-strong);
+    line-height: var(--c-studio-lh-tight);
     color: var(--c-studio-text-weak);
-    padding: 8px 2px;
+    padding: var(--c-studio-space-3) var(--c-studio-space-1);
+    overflow-wrap: anywhere;
     cursor: pointer;
 }
 
 .rail-tab.on {
     color: var(--c-studio-accent-text);
     background: var(--c-studio-accent-surface);
+    box-shadow: var(--c-studio-selected-bar);
 }
 
 .rail-tab.on lightning-icon {
@@ -50,6 +55,7 @@
 
 .rail-tab:hover:not(.on) {
     background: var(--c-studio-hover);
+    color: var(--c-studio-text);
 }
 
 .rail-tab:focus-visible {
@@ -59,16 +65,16 @@
 
 .rail-dot {
     position: absolute;
-    top: 6px;
-    right: 12px;
+    top: var(--c-studio-space-2);
+    right: var(--c-studio-space-4);
     width: 6px;
     height: 6px;
-    border-radius: 50%;
+    border-radius: var(--c-studio-radius-pill);
     background: var(--c-studio-accent);
 }
 
 .rail-divider {
     height: 1px;
-    margin: 0 6px;
+    margin: 0 var(--c-studio-space-2);
     background: var(--c-studio-border);
 }
