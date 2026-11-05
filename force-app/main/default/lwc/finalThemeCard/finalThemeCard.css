@@ -420,3 +420,24 @@
     border-radius: 4px;
     border: 1px solid rgba(0, 0, 0, 0.1);
 }
+
+/* A picture, not a control: no pointer, no lift. */
+.tc[role='img'] {
+    cursor: default;
+}
+
+.tc[role='img']:hover {
+    transform: none;
+    border-color: var(--c-studio-border);
+    box-shadow: none;
+}
+
+/* compact: a short picture, no text under it */
+.tc--compact .tc-preview {
+    height: 104px;
+    overflow: hidden;
+}
+
+.tc--compact .tc-meta {
+    display: none;
+}

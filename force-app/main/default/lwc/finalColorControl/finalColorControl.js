@@ -17,7 +17,8 @@ const PRESET_MIN = 3;
  *   own Opacity slider, composed to rgba by the engine).
  * - Dumb leaf: the parent owns cascade/edited tracking and echoes `value`; this
  *   control only reports `change` and never stores design state.
- * - Badge semantics (FORM_STUDIO_IA §7): ≥4.5 AA pass · ≥3 large-text-only · <3 fail.
+ * - Badge semantics (FORM_STUDIO_IA §7): ≥4.5 AA pass · ≥3 large-text-only · <3 fail,
+ *   said in plain words ("Button labels: easy to read"); the ratio is on hover.
  */
 export default class FinalColorControl extends LightningElement {
     @api
@@ -27,6 +28,9 @@ export default class FinalColorControl extends LightningElement {
 
     /** Row label, e.g. "Accent". */
     @api label;
+    /** Keep the label for screen readers only (a titled section above
+     *  already names the color, e.g. Simple's "Accent color"). */
+    @api labelHidden = false;
     /** Optional reference color; when set, the WCAG badge renders for the pair. */
     @api contrastWith;
     /** What the pair colors, for the badge hint. Default "Text". */
@@ -64,6 +68,14 @@ export default class FinalColorControl extends LightningElement {
         this.dispatchEvent(
             new CustomEvent('change', { detail: { value: this._value } })
         );
+    }
+
+    get labelClass() {
+        return this.labelHidden ? 'label sr-only' : 'label';
+    }
+
+    get headClass() {
+        return this.labelHidden && !this.edited ? 'head sr-only' : 'head';
     }
 
     get pickerAria() {
@@ -234,22 +246,31 @@ export default class FinalColorControl extends LightningElement {
         if (r === null) {
             return null;
         }
+        // plain words on the badge, the numbers on hover (owner 2026-11-04)
         const txt = `${r.toFixed(1)}:1`;
         const what = this.subject || 'Text';
+        const title = `Contrast ${txt}. Easy to read needs 4.5:1 (WCAG AA).`;
         if (r >= 4.5) {
-            return { cls: 'badge pass', label: `${txt} · AA ✓`, hint: '' };
+            return {
+                cls: 'badge pass',
+                label: `✓ ${what}: easy to read`,
+                hint: '',
+                title
+            };
         }
         if (r >= 3) {
             return {
                 cls: 'badge large',
-                label: `${txt} · large text only`,
-                hint: `${what} needs 4.5:1. Darken the color.`
+                label: `${what}: hard to read when small`,
+                hint: 'Darken the color.',
+                title
             };
         }
         return {
             cls: 'badge fail',
-            label: `${txt} · fails AA ✗`,
-            hint: 'Unreadable. Pick a darker color.'
+            label: `${what}: hard to read`,
+            hint: 'Pick a darker color.',
+            title
         };
     }
 
@@ -263,6 +284,10 @@ export default class FinalColorControl extends LightningElement {
 
     get badgeHint() {
         return this.verdict ? this.verdict.hint : '';
+    }
+
+    get badgeTitle() {
+        return this.verdict ? this.verdict.title : null;
     }
 }
 

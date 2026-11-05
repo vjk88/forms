@@ -127,6 +127,7 @@ describe('focus stays visible in Windows High Contrast', () => {
         'finalGalleryPicker',
         'finalGradientControl',
         'finalLayoutCard',
+        'finalMappingEditor',
         'finalMappingSoql',
         'finalPictureChoice',
         'finalPreviewStage',

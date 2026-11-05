@@ -778,7 +778,9 @@ export function contrastRatio(hexA, hexB) {
 
 const GROUP_KEYS = ['palette', 'effects', 'fieldStates', 'pageImage'];
 
-function mergeProps(...layers) {
+/** Theme layers merged in order (later wins), one level into the grouped
+ *  keys. Exported for previews that draw a form's theme with its overrides. */
+export function mergeProps(...layers) {
     const out = { palette: {}, effects: {}, fieldStates: {}, pageImage: {} };
     for (const layer of layers) {
         if (!layer || typeof layer !== 'object') {
@@ -1060,7 +1062,7 @@ function computeReadableText({
         if (first.ok) {
             return { result: first, plate: null };
         }
-        const solve = (colors) => {
+        const solveHeader = (colors) => {
             const plate = backingFor({
                 colors,
                 ownAlpha: 0.01,
@@ -1073,12 +1075,12 @@ function computeReadableText({
         // where the title keeps its own ink: on a dark photo pane with white
         // type a white wash would flip the title to black, so those keep the
         // header's colour first, exactly as before.
-        const card = cardHex ? solve([cardHex]) : null;
-        if (card && card.result.wordsSteps === 0) {
-            return card;
+        const cardFirst = cardHex ? solveHeader([cardHex]) : null;
+        if (cardFirst && cardFirst.result.wordsSteps === 0) {
+            return cardFirst;
         }
         return (
-            solve([headerHex, cardHex, pageHex].filter(Boolean)) || {
+            solveHeader([headerHex, cardHex, pageHex].filter(Boolean)) || {
                 result: first,
                 plate: null
             }

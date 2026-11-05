@@ -231,8 +231,8 @@ describe('Colors tab presets', () => {
 describe('a form on a hidden theme', () => {
     it('names its theme with "no longer in the gallery"', () => {
         const el = mount('mintStepper');
-        expect(
-            el.shadowRoot.querySelectorAll('.entry-name')[0].textContent
-        ).toBe('Neo-Mint Stepper · no longer in the gallery');
+        expect(el.shadowRoot.querySelector('c-final-theme-card').label).toBe(
+            'Neo-Mint Stepper · no longer in the gallery'
+        );
     });
 });

@@ -15,6 +15,8 @@ const AUTOFILL_ARTS = ['link', 'lookup', 'user', 'keep', 'replace'];
  *          or, on a wide tile, what a record step does: 'create' | 'find' |
  *          'reuse' | 'update'; or an Autofill rule's 'link' | 'lookup' |
  *          'user' | 'keep' | 'replace'
+ *   drawing - instead of `art`, a drawing from data (c/finalDesignArt):
+ *          { viewBox, shapes: [{ key, t: 'rect'|'circle'|'path', c, ... }] }
  *   disabled - this one option can't be picked (it says why elsewhere)
  *   wide - a tile with a description, above the grid; wide tiles sit side
  *          by side when there's room
@@ -23,6 +25,28 @@ const AUTOFILL_ARTS = ['link', 'lookup', 'user', 'keep', 'replace'];
  * tile). After the parent re-renders with the new value, the chosen tile gets
  * focus back.
  */
+/** One shape of a data drawing, ready for the template. */
+function shapeVM(s, i) {
+    return {
+        key: s.key || `s${i}`,
+        isRect: s.t === 'rect',
+        isCircle: s.t === 'circle',
+        isPath: s.t === 'path',
+        cls: `pc-shape ${s.c || 'pa-ink'}`,
+        x: s.x,
+        y: s.y,
+        width: s.width,
+        height: s.height,
+        rx: s.rx,
+        cx: s.cx,
+        cy: s.cy,
+        r: s.r,
+        d: s.d,
+        // a real color (a mesh blob); only ever a hex from our own data
+        style: s.fill ? `fill: ${s.fill};` : null
+    };
+}
+
 export default class FinalPictureChoice extends LightningElement {
     /** Read by screen readers as the group's name. */
     @api label;
@@ -30,16 +54,27 @@ export default class FinalPictureChoice extends LightningElement {
     @api value;
     /** Read-only: the tiles show the choice but can't change it. */
     @api disabled = false;
+    /** Grid tiles per row: 2 (default), 3 or 4. */
+    @api columns;
 
     _focusIndex = null;
+
+    get gridClass() {
+        const n = Number(this.columns);
+        return n === 3 || n === 4 ? `pc-grid pc-grid--${n}` : 'pc-grid';
+    }
 
     get _all() {
         return (this.options || []).map((o, index) => {
             const on = o.value === this.value;
             const record = RECORD_ARTS.includes(o.art) ? o.art : '';
             const fill = AUTOFILL_ARTS.includes(o.art) ? o.art : '';
-            const art =
-                ARTS.includes(o.art) || record || fill ? o.art : 'select';
+            const drawing = o.drawing && Array.isArray(o.drawing.shapes);
+            const art = drawing
+                ? 'drawing'
+                : ARTS.includes(o.art) || record || fill
+                  ? o.art
+                  : 'select';
             return {
                 key: `${index}-${String(o.value)}`,
                 index,
@@ -66,6 +101,9 @@ export default class FinalPictureChoice extends LightningElement {
                 isUser: fill === 'user',
                 isKeep: fill === 'keep',
                 isReplace: fill === 'replace',
+                isDrawing: Boolean(drawing),
+                viewBox: drawing ? o.drawing.viewBox : null,
+                shapes: drawing ? o.drawing.shapes.map(shapeVM) : [],
                 optionDisabled: Boolean(o.disabled) || this.disabled
             };
         });

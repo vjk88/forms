@@ -1,8 +1,8 @@
 <template>
     <div
         class={rootClass}
-        role="button"
-        tabindex="0"
+        role={rootRole}
+        tabindex={rootTabindex}
         aria-pressed={pressed}
         aria-label={meta.label}
         onclick={handleClick}
@@ -144,7 +144,7 @@
                 ></lightning-icon>
                 <span class="lc-name">{meta.label}</span>
                 <lightning-icon
-                    lwc:if={selected}
+                    lwc:if={showCheck}
                     icon-name="utility:check"
                     size="xx-small"
                     class="lc-check"

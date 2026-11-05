@@ -71,7 +71,8 @@ describe('c-final-color-control', () => {
         });
         const badge = el.shadowRoot.querySelector('.badge');
         expect(badge.className).toContain('pass');
-        expect(badge.textContent).toContain('AA ✓');
+        expect(badge.textContent).toBe('✓ Text: easy to read');
+        expect(badge.title).toContain('4.5:1');
         expect(el.shadowRoot.querySelector('.hint')).toBeNull();
     });
 
@@ -84,9 +85,11 @@ describe('c-final-color-control', () => {
         });
         const badge = el.shadowRoot.querySelector('.badge');
         expect(badge.className).toContain('large');
-        expect(badge.textContent).toContain('large text only');
-        expect(el.shadowRoot.querySelector('.hint').textContent).toContain(
-            'Button labels needs 4.5:1'
+        expect(badge.textContent).toBe(
+            'Button labels: hard to read when small'
+        );
+        expect(el.shadowRoot.querySelector('.hint').textContent).toBe(
+            'Darken the color.'
         );
     });
 
@@ -98,7 +101,7 @@ describe('c-final-color-control', () => {
         });
         const badge = el.shadowRoot.querySelector('.badge');
         expect(badge.className).toContain('fail');
-        expect(badge.textContent).toContain('fails AA');
+        expect(badge.textContent).toBe('Text: hard to read');
     });
 
     it('badge reacts to picker input (live verdict, parent echo not required)', async () => {
