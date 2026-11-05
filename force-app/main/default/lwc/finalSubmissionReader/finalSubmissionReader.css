@@ -21,6 +21,19 @@
     font-style: italic;
     color: var(--c-studio-text-weak);
 }
+.sr-copy {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--c-studio-space-3);
+    margin-top: var(--c-studio-space-3);
+    font-size: var(--c-studio-fs-body);
+    color: var(--c-studio-text);
+}
+.sr-copy-text {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
 .sr-section {
     padding: 0.75rem 1rem 0.25rem;
 }

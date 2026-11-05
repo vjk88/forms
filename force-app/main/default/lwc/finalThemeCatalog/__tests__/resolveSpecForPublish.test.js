@@ -1,4 +1,8 @@
-import { resolveSpecForPublish, getBuiltinTheme } from 'c/finalThemeCatalog';
+import {
+    listBuiltinThemes,
+    resolveSpecForPublish,
+    getBuiltinTheme
+} from 'c/finalThemeCatalog';
 import { resolveTokens, ENGINE_VERSION } from 'c/finalThemeEngine';
 
 const draft = (theme) => ({
@@ -115,5 +119,30 @@ describe('resolveSpecForPublish: font manifest (fonts A1)', () => {
             { source: 'bundled', key: 'bebasNeue' },
             { source: 'bundled', key: 'inter' }
         ]);
+    });
+
+    it('freezes plain hex PDF colors for the server-built copy (IMPL_PLAN_FORM_PDF §6.4)', () => {
+        const out = resolveSpecForPublish({
+            specVersion: 1,
+            theme: {
+                source: 'builtin',
+                name: listBuiltinThemes()[0].key || listBuiltinThemes()[0]
+            },
+            pages: []
+        });
+        const hex = /^#[0-9a-f]{6}$/;
+        for (const key of [
+            'text',
+            'textWeak',
+            'accent',
+            'accentFill',
+            'headerBg',
+            'headerText',
+            'border',
+            'hairline'
+        ]) {
+            expect(out.resolved.print[key]).toMatch(hex);
+        }
+        expect(typeof out.resolved.print.headerIsPaper).toBe('boolean');
     });
 });

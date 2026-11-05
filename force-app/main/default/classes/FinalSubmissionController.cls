@@ -32,7 +32,10 @@ public with sharing class FinalSubmissionController {
                 Form__r.Name,
                 Form_Version__c,
                 Form_Version__r.Version_Number__c,
-                Form_Version__r.Spec_JSON__c
+                Form_Version__r.Spec_JSON__c,
+                Copy_Status__c,
+                Copy_Message__c,
+                Copy_File_Id__c
             FROM Form_Submission__c
             WHERE Id = :submissionId
             WITH USER_MODE
@@ -96,12 +99,76 @@ public with sharing class FinalSubmissionController {
                 ? null
                 : sub.Form_Version__r.Spec_JSON__c,
             'answers' => answers,
-            'files' => fileLinks(submissionId)
+            'files' => fileLinks(submissionId, sub.Copy_File_Id__c),
+            'copy' => copyInfo(sub)
         };
     }
 
-    /** Files attached to the submission itself, newest first. */
-    private static List<Map<String, Object>> fileLinks(Id submissionId) {
+    /**
+     * The saved PDF copy (IMPL_PLAN_FORM_PDF §6.4): its status and, once
+     * saved, the file to open. Null when the form doesn't save copies.
+     */
+    private static Map<String, Object> copyInfo(Form_Submission__c sub) {
+        if (
+            String.isBlank(sub.Copy_Status__c) ||
+            sub.Copy_Status__c == FinalSubmissionCopy.STATUS_NOT_NEEDED
+        ) {
+            return null;
+        }
+        Id documentId = null;
+        if (String.isNotBlank(sub.Copy_File_Id__c)) {
+            for (ContentVersion cv : [
+                SELECT ContentDocumentId
+                FROM ContentVersion
+                WHERE Id = :sub.Copy_File_Id__c
+                WITH USER_MODE
+                LIMIT 1
+            ]) {
+                documentId = cv.ContentDocumentId;
+            }
+        }
+        return new Map<String, Object>{
+            'status' => sub.Copy_Status__c,
+            'message' => sub.Copy_Message__c,
+            'documentId' => documentId
+        };
+    }
+
+    /**
+     * Makes the submission's PDF copy now, as the person asking: for a copy
+     * that failed, or one that was never made. They must be able to read the
+     * submission (USER_MODE); the copy itself is built from what they can
+     * already see on the Answers card.
+     * @return the refreshed copy info
+     */
+    @AuraEnabled
+    public static Map<String, Object> saveCopy(Id submissionId) {
+        List<Form_Submission__c> found = [
+            SELECT Id
+            FROM Form_Submission__c
+            WHERE Id = :submissionId
+            WITH USER_MODE
+            LIMIT 1
+        ];
+        if (found.isEmpty()) {
+            throw new AuraHandledException('That submission is not available.');
+        }
+        FinalSubmissionCopy.save(submissionId, true);
+        Form_Submission__c sub = [
+            SELECT Copy_Status__c, Copy_Message__c, Copy_File_Id__c
+            FROM Form_Submission__c
+            WHERE Id = :submissionId
+            WITH SYSTEM_MODE
+        ];
+        return copyInfo(sub);
+    }
+
+    /** Files attached to the submission itself, newest first — never the
+     *  saved PDF copy, which has its own place on the card. */
+    private static List<Map<String, Object>> fileLinks(
+        Id submissionId,
+        String copyVersionId
+    ) {
         List<Map<String, Object>> out = new List<Map<String, Object>>();
         Set<Id> docIds = new Set<Id>();
         for (ContentDocumentLink link : [
@@ -121,6 +188,9 @@ public with sharing class FinalSubmissionController {
             WITH USER_MODE
             ORDER BY CreatedDate DESC
         ]) {
+            if (isSavedCopy(cv, copyVersionId)) {
+                continue;
+            }
             out.add(
                 new Map<String, Object>{
                     'id' => cv.Id,
@@ -132,5 +202,17 @@ public with sharing class FinalSubmissionController {
             );
         }
         return out;
+    }
+
+    /** The current saved copy, or an earlier one replaced by Try again. */
+    private static Boolean isSavedCopy(
+        ContentVersion cv,
+        String copyVersionId
+    ) {
+        return (copyVersionId != null &&
+            String.valueOf(cv.Id) == copyVersionId) ||
+            (cv.FileExtension == 'pdf' &&
+            cv.Title != null &&
+            cv.Title.endsWith(' (saved copy)'));
     }
 }

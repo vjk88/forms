@@ -42,6 +42,44 @@
                     Shown as this form asked it at the time — later edits to the
                     form do not change what is here.
                 </p>
+                <template lwc:if={hasCopy}>
+                    <div class="sr-copy" role="status">
+                        <template lwc:if={copySaved}>
+                            <lightning-icon
+                                icon-name="doctype:pdf"
+                                size="x-small"
+                                alternative-text=""
+                            ></lightning-icon>
+                            <span class="sr-copy-text"
+                                >PDF copy saved on this record</span
+                            >
+                            <lightning-button
+                                variant="base"
+                                label="Open saved copy"
+                                onclick={handleOpenCopy}
+                            ></lightning-button>
+                        </template>
+                        <template lwc:elseif={copyQueued}>
+                            <span class="sr-copy-text">Saving a PDF copy…</span>
+                            <lightning-button
+                                variant="base"
+                                label="Refresh"
+                                onclick={handleCopyRefresh}
+                            ></lightning-button>
+                        </template>
+                        <template lwc:elseif={copyFailed}>
+                            <span class="sr-copy-text sr-error"
+                                >{copyMessage}</span
+                            >
+                            <lightning-button
+                                variant="neutral"
+                                label={copyRetryLabel}
+                                disabled={copyBusy}
+                                onclick={handleSaveCopy}
+                            ></lightning-button>
+                        </template>
+                    </div>
+                </template>
             </div>
 
             <template for:each={sections} for:item="section">

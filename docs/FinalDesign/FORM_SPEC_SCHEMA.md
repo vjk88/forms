@@ -72,6 +72,10 @@ Version records are never edited in place. "Fix the live form" = edit records �
       "expiryDays": 30,
       "delivery": "link" // "email" | "link"
     },
+    "documents": {
+      // PDF copies built on the server (IMPL_PLAN_FORM_PDF §6.4). Freeform only for now.
+      "saveCopy": false // true = each new submission gets a PDF copy in its Files
+    },
     "completion": {
       // After Submit (owner FormBuilder port, screenshots 2026-07-09;
       // rendered by c/finalAfterSubmit — display in P2, EXECUTION in P3)
@@ -89,6 +93,7 @@ Version records are never edited in place. "Fix the live form" = edit records �
       "downloadCopy": false, // screen only — "Download a copy (PDF)" on the thank-you screen
       // (IMPL_PLAN_FORM_PDF §6.1); also unlocks FinalGuestController.getGuestPdfImages
       "downloadLabel": null, // button text; null = "Download a copy (PDF)"
+      // (downloadCopy and autoRedirect are exclusive; IMPL_PLAN_FORM_PDF §6.1)
       "showSummary": false, // v2 (deferred — response summary on the screen)
       "allowAnother": false // v2 (deferred — "submit another response")
     }
@@ -138,7 +143,10 @@ Version records are never edited in place. "Fix the live form" = edit records �
       "--c-radius": "14px" /* … full contract */
     },
     "engineVersion": 1, // themeEngine version that produced it
-    "resolvedAt": "2026-07-03T10:00:00Z"
+    "resolvedAt": "2026-07-03T10:00:00Z",
+    // plain hex colors for the server-built PDF copy (c/finalPdfTheme printColors;
+    // IMPL_PLAN_FORM_PDF §6.4). Older versions lack it: the copy uses neutral colors.
+    "print": { "text": "#1f2937", "accent": "#0f766e", "headerBg": "#ffffff", "headerIsPaper": true /* … */ }
   },
 
   "header": {

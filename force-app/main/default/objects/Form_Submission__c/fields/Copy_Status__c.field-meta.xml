@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Copy_Status__c</fullName>
+    <description
+    >Where this submission's saved PDF copy stands (IMPL_PLAN_FORM_PDF §6.4). Set by the trigger on insert (Queued when the form saves copies, otherwise Not needed) and by the copy job or a person's Try again afterwards.</description>
+    <inlineHelpText
+    >Saved: the PDF is in this record's Files. Failed: the reason is below; use Try again on the Answers card.</inlineHelpText>
+    <label>PDF Copy Status</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Not needed</fullName>
+                <default>false</default>
+                <label>Not needed</label>
+            </value>
+            <value>
+                <fullName>Queued</fullName>
+                <default>false</default>
+                <label>Queued</label>
+            </value>
+            <value>
+                <fullName>Saved</fullName>
+                <default>false</default>
+                <label>Saved</label>
+            </value>
+            <value>
+                <fullName>Failed</fullName>
+                <default>false</default>
+                <label>Failed</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

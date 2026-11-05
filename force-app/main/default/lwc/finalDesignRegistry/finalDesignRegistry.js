@@ -1437,6 +1437,18 @@ const AREAS = [
                             { key: 'asDownloadCopy', equals: true }
                         ]
                     },
+                    // A PDF copy built on the server and kept in the
+                    // submission's Files (IMPL_PLAN_FORM_PDF §6.4). Freeform
+                    // only for now: its stored answers ARE the snapshot.
+                    {
+                        key: 'asSaveCopy',
+                        label: 'Save a PDF copy on each submission',
+                        type: 'toggle',
+                        path: 'settings.documents.saveCopy',
+                        fallback: false,
+                        hint: 'Staff find it in the submission’s Files and on its Answers card. Applies to responses received after you publish.',
+                        appliesTo: { formTypes: ['freeform'] }
+                    },
                     // Toast & go: same destination slots, its own gate — two
                     // registry rows over ONE path is the OR of the mode gates.
                     {
@@ -1701,10 +1713,13 @@ export const DESIGN_SECTIONS = [
                     'asActionButton',
                     'asButtonLabel',
                     'asButtonGoesTo',
-                    'asButtonUrl',
-                    'asDownloadCopy',
-                    'asDownloadLabel'
+                    'asButtonUrl'
                 ]
+            },
+            {
+                key: 'copies',
+                label: 'PDF copies',
+                controls: ['asDownloadCopy', 'asDownloadLabel', 'asSaveCopy']
             },
             {
                 key: 'redirect',

@@ -2,6 +2,8 @@ import { LightningElement, api, wire } from 'lwc';
 import { NavigationMixin } from 'lightning/navigation';
 import getSubmission from '@salesforce/apex/FinalSubmissionController.getSubmission';
 import getPdfImages from '@salesforce/apex/FinalPdfController.getImages';
+import saveCopy from '@salesforce/apex/FinalSubmissionController.saveCopy';
+import { refreshApex } from '@salesforce/apex';
 import {
     matrixAnswerWord,
     optionLabel,
@@ -40,8 +42,16 @@ export default class FinalSubmissionReader extends NavigationMixin(
     pdfBusy = false;
     pdfError;
 
+    _wiredResult;
+    copyBusy = false;
+    /** Set by Try again; wins over the cached submission until it refreshes. */
+    _copyOverride;
+
     @wire(getSubmission, { submissionId: '$recordId' })
-    wired({ data, error }) {
+    wired(result) {
+        this._wiredResult = result;
+        this._copyOverride = undefined;
+        const { data, error } = result;
         if (data) {
             this.data = data;
             this.error = undefined;
@@ -81,6 +91,71 @@ export default class FinalSubmissionReader extends NavigationMixin(
 
     get hasFiles() {
         return this.files.length > 0;
+    }
+
+    // ----- The saved PDF copy (IMPL_PLAN_FORM_PDF §6.4) -----
+
+    get _copy() {
+        return this._copyOverride || (this.data && this.data.copy) || null;
+    }
+
+    get hasCopy() {
+        return Boolean(this._copy);
+    }
+
+    get copySaved() {
+        return this._copy?.status === 'Saved' && Boolean(this._copy.documentId);
+    }
+
+    get copyQueued() {
+        return this._copy?.status === 'Queued';
+    }
+
+    get copyFailed() {
+        return this._copy?.status === 'Failed';
+    }
+
+    get copyMessage() {
+        return this._copy?.message || 'The PDF copy couldn’t be saved.';
+    }
+
+    get copyRetryLabel() {
+        return this.copyBusy ? 'Saving…' : 'Try again';
+    }
+
+    handleOpenCopy() {
+        this[NavigationMixin.Navigate]({
+            type: 'standard__namedPage',
+            attributes: { pageName: 'filePreview' },
+            state: { selectedRecordId: this._copy.documentId }
+        });
+    }
+
+    /** Queued is a background job: look again without a page reload. */
+    handleCopyRefresh() {
+        return refreshApex(this._wiredResult);
+    }
+
+    async handleSaveCopy() {
+        if (this.copyBusy) {
+            return;
+        }
+        this.copyBusy = true;
+        try {
+            this._copyOverride = await saveCopy({
+                submissionId: this.recordId
+            });
+            await refreshApex(this._wiredResult);
+        } catch (e) {
+            this._copyOverride = {
+                status: 'Failed',
+                message:
+                    (e && e.body && e.body.message) ||
+                    'The PDF copy couldn’t be saved.'
+            };
+        } finally {
+            this.copyBusy = false;
+        }
     }
 
     get pdfLabel() {

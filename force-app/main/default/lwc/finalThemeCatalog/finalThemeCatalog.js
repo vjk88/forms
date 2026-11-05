@@ -21,6 +21,7 @@ import {
     ENGINE_VERSION
 } from 'c/finalThemeEngine';
 import { neutralFocusTokens } from 'c/finalFocusTreatment';
+import { printColors } from 'c/finalPdfTheme';
 
 /**
  * Error message, required marker and invalid border on the DARK themes. The
@@ -1310,5 +1311,8 @@ export function resolveSpecForPublish(spec, customThemeProps) {
     if (fonts.length) {
         out.resolved.fonts = fonts;
     }
+    // Plain hex colors for the server-built PDF copy, which has no theme
+    // engine (IMPL_PLAN_FORM_PDF §6.4).
+    out.resolved.print = printColors(out.resolved.tokens);
     return out;
 }

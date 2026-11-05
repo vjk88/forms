@@ -185,6 +185,34 @@ permission sets.
 "Download form as PDF". It reads `getPdfSnapshot()` from the viewer on the stage, so the PDF uses the
 draft's live tokens. A failure shows as a line under the toolbar.
 
+### 6.4 Saved copy on the submission (built 2026-11-05)
+
+The industry-standard "PDF on the record", for **Freeform** forms first. Built by the server with
+`Blob.toPdf()` (§8.2), so it is a stored, authoritative copy rather than the browser's.
+
+- **Switch:** Design → After submit → PDF copies → "Save a PDF copy on each submission"
+  (`settings.documents.saveCopy`, Freeform only, default off). Applies to submissions received after
+  publishing.
+- **Snapshot:** a Freeform submission's answer rows and its pinned version are written once at submit
+  and never change, so they are the snapshot; no receipt object is needed for this slice. Survey and
+  classic forms wait for the receipt (they need a frozen copy of what was written).
+- **Flow:** `FinalFormSubmissionTrigger` → `FinalSubmissionCopyTrigger` (before insert: Queued / Not
+  needed; after insert: capacity check, then `FinalSubmissionCopyJob`) → `FinalSubmissionCopy.save`:
+  renders, files the PDF on the submission (`FirstPublishLocationId`), records `Copy_Status__c`
+  (Saved / Failed), `Copy_Message__c`, `Copy_File_Id__c`. A full queue never refuses a submission: the
+  copy is marked Failed with the reason.
+- **Wording:** `FinalAnswerWords` (Apex) mirrors `c/finalAnswerText` rule for rule; both test suites
+  pin the same cases. **Colors:** `resolved.print`, frozen at publish by `c/finalPdfTheme`
+  (`printColors`), so color logic lives in one place; earlier versions print with neutral colors.
+- **Safety:** every author and respondent string is HTML-escaped; colors are accepted only as
+  `#rrggbb`; respondent files are listed by name, never merged.
+- **Answers card:** "PDF copy saved on this record" + Open saved copy; "Saving a PDF copy…" + Refresh;
+  the failure + Try again (`FinalSubmissionController.saveCopy`, after a user-mode read check). The copy
+  is kept out of the respondent's attachment list.
+- **In the org (2026-11-05):** 15 new Apex tests pass; a real copy of FS-00001046 rendered 4 pages
+  with the shared wording. Not yet seen: a guest-run job (which user it runs as, and whether a guest
+  may create the File); if it fails, the copy shows Failed with Try again.
+
 ## 7. Slice 2 (not built): email a copy, from the receipt
 
 Blocked on the parent plan's M0 (`Form_Receipt__c` and its input snapshot). Rules that follow from it:

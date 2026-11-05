@@ -440,3 +440,29 @@ export function pdfTheme(tokens) {
         }
     };
 }
+
+function hex(c) {
+    const h = (n) => n.toString(16).padStart(2, '0');
+    return `#${h(c.r)}${h(c.g)}${h(c.b)}`;
+}
+
+/**
+ * The PDF colors as plain hex, frozen into a published version as
+ * `resolved.print` (IMPL_PLAN_FORM_PDF §6.4). The server-built copy reads
+ * these instead of re-deriving a theme in Apex: one color logic, here.
+ */
+export function printColors(tokens) {
+    const t = pdfTheme(tokens);
+    return {
+        text: hex(t.text),
+        textWeak: hex(t.textWeak),
+        accent: hex(t.accent),
+        accentFill: hex(t.accentFill),
+        headerBg: hex(t.headerBg),
+        headerText: hex(t.headerText),
+        headerTextWeak: hex(t.headerTextWeak),
+        border: hex(t.border),
+        hairline: hex(t.hairline),
+        headerIsPaper: t.headerIsPaper
+    };
+}
