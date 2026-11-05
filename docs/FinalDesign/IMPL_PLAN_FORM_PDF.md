@@ -30,7 +30,7 @@ fonts, with real bold; a thin accent bar on every later page; a footer with the 
 |---|---|
 | **Browser-built PDF file (pdf-lib)**, chosen | One click, a real file, works on every host (LWR site, LEX, VF Studio, iframe embed), uses the form's real fonts. A guest needs **no new data endpoint**: the spec and answers are already in their browser at submit. |
 | Browser print / Save as PDF | Pixel-exact, but goes through the print dialog (clumsy on phones), and keeping site and Lightning chrome out of the printout cannot be done reliably from inside a shadow-DOM component under LWS. |
-| Server PDF (Visualforce `renderAs` / `Blob.toPdf`) | Can attach and email, but the engine is CSS 2.1: no web fonts, no modern layout, approximate branding. Kept for **slice 2 only**, where the server must build the file itself (§7). |
+| Server PDF (`Blob.toPdf()`, no Visualforce page since Spring '26) | Can attach and email, and runs in a background job, but the engine is still CSS 2.1: no brand fonts, no flex, rounded corners or gradients (tested, §8.2). Used where the server must build the file itself (§7). |
 
 ## 3. Pieces
 
@@ -229,6 +229,30 @@ None of these can run outside an org. Record results in `qa/` with dates.
 - Browser checks (items 2–7): **not yet done.** A headless browser in the cloud session could not load
   Lightning itself (Lightning's own framework files returned 400 on both a record page and
   `/apex/FinalStudio`), so the PDF code was never reached. These need a person at a real browser.
+
+### 8.2 Server PDF without Visualforce: `Blob.toPdf()` tested in the org (2026-11-05)
+
+Spring '26 made Apex `Blob.toPdf(html)` use the Visualforce PDF rendering service (enforced from
+Summer '26), so a **server PDF no longer needs a Visualforce page**. Tested in RevCloudDev (Winter '27):
+
+| Works | Doesn't |
+|---|---|
+| Synchronous Apex **and a Queueable** (background job) | Custom / brand fonts via `@font-face` (falls back to Times) |
+| Images from static resources and from Salesforce Files (`/sfc/servlet.shepherd/version/download/<068…>`) | `data:` URI images (broken icon) |
+| Background colors, borders, `@page` margins, "Page n of m" via `counter(pages)`, page breaks | Flexbox (blocks stack), `border-radius`, gradients |
+| Cyrillic, Greek and CJK **when the CSS names `Arial Unicode MS`** | Any non-Latin text in the default font (blank); Arabic shapes poorly |
+
+The producer is iText 2.0.8: the same CSS 2.1 engine as `renderAs="pdf"`. So `Blob.toPdf()` changes
+the plumbing (Apex only, no page, works in a background job), not the look. Consequences:
+
+- Receipt-backed copies (stored on the record, emailed) render with `Blob.toPdf()` in a Queueable.
+  `PLAN_DOCUMENTS_AND_PAYMENTS` / `IMPL_PLAN_SUBMISSION_PDF` "Visualforce print page" should read
+  "`Blob.toPdf()` behind a renderer interface".
+- The server template mirrors this document's layout with CSS 2.1: tables instead of flex, square
+  corners, solid colors, `Arial Unicode MS` for all text (so every language prints), the logo by File
+  URL. Brand fonts stay a browser-copy feature.
+- Unresolved: which user a Queueable enqueued from a guest submit runs as, and the largest PDF it can
+  build within heap limits. Both belong to the receipt work (M0).
 
 ## 9. Later
 
