@@ -1,0 +1,1006 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Design pane mock</title>
+        <style>
+            /* Rough desktop mock. Studio tokens, as in the Mapping and Autofill mocks. */
+            :root {
+                --s: #fff;
+                --ss: #f8fafc;
+                --ws: #f1f5f9;
+                --hv: #eef2f6;
+                --t: #1f2937;
+                --tw: #526071;
+                --b: #dce2e9;
+                --bs: #e8edf2;
+                --bx: #7c8999;
+                --a: #0f766e;
+                --at: #115e59;
+                --as: #e8f5f2;
+                --ok: #21613f;
+                --oks: #eaf6ee;
+                --pin: #c2410c;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                padding: 24px;
+                background: #5d6673;
+                font:
+                    13px/1.45 -apple-system,
+                    'Segoe UI',
+                    system-ui,
+                    Roboto,
+                    Arial,
+                    sans-serif;
+                color: var(--t);
+            }
+            h1 {
+                margin: 0 0 16px;
+                color: #fff;
+                font-size: 16px;
+                font-weight: 600;
+            }
+            .row {
+                display: flex;
+                gap: 24px;
+                align-items: flex-start;
+            }
+            .frame {
+                background: #fff;
+                border-radius: 12px;
+                overflow: hidden;
+                box-shadow: 0 20px 48px rgb(0 0 0 / 28%);
+                display: flex;
+            }
+            .cap {
+                color: #e5e7eb;
+                font-size: 12px;
+                margin: 0 0 8px;
+            }
+            .rail {
+                width: 72px;
+                background: var(--ss);
+                border-right: 1px solid var(--b);
+                padding: 8px 6px;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .rail span {
+                display: grid;
+                place-items: center;
+                gap: 2px;
+                padding: 8px 0;
+                border-radius: 8px;
+                font-size: 12px;
+                color: var(--tw);
+            }
+            .rail span.on {
+                background: var(--as);
+                color: var(--at);
+                box-shadow: inset 3px 0 0 var(--a);
+                font-weight: 600;
+            }
+            .rail i {
+                width: 18px;
+                height: 18px;
+                border-radius: 4px;
+                background: currentColor;
+                opacity: 0.55;
+            }
+            .pane {
+                width: 360px;
+                position: relative;
+            }
+            .ph {
+                padding: 12px 16px;
+                border-bottom: 1px solid var(--b);
+                display: grid;
+                gap: 8px;
+                position: relative;
+            }
+            .seg {
+                display: flex;
+            }
+            .seg b {
+                flex: 1;
+                text-align: center;
+                height: 32px;
+                line-height: 30px;
+                border: 1px solid var(--bx);
+                font-weight: 600;
+            }
+            .seg b:first-child {
+                border-radius: 8px 0 0 8px;
+            }
+            .seg b:last-child {
+                border-radius: 0 8px 8px 0;
+                border-left: 0;
+            }
+            .seg b.on {
+                background: var(--a);
+                border-color: var(--a);
+                color: #fff;
+            }
+            .status {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 12px;
+                color: var(--tw);
+            }
+            .status a {
+                margin-left: auto;
+                color: var(--at);
+                font-weight: 600;
+                text-decoration: none;
+            }
+            .search {
+                height: 32px;
+                border: 1px solid var(--bx);
+                border-radius: 8px;
+                padding: 0 12px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--tw);
+            }
+            .body {
+                padding: 16px;
+                display: grid;
+                gap: 24px;
+            }
+            .gh {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin: 0 0 12px;
+                font-weight: 600;
+            }
+            .gh::after {
+                content: '';
+                flex: 1;
+                height: 1px;
+                background: var(--b);
+            }
+            .gh .q {
+                order: 2;
+                color: var(--at);
+                font-weight: 600;
+                font-size: 12px;
+            }
+            .cards {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+            }
+            .card {
+                border: 1px solid var(--b);
+                border-radius: 8px;
+                overflow: hidden;
+                background: #fff;
+            }
+            .card .art {
+                height: 92px;
+                background: var(--ws);
+                display: grid;
+                place-items: center;
+                border-bottom: 1px solid var(--bs);
+            }
+            .card .txt {
+                padding: 8px 10px;
+            }
+            .card .k {
+                font-size: 11px;
+                color: var(--tw);
+            }
+            .card b {
+                display: block;
+                font-weight: 600;
+            }
+            .card .acts {
+                display: flex;
+                gap: 12px;
+                margin-top: 6px;
+            }
+            .card .acts a {
+                color: var(--at);
+                font-weight: 600;
+                font-size: 12px;
+                text-decoration: none;
+            }
+            .sw {
+                display: grid;
+                grid-template-columns: repeat(8, 28px);
+                gap: 10px;
+            }
+            .sw span {
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                position: relative;
+            }
+            .sw span.on {
+                box-shadow:
+                    0 0 0 2px #fff,
+                    0 0 0 4px var(--a);
+            }
+            .custom {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-top: 12px;
+            }
+            .well {
+                width: 28px;
+                height: 28px;
+                border-radius: 8px;
+                border: 1px solid var(--bx);
+                background: #d97706;
+            }
+            .hex {
+                height: 32px;
+                border: 1px solid var(--bx);
+                border-radius: 8px;
+                padding: 0 10px;
+                display: flex;
+                align-items: center;
+                font:
+                    12px ui-monospace,
+                    Consolas,
+                    monospace;
+                width: 96px;
+            }
+            .read {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 2px 8px;
+                border-radius: 4px;
+                background: var(--oks);
+                color: var(--ok);
+                font-size: 11px;
+                font-weight: 600;
+            }
+            .tiles {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+            .tiles.two {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .tile {
+                position: relative;
+                border: 1px solid var(--bx);
+                border-radius: 8px;
+                padding: 10px 6px 8px;
+                text-align: center;
+                font-weight: 600;
+                display: grid;
+                gap: 6px;
+                justify-items: center;
+            }
+            .tile.on {
+                border: 2px solid var(--a);
+                padding: 9px 5px 7px;
+                background: var(--as);
+            }
+            .tile.on::after {
+                content: '\2713';
+                position: absolute;
+                top: 4px;
+                right: 6px;
+                width: 16px;
+                height: 16px;
+                border-radius: 50%;
+                background: var(--a);
+                color: #fff;
+                font-size: 10px;
+                line-height: 16px;
+            }
+            .lbl {
+                margin: 0 0 6px;
+            }
+            .set {
+                display: grid;
+                gap: 16px;
+            }
+            .note {
+                font-size: 12px;
+                color: var(--tw);
+            }
+            .pin {
+                position: absolute;
+                z-index: 3;
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                background: var(--pin);
+                color: #fff;
+                font-size: 11px;
+                font-weight: 700;
+                display: grid;
+                place-items: center;
+                box-shadow: 0 0 0 2px #fff;
+            }
+            .notes {
+                margin-top: 24px;
+                background: #fff;
+                border-radius: 12px;
+                padding: 20px 24px;
+                max-width: 1000px;
+            }
+            .notes h2 {
+                margin: 0 0 10px;
+                font-size: 15px;
+            }
+            .notes ol {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px 24px;
+            }
+            .notes li {
+                display: grid;
+                grid-template-columns: 20px 1fr;
+                gap: 10px;
+            }
+            .notes li .pin {
+                position: static;
+                box-shadow: none;
+            }
+            .notes li span.g {
+                color: var(--tw);
+            }
+            .notes .ask {
+                margin: 14px 0 0;
+                color: #73510d;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Design pane: rough mock (desktop only)</h1>
+        <div class="row">
+            <div>
+                <p class="cap">Simple</p>
+                <div class="frame">
+                    <div class="rail">
+                        <span class="on"><i></i>Theme</span
+                        ><span><i></i>Brand</span><span><i></i>Buttons</span>
+                    </div>
+                    <div class="pane">
+                        <div class="ph">
+                            <span class="pin" style="right: 8px; top: 52px"
+                                >A</span
+                            >
+                            <div class="seg">
+                                <b class="on">Simple</b><b>Advanced design</b>
+                            </div>
+                            <div class="status">
+                                <span
+                                    class="read"
+                                    style="
+                                        background: var(--ws);
+                                        color: var(--tw);
+                                    "
+                                    >1 change</span
+                                >1 setting differs from the theme<a href="#"
+                                    >Reset</a
+                                >
+                            </div>
+                            <div class="search">
+                                &#9906; Find a design setting
+                            </div>
+                        </div>
+                        <div class="body">
+                            <section style="position: relative">
+                                <span class="pin" style="left: -12px; top: -4px"
+                                    >B</span
+                                >
+                                <div class="gh">Theme and layout</div>
+                                <div class="cards">
+                                    <div class="card">
+                                        <div class="art">
+                                            <svg
+                                                width="120"
+                                                height="76"
+                                                viewBox="0 0 120 76"
+                                            >
+                                                <rect
+                                                    x="1"
+                                                    y="1"
+                                                    width="118"
+                                                    height="74"
+                                                    rx="4"
+                                                    fill="#fff"
+                                                    stroke="#dce2e9"
+                                                />
+                                                <rect
+                                                    x="6"
+                                                    y="6"
+                                                    width="108"
+                                                    height="22"
+                                                    rx="2"
+                                                    fill="#cbd2d9"
+                                                />
+                                                <circle
+                                                    cx="96"
+                                                    cy="14"
+                                                    r="6"
+                                                    fill="#e9dccb"
+                                                />
+                                                <rect
+                                                    x="10"
+                                                    y="12"
+                                                    width="30"
+                                                    height="3"
+                                                    rx="1.5"
+                                                    fill="#1f2937"
+                                                />
+                                                <rect
+                                                    x="10"
+                                                    y="18"
+                                                    width="44"
+                                                    height="4"
+                                                    rx="2"
+                                                    fill="#1f2937"
+                                                />
+                                                <rect
+                                                    x="10"
+                                                    y="34"
+                                                    width="46"
+                                                    height="3"
+                                                    rx="1.5"
+                                                    fill="#7c8999"
+                                                />
+                                                <rect
+                                                    x="10"
+                                                    y="40"
+                                                    width="46"
+                                                    height="7"
+                                                    rx="2"
+                                                    fill="#fff"
+                                                    stroke="#b5bfcb"
+                                                />
+                                                <rect
+                                                    x="62"
+                                                    y="34"
+                                                    width="46"
+                                                    height="3"
+                                                    rx="1.5"
+                                                    fill="#7c8999"
+                                                />
+                                                <rect
+                                                    x="62"
+                                                    y="40"
+                                                    width="46"
+                                                    height="7"
+                                                    rx="2"
+                                                    fill="#fff"
+                                                    stroke="#b5bfcb"
+                                                />
+                                                <rect
+                                                    x="10"
+                                                    y="54"
+                                                    width="46"
+                                                    height="3"
+                                                    rx="1.5"
+                                                    fill="#7c8999"
+                                                />
+                                                <rect
+                                                    x="10"
+                                                    y="60"
+                                                    width="46"
+                                                    height="7"
+                                                    rx="2"
+                                                    fill="#fff"
+                                                    stroke="#b5bfcb"
+                                                />
+                                                <rect
+                                                    x="88"
+                                                    y="60"
+                                                    width="20"
+                                                    height="7"
+                                                    rx="2"
+                                                    fill="#d97706"
+                                                />
+                                            </svg>
+                                        </div>
+                                        <div class="txt">
+                                            <span class="k">Theme</span
+                                            ><b>Photo header · Quiet Studio</b>
+                                            <div class="acts">
+                                                <a href="#">Change</a
+                                                ><a href="#">Edit theme</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card">
+                                        <div class="art">
+                                            <svg
+                                                width="120"
+                                                height="76"
+                                                viewBox="0 0 120 76"
+                                            >
+                                                <rect
+                                                    x="1"
+                                                    y="1"
+                                                    width="118"
+                                                    height="74"
+                                                    rx="4"
+                                                    fill="#fff"
+                                                    stroke="#dce2e9"
+                                                />
+                                                <rect
+                                                    x="8"
+                                                    y="8"
+                                                    width="104"
+                                                    height="14"
+                                                    rx="3"
+                                                    fill="#e8f5f2"
+                                                    stroke="#0f766e"
+                                                />
+                                                <path
+                                                    d="M14 13l3 3 3-3"
+                                                    fill="none"
+                                                    stroke="#0f766e"
+                                                    stroke-width="1.5"
+                                                />
+                                                <rect
+                                                    x="24"
+                                                    y="13"
+                                                    width="36"
+                                                    height="3"
+                                                    rx="1.5"
+                                                    fill="#115e59"
+                                                />
+                                                <rect
+                                                    x="12"
+                                                    y="26"
+                                                    width="96"
+                                                    height="16"
+                                                    rx="2"
+                                                    fill="#f8fafc"
+                                                    stroke="#e8edf2"
+                                                />
+                                                <rect
+                                                    x="8"
+                                                    y="46"
+                                                    width="104"
+                                                    height="10"
+                                                    rx="3"
+                                                    fill="#fff"
+                                                    stroke="#b5bfcb"
+                                                />
+                                                <path
+                                                    d="M14 49l3 3 3-3"
+                                                    fill="none"
+                                                    stroke="#7c8999"
+                                                    stroke-width="1.5"
+                                                />
+                                                <rect
+                                                    x="8"
+                                                    y="60"
+                                                    width="104"
+                                                    height="10"
+                                                    rx="3"
+                                                    fill="#fff"
+                                                    stroke="#b5bfcb"
+                                                />
+                                                <path
+                                                    d="M14 63l3 3 3-3"
+                                                    fill="none"
+                                                    stroke="#7c8999"
+                                                    stroke-width="1.5"
+                                                />
+                                            </svg>
+                                        </div>
+                                        <div class="txt">
+                                            <span class="k">Layout</span
+                                            ><b>Accordion</b>
+                                            <div class="acts">
+                                                <a href="#">Change</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+                            <section style="position: relative">
+                                <span class="pin" style="left: -12px; top: -4px"
+                                    >C</span
+                                >
+                                <div class="gh">Accent color</div>
+                                <div class="sw">
+                                    <span style="background: #1e3a8a"></span
+                                    ><span style="background: #3b82f6"></span
+                                    ><span style="background: #4f46e5"></span
+                                    ><span style="background: #7e22ce"></span
+                                    ><span style="background: #db2777"></span
+                                    ><span style="background: #0f766e"></span
+                                    ><span style="background: #166534"></span
+                                    ><span style="background: #c2410c"></span>
+                                    <span style="background: #ea580c"></span
+                                    ><span
+                                        class="on"
+                                        style="background: #d97706"
+                                    ></span
+                                    ><span style="background: #1f2937"></span
+                                    ><span style="background: #64748b"></span
+                                    ><span style="background: #0e7490"></span
+                                    ><span style="background: #9f1239"></span
+                                    ><span style="background: #4d7c0f"></span>
+                                </div>
+                                <div class="custom">
+                                    <span class="well"></span
+                                    ><span class="hex">#D97706</span
+                                    ><span
+                                        class="read"
+                                        title="Contrast 5.6:1, passes WCAG AA"
+                                        >&#10003; Button text is easy to
+                                        read</span
+                                    >
+                                </div>
+                            </section>
+                            <p class="note">
+                                For fonts, backgrounds and field styling, open
+                                Advanced design. Your choices here are kept.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <p class="cap">Advanced design · Page</p>
+                <div class="frame">
+                    <div class="rail">
+                        <span><i></i>Theme</span><span><i></i>Brand</span
+                        ><span class="on"><i></i>Page</span
+                        ><span><i></i>Fields</span><span><i></i>Buttons</span
+                        ><span><i></i>Finish</span><span><i></i>Colors</span>
+                    </div>
+                    <div class="pane">
+                        <div class="ph">
+                            <div class="seg">
+                                <b>Simple</b><b class="on">Advanced design</b>
+                            </div>
+                            <div class="status">
+                                <span
+                                    class="read"
+                                    style="
+                                        background: var(--ws);
+                                        color: var(--tw);
+                                    "
+                                    >1 change</span
+                                >1 setting differs from the theme<a href="#"
+                                    >Reset</a
+                                >
+                            </div>
+                            <div class="search">
+                                &#9906; Find a design setting
+                            </div>
+                        </div>
+                        <div class="body">
+                            <section class="set" style="position: relative">
+                                <span class="pin" style="left: -12px; top: -4px"
+                                    >D</span
+                                >
+                                <div class="gh">
+                                    Page<span class="q">Reset</span>
+                                </div>
+                                <div>
+                                    <p class="lbl">Density</p>
+                                    <div class="tiles two">
+                                        <span class="tile"
+                                            ><svg
+                                                width="56"
+                                                height="32"
+                                                viewBox="0 0 56 32"
+                                            >
+                                                <rect
+                                                    x="4"
+                                                    y="3"
+                                                    width="20"
+                                                    height="2.5"
+                                                    rx="1"
+                                                    fill="#7c8999"
+                                                />
+                                                <rect
+                                                    x="4"
+                                                    y="7"
+                                                    width="48"
+                                                    height="6"
+                                                    rx="2"
+                                                    fill="#fff"
+                                                    stroke="#b5bfcb"
+                                                />
+                                                <rect
+                                                    x="4"
+                                                    y="16"
+                                                    width="20"
+                                                    height="2.5"
+                                                    rx="1"
+                                                    fill="#7c8999"
+                                                />
+                                                <rect
+                                                    x="4"
+                                                    y="20"
+                                                    width="48"
+                                                    height="6"
+                                                    rx="2"
+                                                    fill="#fff"
+                                                    stroke="#b5bfcb"
+                                                /></svg
+                                            >Compact</span
+                                        >
+                                        <span class="tile on"
+                                            ><svg
+                                                width="56"
+                                                height="32"
+                                                viewBox="0 0 56 32"
+                                            >
+                                                <rect
+                                                    x="4"
+                                                    y="2"
+                                                    width="20"
+                                                    height="2.5"
+                                                    rx="1"
+                                                    fill="#0f766e"
+                                                />
+                                                <rect
+                                                    x="4"
+                                                    y="7"
+                                                    width="48"
+                                                    height="8"
+                                                    rx="2"
+                                                    fill="#fff"
+                                                    stroke="#0f766e"
+                                                />
+                                                <rect
+                                                    x="4"
+                                                    y="20"
+                                                    width="20"
+                                                    height="2.5"
+                                                    rx="1"
+                                                    fill="#0f766e"
+                                                />
+                                                <rect
+                                                    x="4"
+                                                    y="25"
+                                                    width="48"
+                                                    height="6"
+                                                    rx="2"
+                                                    fill="#fff"
+                                                    stroke="#0f766e"
+                                                /></svg
+                                            >Comfortable</span
+                                        >
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="lbl">Corner rounding</p>
+                                    <div class="tiles">
+                                        <span class="tile"
+                                            ><svg
+                                                width="40"
+                                                height="28"
+                                                viewBox="0 0 40 28"
+                                            >
+                                                <rect
+                                                    x="4"
+                                                    y="6"
+                                                    width="32"
+                                                    height="16"
+                                                    fill="#fff"
+                                                    stroke="#7c8999"
+                                                    stroke-width="1.5"
+                                                /></svg
+                                            >Square</span
+                                        >
+                                        <span class="tile on"
+                                            ><svg
+                                                width="40"
+                                                height="28"
+                                                viewBox="0 0 40 28"
+                                            >
+                                                <rect
+                                                    x="4"
+                                                    y="6"
+                                                    width="32"
+                                                    height="16"
+                                                    rx="4"
+                                                    fill="#fff"
+                                                    stroke="#0f766e"
+                                                    stroke-width="1.5"
+                                                /></svg
+                                            >Soft</span
+                                        >
+                                        <span class="tile"
+                                            ><svg
+                                                width="40"
+                                                height="28"
+                                                viewBox="0 0 40 28"
+                                            >
+                                                <rect
+                                                    x="4"
+                                                    y="6"
+                                                    width="32"
+                                                    height="16"
+                                                    rx="8"
+                                                    fill="#fff"
+                                                    stroke="#7c8999"
+                                                    stroke-width="1.5"
+                                                /></svg
+                                            >Round</span
+                                        >
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="lbl">Progress indicator</p>
+                                    <div class="tiles">
+                                        <span class="tile on"
+                                            ><svg
+                                                width="56"
+                                                height="24"
+                                                viewBox="0 0 56 24"
+                                            >
+                                                <circle
+                                                    cx="8"
+                                                    cy="12"
+                                                    r="4"
+                                                    fill="#0f766e"
+                                                />
+                                                <path
+                                                    d="M12 12h12"
+                                                    stroke="#0f766e"
+                                                    stroke-width="1.5"
+                                                />
+                                                <circle
+                                                    cx="28"
+                                                    cy="12"
+                                                    r="4"
+                                                    fill="#fff"
+                                                    stroke="#0f766e"
+                                                />
+                                                <path
+                                                    d="M32 12h12"
+                                                    stroke="#b5bfcb"
+                                                    stroke-width="1.5"
+                                                />
+                                                <circle
+                                                    cx="48"
+                                                    cy="12"
+                                                    r="4"
+                                                    fill="#fff"
+                                                    stroke="#b5bfcb"
+                                                /></svg
+                                            >Steps</span
+                                        >
+                                        <span class="tile"
+                                            ><svg
+                                                width="56"
+                                                height="24"
+                                                viewBox="0 0 56 24"
+                                            >
+                                                <rect
+                                                    x="4"
+                                                    y="10"
+                                                    width="48"
+                                                    height="4"
+                                                    rx="2"
+                                                    fill="#e8edf2"
+                                                />
+                                                <rect
+                                                    x="4"
+                                                    y="10"
+                                                    width="20"
+                                                    height="4"
+                                                    rx="2"
+                                                    fill="#7c8999"
+                                                /></svg
+                                            >Bar</span
+                                        >
+                                        <span class="tile"
+                                            ><svg
+                                                width="56"
+                                                height="24"
+                                                viewBox="0 0 56 24"
+                                            >
+                                                <text
+                                                    x="28"
+                                                    y="16"
+                                                    text-anchor="middle"
+                                                    font-size="9"
+                                                    fill="#526071"
+                                                    font-family="Segoe UI, sans-serif"
+                                                >
+                                                    2 of 4
+                                                </text></svg
+                                            >Text</span
+                                        >
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="lbl">Background intensity</p>
+                                    <div class="seg">
+                                        <b>Subtle</b><b class="on">Medium</b
+                                        ><b>Strong</b>
+                                    </div>
+                                    <p class="note" style="margin: 4px 0 0">
+                                        Strengths stay a switch, not pictures.
+                                    </p>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section class="notes">
+            <h2>What I'd tweak</h2>
+            <ol>
+                <li>
+                    <span class="pin">A</span>
+                    <div>
+                        <b>One status line</b
+                        ><span class="g">
+                            "1 change · 1 setting differs from the theme ·
+                            Reset" replaces both "1 customization(s) Reset all"
+                            and the blue "advanced customization(s) are active"
+                            box.</span
+                        >
+                    </div>
+                </li>
+                <li>
+                    <span class="pin">B</span>
+                    <div>
+                        <b>Theme and layout as picture cards</b
+                        ><span class="g">
+                            A small drawing of each, with the same Change and
+                            Edit theme actions. The "Appearance" line that
+                            repeats them goes.</span
+                        >
+                    </div>
+                </li>
+                <li>
+                    <span class="pin">C</span>
+                    <div>
+                        <b>Accent color: one clean grid of 8 per row</b
+                        ><span class="g">
+                            The chosen color gets a ring, with no hatched pale
+                            dots. The color box and hex sit together. "5.6:1 ·
+                            AA ✓" becomes "Button text is easy to read", with
+                            the numbers on hover.</span
+                        >
+                    </div>
+                </li>
+                <li>
+                    <span class="pin">D</span>
+                    <div>
+                        <b>Advanced: picture tiles where there's a look</b
+                        ><span class="g">
+                            Density, corner rounding, progress style, and the
+                            rest of the plan's list (pane side and width, tab
+                            style, button position…). Strengths like Subtle /
+                            Medium / Strong stay a switch. Each group gets a
+                            title with a hairline and its own Reset.</span
+                        >
+                    </div>
+                </li>
+            </ol>
+            <p class="ask">
+                Same settings and stored values. A, B and C change wording and
+                layout, so they need your OK. D is already in the plan you
+                approved.
+            </p>
+        </section>
+    </body>
+</html>

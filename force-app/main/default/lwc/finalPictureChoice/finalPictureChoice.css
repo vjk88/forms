@@ -290,3 +290,95 @@
 .pc-tile:disabled .pc-art-record {
     opacity: 0.5;
 }
+
+/* Three or four tiles per row (Design's settings with 3+ options). */
+.pc-grid--3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.pc-grid--4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.pc-grid--3 .pc-tile,
+.pc-grid--4 .pc-tile {
+    min-height: 76px;
+    padding: var(--c-studio-space-3) var(--c-studio-space-2);
+}
+
+.pc-grid--3 .pc-tile.on,
+.pc-grid--4 .pc-tile.on {
+    padding: calc(var(--c-studio-space-3) - 1px)
+        calc(var(--c-studio-space-2) - 1px);
+}
+
+.pc-grid--4 .pc-tick {
+    top: var(--c-studio-space-1);
+    right: var(--c-studio-space-1);
+}
+
+/* Drawings from data (c/finalDesignArt): grey parts follow the tile's ink,
+   which turns accent on the chosen tile. */
+.pc-art-draw {
+    width: 56px;
+    height: 36px;
+}
+
+.pc-shape {
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+}
+
+.pa-paper {
+    fill: var(--c-studio-surface);
+    stroke: var(--c-studio-border-strong);
+}
+
+.pa-fill {
+    fill: var(--c-studio-border);
+}
+
+.pa-ink {
+    fill: currentColor;
+}
+
+.pa-line {
+    fill: var(--c-studio-surface);
+    stroke: currentColor;
+    stroke-width: 1.5;
+}
+
+.pa-hair {
+    fill: none;
+    stroke: var(--c-studio-border-strong);
+}
+
+.pa-accent {
+    fill: var(--c-studio-accent);
+}
+
+.pa-accent-line {
+    fill: none;
+    stroke: var(--c-studio-accent);
+    stroke-width: 1.5;
+}
+
+.pa-soft {
+    fill: var(--c-studio-accent-surface);
+    stroke: var(--c-studio-accent);
+}
+
+.pa-dash {
+    fill: none;
+    stroke: var(--c-studio-border-strong);
+    stroke-dasharray: 3 2;
+}
+
+.pa-blob {
+    opacity: 0.75;
+}
+
+.pa-frame {
+    fill: none;
+    stroke: var(--c-studio-border-strong);
+}

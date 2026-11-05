@@ -80,49 +80,10 @@
     margin-top: 8px;
 }
 
-.ovchip {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    margin-top: 8px;
-    background: var(--c-studio-info-surface);
-    color: var(--c-studio-info-text);
-    border-radius: 7px;
-    padding: 6px 10px;
-    font-size: 11.5px;
-}
-
 .scroll {
     overflow-y: auto;
     flex: 1;
     padding: 12px 12px 24px;
-}
-
-/* ----- theme entry ----- */
-.entry {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    border: 1px solid var(--c-studio-border);
-    background: var(--c-studio-surface-subtle);
-    border-radius: 8px;
-    padding: 9px 12px;
-    margin-bottom: 8px;
-}
-
-.entry-k {
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    color: var(--c-studio-text-weak);
-}
-
-.entry-name {
-    flex: 1;
-    min-width: 0;
-    font-weight: 600;
-    overflow-wrap: anywhere;
 }
 
 .confirm {
@@ -165,20 +126,6 @@
     font-family: inherit;
 }
 
-/* ----- simple lens ----- */
-.advchip {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    background: var(--c-studio-info-surface);
-    color: var(--c-studio-info-text);
-    border-radius: 7px;
-    padding: 8px 10px;
-    font-size: 11.5px;
-    margin-bottom: 10px;
-}
-
 .lens-note {
     margin: 12px 2px 0;
     color: var(--c-studio-text-weak);
@@ -201,18 +148,8 @@
     color: var(--c-studio-text-weak);
     overflow-wrap: anywhere;
 }
-.group-head:hover {
-    background: var(--c-studio-hover);
-}
 .simple-body {
     padding: 0 2px 12px;
-}
-.simple-body .entry {
-    padding: 8px 0;
-    border: 0;
-    border-radius: 0;
-    background: none;
-    flex-wrap: wrap;
 }
 .simple-text {
     flex-direction: column;
@@ -224,10 +161,6 @@
     max-width: none;
     box-sizing: border-box;
 }
-.group {
-    border-top: 1px solid var(--c-studio-border);
-}
-
 /* ----- Colors tab: every color in one list ----- */
 .color-group {
     border-top: 1px solid var(--c-studio-border);
@@ -249,25 +182,9 @@
     margin-top: 2px;
     font-size: 12px;
 }
-.group-head {
-    padding: 10px 2px;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: 600;
-}
-.group-head .dot {
-    display: inline-block;
-    margin-left: 6px;
-}
 .group-body {
     padding: 0 2px 10px;
 }
-.group-actions {
-    display: flex;
-    justify-content: flex-end;
-    margin-bottom: 4px;
-}
-
 /* ----- shared rows ----- */
 .row {
     display: flex;
@@ -467,4 +384,191 @@ button.section-toggle:focus-visible {
     .group-head {
         min-height: 44px;
     }
+}
+
+/* ----- the status line (A): how far this form is from its theme ----- */
+.changes {
+    display: flex;
+    align-items: center;
+    gap: var(--c-studio-space-2);
+    margin-top: var(--c-studio-space-3);
+    font-size: var(--c-studio-fs-small);
+    color: var(--c-studio-text-weak);
+}
+
+.changes-count {
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    padding: 0 var(--c-studio-space-2);
+    border-radius: var(--c-studio-radius-sm);
+    background: var(--c-studio-workspace);
+    color: var(--c-studio-text);
+    font-size: var(--c-studio-fs-caption);
+    font-weight: var(--c-studio-fw-strong);
+    white-space: nowrap;
+}
+
+.changes-detail {
+    min-width: 0;
+}
+
+.changes-reset {
+    margin-left: auto;
+    white-space: nowrap;
+}
+
+/* ----- titles with a hairline (Theme and layout, Accent color) ----- */
+.area-head--rule {
+    display: flex;
+    align-items: center;
+    gap: var(--c-studio-space-3);
+    padding: 0 0 var(--c-studio-space-3);
+}
+
+.area-head--rule::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--c-studio-border);
+}
+
+/* ----- Theme and layout as pictures (B) ----- */
+.theme-area {
+    display: flex;
+    flex-direction: column;
+    gap: var(--c-studio-space-2);
+}
+
+.tl-cards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--c-studio-space-3);
+    margin-bottom: var(--c-studio-space-5);
+}
+
+.tl-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--c-studio-space-2);
+    min-width: 0;
+}
+
+.tl-acts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--c-studio-space-4);
+}
+
+/* ----- group titles: name, hairline, Reset (D) ----- */
+.group-wrap {
+    position: relative;
+}
+
+.group-head {
+    display: flex;
+    align-items: center;
+    gap: var(--c-studio-space-2);
+    min-height: var(--c-studio-control-h);
+    padding: var(--c-studio-space-2) 0;
+    list-style: none;
+    cursor: pointer;
+    font-size: var(--c-studio-fs-body);
+    font-weight: var(--c-studio-fw-strong);
+    color: var(--c-studio-text);
+}
+
+.group-head::-webkit-details-marker {
+    display: none;
+}
+
+.group-head--reset {
+    padding-right: var(--c-studio-space-8);
+}
+
+.group-chev {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: var(--c-studio-text-weak);
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.group[open] > .group-head .group-chev {
+    transform: rotate(90deg);
+}
+
+.group-rule {
+    flex: 1;
+    height: 1px;
+    margin-left: var(--c-studio-space-1);
+    background: var(--c-studio-border);
+}
+
+.group-head:hover .group-rule {
+    background: var(--c-studio-border-strong);
+}
+
+.group-reset {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: var(--c-studio-control-h);
+    font-size: var(--c-studio-fs-small);
+}
+
+/* ----- a setting picked by picture or switch: label above ----- */
+.ctl-head {
+    display: flex;
+    align-items: center;
+    gap: var(--c-studio-space-2);
+    padding: var(--c-studio-space-3) 0 var(--c-studio-space-2);
+}
+
+.ctl-head + c-final-picture-choice,
+.ctl-head + c-final-button-group {
+    display: block;
+    margin-bottom: var(--c-studio-space-2);
+}
+
+.tl-card {
+    gap: 0;
+}
+
+.tl-card c-final-theme-card,
+.tl-card c-final-layout-card {
+    display: block;
+    margin-bottom: var(--c-studio-space-2);
+}
+
+.tl-kicker {
+    font-size: var(--c-studio-fs-caption);
+    color: var(--c-studio-text-weak);
+}
+
+.tl-name {
+    font-weight: var(--c-studio-fw-strong);
+    line-height: var(--c-studio-lh-tight);
+    overflow-wrap: anywhere;
+}
+
+.tl-acts {
+    margin-top: var(--c-studio-space-1);
+}
+
+/* registry help is quiet; only real warnings wear the warning color */
+.ctl-hint {
+    color: var(--c-studio-text-weak);
+}
+
+.ctl-hint--warn {
+    color: var(--c-studio-warning-text);
+}
+
+.tl-acts .linkbtn {
+    padding-left: 0;
+    padding-right: 0;
 }

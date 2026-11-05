@@ -75,6 +75,12 @@ export default class FinalThemeCard extends LightningElement {
      * clickable card would read as more looks (a click on them picks).
      */
     @api hideSwatches = false;
+    /**
+     * A small picture only (Design's Theme and layout cards): a short
+     * preview with no name, description or swatches under it; the host
+     * writes those itself.
+     */
+    @api compact = false;
 
     get _theme() {
         if (this.themeProps && typeof this.themeProps === 'object') {
@@ -227,7 +233,8 @@ export default class FinalThemeCard extends LightningElement {
     }
 
     get rootClass() {
-        return this.selected && !this.picture ? 'tc is-on' : 'tc';
+        const base = this.compact ? 'tc tc--compact' : 'tc';
+        return this.selected && !this.picture ? `${base} is-on` : base;
     }
     get rootRole() {
         return this.picture ? 'img' : 'button';

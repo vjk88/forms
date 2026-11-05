@@ -43,6 +43,17 @@ export default class FinalLayoutCard extends LightningElement {
     @api description;
     @api selected = false;
     /**
+     * A picture, not a control (Design's Theme and layout cards): no button
+     * role, no tab stop, no selection check, clicks do nothing.
+     */
+    @api picture = false;
+    /**
+     * A small picture only (Design's Theme and layout cards): a short
+     * preview with no name, description or swatches under it; the host
+     * writes those itself.
+     */
+    @api compact = false;
+    /**
      * The form's Immersive full-bleed and Max content width for THIS layout
      * (c/finalLayoutRegistry previewSettings): the mockup draws them
      * (previewGeometry). Unset means what it means on a form.
@@ -78,10 +89,23 @@ export default class FinalLayoutCard extends LightningElement {
         };
     }
     get rootClass() {
-        return this.selected ? 'lc is-on' : 'lc';
+        const base = this.compact ? 'lc lc--compact' : 'lc';
+        return this.selected && !this.picture ? `${base} is-on` : base;
+    }
+    get rootRole() {
+        return this.picture ? 'img' : 'button';
+    }
+    get rootTabindex() {
+        return this.picture ? null : '0';
     }
     get pressed() {
+        if (this.picture) {
+            return null;
+        }
         return this.selected ? 'true' : 'false';
+    }
+    get showCheck() {
+        return this.selected && !this.picture;
     }
 
     /**
@@ -166,9 +190,14 @@ export default class FinalLayoutCard extends LightningElement {
         );
     }
     handleClick() {
-        this._emit();
+        if (!this.picture) {
+            this._emit();
+        }
     }
     handleKey(e) {
+        if (this.picture) {
+            return;
+        }
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             this._emit();

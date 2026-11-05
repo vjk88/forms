@@ -300,7 +300,7 @@ describe('c-final-design-panel', () => {
         );
     });
 
-    it('Simple has three rail tabs, one section each, and opens on Appearance', async () => {
+    it('Simple has three rail tabs, one section each, and opens on Theme and layout', async () => {
         const el = mount();
         expect(railKeys(el)).toEqual(['theme', 'brand', 'navigation']);
         expect(rail(el).tabs.map((t) => t.label)).toEqual([
@@ -313,7 +313,7 @@ describe('c-final-design-panel', () => {
             [
                 ...el.shadowRoot.querySelectorAll('.simple-section .area-title')
             ].map((t) => t.textContent);
-        expect(titles()).toEqual(['Appearance']);
+        expect(titles()).toEqual(['Theme and layout', 'Accent color']);
         await openArea(el, 'brand');
         expect(titles()).toEqual(['Content & branding']);
         await openArea(el, 'navigation');
@@ -523,7 +523,7 @@ describe('c-final-design-panel', () => {
             [
                 ...el.shadowRoot.querySelectorAll('.design-section .area-title')
             ].map((t) => t.textContent);
-        expect(titles()).toEqual(['Theme']);
+        expect(titles()).toEqual(['Theme and layout']);
         await openArea(el, 'page');
         expect(titles()).toEqual(['Page & form']);
         await openArea(el, 'colors');
@@ -599,7 +599,7 @@ describe('c-final-design-panel', () => {
         expect(adv.value).toBe('#123456');
         expect(adv.edited).toBe(true);
         expect(el.shadowRoot.querySelector('.resetchip')).not.toBeNull();
-        expect(el.shadowRoot.querySelector('.ovchip')).not.toBeNull();
+        expect(el.shadowRoot.querySelector('.changes')).not.toBeNull();
     });
 
     it('setting a control back to the theme default deletes the override (no phantom dots)', async () => {
@@ -641,9 +641,9 @@ describe('c-final-design-panel', () => {
 
     it('theme row: name + Change… opens the gallery popup in theme mode', async () => {
         const el = mount();
-        expect(
-            el.shadowRoot.querySelectorAll('.entry-name')[0].textContent
-        ).toBe('Clean · Nordic Minimalist');
+        expect(el.shadowRoot.querySelector('c-final-theme-card').label).toBe(
+            'Clean · Nordic Minimalist'
+        );
         const gallery = await openGallery(el, 'theme');
         expect(gallery).not.toBeNull();
         expect(gallery.mode).toBe('theme');
@@ -713,7 +713,7 @@ describe('c-final-design-panel', () => {
         expect(handler).not.toHaveBeenCalled();
     });
 
-    it('Simple shows the advanced-overrides chip for non-simple deviations', async () => {
+    it('Simple says how many changes live in Advanced design', async () => {
         const el = mount();
         await goAdvanced(el);
         await openArea(el, 'page');
@@ -723,9 +723,13 @@ describe('c-final-design-panel', () => {
         await flush();
         el.shadowRoot.querySelectorAll('.lens-btn')[0].click();
         await flush();
-        const chip = el.shadowRoot.querySelector('.advchip');
-        expect(chip).not.toBeNull();
-        expect(chip.textContent).toContain('1');
+        // one status line: the change count, and how many live in Advanced
+        expect(el.shadowRoot.querySelector('.changes-count').textContent).toBe(
+            '1 change'
+        );
+        expect(el.shadowRoot.querySelector('.changes-detail').textContent).toBe(
+            'from the theme · 1 in Advanced design'
+        );
     });
 
     it('paging: splitHero gets pane controls (incl. progress style)', async () => {
@@ -739,7 +743,9 @@ describe('c-final-design-panel', () => {
         ).not.toBeNull();
         await openArea(el, 'navigation');
         expect(
-            el.shadowRoot.querySelector('select[data-key="heroProgress"]')
+            el.shadowRoot.querySelector(
+                'c-final-picture-choice[data-key="heroProgress"]'
+            )
         ).not.toBeNull();
         expect(el.shadowRoot.querySelector('.narrate')).toBeNull();
     });
@@ -758,11 +764,12 @@ describe('c-final-design-panel', () => {
         ).toBeNull();
 
         const mode = el.shadowRoot.querySelector(
-            'select[data-key="stepperMode"]'
+            'c-final-picture-choice[data-key="stepperMode"]'
         );
         expect(mode).not.toBeNull();
-        mode.value = 'dots';
-        mode.dispatchEvent(new CustomEvent('change'));
+        mode.dispatchEvent(
+            new CustomEvent('change', { detail: { value: 'dots' } })
+        );
         await flush();
         expect(lastSpec(handler).layout.options.mode).toBe('dots');
 
@@ -772,11 +779,12 @@ describe('c-final-design-panel', () => {
             el.shadowRoot.querySelector('select[data-key="stepperPlacement"]')
         ).toBeNull();
         const narrow = el.shadowRoot.querySelector(
-            'select[data-key="stepperNarrow"]'
+            'c-final-picture-choice[data-key="stepperNarrow"]'
         );
         expect(narrow).not.toBeNull();
-        narrow.value = 'progressBar';
-        narrow.dispatchEvent(new CustomEvent('change'));
+        narrow.dispatchEvent(
+            new CustomEvent('change', { detail: { value: 'progressBar' } })
+        );
         await flush();
         expect(lastSpec(handler).layout.options.narrowMode).toBe('progressBar');
     });
@@ -908,10 +916,12 @@ describe('c-final-design-panel', () => {
         await goAdvanced(el);
         await openArea(el, 'navigation');
         expect(
-            el.shadowRoot.querySelector('select[data-key="tabStyle"]')
+            el.shadowRoot.querySelector(
+                'c-final-picture-choice[data-key="tabStyle"]'
+            )
         ).not.toBeNull();
         expect(
-            el.shadowRoot.querySelector('select[data-key="stepperMode"]')
+            el.shadowRoot.querySelector('[data-key="stepperMode"]')
         ).toBeNull();
 
         const el2 = mount(
@@ -983,10 +993,14 @@ describe('c-final-design-panel', () => {
         await goAdvanced(el);
         await openArea(el, 'page');
         expect(
-            el.shadowRoot.querySelector('select[data-key="density"]')
+            el.shadowRoot.querySelector(
+                'c-final-picture-choice[data-key="density"]'
+            )
         ).not.toBeNull();
         expect(
-            el.shadowRoot.querySelector('select[data-key="radius"]')
+            el.shadowRoot.querySelector(
+                'c-final-picture-choice[data-key="radius"]'
+            )
         ).not.toBeNull();
         expect(handler).not.toHaveBeenCalled();
     });
@@ -1090,9 +1104,7 @@ describe('c-final-design-panel', () => {
         const picker = el.shadowRoot.querySelector(
             'c-final-font-picker[data-key="typography"]'
         );
-        const reset = picker
-            .closest('details.group')
-            .querySelector('.resetchip');
+        const reset = picker.closest('.group-wrap').querySelector('.resetchip');
         expect(reset).not.toBeNull();
         reset.click();
         await flush();
@@ -1128,9 +1140,9 @@ describe('c-final-design-panel', () => {
         );
         expect(accent.value).toBe('#7c2d9c');
         // the row names the pick
-        expect(
-            el.shadowRoot.querySelectorAll('.entry-name')[0].textContent
-        ).toBe('Brand Purple · custom');
+        expect(el.shadowRoot.querySelector('c-final-theme-card').label).toBe(
+            'Brand Purple · custom'
+        );
     });
 
     it('Edit… dispatches the explicit themeedit action (blast-radius rule); Change… does not', async () => {
@@ -1179,9 +1191,9 @@ describe('c-final-design-panel', () => {
                 themeKey: 'nordic'
             })
         );
-        expect(
-            el.shadowRoot.querySelectorAll('.entry-name')[1].textContent
-        ).toBe('Split Hero · Conversational');
+        expect(el.shadowRoot.querySelector('c-final-layout-card').label).toBe(
+            'Split Hero · Conversational'
+        );
         const gallery = await openGallery(el, 'layout');
         expect(gallery.mode).toBe('layout');
         expect(gallery.layout).toBe('splitHero');
@@ -1219,8 +1231,16 @@ describe('c-final-design-panel', () => {
     };
     const setSelect = async (el, key, value) => {
         const sel = el.shadowRoot.querySelector(`select[data-key="${key}"]`);
-        sel.value = value;
-        sel.dispatchEvent(new CustomEvent('change'));
+        if (sel) {
+            sel.value = value;
+            sel.dispatchEvent(new CustomEvent('change'));
+        } else {
+            el.shadowRoot
+                .querySelector(`[data-key="${key}"]`)
+                .dispatchEvent(
+                    new CustomEvent('change', { detail: { value } })
+                );
+        }
         await flush();
     };
 

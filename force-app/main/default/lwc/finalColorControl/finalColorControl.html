@@ -1,21 +1,13 @@
 <template>
-    <div class="row">
-        <template lwc:if={edited}>
-            <span class="dot" title="Customized"></span>
-        </template>
-        <label class="label" for="picker">{label}</label>
-        <span class="hex">{value}</span>
-        <input
-            id="picker"
-            class="picker"
-            type="color"
-            value={value}
-            disabled={disabled}
-            aria-label={pickerAria}
-            oninput={handleInput}
-        />
-    </div>
     <template lwc:if={hasPresets}>
+        <!-- With one-click colors (Accent): label, the grid of colors, then
+             your own color and how readable it is (DESIGN_SYSTEM 5.27). -->
+        <div class={headClass}>
+            <template lwc:if={edited}>
+                <span class="dot" title="Customized"></span>
+            </template>
+            <label class={labelClass} for="own-picker">{label}</label>
+        </div>
         <div
             class="swatches"
             role="radiogroup"
@@ -49,13 +41,53 @@
         <!-- always mounted: reserved height (no badge jump) and a live
              region that exists before its text changes -->
         <p class="swatch-note" aria-live="polite">{noteText}</p>
-    </template>
-    <template lwc:if={showBadge}>
-        <div class="badge-row">
-            <span class={badgeClass} role="status">{badgeLabel}</span>
-            <template lwc:if={badgeHint}>
-                <span class="hint">{badgeHint}</span>
+        <div class="own">
+            <input
+                id="own-picker"
+                class="picker"
+                type="color"
+                value={value}
+                disabled={disabled}
+                aria-label={pickerAria}
+                oninput={handleInput}
+            />
+            <span class="hex">{value}</span>
+            <template lwc:if={showBadge}>
+                <span class={badgeClass} role="status" title={badgeTitle}
+                    >{badgeLabel}</span
+                >
             </template>
         </div>
+        <template lwc:if={badgeHint}>
+            <p class="hint hint--below">{badgeHint}</p>
+        </template>
+    </template>
+    <template lwc:else>
+        <div class="row">
+            <template lwc:if={edited}>
+                <span class="dot" title="Customized"></span>
+            </template>
+            <label class={labelClass} for="picker">{label}</label>
+            <span class="hex">{value}</span>
+            <input
+                id="picker"
+                class="picker"
+                type="color"
+                value={value}
+                disabled={disabled}
+                aria-label={pickerAria}
+                oninput={handleInput}
+            />
+        </div>
+        <template lwc:if={showBadge}>
+            <div class="badge-row">
+                <span class={badgeClass} role="status" title={badgeTitle}
+                    >{badgeLabel}</span
+                >
+                <template lwc:if={badgeHint}>
+                    <span class="hint">{badgeHint}</span>
+                </template>
+            </div>
+        </template>
     </template>
 </template>

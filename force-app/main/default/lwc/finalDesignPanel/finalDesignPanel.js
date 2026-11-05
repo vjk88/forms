@@ -3,7 +3,13 @@ import LightningConfirm from 'lightning/confirm';
 import listFonts from '@salesforce/apex/FinalFontController.listFonts';
 import listCustomThemes from '@salesforce/apex/FinalThemeController.listCustomThemes';
 import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme';
-import { resolveTokens, resolveFontRefs, MESH_SEEDS } from 'c/finalThemeEngine';
+import {
+    resolveTokens,
+    resolveFontRefs,
+    mergeProps,
+    MESH_SEEDS
+} from 'c/finalThemeEngine';
+import { designArt, PICTURE_KEYS, SWITCH_KEYS } from 'c/finalDesignArt';
 import {
     pairingOptions,
     applyFontPatch,
@@ -20,7 +26,8 @@ import { localizeAssetUrl } from 'c/finalThemeAssets';
 import {
     getLayout,
     layoutAfterSwitch,
-    settleStartWidth
+    settleStartWidth,
+    previewSettings
 } from 'c/finalLayoutRegistry';
 import { layoutCardName } from 'c/finalGalleryPicker';
 import {
@@ -509,6 +516,7 @@ export default class FinalDesignPanel extends LightningElement {
     _buildControls(entries) {
         const tokens = this.tokens;
         const out = [];
+        let artCtx = null;
         for (const entry of entries) {
             const c = entry.control;
             if (this._unavailableReason(entry)) continue;
@@ -536,6 +544,7 @@ export default class FinalDesignPanel extends LightningElement {
                 // registry-authored helper line (the glass select's derived
                 // hint overwrites this below — it stays the more specific one)
                 hint: c.hint || '',
+                hintClass: 'ctl-hint',
                 min: c.min,
                 max: c.max
             };
@@ -607,11 +616,37 @@ export default class FinalDesignPanel extends LightningElement {
                 }
                 if (c.key === 'glass') {
                     vm.hint = this._glassHint(current);
+                    // glass over an opaque fill does nothing: a real warning
+                    vm.hintClass = 'ctl-hint ctl-hint--warn';
                 }
                 vm.options = c.options.map((o) => ({
                     ...o,
                     selected: o.value === current
                 }));
+                if (PICTURE_KEYS.includes(c.key)) {
+                    // a setting with a look: one drawing per option
+                    // (IMPL_PLAN_STUDIO_DESIGN_SCALE step 4)
+                    artCtx = artCtx || this._artContext();
+                    const ctx = artCtx;
+                    vm.isSelect = false;
+                    vm.isPicture = true;
+                    vm.value = current;
+                    vm.columns = pictureColumns(c.options.length);
+                    vm.choices = c.options.map((o) => ({
+                        value: o.value,
+                        label: o.label,
+                        drawing: designArt(c.key, o.value, ctx)
+                    }));
+                } else if (SWITCH_KEYS.includes(c.key)) {
+                    // a strength (Subtle / Medium / Strong): a switch
+                    vm.isSelect = false;
+                    vm.isSwitch = true;
+                    vm.value = current;
+                    vm.choices = c.options.map((o) => ({
+                        value: o.value,
+                        label: o.label
+                    }));
+                }
             } else if (c.type === 'fontPicker') {
                 // form level vs theme: "From theme" names the theme's fonts
                 const level = this._fontLevel();
@@ -690,7 +725,12 @@ export default class FinalDesignPanel extends LightningElement {
                     ...group,
                     open:
                         this.expandedGroups[`${section.key}:${group.key}`] ??
-                        true
+                        true,
+                    // room on the right of the title for its Reset
+                    headClass: group.edited
+                        ? 'group-head group-head--reset'
+                        : 'group-head',
+                    resetLabel: `Reset ${group.label} to the theme`
                 }))
             };
         });
@@ -711,6 +751,75 @@ export default class FinalDesignPanel extends LightningElement {
             default:
                 return '';
         }
+    }
+
+    /** What the drawings need to know about the form right now. */
+    _artContext() {
+        const pick = (key) => {
+            const def = this._controlDef(key);
+            return def ? this._effective(def.control) : undefined;
+        };
+        const custom = pick('meshColors');
+        return {
+            meshSeeds: MESH_SEEDS,
+            customMesh: Array.isArray(custom) ? custom : [],
+            paneSide: pick('paneSide') === 'right' ? 'right' : 'left'
+        };
+    }
+
+    // ----- Theme and layout cards (pictures of what the form uses) -----
+
+    /** The theme with this form's own changes, so the card shows the
+     *  accent and colors the form really paints. */
+    get cardThemeProps() {
+        if (!this.themeProps) {
+            return null;
+        }
+        return mergeProps(this.themeProps, this.overrides);
+    }
+
+    get cardThemeKey() {
+        return this.themeSource === 'custom' ? '' : this.themeKey;
+    }
+
+    get _cardSettings() {
+        return (
+            previewSettings(
+                this.formLayout,
+                this.layoutType,
+                this.currentPaneFlow
+            ) || {}
+        );
+    }
+
+    get cardFullBleed() {
+        return (this._cardSettings.options || {}).fullBleed;
+    }
+
+    get cardMaxWidth() {
+        return this._cardSettings.maxWidth;
+    }
+
+    get cardPaneSide() {
+        return (this._cardSettings.options || {}).side;
+    }
+
+    get cardPaneRatio() {
+        return (this._cardSettings.options || {}).ratio;
+    }
+
+    // ----- the status line (one line: how far this form is from its theme) -----
+
+    get changesLabel() {
+        const n = this.overrideCount;
+        return `${n} ${n === 1 ? 'change' : 'changes'}`;
+    }
+
+    get changesDetail() {
+        const k = this.advChipCount;
+        return !this.advanced && k > 0
+            ? `from the theme · ${k} in Advanced design`
+            : 'from the theme';
     }
 
     get simpleVM() {
@@ -841,10 +950,6 @@ export default class FinalDesignPanel extends LightningElement {
         return this.customizedControls.filter((c) => !c.control.simple).length;
     }
 
-    get showAdvChip() {
-        return !this.advanced && this.advChipCount > 0;
-    }
-
     // ----- the rail (IMPL_PLAN_DESIGN_RAIL) -----
 
     /** Advanced: Theme, the five task sections, then Colors under a divider.
@@ -888,8 +993,16 @@ export default class FinalDesignPanel extends LightningElement {
         return this.activeAreaKey === 'colors';
     }
 
-    get isSimpleTheme() {
-        return !this.advanced && this.activeAreaKey === 'theme';
+    /** Theme and layout: the same cards in both lenses. */
+    get themeSectionClass() {
+        return this.advanced
+            ? 'design-section theme-area'
+            : 'simple-section theme-area';
+    }
+
+    /** Simple keeps the accent on its Theme tab (Advanced has it in Brand). */
+    get showSimpleAccent() {
+        return !this.advanced && Boolean(this.simpleVM.accent);
     }
 
     get isSimpleBrand() {
@@ -1164,9 +1277,21 @@ export default class FinalDesignPanel extends LightningElement {
     }
 
     handleSelect(event) {
-        const key = event.target.dataset.key;
+        this._selectValue(event.target.dataset.key, event.target.value);
+    }
+
+    /** A picture tile or a switch: the same write as the dropdown it replaced. */
+    handleChoice(event) {
+        const v = event.detail.value;
+        this._selectValue(
+            event.currentTarget.dataset.key,
+            v === null || v === undefined ? '' : String(v)
+        );
+    }
+
+    _selectValue(key, value) {
         const def = this._controlDef(key);
-        let v = event.target.value;
+        let v = value;
         if (def && def.control.emptyAsNull && v === '') {
             v = null;
         }
@@ -1423,6 +1548,12 @@ export default class FinalDesignPanel extends LightningElement {
             this._emit();
         }
     }
+}
+
+/** Tiles per row: 2 for two choices, 4 for seven or more, else 3. */
+function pictureColumns(n) {
+    if (n <= 2) return 2;
+    return n >= 7 ? 4 : 3;
 }
 
 /** '#abc' / '#aabbcc' / 'rgb(a)(…)' → { r, g, b, a }; anything else → null. */

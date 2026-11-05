@@ -248,7 +248,7 @@
             </div>
         </template>
         <template lwc:if={hasGrid}>
-            <div class="pc-grid">
+            <div class={gridClass}>
                 <template for:each={gridTiles} for:item="t">
                     <button
                         key={t.key}
@@ -266,6 +266,44 @@
                                 <path d="M3.5 8.5l3 3 6-7"></path></svg
                         ></span>
                         <span class="pc-art" aria-hidden="true">
+                            <template lwc:if={t.isDrawing}>
+                                <svg
+                                    class="pc-art-draw"
+                                    viewBox={t.viewBox}
+                                    focusable="false"
+                                >
+                                    <template for:each={t.shapes} for:item="s">
+                                        <g key={s.key}>
+                                            <template lwc:if={s.isRect}>
+                                                <rect
+                                                    class={s.cls}
+                                                    x={s.x}
+                                                    y={s.y}
+                                                    width={s.width}
+                                                    height={s.height}
+                                                    rx={s.rx}
+                                                    style={s.style}
+                                                ></rect>
+                                            </template>
+                                            <template lwc:elseif={s.isCircle}>
+                                                <circle
+                                                    class={s.cls}
+                                                    cx={s.cx}
+                                                    cy={s.cy}
+                                                    r={s.r}
+                                                    style={s.style}
+                                                ></circle>
+                                            </template>
+                                            <template lwc:else>
+                                                <path
+                                                    class={s.cls}
+                                                    d={s.d}
+                                                ></path>
+                                            </template>
+                                        </g>
+                                    </template>
+                                </svg>
+                            </template>
                             <template lwc:if={t.isSelect}>
                                 <span class="pc-art-select">
                                     <span class="pc-art-bar"></span>
