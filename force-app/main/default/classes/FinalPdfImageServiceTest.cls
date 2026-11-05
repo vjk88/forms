@@ -67,10 +67,9 @@ private class FinalPdfImageServiceTest {
 
     @IsTest
     static void refusesIdsOfOtherObjects() {
-        Account acc = new Account(Name = 'Not a file');
-        insert acc;
+        // A User Id: needs no DML, so org validation rules can't interfere.
         FinalPdfImageService.Result r = FinalPdfImageService.read(
-            new Set<Id>{ acc.Id },
+            new Set<Id>{ UserInfo.getUserId() },
             false
         );
         Assert.areEqual(0, r.images.size(), 'only ContentVersion ids');
