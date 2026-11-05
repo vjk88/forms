@@ -229,6 +229,16 @@ describe('buildReaderDocument', () => {
                             answered: false
                         },
                         {
+                            key: 'c',
+                            label: 'Consent',
+                            value: 'Agreed',
+                            answered: true,
+                            consent: {
+                                html: '<p>I agree to the terms.</p>',
+                                checked: true
+                            }
+                        },
+                        {
                             key: 'm',
                             label: 'Rate',
                             isMatrix: true,
@@ -253,10 +263,16 @@ describe('buildReaderDocument', () => {
             'section',
             'qa',
             'qa',
+            'consent',
             'matrix',
             'section',
             'qa'
         ]);
+        const consent = doc.blocks.find((b) => b.kind === 'consent');
+        expect(consent.checked).toBe(true);
+        expect(consent.paragraphs[0].runs[0].text).toBe(
+            'I agree to the terms.'
+        );
         expect(doc.footerNote).toBe('Intake · FS-0042');
     });
 });

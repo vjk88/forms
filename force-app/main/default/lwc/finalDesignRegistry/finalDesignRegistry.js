@@ -1312,7 +1312,12 @@ const AREAS = [
                         label: 'Auto-redirect',
                         type: 'toggle',
                         path: 'settings.completion.autoRedirect',
-                        needsValue: [{ key: 'asMode', equals: 'screen' }]
+                        // exclusive with the PDF copy: a countdown would take
+                        // people away from their download (IMPL_PLAN_FORM_PDF §6.1)
+                        needsValue: [
+                            { key: 'asMode', equals: 'screen' },
+                            { key: 'asDownloadCopy', notEquals: true }
+                        ]
                     },
                     {
                         key: 'asRedirectTo',
@@ -1416,7 +1421,10 @@ const AREAS = [
                         path: 'settings.completion.downloadCopy',
                         fallback: false,
                         simple: true,
-                        needsValue: [{ key: 'asMode', equals: 'screen' }]
+                        needsValue: [
+                            { key: 'asMode', equals: 'screen' },
+                            { key: 'asAutoRedirect', notEquals: true }
+                        ]
                     },
                     {
                         key: 'asDownloadLabel',

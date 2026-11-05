@@ -58,7 +58,9 @@ export default class FinalAfterSubmit extends LightningElement {
     }
 
     get showRedirect() {
-        return Boolean(this.cfg.autoRedirect);
+        // A screen offering the PDF copy never counts down to leave
+        // (finalFormViewer/completionRules.js) — so it never says it will.
+        return Boolean(this.cfg.autoRedirect) && !this.showDownload;
     }
 
     get showDownload() {

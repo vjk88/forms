@@ -254,8 +254,9 @@ describe('c/finalSubmissionReader', () => {
         });
         expect(rows(el).map((r) => r.label)).toEqual(['How much do you agree']);
         expect(matrixLines(el)).toEqual([
-            { statement: 'It was clear', value: '4' },
-            { statement: 'It was quick', value: '2' }
+            // stored as the point's value, read as its label (finalAnswerText)
+            { statement: 'It was clear', value: 'Strongly agree' },
+            { statement: 'It was quick', value: 'Neutral' }
         ]);
     });
 
@@ -461,5 +462,67 @@ describe('c/finalSubmissionReader', () => {
         expect(el.shadowRoot.querySelector('.sr-error').textContent).toContain(
             'No access'
         );
+    });
+
+    it('words scales, rankings, dates and consent like the respondent copy', async () => {
+        const el = await mount({
+            ...base,
+            specJson: specWith([
+                { id: 'el_nps', type: 'nps', label: 'Recommend us?' },
+                {
+                    id: 'el_rank',
+                    type: 'ranking',
+                    label: 'Rank these',
+                    config: {
+                        options: [
+                            { value: 's', label: 'Salary' },
+                            { value: 't', label: 'Team' }
+                        ]
+                    }
+                },
+                {
+                    id: 'el_d',
+                    type: 'field',
+                    label: 'Start date',
+                    config: { inputType: 'date' }
+                },
+                {
+                    id: 'el_ok',
+                    type: 'consent',
+                    label: 'Consent',
+                    config: { html: '<p>I agree.</p>' }
+                }
+            ]),
+            answers: [
+                answer({
+                    elementKey: 'el_nps',
+                    answerType: 'Number',
+                    number: 0
+                }),
+                answer({
+                    elementKey: 'el_rank',
+                    answerType: 'Options',
+                    options: '["t","s"]'
+                }),
+                answer({
+                    elementKey: 'el_d',
+                    answerType: 'Date',
+                    date: '2026-11-02'
+                }),
+                answer({
+                    elementKey: 'el_ok',
+                    answerType: 'Boolean',
+                    checked: true
+                })
+            ]
+        });
+        const byLabel = Object.fromEntries(
+            rows(el).map((r) => [r.label, r.value])
+        );
+        expect(byLabel['Recommend us?']).toBe('0 out of 10');
+        expect(byLabel['Rank these']).toBe('1. Team\n2. Salary');
+        expect(byLabel['Start date']).toMatch(/2026/);
+        expect(byLabel['Start date']).not.toBe('2026-11-02');
+        expect(byLabel.Consent).toBe('Agreed');
     });
 });

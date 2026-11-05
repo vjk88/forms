@@ -2,7 +2,8 @@
 
 **Status:** slice 1 built (this PR) and unit-tested; **not yet deployed or looked at in an org**
 (§8 is the check list). Slice 2 (email a copy) is planned, not built.
-**Parent plan:** [PLAN_DOCUMENTS_AND_PAYMENTS.md](./PLAN_DOCUMENTS_AND_PAYMENTS.md) M1 "Submission PDFs".
+**Parent plan:** [PLAN_DOCUMENTS_AND_PAYMENTS.md](./PLAN_DOCUMENTS_AND_PAYMENTS.md) M1 "Submission PDFs"
+(added with its detailed plans by PR #435; M1's is [specs/IMPL_PLAN_SUBMISSION_PDF.md](./specs/IMPL_PLAN_SUBMISSION_PDF.md)).
 This file is M1's **first part, the in-session copy**, which needs no receipt. §10 maps it onto the
 parent plan, including what of M1 it does not cover.
 **Owner decision (2026-11-02):** build the PDF **in the browser, as a real .pdf file**, and ship four
@@ -87,6 +88,11 @@ and try again." It is shown under the button that was clicked, and the button st
 
 ### 4.3 What a copy contains
 
+Page breaks: an answer of up to 8 lines (a ranking, a short address) never splits across pages; a
+longer one may, but never leaves its first or last line alone. Choice lists and matrices follow the
+same rule.
+
+
 - **Respondent copy:** the payload that was actually submitted (rule-hidden answers are already
   absent) plus the set of rule-hidden keys, so a hidden question is left out instead of printing
   "No answer". Pages and sections emptied by rules are dropped. Lookups print the picked record's
@@ -144,7 +150,10 @@ show them but not read their bytes. The server hands the bytes over:
 - Spec: `settings.completion.downloadCopy` (boolean, default off) and
   `settings.completion.downloadLabel` (text, default "Download a copy (PDF)"). Design → After submit →
   Confirmation: a toggle and a label field (registry rows `asDownloadCopy`, `asDownloadLabel`).
-  Completion **screen** only: Toast & go leaves at once.
+  Completion **screen** only: Toast & go leaves at once. **Exclusive with Auto-redirect:** turning one on
+  disables the other in the Design panel (with the reason shown), because a countdown would take the
+  respondent away from their download. A spec that arrives with both on (import, older draft) keeps
+  the button and skips the redirect (`finalFormViewer/completionRules.js`).
 - `finalAfterSubmit`: a secondary button under the message. Busy: "Preparing your PDF…", disabled,
   `aria-busy`. Failure: a line under the button (`role=alert`). Respondent tokens only.
 - `finalFormViewer`: snapshots the submitted copy on every successful path (delegated, internal and
@@ -154,6 +163,13 @@ show them but not read their bytes. The server hands the bytes over:
   published snapshot).
 
 ### 6.2 Staff copy
+
+**One wording everywhere (2026-11-05, after the first in-org PDFs):** the Answers card used to show
+raw stored values (`1` for a matrix point, `0` for a 0–10 scale, ranking as a comma list, ISO dates,
+consent as "Yes"). It now reads every stored answer through `c/finalAnswerText.storedAnswerLines`,
+the same wording as the respondent's copy: "Disagree", "0 out of 10", a numbered ranking,
+"November 2, 2026", and the consent statement with Agreed / Not agreed in the PDF. Email, phone and
+website answers stay links on screen.
 
 `finalSubmissionReader`: `lightning-button` "Download PDF" (utility:download) in the card's actions
 slot (DESIGN_SYSTEM 5.1); "Preparing PDF…" while busy; failure as the card's existing error line.

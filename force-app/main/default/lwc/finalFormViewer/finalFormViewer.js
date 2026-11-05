@@ -33,6 +33,7 @@ import { evaluateVisibility, validateElement } from 'c/finalExpressionEngine';
 import { reconcileAnswers, pageAnchor, restorePage } from './previewSession';
 import { repeatsPageName } from 'c/finalPageName';
 import { headerFade, paneFadeEligible } from './headerFade';
+import { shouldAutoRedirect } from './completionRules';
 import {
     // The engine's two-argument reconcile, as the call below always meant:
     // previewSession's three-argument copy was imported by mistake and,
@@ -3061,7 +3062,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             );
             return;
         }
-        if (c.autoRedirect) {
+        if (shouldAutoRedirect(c, this.canDownloadCopy)) {
             const delay = Number(c.redirectDelay);
             // eslint-disable-next-line @lwc/lwc/no-async-operation
             this._redirectTimer = setTimeout(

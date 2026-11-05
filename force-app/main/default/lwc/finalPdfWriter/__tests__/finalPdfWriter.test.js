@@ -140,3 +140,22 @@ describe('c/finalPdfWriter text safety', () => {
         ).toBeGreaterThanOrEqual(1);
     });
 });
+
+describe('keepLine (page breaks)', () => {
+    const { keepLine } = require('c/finalPdfWriter');
+    it('keeps a short answer whole', () => {
+        expect([0, 1, 2].map((i) => keepLine(i, 4))).toEqual([
+            true,
+            true,
+            true
+        ]);
+        expect(keepLine(3, 4)).toBe(false);
+    });
+    it('lets a long answer break, but never strands its first or last line', () => {
+        const n = 20;
+        expect(keepLine(0, n)).toBe(true);
+        expect(keepLine(5, n)).toBe(false);
+        expect(keepLine(n - 2, n)).toBe(true);
+        expect(keepLine(n - 1, n)).toBe(false);
+    });
+});

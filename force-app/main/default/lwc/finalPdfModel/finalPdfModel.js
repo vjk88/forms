@@ -20,8 +20,13 @@
  *
  * Pure: no DOM, no Apex.
  */
-import { lookOf, optionsFor } from 'c/finalChoiceLook';
-import { optionLabel } from 'c/finalAnswerText';
+import {
+    answerLines,
+    choiceOptions,
+    formatDateTime,
+    labelOf,
+    optionLabel
+} from 'c/finalAnswerText';
 import { likertPoints, matrixPoints, scaleBounds } from 'c/finalSurveyPoints';
 
 const NO_ANSWER = 'No answer';
@@ -40,6 +45,8 @@ const CONTENT_TYPES = new Set([
 ]);
 
 const SCALE_TYPES = new Set(['nps', 'rating', 'scale', 'emojiScale']);
+
+export { answerLines };
 
 // ------------------------------------------------------------ rich text --
 
@@ -179,147 +186,6 @@ export function richTextParagraphs(html) {
 }
 
 // ------------------------------------------------------------- answers --
-
-function isEmpty(v) {
-    return (
-        v === null ||
-        v === undefined ||
-        v === '' ||
-        (Array.isArray(v) && v.length === 0) ||
-        (typeof v === 'object' && !Array.isArray(v) && !Object.keys(v).length)
-    );
-}
-
-function choiceOptions(el) {
-    const cfg = el.config || {};
-    let own = cfg.options || [];
-    if (el.type === 'field') {
-        own = optionsFor(cfg, lookOf(cfg, el.renderDefault).look) || [];
-    }
-    // A published projection compiles describe options into `render`
-    // (schema §4); they name a picklist's values when the author added none.
-    return own.length ? own : (el.render && el.render.options) || [];
-}
-
-function labelOf(o) {
-    if (!o) return '';
-    const base = o.label || String(o.value ?? '');
-    return o.emoji ? `${o.emoji} ${base}` : base;
-}
-
-/** 'YYYY-MM-DD' as a local date, without a timezone shift. */
-function formatDate(v, locale) {
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v));
-    if (!m) return String(v);
-    const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
-    try {
-        return new Intl.DateTimeFormat(locale, {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            timeZone: 'UTC'
-        }).format(d);
-    } catch {
-        return String(v);
-    }
-}
-
-function formatDateTime(v, locale) {
-    const d = new Date(v);
-    if (Number.isNaN(d.getTime())) return String(v);
-    try {
-        return new Intl.DateTimeFormat(locale, {
-            dateStyle: 'long',
-            timeStyle: 'short'
-        }).format(d);
-    } catch {
-        return d.toISOString();
-    }
-}
-
-function yesNo(v, cfg) {
-    const yes = (cfg && cfg.yesLabel) || 'Yes';
-    const no = (cfg && cfg.noLabel) || 'No';
-    if (v === true || v === 'true') return yes;
-    if (v === false || v === 'false') return no;
-    return String(v);
-}
-
-/**
- * One answer as lines of text (a multi-line answer keeps its line breaks).
- * `ctx`: { locale, lookupLabels }.
- * @returns {string[]} empty when unanswered
- */
-export function answerLines(el, value, ctx = {}) {
-    if (isEmpty(value)) {
-        return [];
-    }
-    const cfg = el.config || {};
-    const locale = ctx.locale;
-    const type = el.type;
-
-    if (type === 'yesNo') return [yesNo(value, cfg)];
-    if (type === 'consent') {
-        return [value === true || value === 'true' ? 'Agreed' : 'Not agreed'];
-    }
-    if (type === 'likert') {
-        return [optionLabel(value, likertPoints(cfg))];
-    }
-    if (SCALE_TYPES.has(type)) {
-        const { max } = scaleBounds(type, cfg);
-        return [`${value} out of ${max}`];
-    }
-    if (type === 'ranking') {
-        const opts = cfg.options || [];
-        return (Array.isArray(value) ? value : [value]).map(
-            (v, i) => `${i + 1}. ${optionLabel(v, opts)}`
-        );
-    }
-    if (type === 'file') {
-        return (Array.isArray(value) ? value : [value])
-            .map((f) => (f && (f.name || f.title)) || '')
-            .filter(Boolean);
-    }
-    if (type === 'imageChoice') {
-        const opts = cfg.options || [];
-        return [
-            (Array.isArray(value) ? value : [value])
-                .map((v) => optionLabel(v, opts))
-                .join(', ')
-        ];
-    }
-
-    const inputType = cfg.inputType;
-    if (
-        inputType === 'reference' ||
-        inputType === 'lookup' ||
-        type === 'lookup'
-    ) {
-        const label = ctx.lookupLabels && ctx.lookupLabels[el.id];
-        return [label || String(value)];
-    }
-    const options = choiceOptions(el);
-    if (options.length && !(typeof value === 'boolean')) {
-        const list = Array.isArray(value)
-            ? value
-            : typeof value === 'string' && inputType === 'multipicklist'
-              ? value.split(';')
-              : [value];
-        const opts = options.map((o) => ({
-            value: o.value,
-            label: labelOf(o)
-        }));
-        return [list.map((v) => optionLabel(v, opts)).join(', ')];
-    }
-    if (typeof value === 'boolean') {
-        return [value ? 'Yes' : 'No'];
-    }
-    if (inputType === 'date') return [formatDate(value, locale)];
-    if (inputType === 'datetime') return [formatDateTime(value, locale)];
-    if (Array.isArray(value)) return [value.map(String).join(', ')];
-    if (typeof value === 'object') return [JSON.stringify(value)];
-    return String(value).split(/\r?\n/);
-}
 
 /** A matrix answer `{ rowValue: pointValue }` as one line per statement. */
 function matrixLines(el, value) {
@@ -718,6 +584,14 @@ export function buildReaderDocument({ spec, header, sections, files, locale }) {
                         value: l.value,
                         answered: l.answered
                     }))
+                });
+            } else if (row.consent) {
+                // what was agreed to, ticked or not, as on the respondent copy
+                blocks.push({
+                    kind: 'consent',
+                    label: row.label,
+                    paragraphs: richTextParagraphs(row.consent.html),
+                    checked: row.consent.checked
                 });
             } else {
                 blocks.push({

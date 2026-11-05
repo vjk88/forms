@@ -160,6 +160,16 @@ describe('c-final-after-submit', () => {
             expect(handler).toHaveBeenCalledTimes(1);
         });
 
+        it('drops the redirect countdown while a copy is on offer', () => {
+            const cfg = { downloadCopy: true, autoRedirect: true };
+            expect(
+                mount(cfg, { canDownload: true }).shadowRoot.querySelector(
+                    '.pill'
+                )
+            ).toBeNull();
+            expect(mount(cfg).shadowRoot.querySelector('.pill')).not.toBeNull();
+        });
+
         it('never shows in toast mode', () => {
             const el = mount(
                 { mode: 'toast', downloadCopy: true },

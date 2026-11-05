@@ -49,6 +49,19 @@ const SIZE = {
 
 const IMAGE_WIDTH = { small: 120, medium: 240, large: 390 };
 
+/** Answers up to this many lines never break across pages. */
+const KEEP_LINES = 8;
+
+/**
+ * Whether line `i` of `n` must stay on the same page as the next line:
+ * a short answer stays whole; a long one may break, but never strands its
+ * first or last line alone (no widows, no orphans).
+ */
+export function keepLine(i, n) {
+    if (i >= n - 1) return false;
+    return n <= KEEP_LINES || i === 0 || i >= n - 2;
+}
+
 // ----------------------------------------------------------------- utils --
 
 function toRgb(lib, c) {
@@ -690,7 +703,11 @@ export async function renderPdf(opts) {
                                 SIZE.answer,
                                 col
                             ),
-                        { keepWithNext: i === 0 && all.length === 2 }
+                        {
+                            keepWithNext:
+                                keepLine(i, all.length) ||
+                                (i === all.length - 1 && Boolean(block.note))
+                        }
                     )
                 );
                 if (block.note) {
@@ -757,7 +774,7 @@ export async function renderPdf(opts) {
                                 );
                             }
                         },
-                        { keepWithNext: i === 0 }
+                        { keepWithNext: keepLine(i, block.rows.length) }
                     );
                 });
                 space(10);
@@ -860,7 +877,7 @@ export async function renderPdf(opts) {
                                 )
                             );
                         },
-                        { keepWithNext: i === 0 }
+                        { keepWithNext: keepLine(i, block.options.length) }
                     );
                 });
                 space(10);

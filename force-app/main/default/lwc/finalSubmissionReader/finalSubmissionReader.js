@@ -2,10 +2,15 @@ import { LightningElement, api, wire } from 'lwc';
 import { NavigationMixin } from 'lightning/navigation';
 import getSubmission from '@salesforce/apex/FinalSubmissionController.getSubmission';
 import getPdfImages from '@salesforce/apex/FinalPdfController.getImages';
-import { optionLabel } from 'c/finalAnswerText';
+import {
+    matrixAnswerWord,
+    optionLabel,
+    storedAnswerLines
+} from 'c/finalAnswerText';
 import { localizeAssetUrls } from 'c/finalThemeAssets';
 import { buildReaderDocument, pdfFileName } from 'c/finalPdfModel';
-import { downloadPdf, LOCALE } from 'c/finalPdfService';
+import { downloadPdf } from 'c/finalPdfService';
+import LOCALE from '@salesforce/i18n/locale';
 
 /**
  * Reads one Freeform submission back, in the form's own order (FREEFORM_SPEC §8).
@@ -291,7 +296,7 @@ function matrixGroup(el, label, statements, answered) {
         const text = r.label || value;
         lines.push(
             a
-                ? answeredRow(`${el.id}-${value}`, text, a, el)
+                ? matrixRow(`${el.id}-${value}`, text, a, el)
                 : skippedRow(`${el.id}-${value}`, text)
         );
     }
@@ -299,20 +304,47 @@ function matrixGroup(el, label, statements, answered) {
     // its own key — the same courtesy the orphan section gives a question.
     for (const [value, a] of byStatement) {
         if (!placed.has(value)) {
-            lines.push(answeredRow(`${el.id}-${value}`, value, a, el));
+            lines.push(matrixRow(`${el.id}-${value}`, value, a, el));
         }
     }
     return { key: el.id, label, isMatrix: true, answered: true, lines };
 }
 
 function answeredRow(key, label, a, el) {
-    return {
+    const row = {
         key,
         label,
         ...displayValue(a, el),
         answered: true,
         unparsed: a.unparsed,
         note: a.unparsed ? unparsedNote(a) : ''
+    };
+    // A consent answer carries the statement that was agreed to, so the PDF
+    // can print WHAT was agreed, not just "Agreed" (IMPL_PLAN_FORM_PDF §6.2).
+    if (el && el.type === 'consent') {
+        row.consent = {
+            html: (el.config && el.config.html) || '',
+            checked: Boolean(a.checked)
+        };
+    }
+    return row;
+}
+
+/** One matrix statement: its chosen scale point, by name. */
+function matrixRow(key, label, a, el) {
+    if (a.unparsed) {
+        return answeredRow(key, label, a, null);
+    }
+    const stored =
+        a.number !== null && a.number !== undefined ? a.number : a.text;
+    return {
+        key,
+        label,
+        value: matrixAnswerWord(el, stored) || String(stored ?? ''),
+        isText: true,
+        answered: true,
+        unparsed: false,
+        note: ''
     };
 }
 
@@ -345,6 +377,22 @@ function unparsedNote(a) {
 function displayValue(a, el) {
     if (a.unparsed) {
         return plain(a.text);
+    }
+    // Links stay links.
+    if (a.answerType === 'Email') {
+        return { value: a.text || '', isEmail: true };
+    }
+    if (a.answerType === 'Phone') {
+        return { value: a.text || '', isPhone: true };
+    }
+    if (a.answerType === 'URL') {
+        return { value: a.text || '', isUrl: true };
+    }
+    // A question the version still has reads through the shared wording
+    // (c/finalAnswerText): "3 out of 10", "Agree", a numbered ranking, a
+    // local date — exactly what the respondent's own PDF copy says.
+    if (el) {
+        return plain(storedAnswerLines(a, el, { locale: LOCALE }).join('\n'));
     }
     switch (a.answerType) {
         case 'Boolean':
