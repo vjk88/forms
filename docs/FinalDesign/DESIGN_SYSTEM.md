@@ -7,8 +7,8 @@ Later rulings the same day: the preview editing mark and the narrow Editor/Previ
 ([DEFERRED.md](./DEFERRED.md) 48, 49) and the row-based structure list is dropped; options that
 look different are shown as **picture tiles** wherever possible; the Appearance picker, the new-form
 steps, the page switcher and the always-visible remove (×) **stay as they are** and are only restyled.
-Everything below is binding for new work now; existing screens move over through
-[IMPL_PLAN_STUDIO_DESIGN_SCALE.md](./IMPL_PLAN_STUDIO_DESIGN_SCALE.md).
+Everything below is binding, and every Studio screen follows it (the move-over plan is done and archived:
+[archive/IMPL_PLAN_STUDIO_DESIGN_SCALE.md](./archive/IMPL_PLAN_STUDIO_DESIGN_SCALE.md)).
 **See it:** [mocks/studio-formwork-system-mock.html](./mocks/studio-formwork-system-mock.html) shows every
 rule on every Studio screen (Build, Design, Mapping, library, new form, settings, publish, narrow width)
 plus a sheet of every control in every state. Its CSS uses the real token names below.
@@ -40,7 +40,7 @@ and `mocks/STUDIO_FORMWORK_DIRECTION.md` (the proposal this adopts).
 11. **Restyle, never redesign, what's already built.** Existing features keep their controls, control
     types, options, labels, menus, flows and behavior (§5.0). The meaning map (§2) decides **new** controls;
     it is never a reason to swap an existing one. Only the plan's approved-changes list and the component swap
-    ([IMPL_PLAN_STUDIO_COMPONENT_SWAP.md](./IMPL_PLAN_STUDIO_COMPONENT_SWAP.md)) may go further.
+    ([IMPL_PLAN_STUDIO_COMPONENT_SWAP.md](./archive/IMPL_PLAN_STUDIO_COMPONENT_SWAP.md)) may go further.
 12. **Salesforce components first** (owner 2026-11-01). Buttons, icon buttons, text, number, search,
     checkbox and toggle inputs, dropdowns, sliders and text areas are `lightning-*` base
     components, styled only through their `--slds-c-*` hooks. Button groups are always our `finalButtonGroup`
@@ -311,8 +311,9 @@ Adding an exception = one row here + a comment on the selector naming this secti
 `final*` stylesheet not on the respondent list and fails on: a raw font size, weight, color, radius,
 shadow, z-index, font family or transition time; `text-transform: uppercase`; a `var(--c-studio-*)` the
 bundle doesn't define; a self-referencing variable; a respondent token read outside a §8 selector;
-bundle values that don't match §4. During migration a per-selector allowlist of today's violations may
-only shrink. It's empty when the migration ends.
+bundle values that don't match §4. There is no allowlist (emptied and removed 2026-11-11): every Studio
+stylesheet passes every rule. Art that draws the respondent form is a §8 specimen, skipped by selector in
+the guard's `SPECIMENS` map.
 
 **Before you merge any UI change:**
 1. Full Jest suite green.
@@ -349,6 +350,7 @@ the missing one here first.
 
 ## Change log
 
+- **2026-11-11 v2.13.** Locked (plan step 6): the guard has no allowlist, so a raw value or ALL CAPS anywhere in Studio CSS fails the build; `studioScaleAllowlist.json` is deleted. The move-over plan and the component swap plan are archived. All six steps are done.
 - **2026-11-11 v2.12.** The screens around the Studio moved onto the system (plan step 5): forms library (data table 5.21, kind badge 5.22, Salesforce buttons and Show filter), New form (Close and Back are Salesforce buttons, How to start and Preview width are `finalButtonGroup`, the name, object and layout boxes are Salesforce controls, kind and template cards follow 5.11; no em dashes or arrows in its labels), the Studio dialogs, settings drawer, Publish (now on the Studio teal), conditions, rule, validation, Autofill and record-link panels. New tokens: `drop-before`, `drop-after`, `drop-target`, `ring-focus`, `ring-error`, `z-behind`. The `dialog-shadow` alias and the last dead `var(--c-studio-x, #hex)` fallbacks are gone. The guard's allowlist is empty. Salesforce icon buttons and button menus take the Studio focus ring and text colors too (the Actions menu and dialog Close were Salesforce blue), and sliders take the accent (VF reads `--slds-c-slider-thumb-color-foreground`).
 - **2026-11-11 v2.11.** Design screen moved onto the system (plan step 4): the Design pane, theme dialog, brand inputs, gradient, image, font and color controls, galleries and cards. Hand-built buttons, dropdowns, toggles, sliders and text boxes became Salesforce ones; Simple / Advanced design, Solid / Gradient, Start from and Preview in became `finalButtonGroup`; Salesforce controls in a settings row take their label above (5.4). Theme and layout cards follow 5.11 (no lift on hover). New tokens: `duration-long`, `swatch-edge`, `swatch-ring`. The guard skips the §8 specimens by selector. Kept hand-built: the logo color swatches (color chips with a role, not a button group), color pickers, presets, font selects (groups), Design search, after-submit tiles.
 - **2026-11-04 v2.10.** Owner OK on the Design pane mock: one change status line (5.28), Theme and layout as compact pictures of the form's own theme and layout, Accent as a clean 8-to-a-row grid with plain readability words (5.27), Design dropdowns with a look as drawn tiles (5.24), group titles with a hairline and their own Reset (5.29). Too-pale accent presets stay, faded, without the slash (owner ruling).
@@ -357,7 +359,7 @@ the missing one here first.
 - **2026-11-02 v2.7.** Owner: two new patterns from the Mapping mock: plain summary (5.25) and how it works strip (5.26).
 - **2026-11-02 v2.6.** Owner: button groups are joined with the chosen one solid teal (5.7). A lone solid teal button is the main action; teal inside a joined group is the chosen value.
 - **2026-11-01 v2.5.** Owner: swap hand-built controls to Salesforce components first, then restyle
-  ([IMPL_PLAN_STUDIO_COMPONENT_SWAP.md](./IMPL_PLAN_STUDIO_COMPONENT_SWAP.md)). Rule 12: Salesforce components
+  ([IMPL_PLAN_STUDIO_COMPONENT_SWAP.md](./archive/IMPL_PLAN_STUDIO_COMPONENT_SWAP.md)). Rule 12: Salesforce components
   first; every button group uses `finalButtonGroup`.
 - **2026-11-01 v2.4.** Owner: the inspector header keeps today's contents (no type mark, no meta line).
 - **2026-11-01 v2.3.** Owner: editing mark and narrow Editor/Preview switch parked (DEFERRED 48, 49);
