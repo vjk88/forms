@@ -8,26 +8,27 @@
                 </p>
             </div>
             <div class="lib-actions">
-                <label class="lib-filter-label" for="status-filter">Show</label>
-                <select
-                    id="status-filter"
+                <span class="lib-filter-label" aria-hidden="true">Show</span>
+                <lightning-combobox
                     class="lib-filter"
-                    aria-label="Form lifecycle filter"
+                    label="Form lifecycle filter"
+                    variant="label-hidden"
+                    options={statusOptions}
+                    value={statusValue}
                     onchange={handleStatusFilter}
-                >
-                    <option value="current">Current</option>
-                    <option value="archived">Archived</option>
-                </select>
-                <button
-                    type="button"
+                ></lightning-combobox>
+                <lightning-button
                     class="lib-refresh"
+                    label="Refresh"
                     onclick={handleRefresh}
-                >
-                    Refresh
-                </button>
-                <button type="button" class="lib-new" onclick={handleNew}>
-                    + New form
-                </button>
+                ></lightning-button>
+                <lightning-button
+                    class="lib-new"
+                    variant="brand"
+                    icon-name="utility:add"
+                    label="New form"
+                    onclick={handleNew}
+                ></lightning-button>
             </div>
         </header>
         <template lwc:if={restoreNotice}>
@@ -80,34 +81,29 @@
                                 </td>
                                 <td>
                                     <template lwc:if={row.isArchived}>
-                                        <button
-                                            type="button"
+                                        <lightning-button
                                             class="lib-view"
+                                            label="View"
                                             data-id={row.id}
                                             onclick={handleOpen}
-                                        >
-                                            View
-                                        </button>
-                                        <button
-                                            type="button"
+                                        ></lightning-button>
+                                        <lightning-button
                                             class="lib-restore"
+                                            variant="brand"
+                                            label={row.restoreLabel}
                                             data-id={row.id}
                                             disabled={row.restoring}
                                             title="Restore as a private draft"
                                             onclick={handleRestore}
-                                        >
-                                            {row.restoreLabel}
-                                        </button>
+                                        ></lightning-button>
                                     </template>
                                     <template lwc:else>
-                                        <button
-                                            type="button"
+                                        <lightning-button
                                             class="lib-open"
+                                            label="Open in Studio"
                                             data-id={row.id}
                                             onclick={handleOpen}
-                                        >
-                                            Open in Studio
-                                        </button>
+                                        ></lightning-button>
                                     </template>
                                 </td>
                             </tr>

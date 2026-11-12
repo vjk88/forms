@@ -83,13 +83,12 @@
                             ></lightning-button>
                         </template>
                         <template lwc:else>
-                            <button
-                                type="button"
+                            <lightning-button
                                 class="action-linkish"
+                                variant="base"
+                                label="Download didn't start? Copy the package instead."
                                 onclick={handleShowFallback}
-                            >
-                                Download didn't start? Copy the package instead.
-                            </button>
+                            ></lightning-button>
                         </template>
                     </template>
                 </template>

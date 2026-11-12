@@ -110,6 +110,7 @@ Jest uses stand-ins for Lightning components, so it can't prove how the real one
 - **Design swap: built 2026-11-11 on `feat/studio-design-consistency`** (shipped together with the Design restyle, plan step 4).
   - Not swapped, on purpose: the logo color swatches in `finalBrandInputs` (line 49). They are color chips that each carry a role (Main, Second), so they stay color swatches like `finalColorControl`'s, not a button group.
   - The after-submit tiles and the Design search stay Keep, as listed.
+- **Around-it swap: built 2026-11-11 on `feat/studio-surround-consistency`** (with the step 5 restyle): `finalFormsLibrary`, `finalCreationGallery`, `finalStudioActionDialog` as listed. The kind, template and theme-chip buttons stay Keep. Every swap in this plan is now done.
   - "Add a record", "Change", the relationship picker's Cancel and the submission file link are now `lightning-button`.
 
 ## Order of work (one swap PR per screen, then its restyle PR)

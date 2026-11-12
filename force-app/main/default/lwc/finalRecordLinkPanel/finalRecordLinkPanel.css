@@ -20,8 +20,8 @@
 .rl-result-title {
     margin: 0;
     color: var(--c-studio-text);
-    font-size: 0.875rem;
-    font-weight: 700;
+    font-size: var(--c-studio-fs-body);
+    font-weight: var(--c-studio-fw-strong);
 }
 
 .rl-help,
@@ -29,7 +29,7 @@
 .rl-validation {
     margin: 0.25rem 0 0;
     color: var(--c-studio-text-weak);
-    font-size: 0.75rem;
+    font-size: var(--c-studio-fs-small);
     line-height: 1.45;
 }
 
@@ -55,7 +55,7 @@
 .rl-result {
     margin-top: 1rem;
     padding: 0.875rem;
-    border-radius: 0.5rem;
+    border-radius: var(--c-studio-radius-md);
     background: var(--c-studio-info-surface);
 }
 
@@ -70,10 +70,11 @@
     flex: 1;
     padding: 0.5rem;
     border: 1px solid var(--c-studio-border-strong);
-    border-radius: 0.25rem;
+    border-radius: var(--c-studio-radius-sm);
     background: var(--c-studio-hover);
     color: var(--c-studio-text);
-    font: 0.75rem monospace;
+    font-family: var(--c-studio-font-mono);
+    font-size: var(--c-studio-fs-small);
 }
 
 .rl-danger-row {
@@ -87,20 +88,20 @@
     margin-top: 8px;
     padding: 10px 12px;
     border: 1px solid var(--c-studio-error-border);
-    border-radius: 6px;
+    border-radius: var(--c-studio-radius-md);
     background: var(--c-studio-error-surface);
 }
 
 .rl-stop-title {
     margin: 0 0 4px;
-    font-size: 12.5px;
-    font-weight: 700;
+    font-size: var(--c-studio-fs-small);
+    font-weight: var(--c-studio-fw-strong);
     color: var(--c-studio-text);
 }
 
 .rl-stop-text {
     margin: 0 0 8px;
-    font-size: 12px;
+    font-size: var(--c-studio-fs-small);
     line-height: 1.4;
     color: var(--c-studio-text-weak);
 }

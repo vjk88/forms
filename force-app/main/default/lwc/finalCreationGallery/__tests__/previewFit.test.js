@@ -118,7 +118,11 @@ describe('new-form preview shrinks to fit', () => {
     it('switching device re-fits the same frame: a phone needs no shrink', async () => {
         const el = await openDetails();
         await measure(el, 768, 1024, 2000);
-        el.shadowRoot.querySelector('.dev-btn[data-value="mobile"]').click();
+        el.shadowRoot
+            .querySelector('c-final-button-group.dev-toggle')
+            .dispatchEvent(
+                new CustomEvent('change', { detail: { value: 'mobile' } })
+            );
         await flush();
         const { fit, frame } = await measure(el, 768, 390, 1200);
         expect(frame.style.width).toBe('390px');
@@ -131,13 +135,11 @@ describe('new-form preview shrinks to fit', () => {
         const first = observers.length;
         el.shadowRoot.querySelector('.d-back').click();
         await flush();
-        el.shadowRoot
-            .querySelector('c-final-theme-gallery')
-            .dispatchEvent(
-                new CustomEvent('themeselect', {
-                    detail: { themeKey: 'nordic' }
-                })
-            );
+        el.shadowRoot.querySelector('c-final-theme-gallery').dispatchEvent(
+            new CustomEvent('themeselect', {
+                detail: { themeKey: 'nordic' }
+            })
+        );
         await flush();
         expect(observers.length).toBe(first + 1);
         expect(observers[first - 1].targets).toEqual([]);

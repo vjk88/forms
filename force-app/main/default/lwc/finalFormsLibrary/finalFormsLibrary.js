@@ -82,8 +82,21 @@ export default class FinalFormsLibrary extends LightningElement {
             : 'Click + New form to start from a survey template or a blank layout.';
     }
 
+    /** The Show filter: current or archived forms. */
+    get statusOptions() {
+        return [
+            { label: 'Current', value: 'current' },
+            { label: 'Archived', value: 'archived' }
+        ];
+    }
+
+    get statusValue() {
+        return this.showArchived ? 'archived' : 'current';
+    }
+
     handleStatusFilter(event) {
-        this.showArchived = event.target.value === 'archived';
+        const v = event.detail ? event.detail.value : event.target.value;
+        this.showArchived = v === 'archived';
         this.rows = undefined;
         this.error = undefined;
         this.restoreNotice = undefined;

@@ -54,25 +54,25 @@ const SURVEY_TEMPLATES = [
         key: 'blank',
         name: 'Blank survey',
         icon: 'utility:add',
-        blurb: 'An empty one-question-per-screen survey — build it yourself from the Questions palette.'
+        blurb: 'An empty one-question-per-screen survey. Build it yourself from the Questions palette.'
     },
     {
         key: 'csat',
         name: 'CSAT Pulse',
         icon: 'utility:smiley_and_people',
-        blurb: 'How satisfied are customers? One score, one comment — charted by the Satisfaction topic.'
+        blurb: 'How satisfied are customers? One score, one comment, charted by the Satisfaction topic.'
     },
     {
         key: 'nps',
         name: 'NPS Pulse',
         icon: 'utility:metrics',
-        blurb: 'The classic 0–10 "would you recommend us?" plus the why — charted by the Loyalty topic.'
+        blurb: 'The classic 0–10 "would you recommend us?" plus the why, charted by the Loyalty topic.'
     },
     {
         key: 'event',
         name: 'Event Feedback',
         icon: 'utility:event',
-        blurb: 'Rating, agreement, would-you-return, comments. Anonymous by default — honest answers.'
+        blurb: 'Rating, agreement, would-you-return, comments. Anonymous by default, for honest answers.'
     }
 ];
 
@@ -83,7 +83,7 @@ const FREEFORM_TEMPLATES = [
         key: 'blank',
         name: 'Blank freeform',
         icon: 'utility:add',
-        blurb: 'An empty canvas — ask anything, then decide later where the answers go in Salesforce.'
+        blurb: 'An empty canvas. Ask anything, then decide later where the answers go in Salesforce.'
     },
     {
         key: 'contact',
@@ -222,6 +222,19 @@ export default class FinalCreationGallery extends LightningElement {
     get scratchSelected() {
         return this.isTemplateMode ? 'false' : 'true';
     }
+    /** How to start: the shared button group (DESIGN_SYSTEM 5.7). */
+    get entryOptions() {
+        return [
+            { label: 'Form templates', value: 'template' },
+            { label: 'Blank form · pick a layout', value: 'scratch' }
+        ];
+    }
+    get entryValue() {
+        return this.isTemplateMode ? 'template' : 'scratch';
+    }
+    handleEntry(event) {
+        this.entryMode = event.detail.value;
+    }
     handleEntryTemplate() {
         this.entryMode = 'template';
     }
@@ -256,7 +269,7 @@ export default class FinalCreationGallery extends LightningElement {
     get templatesSub() {
         return this.isFreeformType
             ? 'Answers are kept with the submission. You pick the layout and theme next, and can map answers to Salesforce later.'
-            : 'Complete and ready — answers land in the answer store, one question per screen. You pick the theme next.';
+            : 'Complete and ready: answers land in the answer store, one question per screen. You pick the theme next.';
     }
 
     get chosenTemplateName() {
@@ -360,8 +373,21 @@ export default class FinalCreationGallery extends LightningElement {
         });
         return out;
     }
+    /** The details screen's Layout dropdown (lightning-combobox). */
+    get layoutComboOptions() {
+        return this.layoutOptions.map((o) => ({
+            label: o.label,
+            value: o.value
+        }));
+    }
+    get layoutValue() {
+        const hit = this.layoutOptions.find((o) => o.selected);
+        return hit ? hit.value : undefined;
+    }
+
     handleLayoutDropdown(e) {
-        const [layout, paneFlow] = e.target.value.split(':');
+        const v = e.detail ? e.detail.value : e.target.value;
+        const [layout, paneFlow] = v.split(':');
         this.chosenLayout = layout;
         this.chosenPaneFlow = paneFlow || '';
     }
@@ -393,7 +419,7 @@ export default class FinalCreationGallery extends LightningElement {
     }
     get themeSub() {
         return this.isSurveyType
-            ? 'Each preview uses the survey flow — one question at a time.'
+            ? 'Each preview uses the survey flow: one question at a time.'
             : 'Each preview uses your chosen layout.';
     }
 
@@ -518,8 +544,25 @@ export default class FinalCreationGallery extends LightningElement {
             this._pvHeight = height;
         }
     }
+    /** Preview width: the shared button group (DESIGN_SYSTEM 5.7). */
+    get deviceGroupOptions() {
+        return DEVICES.map((d) => ({ label: d.title, value: d.value }));
+    }
+
     handleDevice(e) {
-        this.previewDevice = e.currentTarget.dataset.value;
+        this.previewDevice = e.detail
+            ? e.detail.value
+            : e.currentTarget.dataset.value;
+    }
+
+    get createFormLabel() {
+        return this.isCreating ? 'Creating…' : 'Create form';
+    }
+    get createSurveyLabel() {
+        return this.isCreating ? 'Creating…' : 'Create survey';
+    }
+    get createFreeformLabel() {
+        return this.isCreating ? 'Creating…' : 'Create freeform';
     }
 
     // ---- object picker (searchable, all updatable) ----

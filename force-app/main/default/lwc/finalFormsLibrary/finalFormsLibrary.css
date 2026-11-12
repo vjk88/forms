@@ -1,10 +1,12 @@
 @import 'c/finalStudioStyles';
 
+/* The forms library: a page title, its actions, then the data table
+   (DESIGN_SYSTEM 5.21). Studio tokens only. */
 .lib {
-    padding: 16px 20px;
+    padding: var(--c-studio-space-6);
     background: var(--c-studio-surface);
-    font-family:
-        -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-family: var(--c-studio-font);
+    font-size: var(--c-studio-fs-body);
     color: var(--c-studio-text);
 }
 
@@ -12,148 +14,116 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 12px;
+    gap: var(--c-studio-space-5);
+    margin-bottom: var(--c-studio-space-5);
 }
 
 .lib-head h2 {
     margin: 0;
-    font-size: 16px;
+    font-size: var(--c-studio-fs-display);
+    font-weight: var(--c-studio-fw-strong);
+    line-height: var(--c-studio-lh-tight);
 }
 
 .lib-subtitle {
-    margin: 3px 0 0;
+    margin: var(--c-studio-space-2) 0 0;
     color: var(--c-studio-text-weak);
-    font-size: 12px;
+    font-size: var(--c-studio-fs-small);
+}
+
+.lib-actions {
+    display: flex;
+    gap: var(--c-studio-space-3);
+    align-items: center;
 }
 
 .lib-filter-label {
     color: var(--c-studio-text-weak);
-    font-size: 12px;
+    font-size: var(--c-studio-fs-small);
 }
 
 .lib-filter {
-    min-height: 30px;
-    border: 1px solid var(--c-studio-border-strong);
-    border-radius: 6px;
-    background: var(--c-studio-surface);
-    padding: 4px 28px 4px 9px;
-    font: inherit;
-    font-size: 12px;
-}
-
-.lib-refresh {
-    border: 1px solid var(--c-studio-border-strong);
-    border-radius: 6px;
-    background: var(--c-studio-surface);
-    font: inherit;
-    font-size: 12px;
-    padding: 5px 12px;
-    cursor: pointer;
+    width: 9rem;
 }
 
 .lib-error {
-    color: var(--c-studio-error);
+    color: var(--c-studio-error-text);
 }
 
 .lib-empty {
-    padding: 40px 0;
+    padding: var(--c-studio-space-8) 0;
     text-align: center;
     color: var(--c-studio-text-weak);
 }
 
 .lib-empty h3 {
-    margin: 0 0 6px;
+    margin: 0 0 var(--c-studio-space-2);
+    font-size: var(--c-studio-fs-title);
+    font-weight: var(--c-studio-fw-strong);
     color: var(--c-studio-text);
+}
+
+.lib-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--c-studio-border);
+    border-radius: var(--c-studio-radius-md);
 }
 
 .lib-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 13px;
+    font-size: var(--c-studio-fs-body);
 }
 
-.lib-table-wrap {
-    overflow-x: auto;
-}
-
+/* header: subtle surface, 12px strong weak text, sentence case (5.21) */
 .lib-table th {
     text-align: left;
-    padding: 8px 10px;
-    border-bottom: 2px solid var(--c-studio-border);
+    padding: var(--c-studio-space-3) var(--c-studio-space-4);
+    background: var(--c-studio-surface-subtle);
+    border-bottom: 1px solid var(--c-studio-border);
     color: var(--c-studio-text-weak);
-    font-size: 11.5px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    font-size: var(--c-studio-fs-small);
+    font-weight: var(--c-studio-fw-strong);
 }
 
 .lib-table td {
-    padding: 10px;
+    padding: var(--c-studio-space-3) var(--c-studio-space-4);
     border-bottom: 1px solid var(--c-studio-border-subtle);
+    vertical-align: middle;
+}
+
+.lib-table tbody tr:last-child td {
+    border-bottom: 0;
 }
 
 .lib-name {
-    font-weight: 600;
+    font-weight: var(--c-studio-fw-strong);
 }
 
+/* the form's kind: a neutral badge (5.22) */
 .lib-type {
-    display: inline-block;
-    padding: 2px 7px;
-    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    padding: 0 var(--c-studio-space-2);
+    border-radius: var(--c-studio-radius-sm);
     background: var(--c-studio-workspace);
     color: var(--c-studio-text-weak);
-    font-size: 11px;
-    font-weight: 600;
-}
-
-.lib-open {
-    border: 1px solid var(--c-studio-accent);
-    border-radius: 6px;
-    background: var(--c-studio-surface);
-    color: var(--c-studio-accent-text);
-    font: inherit;
-    font-size: 12px;
-    font-weight: 600;
-    padding: 5px 12px;
-    cursor: pointer;
-}
-
-.lib-restore {
-    border: 0;
-    border-radius: 6px;
-    background: var(--c-studio-accent);
-    color: var(--c-studio-on-accent);
-    font: inherit;
-    font-size: 12px;
-    font-weight: 600;
-    padding: 6px 14px;
-    cursor: pointer;
-}
-
-.lib-restore:disabled {
-    opacity: 0.55;
-    cursor: default;
+    font-size: var(--c-studio-fs-caption);
+    font-weight: var(--c-studio-fw-strong);
 }
 
 .lib-view {
-    margin-right: 8px;
-    border: 1px solid var(--c-studio-border-strong);
-    border-radius: 6px;
-    background: var(--c-studio-surface);
-    color: var(--c-studio-text-weak);
-    font: inherit;
-    font-size: 12px;
-    font-weight: 600;
-    padding: 5px 12px;
-    cursor: pointer;
+    margin-right: var(--c-studio-space-3);
 }
 
 .lib-notice {
-    margin: 0 0 12px;
-    padding: 8px 12px;
-    border-radius: 6px;
+    margin: 0 0 var(--c-studio-space-4);
+    padding: var(--c-studio-space-3) var(--c-studio-space-4);
+    border-radius: var(--c-studio-radius-md);
     background: var(--c-studio-success-surface);
     color: var(--c-studio-success-text);
-    font-size: 13px;
+    font-size: var(--c-studio-fs-body);
 }
 
 .assistive-text {
@@ -164,59 +134,37 @@
     clip-path: inset(50%);
 }
 
-.lib-open:hover {
-    background: var(--c-studio-accent-surface);
-}
-
-/* ---- creation overlay (S5 wiring: the gallery's host) ---- */
-.lib-actions {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-.lib-new {
-    border: none;
-    border-radius: 8px;
-    background: var(--c-studio-accent);
-    color: var(--c-studio-on-accent);
-    font-weight: 700;
-    padding: 7px 16px;
-    cursor: pointer;
-    font: inherit;
-}
-.lib-new:hover {
-    background: var(--c-studio-accent-hover);
-}
+/* ---- creation overlay (the gallery's host) ---- */
 .lib-overlay {
     position: fixed;
     inset: 0;
-    z-index: 9000;
+    z-index: var(--c-studio-z-backdrop);
     background: var(--c-studio-overlay);
     /* the creation window fills the screen, less a 24px margin (owner
        2026-10-31); minmax(0, …) keeps a tall gallery scrolling inside the
        window instead of stretching it */
     display: grid;
     grid-template: minmax(0, 1fr) / minmax(0, 1fr);
-    padding: 24px;
+    padding: var(--c-studio-space-6);
 }
+
 .lib-overlay-panel {
     background: var(--c-studio-surface);
-    border-radius: 14px;
+    border-radius: var(--c-studio-radius-lg);
     overflow: auto;
-    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.3);
-    padding: 8px 4px;
+    box-shadow: var(--c-studio-shadow-3);
+    padding: var(--c-studio-space-3) var(--c-studio-space-2);
 }
 
 @media (max-width: 600px) {
     .lib-overlay {
-        padding: 8px;
+        padding: var(--c-studio-space-3);
     }
 }
 
 @media (max-width: 700px) {
     .lib-head {
         align-items: flex-start;
-        gap: 12px;
         flex-direction: column;
     }
 
@@ -224,9 +172,4 @@
         width: 100%;
         flex-wrap: wrap;
     }
-}
-
-.lib-restore:hover:not(:disabled) {
-    background: var(--c-studio-accent-hover);
-    border-color: var(--c-studio-accent-hover);
 }

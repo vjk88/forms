@@ -157,7 +157,7 @@ Components: `finalDesignPanel`, `finalDesignSearch`, `finalColorControl`, `final
 - **Theme and layout cards:** restyled frame, name and selection only.
 - **Confirm dialog:** test the `LightningConfirm` call at `finalDesignPanel.js:1414` in the VF Studio. If Cancel hangs, show the owner before switching it to the inline confirm.
 
-## Step 5: around it
+## Step 5: around it: BUILT 2026-11-11, PR open (swap + restyle together, before/after photos in the PR; stacked on step 4)
 
 Branch `feat/studio-surround-consistency`.
 Components: `finalFormsLibrary`, `finalCreationGallery`, `finalStudioDialog`, `finalStudioActionDialog`, `finalStudioSettingsPanel`, `finalPublishDialog`, `finalConditionsModal`, `finalConditionsSummary`, `finalRuleEditor`, `finalValidationEditor`, `finalAutofillPanel`, `finalAutofillRuleEditor`, `finalRecordLinkPanel`.
