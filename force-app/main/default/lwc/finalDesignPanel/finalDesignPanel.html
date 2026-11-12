@@ -24,8 +24,38 @@
                             class="changes-reset"
                             variant="base"
                             label="Reset all"
+                            aria-expanded={resetExpanded}
                             onclick={handleResetAll}
-                        ></lightning-button></div
+                        ></lightning-button>
+                    </div>
+                    <template lwc:if={confirmingReset}
+                        ><div
+                            class="reset-ask"
+                            role="alertdialog"
+                            aria-labelledby="reset-ask-title"
+                            aria-describedby="reset-ask-text"
+                            onkeydown={handleResetKeydown}
+                        >
+                            <p id="reset-ask-title" class="reset-ask-title">
+                                {resetQuestion}
+                            </p>
+                            <p id="reset-ask-text" class="reset-ask-text">
+                                Every setting you changed goes back to what the
+                                theme sets. Undo brings them back.
+                            </p>
+                            <div class="reset-ask-actions">
+                                <lightning-button
+                                    class="reset-ask-cancel"
+                                    label="Cancel"
+                                    onclick={handleResetCancel}
+                                ></lightning-button>
+                                <lightning-button
+                                    class="reset-ask-confirm"
+                                    variant="destructive"
+                                    label="Reset all"
+                                    onclick={handleResetConfirm}
+                                ></lightning-button>
+                            </div></div></template
                 ></template>
                 <c-final-design-search
                     entries={searchEntries}

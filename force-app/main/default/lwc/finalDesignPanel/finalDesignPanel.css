@@ -373,6 +373,34 @@
     white-space: nowrap;
 }
 
+/* Reset all asks inline, under the status line (5.17). */
+.reset-ask {
+    margin-top: var(--c-studio-space-3);
+    padding: var(--c-studio-space-4);
+    border: 1px solid var(--c-studio-warning-border);
+    border-radius: var(--c-studio-radius-md);
+    background: var(--c-studio-warning-surface);
+}
+
+.reset-ask-title {
+    margin: 0 0 var(--c-studio-space-2);
+    font-weight: var(--c-studio-fw-strong);
+    color: var(--c-studio-text);
+}
+
+.reset-ask-text {
+    margin: 0 0 var(--c-studio-space-4);
+    font-size: var(--c-studio-fs-small);
+    line-height: var(--c-studio-lh-body);
+    color: var(--c-studio-text-weak);
+}
+
+.reset-ask-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--c-studio-space-3);
+}
+
 /* ----- titles with a hairline (Theme and layout, Accent color) ----- */
 .area-head--rule {
     display: flex;

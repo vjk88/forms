@@ -1,7 +1,6 @@
 import { LightningElement, api, track, wire } from 'lwc';
 import { canMoveElement } from 'c/finalBuilderCanvas';
 import { CurrentPageReference, NavigationMixin } from 'lightning/navigation';
-import LightningConfirm from 'lightning/confirm';
 import loadStudio from '@salesforce/apex/FinalStudioController.loadStudio';
 import saveDraft from '@salesforce/apex/FinalStudioController.saveDraft';
 import setContextObject from '@salesforce/apex/FinalStudioController.setContextObject';
@@ -3044,19 +3043,8 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         const next = event.detail?.checked ?? event.target.checked;
         this.publicError = '';
         this.publicSaved = false;
-        // exposing a form publicly is outward-facing — confirm turning it ON;
-        // turning it OFF is safe and immediate.
-        if (next) {
-            const ok = await LightningConfirm.open({
-                message:
-                    'Make this form public? Anyone with the link will be able to view and submit it with no Salesforce login.',
-                label: 'Turn on public link'
-            });
-            if (!ok) {
-                this.isPublic = false; // snap the toggle back
-                return;
-            }
-        }
+        // Turning it ON was already asked inline by the settings panel
+        // (lightning/confirm never settles after Cancel in the VF Studio).
         this.togglingPublic = true;
         try {
             const result = await setGuestAccess({

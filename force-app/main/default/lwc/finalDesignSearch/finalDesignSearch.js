@@ -42,6 +42,12 @@ export default class FinalDesignSearch extends LightningElement {
     @api disabled = false;
     /** In Simple: a pick switches to Advanced design, so the list says so. */
     @api opensAdvanced = false;
+
+    /** Focus the search box (the Design pane uses it after Reset all). */
+    @api
+    focus() {
+        this.template.querySelector('.ds-input')?.focus();
+    }
     query = '';
     searchOpen = false;
     _focusResult = false;
