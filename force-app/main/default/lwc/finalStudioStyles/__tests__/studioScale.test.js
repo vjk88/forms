@@ -12,12 +12,9 @@
  *   - a custom property whose own fallback names itself (an invalid cycle).
  * It also pins the bundle's token values to the §4 tables.
  *
- * Today's violations are listed in studioScaleAllowlist.json, keyed by
- * component, selector and rule. The list may only SHRINK: a new violation
- * fails, and so does a listed one that has been fixed (delete it from the list
- * in the same PR). To rewrite the list after fixing violations, run
- *   STUDIO_SCALE_WRITE=1 npx jest studioScale
- * which refuses to write if any count went up.
+ * There is no allowlist (plan step 6, 2026-11-11): every Studio stylesheet
+ * follows every rule. Art that draws the respondent form is a specimen
+ * (DESIGN_SYSTEM §8), skipped by selector in SPECIMENS below.
  */
 const fs = require('fs');
 const path = require('path');
@@ -28,7 +25,6 @@ const BUNDLE = path.join(
     'finalStudioStyles',
     'finalStudioStyles.css'
 );
-const ALLOWLIST = path.join(__dirname, 'studioScaleAllowlist.json');
 
 // Respondent components (DESIGN_SYSTEM §1) follow the theme, not this guard.
 const RESPONDENT = new Set([
@@ -190,7 +186,7 @@ const TIME = /(^|[^\w-])-?\d*\.?\d+m?s(?![\w-])/i;
 const COLOUR =
     /#[0-9a-f]{3,8}\b|\b(rgba?|hsla?|hwb|lab|lch|oklch|oklab|color)\(/i;
 
-/** Rules a declaration breaks (each is one allowlist key part). */
+/** Rules a declaration breaks. */
 function violations({ prop, value }, defined) {
     const found = [];
     const bare = stripFunctions(value);
@@ -308,78 +304,17 @@ function currentViolations() {
     return result;
 }
 
-// Bugs, never allowlisted: these must be fixed, not listed.
-const NEVER_ALLOWED = /^(undefined --c-studio-|self-referencing variable)/;
-
 describe('Studio stylesheets follow the design system (DESIGN_SYSTEM §10)', () => {
     const current = currentViolations();
-    const allowed = fs.existsSync(ALLOWLIST)
-        ? JSON.parse(fs.readFileSync(ALLOWLIST, 'utf8'))
-        : null;
 
-    if (process.env.STUDIO_SCALE_WRITE === '1') {
-        test('rewrite the allowlist (shrink only)', () => {
-            // The first write (no list yet) records today's state as is.
-            const grew = [];
-            for (const [name, counts] of Object.entries(
-                allowed ? current : {}
-            )) {
-                for (const [key, n] of Object.entries(counts)) {
-                    const before = (allowed[name] || {})[key] || 0;
-                    if (n > before) {
-                        grew.push(`${name}: ${key} (${before} -> ${n})`);
-                    }
-                }
-            }
-            expect(grew).toEqual([]);
-            fs.writeFileSync(
-                ALLOWLIST,
-                JSON.stringify(current, null, 2) + '\n'
-            );
-        });
-        return;
-    }
-
-    test('the allowlist exists', () => {
-        expect(allowed).not.toBeNull();
-    });
-
-    test('no bugs: every --c-studio-* reference exists and no variable names itself', () => {
-        const bugs = [];
-        for (const [name, counts] of Object.entries(current)) {
-            for (const key of Object.keys(counts)) {
-                if (NEVER_ALLOWED.test(key.split(' || ')[1])) {
-                    bugs.push(`${name}: ${key}`);
-                }
-            }
-        }
-        expect(bugs).toEqual([]);
-    });
-
-    test('no new violations (use a token, a pattern, or sentence case)', () => {
-        const added = [];
+    test('no Studio stylesheet breaks a rule (use a token, a pattern, or sentence case)', () => {
+        const found = [];
         for (const [name, counts] of Object.entries(current)) {
             for (const [key, n] of Object.entries(counts)) {
-                const limit = ((allowed || {})[name] || {})[key] || 0;
-                if (n > limit) {
-                    added.push(`${name}: ${key} (${n}, allowed ${limit})`);
-                }
+                found.push(`${name}: ${key}${n > 1 ? ` (x${n})` : ''}`);
             }
         }
-        expect(added).toEqual([]);
-    });
-
-    test('fixed violations are removed from the allowlist (it may only shrink)', () => {
-        const stale = [];
-        for (const [name, counts] of Object.entries(allowed || {})) {
-            for (const [key, limit] of Object.entries(counts)) {
-                const n = (current[name] || {})[key] || 0;
-                if (n < limit) {
-                    stale.push(`${name}: ${key} (allowed ${limit}, now ${n})`);
-                }
-            }
-        }
-        expect(stale).toEqual([]);
+        expect(found).toEqual([]);
     });
 });
 

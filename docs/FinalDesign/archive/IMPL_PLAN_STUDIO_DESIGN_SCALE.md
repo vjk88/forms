@@ -5,16 +5,16 @@
 1. Step 1 (foundations) runs first.
 2. Then each screen gets two PRs: the component swap in [IMPL_PLAN_STUDIO_COMPONENT_SWAP.md](./IMPL_PLAN_STUDIO_COMPONENT_SWAP.md), then this plan's restyle step for that screen.
 3. The restyle steps style the swapped Salesforce components through their hooks, and only hand-build CSS for the swap plan's Keep and shared controls.
-**The rules this plan implements:** [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md). Every number, pattern and
+**The rules this plan implements:** [DESIGN_SYSTEM.md](../DESIGN_SYSTEM.md). Every number, pattern and
 state lives there. This file holds only the order of work, what each step touches, and the checks.
 Archive it once step 6 is verified.
-**What it should look like:** [mocks/studio-formwork-system-mock.html](./mocks/studio-formwork-system-mock.html).
+**What it should look like:** [mocks/studio-formwork-system-mock.html](../mocks/studio-formwork-system-mock.html).
 
 **Owner rulings (2026-11-01):**
 - 13px base text, no ALL CAPS, and mapping screens use the Studio look.
 - Mock before any CSS.
 - Direction is **Formwork**, with four changes: 32px controls with 8px corners, a neutral grey surround, and plain (unnumbered) group titles.
-- **Formwork product changes:** none are in. The inspector header stays as it is today (owner, 2026-11-01). The preview editing mark and the narrow Editor/Preview switch are parked ([DEFERRED.md](./DEFERRED.md) 48, 49). The row-based structure list is dropped; the structure pane gets a styling-only pass in step 2 instead.
+- **Formwork product changes:** none are in. The inspector header stays as it is today (owner, 2026-11-01). The preview editing mark and the narrow Editor/Preview switch are parked ([DEFERRED.md](../DEFERRED.md) 48, 49). The row-based structure list is dropped; the structure pane gets a styling-only pass in step 2 instead.
 - **Second pass, same day:**
   - picture tiles replace dropdowns wherever the options look different;
   - these stay as they are and only get restyled (DESIGN_SYSTEM §5.0): the Appearance picker, the new-form steps, the one-page-at-a-time page switcher, and the always-visible remove (×).
@@ -63,7 +63,7 @@ feature works.
 
 ## Step 0: mock (done)
 
-[mocks/studio-formwork-system-mock.html](./mocks/studio-formwork-system-mock.html) covers every Studio screen. It still shows the parked editing highlight, Editor/Preview switch and row-based structure list: ignore those parts (owner, 2026-11-01). It also has a "The system" sheet: the meaning map, type roles, space, controls in every state, feedback, and the editing mark on three themes. Checked at 1400px and 390px: no page overflow and no script errors.
+[mocks/studio-formwork-system-mock.html](../mocks/studio-formwork-system-mock.html) covers every Studio screen. It still shows the parked editing highlight, Editor/Preview switch and row-based structure list: ignore those parts (owner, 2026-11-01). It also has a "The system" sheet: the meaning map, type roles, space, controls in every state, feedback, and the editing mark on three themes. Checked at 1400px and 390px: no page overflow and no script errors.
 
 ## Step 1: foundations (no visible change): BUILT 2026-11-02, PR open
 
@@ -176,7 +176,7 @@ Components: `finalFormsLibrary`, `finalCreationGallery`, `finalStudioDialog`, `f
   - remove the 23 dead `var(--c-studio-x, #hex)` fallbacks;
   - drop the `--c-studio-dialog-shadow` alias.
 
-## Step 6: lock it
+## Step 6: lock it: DONE 2026-11-11 (allowlist emptied and deleted, changelog written, this plan archived)
 
 1. Empty the guard's allowlist so the rules become absolute.
 2. Fill in the DESIGN_SYSTEM change log.
