@@ -109,16 +109,62 @@ describe('studio settings panel', () => {
         );
     });
 
-    it('keeps the public toggle controlled and emits requested access state', () => {
+    it('asks inline before turning public access on, and only then emits', async () => {
         const element = mount({ section: 'access', isPublic: false });
         const listener = jest.fn();
         element.addEventListener('publicchange', listener);
         const toggle = inputByLabel(element, 'Public guest access');
         toggle.checked = true;
         toggle.dispatchEvent(new CustomEvent('change'));
+        await flush();
 
-        expect(listener.mock.calls[0][0].detail).toEqual({ checked: true });
+        // the toggle stays off and nothing is sent until the author says yes
         expect(toggle.checked).toBe(false);
+        expect(listener).not.toHaveBeenCalled();
+        const ask = element.shadowRoot.querySelector('.sp-public-ask');
+        expect(ask.getAttribute('role')).toBe('alertdialog');
+        expect(ask.textContent).toContain('Make this form public?');
+
+        element.shadowRoot.querySelector('.sp-public-confirm').click();
+        await flush();
+        expect(listener.mock.calls[0][0].detail).toEqual({ checked: true });
+        expect(element.shadowRoot.querySelector('.sp-public-ask')).toBeNull();
+    });
+
+    it('Cancel or Escape on the public question sends nothing', async () => {
+        const element = mount({ section: 'access', isPublic: false });
+        const listener = jest.fn();
+        element.addEventListener('publicchange', listener);
+        const toggle = inputByLabel(element, 'Public guest access');
+        const askAgain = async () => {
+            toggle.checked = true;
+            toggle.dispatchEvent(new CustomEvent('change'));
+            await flush();
+        };
+        await askAgain();
+        element.shadowRoot.querySelector('.sp-public-cancel').click();
+        await flush();
+        expect(element.shadowRoot.querySelector('.sp-public-ask')).toBeNull();
+
+        await askAgain();
+        element.shadowRoot
+            .querySelector('.sp-public-ask')
+            .dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+        await flush();
+        expect(element.shadowRoot.querySelector('.sp-public-ask')).toBeNull();
+        expect(listener).not.toHaveBeenCalled();
+    });
+
+    it('turning public access off needs no question', () => {
+        const element = mount({ section: 'access', isPublic: true });
+        const listener = jest.fn();
+        element.addEventListener('publicchange', listener);
+        const toggle = inputByLabel(element, 'Public guest access');
+        toggle.checked = false;
+        toggle.dispatchEvent(new CustomEvent('change'));
+
+        expect(listener.mock.calls[0][0].detail).toEqual({ checked: false });
+        expect(element.shadowRoot.querySelector('.sp-public-ask')).toBeNull();
     });
 
     it('keeps object and invitation actions on the access surface', async () => {

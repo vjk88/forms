@@ -1,5 +1,4 @@
 import { LightningElement, api, track } from 'lwc';
-import LightningConfirm from 'lightning/confirm';
 import listFonts from '@salesforce/apex/FinalFontController.listFonts';
 import listCustomThemes from '@salesforce/apex/FinalThemeController.listCustomThemes';
 import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme';
@@ -100,8 +99,18 @@ export default class FinalDesignPanel extends LightningElement {
     focusedControlKey;
     expandedGroups = {};
 
+    /** Reset all asks inline (DESIGN_SYSTEM 5.17): lightning/confirm never
+     *  settles after Cancel in the VF-hosted Studio. */
+    confirmingReset = false;
+    _focusNext = null;
+
     renderedCallback() {
         this._focusPendingControl();
+        if (this._focusNext) {
+            const target = this.template.querySelector(this._focusNext);
+            this._focusNext = null;
+            target?.focus();
+        }
     }
 
     /** Every control for "Find a design setting", with the same
@@ -1563,18 +1572,40 @@ export default class FinalDesignPanel extends LightningElement {
         this._emit();
     }
 
-    async handleResetAll() {
-        const ok = await LightningConfirm.open({
-            message: `Reset all ${this.overrideCount} customization(s) to the theme's defaults?`,
-            label: 'Reset all customizations',
-            theme: 'warning'
-        });
-        if (ok) {
-            this._ensureOverrides();
-            this._spec.theme.overrides = {};
-            this._spec = { ...this._spec };
-            this._emit();
+    get resetExpanded() {
+        return this.confirmingReset ? 'true' : 'false';
+    }
+
+    get resetQuestion() {
+        return `Reset ${this.changesLabel} to the theme?`;
+    }
+
+    handleResetAll() {
+        this.confirmingReset = true;
+        // land on the safe choice
+        this._focusNext = '.reset-ask-cancel';
+    }
+
+    handleResetCancel() {
+        this.confirmingReset = false;
+        this._focusNext = '.changes-reset';
+    }
+
+    handleResetKeydown(event) {
+        if (event.key === 'Escape') {
+            event.stopPropagation();
+            this.handleResetCancel();
         }
+    }
+
+    handleResetConfirm() {
+        this.confirmingReset = false;
+        this._ensureOverrides();
+        this._spec.theme.overrides = {};
+        this._spec = { ...this._spec };
+        this._emit();
+        // the status line (and its Reset all) is gone: the search box is next
+        this._focusNext = 'c-final-design-search';
     }
 }
 

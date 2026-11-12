@@ -168,16 +168,61 @@ export default class FinalStudioSettingsPanel extends LightningElement {
         this.dispatchEvent(new CustomEvent(event.type));
     }
 
+    /**
+     * Turning public access ON is outward-facing, so it is asked first,
+     * inline: lightning/confirm never settles after Cancel in the VF-hosted
+     * Studio (DESIGN_SYSTEM 5.17). Turning it OFF is safe and immediate.
+     */
+    confirmingPublic = false;
+    _focusNext = null;
+
     handlePublicChange(event) {
         const checked = event.target.checked;
         // The parent owns the committed value. Keep the control on that value
-        // while confirmation/Apex runs, then let the public API update it.
+        // while the question or Apex runs, then let the public API update it.
         event.target.checked = this.isPublic;
+        if (checked && !this.isPublic) {
+            this.confirmingPublic = true;
+            // land on the safe choice
+            this._focusNext = '.sp-public-cancel';
+            return;
+        }
+        this.confirmingPublic = false;
+        this._emitPublic(checked);
+    }
+
+    handlePublicCancel() {
+        this.confirmingPublic = false;
+        this._focusNext = '.sp-public-toggle';
+    }
+
+    handlePublicKeydown(event) {
+        if (event.key === 'Escape') {
+            event.stopPropagation();
+            this.handlePublicCancel();
+        }
+    }
+
+    handlePublicConfirm() {
+        this.confirmingPublic = false;
+        this._focusNext = '.sp-public-toggle';
+        this._emitPublic(true);
+    }
+
+    _emitPublic(checked) {
         this.dispatchEvent(
             new CustomEvent('publicchange', {
                 detail: { checked }
             })
         );
+    }
+
+    renderedCallback() {
+        if (this._focusNext) {
+            const target = this.template.querySelector(this._focusNext);
+            this._focusNext = null;
+            target?.focus();
+        }
     }
 
     relayMintLink(event) {

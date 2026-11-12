@@ -94,6 +94,7 @@
                 <p class="sp-description">{publicHelp}</p>
             </div>
             <lightning-input
+                class="sp-public-toggle"
                 type="toggle"
                 variant="label-hidden"
                 label="Public guest access"
@@ -104,6 +105,36 @@
                 onchange={handlePublicChange}
             ></lightning-input>
         </div>
+        <template lwc:if={confirmingPublic}>
+            <div
+                class="sp-public-ask"
+                role="alertdialog"
+                aria-labelledby="sp-public-ask-title"
+                aria-describedby="sp-public-ask-text"
+                onkeydown={handlePublicKeydown}
+            >
+                <p id="sp-public-ask-title" class="sp-public-ask-title">
+                    Make this form public?
+                </p>
+                <p id="sp-public-ask-text" class="sp-public-ask-text">
+                    Anyone with the link will be able to view and submit it with
+                    no Salesforce login.
+                </p>
+                <div class="sp-public-ask-actions">
+                    <lightning-button
+                        class="sp-public-cancel"
+                        label="Cancel"
+                        onclick={handlePublicCancel}
+                    ></lightning-button>
+                    <lightning-button
+                        class="sp-public-confirm"
+                        variant="brand"
+                        label="Turn on public link"
+                        onclick={handlePublicConfirm}
+                    ></lightning-button>
+                </div>
+            </div>
+        </template>
         <p class="sp-save-cue" role="status" aria-live="polite">
             {publicSaveText}
         </p>

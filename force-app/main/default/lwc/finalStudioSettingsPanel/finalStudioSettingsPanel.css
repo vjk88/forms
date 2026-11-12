@@ -45,6 +45,44 @@
     gap: 0.75rem;
 }
 
+.sp-access-row > div {
+    flex: 1;
+    min-width: 0;
+}
+
+/* the toggle keeps its width; the help text wraps instead */
+.sp-public-toggle {
+    flex: none;
+}
+
+/* Turning public access on asks inline, under the row (5.17). */
+.sp-public-ask {
+    margin-top: var(--c-studio-space-3);
+    padding: var(--c-studio-space-4);
+    border: 1px solid var(--c-studio-warning-border);
+    border-radius: var(--c-studio-radius-md);
+    background: var(--c-studio-warning-surface);
+}
+
+.sp-public-ask-title {
+    margin: 0 0 var(--c-studio-space-2);
+    font-weight: var(--c-studio-fw-strong);
+    color: var(--c-studio-text);
+}
+
+.sp-public-ask-text {
+    margin: 0 0 var(--c-studio-space-4);
+    font-size: var(--c-studio-fs-small);
+    line-height: var(--c-studio-lh-body);
+    color: var(--c-studio-text-weak);
+}
+
+.sp-public-ask-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--c-studio-space-3);
+}
+
 .sp-access-row {
     display: flex;
     gap: 1rem;
