@@ -149,11 +149,15 @@ describe('accent presets in the Design panel', () => {
         el.addEventListener('specchange', handler);
         pick(el, '#6ee7b7');
         await flush();
-        el.shadowRoot.querySelectorAll('.lens-btn')[1].click();
+        el.shadowRoot.querySelector('c-final-button-group.lens').dispatchEvent(
+            new CustomEvent('change', {
+                detail: { value: 'advanced' }
+            })
+        );
         await flush();
         openTab(el, 'brand');
         await flush();
-        el.shadowRoot.querySelector('.resetchip').click();
+        el.shadowRoot.querySelector('.group-reset').click();
         await flush();
         const overrides = lastSpec(handler).theme.overrides;
         expect((overrides.palette || {}).inkMode).toBeUndefined();
@@ -170,7 +174,11 @@ describe('accent presets in the Design panel', () => {
 describe('Colors tab presets', () => {
     async function colorsTab(themeKey) {
         const el = mount(themeKey);
-        el.shadowRoot.querySelectorAll('.lens-btn')[1].click();
+        el.shadowRoot.querySelector('c-final-button-group.lens').dispatchEvent(
+            new CustomEvent('change', {
+                detail: { value: 'advanced' }
+            })
+        );
         await flush();
         openTab(el, 'colors');
         await flush();

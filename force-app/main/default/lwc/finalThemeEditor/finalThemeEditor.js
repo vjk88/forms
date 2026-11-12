@@ -273,6 +273,16 @@ function friendly(error, stage) {
     return `The theme couldn’t be saved: ${raw.replace(/^Error[^:]*:\s*/, '')}`;
 }
 
+// lightning-combobox treats '' as "nothing picked": an empty option (None)
+// rides a stand-in value and turns back into ''.
+const EMPTY_OPTION = '__none__';
+function comboValue(v) {
+    return v === null || v === undefined || v === '' ? EMPTY_OPTION : String(v);
+}
+function fromComboValue(v) {
+    return v === null || v === undefined || v === EMPTY_OPTION ? '' : String(v);
+}
+
 export default class FinalThemeEditor extends LightningElement {
     /** Theme_Definition__c Id — null/undefined = create a new theme. */
     @api themeId;
@@ -483,7 +493,6 @@ export default class FinalThemeEditor extends LightningElement {
         }
         return opts.map((o) => ({
             ...o,
-            cls: o.value === this.start ? 'te-seg on' : 'te-seg',
             pressed: o.value === this.start ? 'true' : 'false'
         }));
     }
@@ -526,7 +535,7 @@ export default class FinalThemeEditor extends LightningElement {
     }
 
     handleStart(event) {
-        const value = event.currentTarget.dataset.value;
+        const value = event.detail.value;
         if (value === this.start) return;
         // an older theme has no pins yet: say what a rebuild does, once
         if (this.start === 'current') {
@@ -547,7 +556,7 @@ export default class FinalThemeEditor extends LightningElement {
     }
 
     handleThemeSelect(event) {
-        this.baseKey = event.target.value;
+        this.baseKey = event.detail ? event.detail.value : event.target.value;
         this._rebuild();
     }
 
@@ -812,6 +821,15 @@ export default class FinalThemeEditor extends LightningElement {
                 options: r.options.map((o) => ({
                     ...o,
                     selected: o.value === current
+                })),
+                // lightning-combobox: string values, the current one chosen
+                // ('' is "nothing picked" to it, so None rides a stand-in)
+                value: r.options.some((o) => String(o.value) === current)
+                    ? comboValue(current)
+                    : comboValue(r.options[0] && r.options[0].value),
+                comboOptions: r.options.map((o) => ({
+                    label: o.label,
+                    value: comboValue(o.value)
                 }))
             };
         });
@@ -819,7 +837,9 @@ export default class FinalThemeEditor extends LightningElement {
 
     handleSelect(event) {
         const row = SELECT_ROWS.find((r) => r.key === event.target.dataset.key);
-        let v = event.target.value;
+        let v = fromComboValue(
+            event.detail ? event.detail.value : event.target.value
+        );
         if (row && row.emptyAsNull && v === '') {
             v = null; // "None" is a real value: written, not deleted
         }

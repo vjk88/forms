@@ -4,32 +4,28 @@
 .tc {
     cursor: pointer;
     border: 1px solid var(--c-studio-border);
-    border-radius: 14px;
+    border-radius: var(--c-studio-radius-md);
     overflow: hidden;
     background: var(--c-studio-surface);
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
     transition:
-        transform 0.15s ease,
-        border-color 0.15s ease,
-        box-shadow 0.15s ease;
+        border-color var(--c-studio-duration) var(--c-studio-ease),
+        box-shadow var(--c-studio-duration) var(--c-studio-ease);
 }
 
+/* Selectable card (DESIGN_SYSTEM 5.11): hover strengthens the edge,
+   selected is an accent edge and ring. */
 .tc:hover {
-    transform: translateY(-2px);
-    border-color: var(--c-studio-accent);
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+    border-color: var(--c-studio-border-strong);
 }
 
 .tc:focus-visible {
     outline: 2px solid var(--c-studio-focus);
-    outline-offset: 4px;
-    border-color: var(--c-studio-accent);
-    box-shadow: 0 0 0 3px var(--c-studio-focus-halo);
+    outline-offset: 2px;
 }
 
 .tc.is-on {
     border-color: var(--c-studio-accent);
-    box-shadow: 0 0 0 2px var(--c-studio-accent);
+    box-shadow: var(--c-studio-selected-ring);
 }
 
 /* --- Themed preview stage (everything below rides --c-* tokens) --- */
@@ -382,19 +378,19 @@
 
 /* --- Admin chrome meta --- */
 .tc-meta {
-    padding: 10px 12px 12px;
+    padding: var(--c-studio-space-4);
 }
 
 .tc-meta-top {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 8px;
+    gap: var(--c-studio-space-3);
 }
 
 .tc-name {
-    font-weight: 600;
-    font-size: 0.85rem;
+    font-weight: var(--c-studio-fw-strong);
+    font-size: var(--c-studio-fs-body);
     color: var(--c-studio-text);
 }
 
@@ -403,22 +399,22 @@
 }
 
 .tc-desc {
-    margin: 2px 0 8px;
-    font-size: 0.72rem;
-    line-height: 1.35;
+    margin: var(--c-studio-space-1) 0 var(--c-studio-space-3);
+    font-size: var(--c-studio-fs-small);
+    line-height: var(--c-studio-lh-body);
     color: var(--c-studio-text-weak);
 }
 
 .tc-swatches {
     display: flex;
-    gap: 4px;
+    gap: var(--c-studio-space-2);
 }
 
 .tc-swatch {
     width: 16px;
     height: 16px;
-    border-radius: 4px;
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: var(--c-studio-radius-sm);
+    box-shadow: var(--c-studio-swatch-edge);
 }
 
 /* A picture, not a control: no pointer, no lift. */
@@ -427,9 +423,7 @@
 }
 
 .tc[role='img']:hover {
-    transform: none;
     border-color: var(--c-studio-border);
-    box-shadow: none;
 }
 
 /* compact: a short picture, no text under it */

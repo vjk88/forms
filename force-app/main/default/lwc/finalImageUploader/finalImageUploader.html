@@ -12,23 +12,20 @@
             ></lightning-spinner>
         </template>
         <template lwc:if={showRemove}>
-            <button
+            <lightning-button
                 class="linkbtn"
-                type="button"
+                variant="base"
+                label="Remove"
                 disabled={inputDisabled}
                 onclick={handleRemove}
-            >
-                Remove
-            </button>
+            ></lightning-button>
         </template>
-        <button
+        <lightning-button
             class="btn"
-            type="button"
+            label={buttonLabel}
             disabled={inputDisabled}
             onclick={handlePick}
-        >
-            {buttonLabel}
-        </button>
+        ></lightning-button>
         <input
             class="file-input"
             type="file"

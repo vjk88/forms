@@ -141,7 +141,7 @@ Components: `finalMappingEditor`, `finalMappingAction`, `finalMappingSoql`, `fin
 - **Styling only:** same layout, same steps, same pickers and same behavior. Table headers, rows, selected states, API-name text and spacing are restyled with the tokens.
 - **Test:** put a long question label beside a long field API name, and regression-check every typeahead consumer.
 
-## Step 4: Design
+## Step 4: Design: BUILT 2026-11-11, PR open (swap + restyle together, before/after photos in the PR)
 
 Branch `feat/studio-design-consistency`.
 Components: `finalDesignPanel`, `finalDesignSearch`, `finalColorControl`, `finalGradientControl`, `finalImageUploader`, `finalFontPicker` (chrome only), `finalBrandInputs`, `finalThemeEditor`, `finalThemeGallery`, `finalGalleryPicker`, `finalThemeCard` and `finalLayoutCard` (frame, name and selection only).

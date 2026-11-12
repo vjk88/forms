@@ -89,9 +89,13 @@ describe('c-final-font-picker', () => {
         expect(heading.getAttribute('style')).toContain('font-weight: 400');
         expect(body.getAttribute('style')).toContain('FormsBundledInter');
         expect(
+            // the font's style tag lives in the page head, outside any component
+            // eslint-disable-next-line @lwc/lwc/no-document-query
             document.getElementById('final-fontb-bundled-bebasneue')
         ).not.toBeNull();
         expect(
+            // the font's style tag lives in the page head, outside any component
+            // eslint-disable-next-line @lwc/lwc/no-document-query
             document.getElementById('final-fontb-bundled-inter')
         ).not.toBeNull();
     });
@@ -164,7 +168,7 @@ describe('c-final-font-picker', () => {
         expect(q(el, '.fp-custom').hidden).toBe(false);
         // "Hide heading and body" really hides it, even on a custom split
         const link = q(el, '.fp-link');
-        expect(link.textContent.trim()).toBe('Hide heading and body');
+        expect(link.label).toBe('Hide heading and body');
         link.click();
         await flush();
         expect(q(el, '.fp-custom').hidden).toBe(true);

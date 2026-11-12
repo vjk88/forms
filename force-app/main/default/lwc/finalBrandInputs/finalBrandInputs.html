@@ -8,23 +8,20 @@
                 We suggest colors from it. PNG, JPG, GIF or WebP, up to 5 MB.
             </p>
             <div class="bd-row">
-                <button
-                    type="button"
+                <lightning-button
                     class="bd-btn"
+                    label="Upload logo…"
                     onclick={handleLogoPick}
                     disabled={logoReading}
-                >
-                    Upload logo…
-                </button>
+                ></lightning-button>
                 <template lwc:if={hasLogo}>
                     <img class="bd-logo" src={logoDataUrl} alt="Your logo" />
-                    <button
-                        type="button"
+                    <lightning-button
                         class="bd-link"
+                        variant="base"
+                        label="Remove"
                         onclick={handleLogoRemove}
-                    >
-                        Remove
-                    </button>
+                    ></lightning-button>
                 </template>
                 <input
                     class="bd-file"
@@ -76,14 +73,13 @@
                 </p>
             </template>
             <template lwc:if={hasLogo}>
-                <label class="bd-check">
-                    <input
-                        type="checkbox"
-                        checked={useAsLogo}
-                        onchange={handleUseAsLogo}
-                    />
-                    {useAsLogoLabel}
-                </label>
+                <lightning-input
+                    class="bd-check"
+                    type="checkbox"
+                    label={useAsLogoLabel}
+                    checked={useAsLogo}
+                    onchange={handleUseAsLogo}
+                ></lightning-input>
                 <template lwc:if={logoHiddenHint}>
                     <p class="bd-hint">{logoHiddenHint}</p>
                 </template>
@@ -143,14 +139,13 @@
                     />
                 </label>
                 <template lwc:if={second}>
-                    <button
-                        type="button"
+                    <lightning-button
                         class="bd-link bd-clear"
+                        variant="base"
+                        label="Clear"
                         aria-label="Clear the second color"
                         onclick={handleSecondClear}
-                    >
-                        Clear
-                    </button>
+                    ></lightning-button>
                 </template>
             </div>
             <p id="bd-second-err" class="bd-error bd-second-err" role="alert">
@@ -163,13 +158,12 @@
             </template>
             <p class="bd-sr" role="status" aria-live="polite">{announce}</p>
             <template lwc:if={canSwap}>
-                <button
-                    type="button"
+                <lightning-button
                     class="bd-link bd-swap"
+                    variant="base"
+                    label="Swap main and second"
                     onclick={handleSwap}
-                >
-                    Swap main and second
-                </button>
+                ></lightning-button>
             </template>
         </section>
 

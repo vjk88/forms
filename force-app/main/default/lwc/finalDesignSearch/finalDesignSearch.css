@@ -3,7 +3,7 @@
 :host {
     display: block;
     color: var(--c-studio-text);
-    font-size: 13px;
+    font-size: var(--c-studio-fs-body);
 }
 
 .ds-search {
@@ -19,7 +19,7 @@
     color: inherit;
     background: var(--c-studio-surface);
     border: 1px solid var(--c-studio-border-strong);
-    border-radius: 6px;
+    border-radius: var(--c-studio-radius-md);
 }
 
 .ds-input:disabled {
@@ -40,7 +40,7 @@
     padding: 3px 8px;
     border: 0;
     background: transparent;
-    font-size: 20px;
+    font-size: var(--c-studio-fs-display);
     line-height: 1;
     color: var(--c-studio-text-weak);
     cursor: pointer;
@@ -48,7 +48,7 @@
 
 .ds-results {
     position: absolute;
-    z-index: 20;
+    z-index: var(--c-studio-z-dropdown);
     top: calc(100% + 6px);
     left: 0;
     right: 0;
@@ -56,7 +56,7 @@
     overflow: auto;
     background: var(--c-studio-surface);
     border: 1px solid var(--c-studio-border-strong);
-    border-radius: 8px;
+    border-radius: var(--c-studio-radius-md);
     box-shadow: var(--c-studio-shadow-2);
 }
 
@@ -69,7 +69,7 @@
 .ds-summary {
     margin: 0;
     padding: 10px 12px;
-    font-size: 12px;
+    font-size: var(--c-studio-fs-small);
     color: var(--c-studio-text-weak);
 }
 
@@ -79,7 +79,7 @@
     gap: 3px;
     text-align: left;
     border: 0;
-    border-radius: 4px;
+    border-radius: var(--c-studio-radius-sm);
     background: transparent;
     color: inherit;
     font: inherit;
@@ -92,7 +92,7 @@
 }
 
 .ds-result span {
-    font-size: 12px;
+    font-size: var(--c-studio-fs-small);
     color: var(--c-studio-text-weak);
 }
 

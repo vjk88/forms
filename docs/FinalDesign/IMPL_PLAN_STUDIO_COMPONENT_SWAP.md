@@ -107,6 +107,9 @@ Jest uses stand-ins for Lightning components, so it can't prove how the real one
   - It adds `finalButtonGroup` and `finalPictureChoice`.
   - It also keeps the topic box native: its suggestions are a `<datalist>`.
 - **Mapping swap: built 2026-11-02 on `feat/mapping-swap-restyle`** (shipped together with the Mapping restyle).
+- **Design swap: built 2026-11-11 on `feat/studio-design-consistency`** (shipped together with the Design restyle, plan step 4).
+  - Not swapped, on purpose: the logo color swatches in `finalBrandInputs` (line 49). They are color chips that each carry a role (Main, Second), so they stay color swatches like `finalColorControl`'s, not a button group.
+  - The after-submit tiles and the Design search stay Keep, as listed.
   - "Add a record", "Change", the relationship picker's Cancel and the submission file link are now `lightning-button`.
 
 ## Order of work (one swap PR per screen, then its restyle PR)

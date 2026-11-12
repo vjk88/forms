@@ -254,10 +254,8 @@ describe('c-final-brand-inputs', () => {
     it('an existing logo: the option replaces it and starts unticked', async () => {
         const el = await mount({ currentLogoUrl: '/sfc/old' });
         await uploadLogo(el, px('#e11d48', 500));
-        expect(q(el, '.bd-check').textContent).toContain(
-            'Replace this form’s logo'
-        );
-        expect(q(el, '.bd-check input').checked).toBe(false);
+        expect(q(el, '.bd-check').label).toContain('Replace this form’s logo');
+        expect(q(el, '.bd-check').checked).toBe(false);
         expect(el.logoEvents[el.logoEvents.length - 1].useAsLogo).toBe(false);
     });
 

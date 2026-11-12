@@ -76,7 +76,13 @@
     --c-studio-z-modal: 9001;
     --c-studio-z-popover: 9500;
     --c-studio-duration: 150ms;
+    --c-studio-duration-long: 1600ms;
     --c-studio-ease: ease;
+    /* Color chips (DESIGN_SYSTEM 5.27): a see-through edge that shows on any
+       color, and the chosen chip's ring (a surface gap, then accent). */
+    --c-studio-swatch-edge: inset 0 0 0 1px rgb(15 23 42 / 22%);
+    --c-studio-swatch-ring:
+        0 0 0 2px var(--c-studio-surface), 0 0 0 4px var(--c-studio-accent);
 }
 
 /* Scoped to native authoring controls in each importing component's template.
@@ -168,6 +174,17 @@ lightning-checkbox-group {
     );
     /* LEX (newer design system): the checked switch and checkbox read this. */
     --slds-g-color-accent-container-1: var(--c-studio-accent);
+}
+
+/* Sliders: the knob in the Studio accent, never Salesforce blue. VF reads
+   the component hooks; the LEX tab's newer SLDS reads the accent global. */
+lightning-slider {
+    --slds-c-slider-thumb-color-foreground: var(--c-studio-accent);
+    --slds-c-slider-thumb-color-foreground-hover: var(--c-studio-accent-hover);
+    --slds-c-slider-thumb-color-foreground-focus: var(--c-studio-accent-hover);
+    --slds-c-slider-thumb-color-foreground-active: var(--c-studio-accent-hover);
+    --slds-g-color-accent-container-1: var(--c-studio-accent);
+    --slds-g-color-accent-container-2: var(--c-studio-accent-hover);
 }
 
 /* DESIGN_SYSTEM §4.4: motion turns off for people who ask their system for

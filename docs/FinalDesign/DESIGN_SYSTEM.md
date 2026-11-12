@@ -186,6 +186,8 @@ an alias. 2 is for optical fixes and tight insets only.
 | `--c-studio-shadow-3` | `0 20px 48px rgb(0 0 0 / 28%)` | Dialogs, drawers (replaces `--c-studio-dialog-shadow`) |
 | `--c-studio-z-raised` / `-dropdown` / `-menu` / `-drawer` / `-action-dialog` / `-backdrop` / `-modal` / `-popover` | 2 / 20 / 30 / 1000 / 1100 / 9000 / 9001 / 9500 | Today's numbers, named. Check the real stacking context before trusting one. |
 | `--c-studio-duration` / `--c-studio-ease` | 150ms / `ease` | State changes only (hover, toggle knob, width). Never focus or errors. |
+| `--c-studio-duration-long` | 1600ms | A tint that fades after a jump (the setting a Design search lands on). Nothing else. |
+| `--c-studio-swatch-edge` / `--c-studio-swatch-ring` | `inset 0 0 0 1px rgb(15 23 42 / 22%)` / `0 0 0 2px` surface, `0 0 0 4px` accent | Color chips (5.27): a see-through edge that shows on any color, and the chosen chip's ring. |
 
 Every component that animates honors `prefers-reduced-motion: reduce` (instant). The bundle carries
 one shared rule; shadow DOM means it only reaches components that import the bundle.
@@ -288,7 +290,7 @@ Listed by selector, never by whole file, so the chrome around them still follows
 | Submission reader answers | `finalSubmissionReader` | May use a larger reading size for answers; chrome is Studio. |
 | Salesforce object icons | `finalObjectIcon` | Shows the object's own Salesforce icon and color (`getObjectInfo` `themeInfo`), or its first letter on that color when it has no tab. The color is the object's identity, so it never stands alone: a name always sits beside it (owner 2026-11-02). |
 
-Adding an exception = one row here + a comment on the selector naming this section.
+Adding an exception = one row here + a comment on the selector naming this section + the selector rule in the guard's `SPECIMENS` map (`studioScale.test.js`), which skips exactly those selectors and nothing around them.
 
 ## 9. Accessibility floor
 
@@ -344,6 +346,7 @@ the missing one here first.
 
 ## Change log
 
+- **2026-11-11 v2.11.** Design screen moved onto the system (plan step 4): the Design pane, theme dialog, brand inputs, gradient, image, font and color controls, galleries and cards. Hand-built buttons, dropdowns, toggles, sliders and text boxes became Salesforce ones; Simple / Advanced design, Solid / Gradient, Start from and Preview in became `finalButtonGroup`; Salesforce controls in a settings row take their label above (5.4). Theme and layout cards follow 5.11 (no lift on hover). New tokens: `duration-long`, `swatch-edge`, `swatch-ring`. The guard skips the §8 specimens by selector. Kept hand-built: the logo color swatches (color chips with a role, not a button group), color pickers, presets, font selects (groups), Design search, after-submit tiles.
 - **2026-11-04 v2.10.** Owner OK on the Design pane mock: one change status line (5.28), Theme and layout as compact pictures of the form's own theme and layout, Accent as a clean 8-to-a-row grid with plain readability words (5.27), Design dropdowns with a look as drawn tiles (5.24), group titles with a hairline and their own Reset (5.29). Too-pale accent presets stay, faded, without the slash (owner ruling).
 - **2026-11-04 v2.9.** Owner: How it works (5.26) is an info icon by the dialog title, not a strip that hides for good. The Autofill rule's plain summary (5.25) is one short line in the footer.
 - **2026-11-02 v2.8.** Owner, for the Mapping redesign: object icons wear their Salesforce color (8); wide picture tiles also carry what-it-does choices (5.24); badges gain warning and success for status (5.22); "Add a record" stays a dashed add place (5.12).

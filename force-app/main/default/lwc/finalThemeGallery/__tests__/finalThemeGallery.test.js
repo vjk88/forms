@@ -132,12 +132,16 @@ describe('c-final-theme-gallery: families', () => {
         const el = await mount();
         dots(el, 'photoHeader')[3].click();
         await flush();
-        const chips = [...el.shadowRoot.querySelectorAll('.lchip')];
-        for (const chip of chips) {
-            chip.click();
+        const group = el.shadowRoot.querySelector('c-final-button-group');
+        expect(group.label).toBe('Preview layout');
+        for (const { value } of group.options) {
+            group.dispatchEvent(
+                new CustomEvent('change', { detail: { value } })
+            );
             // eslint-disable-next-line no-await-in-loop
             await flush();
-            const [layout, paneFlow] = chip.dataset.value.split(':');
+            expect(group.value).toBe(value);
+            const [layout, paneFlow] = value.split(':');
             expect(card(el, 'photoHeader').themeKey).toBe('cyberSplit');
             expect(card(el, 'photoHeader').layout).toBe(layout);
             expect(card(el, 'photoHeader').paneFlow || '').toBe(paneFlow || '');
@@ -214,7 +218,11 @@ describe('c-final-theme-gallery: previews follow the form', () => {
             layout: 'scroll',
             formLayout: { type: 'scroll', options: {}, maxWidth: 'medium' }
         });
-        el.shadowRoot.querySelector('.lchip[data-value="splitHero"]').click();
+        el.shadowRoot
+            .querySelector('c-final-button-group')
+            .dispatchEvent(
+                new CustomEvent('change', { detail: { value: 'splitHero' } })
+            );
         await flush();
         expect(card(el, 'scenic').fullBleed).toBe(false);
         expect(card(el, 'scenic').maxWidth).toBe('wide');

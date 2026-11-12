@@ -36,16 +36,15 @@
             >
             <span class="fp-sample-caption">{sampleCaption}</span>
         </div>
-        <button
-            type="button"
+        <lightning-button
             class="fp-link"
+            variant="base"
+            label={customizeLabel}
             aria-expanded={customizeOpen}
             aria-controls="fp-custom"
             disabled={disabled}
             onclick={toggleCustomize}
-        >
-            {customizeLabel}
-        </button>
+        ></lightning-button>
         <div id="fp-custom" class="fp-custom" hidden={customizeHidden}>
             <div class="fp-row">
                 <label for="fp-display">Heading font</label>

@@ -19,7 +19,7 @@ const DEFAULT_ACCEPT = 'image/png,image/jpeg,image/gif,image/webp';
 export default class FinalImageUploader extends LightningElement {
     @api
     focus() {
-        this.template.querySelector('button.btn')?.focus();
+        this.template.querySelector('lightning-button.btn')?.focus();
     }
 
     @api label;
