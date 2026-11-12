@@ -16,13 +16,13 @@
 
 .bd-h {
     margin: 0;
-    font-size: 13px;
-    font-weight: 700;
+    font-size: var(--c-studio-fs-body);
+    font-weight: var(--c-studio-fw-strong);
 }
 
 .bd-hint {
     margin: 0;
-    font-size: 12.5px;
+    font-size: var(--c-studio-fs-small);
     line-height: 1.4;
     color: var(--c-studio-text-weak);
 }
@@ -34,18 +34,6 @@
     flex-wrap: wrap;
 }
 
-.bd-btn {
-    min-height: 32px;
-    padding: 4px 14px;
-    border: 1px solid var(--c-studio-border-strong);
-    border-radius: 6px;
-    background: var(--c-studio-surface);
-    color: var(--c-studio-text);
-    font: inherit;
-    cursor: pointer;
-}
-
-.bd-btn:focus-visible,
 .bd-swatch:focus-visible,
 .bd-picker:focus-visible {
     outline: 2px solid var(--c-studio-focus);
@@ -76,7 +64,7 @@
     min-width: 44px;
     padding: 4px 2px 2px;
     border: 0;
-    border-radius: 8px;
+    border-radius: var(--c-studio-radius-md);
     background: none;
     color: var(--c-studio-text);
     cursor: pointer;
@@ -85,30 +73,20 @@
 .bd-swatch-chip {
     width: 28px;
     height: 28px;
-    border-radius: 50%;
-    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 20%);
+    border-radius: var(--c-studio-radius-pill);
+    box-shadow: var(--c-studio-swatch-edge);
 }
 
 /* chosen: a ring around the chip, and its role in words below it */
 .bd-swatch.is-on .bd-swatch-chip {
-    box-shadow:
-        inset 0 0 0 1px rgb(0 0 0 / 20%),
-        0 0 0 2px var(--c-studio-surface),
-        0 0 0 4px var(--c-studio-text);
+    box-shadow: var(--c-studio-swatch-edge), var(--c-studio-swatch-ring);
 }
 
 .bd-swatch-role {
     min-height: 14px;
-    font-size: 11px;
-    font-weight: 600;
+    font-size: var(--c-studio-fs-small);
+    font-weight: var(--c-studio-fw-strong);
     line-height: 14px;
-}
-
-.bd-check {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
 }
 
 .bd-picker {
@@ -116,7 +94,7 @@
     height: 36px;
     padding: 0;
     border: 1px solid var(--c-studio-border-strong);
-    border-radius: 6px;
+    border-radius: var(--c-studio-radius-md);
     background: none;
     cursor: pointer;
 }
@@ -131,7 +109,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 13px;
+    font-size: var(--c-studio-fs-body);
 }
 
 .bd-hex {
@@ -139,7 +117,7 @@
     font: inherit;
     padding: 4px 8px;
     border: 1px solid var(--c-studio-border-strong);
-    border-radius: 6px;
+    border-radius: var(--c-studio-radius-md);
     background: var(--c-studio-surface);
     color: var(--c-studio-text);
 }
@@ -158,7 +136,7 @@
 
 .bd-error {
     margin: 0;
-    font-size: 12.5px;
+    font-size: var(--c-studio-fs-small);
     color: var(--c-studio-error-text);
 }
 
@@ -167,25 +145,8 @@
 }
 
 .bd-opt {
-    font-weight: 400;
+    font-weight: var(--c-studio-fw-regular);
     color: var(--c-studio-text-weak);
-}
-
-.bd-link {
-    min-height: 32px;
-    padding: 4px 0;
-    border: 0;
-    background: none;
-    font: inherit;
-    font-size: 13px;
-    color: var(--c-studio-accent-text);
-    text-decoration: underline;
-    cursor: pointer;
-}
-
-.bd-link:focus-visible {
-    outline: 2px solid var(--c-studio-focus);
-    outline-offset: 2px;
 }
 
 .bd-swap {

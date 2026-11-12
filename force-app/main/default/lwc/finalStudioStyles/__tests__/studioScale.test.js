@@ -47,6 +47,22 @@ const RESPONDENT = new Set([
 const isRespondent = (name) =>
     RESPONDENT.has(name) || name.startsWith('finalNav');
 
+// Specimens (DESIGN_SYSTEM §8): art that draws the respondent form, listed
+// by selector so the chrome around it still follows every rule here.
+const SPECIMENS = {
+    // the miniature form inside a theme card; the frame, name, description
+    // and swatches are chrome
+    finalThemeCard: (sel) =>
+        /\.tc-/.test(sel) &&
+        !/^\.tc-(meta|name|desc|swatch|swatches|check)\b/.test(sel),
+    // the miniature layout inside a layout card
+    finalLayoutCard: (sel) => /\.lt-/.test(sel),
+    // sample text drawn in the font it shows
+    finalFontPicker: (sel) => /^\.fp-sample-(heading|body)$/.test(sel)
+};
+const isSpecimen = (name, selector) =>
+    Boolean(SPECIMENS[name] && SPECIMENS[name](selector));
+
 const NAMED_COLOURS =
     /\b(white|black|red|green|blue|gray|grey|silver|orange|yellow|purple|pink|navy|teal|maroon|olive|lime|aqua|fuchsia)\b/i;
 
@@ -277,6 +293,9 @@ function currentViolations() {
         for (const d of declarations(
             readCss(path.join(LWC_ROOT, name, `${name}.css`))
         )) {
+            if (isSpecimen(name, d.selector)) {
+                continue;
+            }
             for (const rule of violations(d, defined)) {
                 const key = `${d.selector} || ${rule}`;
                 counts[key] = (counts[key] || 0) + 1;
@@ -406,6 +425,10 @@ describe('the bundle holds the DESIGN_SYSTEM §4 values', () => {
         'z-modal': '9001',
         'z-popover': '9500',
         duration: '150ms',
+        'duration-long': '1600ms',
+        'swatch-edge': 'inset 0 0 0 1px rgb(15 23 42 / 22%)',
+        'swatch-ring':
+            '0 0 0 2px var(--c-studio-surface), 0 0 0 4px var(--c-studio-accent)',
         ease: 'ease',
         accent: '#0f766e',
         text: '#1f2937',

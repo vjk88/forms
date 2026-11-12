@@ -109,11 +109,9 @@ export default class FinalThemeGallery extends LightningElement {
         return (this._shownSettings.options || {}).ratio;
     }
 
-    get layoutChips() {
-        return LAYOUTS.map((l) => ({
-            ...l,
-            cls: this.previewKey === l.value ? 'lchip is-on' : 'lchip'
-        }));
+    /** "Preview in": the shared button group (DESIGN_SYSTEM 5.7). */
+    get layoutOptions() {
+        return LAYOUTS;
     }
 
     get families() {
@@ -163,7 +161,7 @@ export default class FinalThemeGallery extends LightningElement {
     }
 
     handleLayout(e) {
-        this._previewKey = e.currentTarget.dataset.value;
+        this._previewKey = e.detail.value;
     }
 
     /** A dot changes only the preview: no event. */

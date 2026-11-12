@@ -4,26 +4,14 @@
             <span class="dot" title="Customized"></span>
         </template>
         <span class="label">{label}</span>
-        <div class="seg" role="group" aria-label={modeGroupLabel}>
-            <button
-                class={solidSegClass}
-                type="button"
-                aria-pressed={solidPressed}
-                disabled={disabled}
-                onclick={handleSolidMode}
-            >
-                Solid
-            </button>
-            <button
-                class={gradientSegClass}
-                type="button"
-                aria-pressed={gradientPressed}
-                disabled={disabled}
-                onclick={handleGradientMode}
-            >
-                Gradient
-            </button>
-        </div>
+        <c-final-button-group
+            class="seg"
+            label={modeGroupLabel}
+            options={modeOptions}
+            value={modeValue}
+            disabled={disabled}
+            onchange={handleMode}
+        ></c-final-button-group>
     </div>
 
     <template lwc:if={isGradient}>
@@ -46,34 +34,29 @@
             </div>
             <div class="grow">
                 <label>Type</label>
-                <select
-                    aria-label={typeLabel}
+                <lightning-combobox
+                    class="g-type"
+                    label={typeLabel}
+                    variant="label-hidden"
+                    options={typeOptions}
+                    value={typeValue}
                     disabled={disabled}
                     onchange={handleType}
-                >
-                    <template for:each={typeOptions} for:item="o">
-                        <option
-                            key={o.value}
-                            value={o.value}
-                            selected={o.selected}
-                        >
-                            {o.label}
-                        </option>
-                    </template>
-                </select>
+                ></lightning-combobox>
             </div>
             <template lwc:if={isLinear}>
                 <div class="grow">
                     <label>Angle</label>
-                    <input
-                        type="range"
-                        aria-label={angleLabel}
+                    <lightning-slider
+                        class="g-angle"
+                        label={angleLabel}
+                        variant="label-hidden"
                         disabled={disabled}
                         min="0"
                         max="360"
                         value={angle}
-                        oninput={handleAngle}
-                    />
+                        onchange={handleAngle}
+                    ></lightning-slider>
                     <span class="deg">{angle}°</span>
                 </div>
             </template>

@@ -60,12 +60,16 @@ export default class FinalGradientControl extends LightningElement {
         return !this._gradient || this._gradient.type !== 'radial';
     }
 
-    get solidSegClass() {
-        return this.isGradient ? 'seg-btn' : 'seg-btn on';
+    /** Solid / Gradient: the shared button group (DESIGN_SYSTEM 5.7). */
+    get modeOptions() {
+        return [
+            { label: 'Solid', value: 'solid' },
+            { label: 'Gradient', value: 'gradient' }
+        ];
     }
 
-    get gradientSegClass() {
-        return this.isGradient ? 'seg-btn on' : 'seg-btn';
+    get modeValue() {
+        return this.isGradient ? 'gradient' : 'solid';
     }
 
     get angle() {
@@ -90,18 +94,16 @@ export default class FinalGradientControl extends LightningElement {
         ];
     }
 
+    get typeValue() {
+        return this._gradient && this._gradient.type === 'radial'
+            ? 'radial'
+            : 'linear';
+    }
+
     // Spoken names: each control says which fill it edits (the visible
     // Type / Angle / Start / End labels sit beside the inputs, not on them).
     get modeGroupLabel() {
         return `${this.label || 'Fill'} type`;
-    }
-
-    get solidPressed() {
-        return this.isGradient ? 'false' : 'true';
-    }
-
-    get gradientPressed() {
-        return this.isGradient ? 'true' : 'false';
     }
 
     get typeLabel() {
@@ -145,6 +147,14 @@ export default class FinalGradientControl extends LightningElement {
         );
     }
 
+    handleMode(event) {
+        if (event.detail.value === 'gradient') {
+            this.handleGradientMode();
+        } else {
+            this.handleSolidMode();
+        }
+    }
+
     handleSolidMode() {
         if (!this.isGradient) {
             return;
@@ -178,14 +188,17 @@ export default class FinalGradientControl extends LightningElement {
     }
 
     handleType(event) {
-        this._gradient = { ...this._gradient, type: event.target.value };
+        const v = event.detail ? event.detail.value : event.target.value;
+        this._gradient = { ...this._gradient, type: v };
         this._emit();
     }
 
     handleAngle(event) {
         this._gradient = {
             ...this._gradient,
-            angle: Number(event.target.value)
+            angle: Number(
+                event.detail ? event.detail.value : event.target.value
+            )
         };
         this._emit();
     }

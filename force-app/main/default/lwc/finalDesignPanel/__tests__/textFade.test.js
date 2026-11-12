@@ -36,7 +36,11 @@ function mount(formSpec) {
 }
 
 async function openHeader(el) {
-    el.shadowRoot.querySelectorAll('.lens-btn')[1].click();
+    el.shadowRoot.querySelector('c-final-button-group.lens').dispatchEvent(
+        new CustomEvent('change', {
+            detail: { value: 'advanced' }
+        })
+    );
     await flush();
     el.shadowRoot
         .querySelector('c-final-studio-rail')

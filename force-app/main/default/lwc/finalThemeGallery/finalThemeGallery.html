@@ -1,19 +1,15 @@
 <template>
     <div class="gal">
         <div class="gal-controls">
-            <div class="gal-layout" role="group" aria-label="Preview layout">
-                <span class="gal-llabel">Preview in</span>
-                <template for:each={layoutChips} for:item="l">
-                    <button
-                        key={l.value}
-                        class={l.cls}
-                        data-value={l.value}
-                        onclick={handleLayout}
-                        type="button"
-                    >
-                        {l.label}
-                    </button>
-                </template>
+            <div class="gal-layout">
+                <span class="gal-llabel" aria-hidden="true">Preview in</span>
+                <c-final-button-group
+                    class="gal-layouts"
+                    label="Preview layout"
+                    options={layoutOptions}
+                    value={previewKey}
+                    onchange={handleLayout}
+                ></c-final-button-group>
             </div>
             <p class="gal-hint">
                 Dots show each look. Click a preview to use it.

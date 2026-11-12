@@ -3,7 +3,7 @@
 /* Builder chrome — neutral, self-contained; NOT the form's --c-* tokens. */
 :host {
     display: block;
-    font-size: 13px;
+    font-size: var(--c-studio-fs-body);
     color: var(--c-studio-text);
 }
 
@@ -17,7 +17,7 @@
 .dot {
     width: 7px;
     height: 7px;
-    border-radius: 50%;
+    border-radius: var(--c-studio-radius-pill);
     background: var(--c-studio-accent-text);
     flex: none;
 }
@@ -28,8 +28,8 @@
 }
 
 .hex {
-    font-family: Consolas, 'Liberation Mono', Menlo, monospace;
-    font-size: 11.5px;
+    font-family: var(--c-studio-font-mono);
+    font-size: var(--c-studio-fs-small);
     color: var(--c-studio-text-weak);
 }
 
@@ -37,7 +37,7 @@
     width: 30px;
     height: 24px;
     border: 1px solid var(--c-studio-border-strong);
-    border-radius: 6px;
+    border-radius: var(--c-studio-radius-md);
     padding: 1px;
     background: var(--c-studio-surface);
     cursor: pointer;
@@ -72,15 +72,15 @@
     border: 0;
     padding: 0;
     background: transparent;
-    border-radius: 50%;
+    border-radius: var(--c-studio-radius-pill);
     cursor: pointer;
 }
 
 .chip {
     width: 28px;
     height: 28px;
-    border-radius: 50%;
-    box-shadow: inset 0 0 0 1px var(--c-studio-border-strong);
+    border-radius: var(--c-studio-radius-pill);
+    box-shadow: var(--c-studio-swatch-edge);
 }
 
 .swatch:hover .chip {
@@ -89,9 +89,7 @@
 
 /* the chosen color: a ring in the Studio's selected color */
 .swatch.is-on .chip {
-    box-shadow:
-        0 0 0 2px var(--c-studio-surface),
-        0 0 0 4px var(--c-studio-accent);
+    box-shadow: var(--c-studio-swatch-edge), var(--c-studio-swatch-ring);
 }
 
 .swatch:focus-visible {
@@ -116,7 +114,7 @@
 .swatch-note {
     min-height: 16px;
     margin: 0 0 6px;
-    font-size: 11px;
+    font-size: var(--c-studio-fs-small);
     color: var(--c-studio-text-weak);
 }
 
@@ -131,7 +129,7 @@
 
 @media (prefers-reduced-motion: no-preference) {
     .chip {
-        transition: transform 0.12s ease;
+        transition: transform var(--c-studio-duration) var(--c-studio-ease);
     }
 }
 
@@ -143,9 +141,9 @@
 }
 
 .badge {
-    font-size: 10.5px;
-    font-weight: 700;
-    border-radius: 5px;
+    font-size: var(--c-studio-fs-caption);
+    font-weight: var(--c-studio-fw-strong);
+    border-radius: var(--c-studio-radius-sm);
     padding: 2px 7px;
     white-space: nowrap;
 }
@@ -166,7 +164,7 @@
 }
 
 .hint {
-    font-size: 11px;
+    font-size: var(--c-studio-fs-small);
     color: var(--c-studio-text-weak);
 }
 

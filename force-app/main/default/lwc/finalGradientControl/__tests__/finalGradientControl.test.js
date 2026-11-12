@@ -21,18 +21,23 @@ afterEach(() => {
     }
 });
 
-it('Solid / Gradient is a labelled group that says which one is on', async () => {
+it('Solid / Gradient is the shared button group, named for its fill', async () => {
     const el = mount();
-    const group = el.shadowRoot.querySelector('.seg');
-    expect(group.getAttribute('role')).toBe('group');
-    expect(group.getAttribute('aria-label')).toBe('Page fill type');
-    const [solid, gradient] = group.querySelectorAll('button');
-    expect(solid.getAttribute('aria-pressed')).toBe('true');
-    expect(gradient.getAttribute('aria-pressed')).toBe('false');
-    gradient.click();
+    const group = el.shadowRoot.querySelector('c-final-button-group');
+    expect(group.label).toBe('Page fill type');
+    expect(group.options.map((o) => o.label)).toEqual(['Solid', 'Gradient']);
+    expect(group.value).toBe('solid');
+    const handler = jest.fn();
+    el.addEventListener('change', handler);
+    group.dispatchEvent(
+        new CustomEvent('change', { detail: { value: 'gradient' } })
+    );
     await flush();
-    expect(solid.getAttribute('aria-pressed')).toBe('false');
-    expect(gradient.getAttribute('aria-pressed')).toBe('true');
+    expect(group.value).toBe('gradient');
+    expect(handler.mock.calls[0][0].detail.gradient).toMatchObject({
+        type: 'linear',
+        angle: 135
+    });
 });
 
 it('every gradient input and preset has its own spoken name', async () => {
@@ -46,12 +51,10 @@ it('every gradient input and preset has its own spoken name', async () => {
     });
     await flush();
     const q = (sel) => el.shadowRoot.querySelector(sel);
-    expect(q('select').getAttribute('aria-label')).toBe(
-        'Page fill gradient type'
-    );
-    expect(q('input[type="range"]').getAttribute('aria-label')).toBe(
-        'Page fill gradient angle'
-    );
+    expect(q('lightning-combobox').label).toBe('Page fill gradient type');
+    expect(q('lightning-combobox').value).toBe('linear');
+    expect(q('lightning-slider').label).toBe('Page fill gradient angle');
+    expect(q('lightning-slider').value).toBe(90);
     const colors = el.shadowRoot.querySelectorAll('input[type="color"]');
     expect(colors[0].getAttribute('aria-label')).toBe(
         'Page fill gradient start color'

@@ -26,9 +26,10 @@
 }
 
 select {
+    min-height: var(--c-studio-control-h);
     font: inherit;
     border: 1px solid var(--c-studio-border-strong);
-    border-radius: 6px;
+    border-radius: var(--c-studio-radius-md);
     padding: 4px 8px;
     background: var(--c-studio-surface);
     color: var(--c-studio-text);
@@ -49,7 +50,7 @@ select {
 .dot {
     width: 7px;
     height: 7px;
-    border-radius: 50%;
+    border-radius: var(--c-studio-radius-pill);
     background: var(--c-studio-accent-text);
     flex: none;
 }
@@ -61,12 +62,14 @@ select {
     gap: 2px;
     padding: 8px 10px;
     border: 1px solid var(--c-studio-border);
-    border-radius: 6px;
+    border-radius: var(--c-studio-radius-md);
     background: var(--c-studio-surface);
     color: var(--c-studio-text);
     overflow: hidden;
 }
 
+/* Specimen (DESIGN_SYSTEM §8): the sample text uses the font it shows, at
+   the size a form would. The frame and caption around it are Studio. */
 .fp-sample-heading {
     font-size: 18px;
     line-height: 1.25;
@@ -80,37 +83,13 @@ select {
 
 .fp-sample-caption {
     margin-top: 2px;
-    font-size: 11.5px;
+    font-size: var(--c-studio-fs-small);
     line-height: 1.4;
     color: var(--c-studio-text-weak);
 }
 
 .fp-link {
     align-self: flex-start;
-    min-height: 32px;
-    padding: 4px 0;
-    border: 0;
-    background: none;
-    font: inherit;
-    color: var(--c-studio-accent-text);
-    text-decoration: underline;
-    cursor: pointer;
-}
-
-.fp-link:focus-visible {
-    outline: 2px solid var(--c-studio-focus);
-    outline-offset: 2px;
-}
-
-.fp-link:disabled {
-    cursor: default;
-    opacity: 0.6;
-}
-
-@media (pointer: coarse) {
-    .fp-link {
-        min-height: 44px;
-    }
 }
 
 .fp-custom {
@@ -127,7 +106,7 @@ select {
 
 .fp-note {
     margin: 2px 0 0;
-    font-size: 11.5px;
+    font-size: var(--c-studio-fs-small);
     line-height: 1.4;
     color: var(--c-studio-text-weak);
 }

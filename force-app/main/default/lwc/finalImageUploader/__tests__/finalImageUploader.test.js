@@ -55,9 +55,7 @@ describe('c-final-image-uploader', () => {
     it('renders label and Upload cta when empty; no thumbnail, no Remove', () => {
         const el = mount({ label: 'Logo' });
         expect(el.shadowRoot.querySelector('.label').textContent).toBe('Logo');
-        expect(el.shadowRoot.querySelector('.btn').textContent.trim()).toBe(
-            'Upload image…'
-        );
+        expect(el.shadowRoot.querySelector('.btn').label).toBe('Upload image…');
         expect(el.shadowRoot.querySelector('.thumb')).toBeNull();
         expect(el.shadowRoot.querySelector('.linkbtn')).toBeNull();
     });
@@ -71,9 +69,7 @@ describe('c-final-image-uploader', () => {
         expect(el.shadowRoot.querySelector('.thumb').getAttribute('src')).toBe(
             '/sfc/x'
         );
-        expect(el.shadowRoot.querySelector('.btn').textContent.trim()).toBe(
-            'Replace'
-        );
+        expect(el.shadowRoot.querySelector('.btn').label).toBe('Replace');
         expect(el.shadowRoot.querySelector('.linkbtn')).not.toBeNull();
     });
 

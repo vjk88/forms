@@ -2,8 +2,7 @@
 
 :host {
     display: block;
-    font-family:
-        -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-family: var(--c-studio-font);
     color: var(--c-studio-text);
 }
 
@@ -26,50 +25,22 @@
 
 .gal-layout {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
-    gap: 0.4rem;
+    gap: var(--c-studio-space-3);
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.gal-layouts {
+    flex: none;
 }
 
 .gal-llabel {
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    flex: none;
+    font-size: var(--c-studio-fs-small);
+    font-weight: var(--c-studio-fw-strong);
     color: var(--c-studio-text-weak);
-    font-weight: 600;
-    margin-right: 0.25rem;
-}
-
-.lchip {
-    border: 1px solid var(--c-studio-border);
-    background: var(--c-studio-surface-subtle);
-    color: var(--c-studio-text-weak);
-    border-radius: 9999px;
-    padding: 0.35rem 0.8rem;
-    font-size: 0.78rem;
-    font-weight: 500;
-    cursor: pointer;
-    font-family: inherit;
-    transition:
-        background 0.15s ease,
-        border-color 0.15s ease,
-        color 0.15s ease;
-}
-
-.lchip:hover {
-    border-color: var(--c-studio-accent);
-}
-
-.lchip {
-    border-radius: 7px;
-    padding: 0.3rem 0.65rem;
-    font-size: 0.75rem;
-}
-
-.lchip.is-on {
-    background: var(--c-studio-accent);
-    border-color: var(--c-studio-accent);
-    color: var(--c-studio-on-accent);
 }
 
 .gal-grid {
@@ -102,7 +73,7 @@
     height: 32px;
     padding: 0;
     border: 0;
-    border-radius: 50%;
+    border-radius: var(--c-studio-radius-pill);
     background: none;
     cursor: pointer;
 }
@@ -110,8 +81,8 @@
 .fam-chip {
     width: 22px;
     height: 22px;
-    border-radius: 50%;
-    box-shadow: inset 0 0 0 1px var(--c-studio-border);
+    border-radius: var(--c-studio-radius-pill);
+    box-shadow: var(--c-studio-swatch-edge);
 }
 
 /* the form's current look: a small check badge on its dot */
@@ -122,22 +93,19 @@
     bottom: 0;
     display: grid;
     place-items: center;
-    width: 13px;
-    height: 13px;
-    border-radius: 50%;
+    width: 14px;
+    height: 14px;
+    border-radius: var(--c-studio-radius-pill);
     background: var(--c-studio-accent);
     color: var(--c-studio-on-accent);
-    font-size: 9px;
-    font-weight: 700;
+    font-size: var(--c-studio-fs-caption);
+    font-weight: var(--c-studio-fw-strong);
     line-height: 1;
 }
 
 /* the look being shown: a ring around its chip */
 .fam-dot.is-on .fam-chip {
-    box-shadow:
-        inset 0 0 0 1px var(--c-studio-border),
-        0 0 0 2px var(--c-studio-surface),
-        0 0 0 4px var(--c-studio-text);
+    box-shadow: var(--c-studio-swatch-edge), var(--c-studio-swatch-ring);
 }
 
 .fam-dot:focus-visible {
@@ -147,12 +115,12 @@
 
 .fam-yours {
     margin: 0;
-    font-size: 0.75rem;
+    font-size: var(--c-studio-fs-small);
     color: var(--c-studio-text-weak);
 }
 
 .gal-hint {
     margin: 0;
-    font-size: 0.8rem;
+    font-size: var(--c-studio-fs-small);
     color: var(--c-studio-text-weak);
 }

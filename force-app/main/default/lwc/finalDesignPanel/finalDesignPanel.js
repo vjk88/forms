@@ -67,6 +67,16 @@ const SIMPLE_TABS = [
     { key: 'navigation', label: 'Buttons', icon: 'utility:forward' }
 ];
 
+// lightning-combobox treats '' as "nothing picked": the empty option (a
+// layout or theme default) rides a stand-in value and turns back into ''.
+const EMPTY_OPTION = '__default__';
+function comboValue(v) {
+    return v === null || v === undefined || v === '' ? EMPTY_OPTION : String(v);
+}
+function fromComboValue(v) {
+    return v === null || v === undefined || v === EMPTY_OPTION ? '' : String(v);
+}
+
 export default class FinalDesignPanel extends LightningElement {
     /** Parent Form__c id — forwarded to image uploads (public/private decision). */
     @api formId;
@@ -215,7 +225,7 @@ export default class FinalDesignPanel extends LightningElement {
         if (disclosure) disclosure.open = true;
         wrapper.scrollIntoView?.({ block: 'nearest' });
         const input = wrapper.querySelector(
-            'input, select, textarea, lightning-input-rich-text, c-final-color-control, c-final-gradient-control, c-final-image-uploader, c-final-font-picker'
+            'input, select, textarea, lightning-input, lightning-combobox, lightning-slider, lightning-input-rich-text, c-final-color-control, c-final-gradient-control, c-final-image-uploader, c-final-font-picker'
         );
         if (input?.focus) input.focus();
         else wrapper.focus();
@@ -623,6 +633,17 @@ export default class FinalDesignPanel extends LightningElement {
                     ...o,
                     selected: o.value === current
                 }));
+                // lightning-combobox: string values, the current one chosen.
+                // It reads '' as "nothing picked", so the empty option gets a
+                // stand-in value; a value no option has shows the first one,
+                // as the browser's own dropdown did.
+                vm.comboOptions = c.options.map((o) => ({
+                    label: o.label,
+                    value: comboValue(o.value)
+                }));
+                vm.value = c.options.some((o) => String(o.value) === current)
+                    ? comboValue(current)
+                    : vm.comboOptions[0]?.value;
                 if (PICTURE_KEYS.includes(c.key)) {
                     // a setting with a look: one drawing per option
                     // (IMPL_PLAN_STUDIO_DESIGN_SCALE step 4)
@@ -1033,12 +1054,16 @@ export default class FinalDesignPanel extends LightningElement {
                 : 'theme';
     }
 
-    get simpleLensClass() {
-        return this.advanced ? 'lens-btn' : 'lens-btn on';
+    /** Simple / Advanced design: the shared button group (DESIGN_SYSTEM 5.7). */
+    get lensOptions() {
+        return [
+            { label: 'Simple', value: 'simple' },
+            { label: 'Advanced design', value: 'advanced' }
+        ];
     }
 
-    get advancedLensClass() {
-        return this.advanced ? 'lens-btn on' : 'lens-btn';
+    get lensValue() {
+        return this.advanced ? 'advanced' : 'simple';
     }
 
     get pendingThemeName() {
@@ -1277,7 +1302,9 @@ export default class FinalDesignPanel extends LightningElement {
     }
 
     handleSelect(event) {
-        this._selectValue(event.target.dataset.key, event.target.value);
+        // lightning-combobox sends the pick in detail.value
+        const v = event.detail ? event.detail.value : event.target.value;
+        this._selectValue(event.target.dataset.key, fromComboValue(v));
     }
 
     /** A picture tile or a switch: the same write as the dropdown it replaced. */
@@ -1353,7 +1380,9 @@ export default class FinalDesignPanel extends LightningElement {
     }
 
     handleRange(event) {
-        this._apply(event.target.dataset.key, Number(event.target.value));
+        // lightning-slider sends the value in detail.value while dragging
+        const v = event.detail ? event.detail.value : event.target.value;
+        this._apply(event.target.dataset.key, Number(v));
     }
 
     handleImage(event) {
@@ -1383,13 +1412,12 @@ export default class FinalDesignPanel extends LightningElement {
 
     // ----- lens + rail -----
 
-    handleLensSimple() {
-        this.advanced = false;
-        this._keepTab();
-    }
-
-    handleLensAdvanced() {
-        this.advanced = true;
+    handleLens(event) {
+        const advanced = event.detail.value === 'advanced';
+        if (advanced === this.advanced) {
+            return;
+        }
+        this.advanced = advanced;
         this._keepTab();
     }
 

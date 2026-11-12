@@ -8,37 +8,25 @@
         ></c-final-studio-rail>
         <div class="settings">
             <div class="head">
-                <div class="lens" role="group" aria-label="Design mode">
-                    <button
-                        class={simpleLensClass}
-                        type="button"
-                        aria-pressed={simpleSelected}
-                        onclick={handleLensSimple}
-                    >
-                        Simple
-                    </button>
-                    <button
-                        class={advancedLensClass}
-                        type="button"
-                        aria-pressed={advanced}
-                        onclick={handleLensAdvanced}
-                    >
-                        Advanced design
-                    </button>
-                </div>
+                <c-final-button-group
+                    class="lens"
+                    label="Design mode"
+                    options={lensOptions}
+                    value={lensValue}
+                    stretch
+                    onchange={handleLens}
+                ></c-final-button-group>
                 <template lwc:if={hasOverrides}
                     ><div class="changes" role="status">
                         <span class="changes-count">{changesLabel}</span
                         ><span class="changes-detail">{changesDetail}</span
-                        ><button
-                            class="linkbtn changes-reset"
-                            type="button"
+                        ><lightning-button
+                            class="changes-reset"
+                            variant="base"
+                            label="Reset all"
                             onclick={handleResetAll}
-                        >
-                            Reset all
-                        </button>
-                    </div></template
-                >
+                        ></lightning-button></div
+                ></template>
                 <c-final-design-search
                     entries={searchEntries}
                     opens-advanced={simpleSelected}
@@ -56,27 +44,22 @@
                             overrides, including settings hidden in Simple.
                         </p>
                         <div class="confirm-acts">
-                            <button
+                            <lightning-button
                                 class="confirm-go"
-                                type="button"
+                                variant="brand"
+                                label="Keep my customizations"
                                 onclick={handleConfirmKeep}
-                            >
-                                Keep my customizations
-                            </button>
-                            <button
+                            ></lightning-button>
+                            <lightning-button
                                 class="confirm-alt"
-                                type="button"
+                                label="Use theme as-is"
                                 onclick={handleConfirmClear}
-                            >
-                                Use theme as-is
-                            </button>
-                            <button
+                            ></lightning-button>
+                            <lightning-button
                                 class="confirm-alt"
-                                type="button"
+                                label="Cancel"
                                 onclick={handleConfirmCancel}
-                            >
-                                Cancel
-                            </button>
+                            ></lightning-button>
                         </div>
                     </div>
                 </template>
@@ -107,24 +90,22 @@
                                     >{themeLabel}</span
                                 >
                                 <div class="tl-acts">
-                                    <button
-                                        class="linkbtn entry-change"
-                                        type="button"
+                                    <lightning-button
+                                        class="entry-change"
+                                        variant="base"
+                                        label="Change…"
                                         data-gallery="theme"
                                         aria-label="Change theme"
                                         onclick={handleOpenGallery}
-                                    >
-                                        Change…
-                                    </button>
+                                    ></lightning-button>
                                     <template lwc:if={advanced}
-                                        ><button
-                                            class="linkbtn entry-edit"
-                                            type="button"
+                                        ><lightning-button
+                                            class="entry-edit"
+                                            variant="base"
+                                            label="Edit theme…"
                                             onclick={handleEditTheme}
-                                        >
-                                            Edit theme…
-                                        </button></template
-                                    >
+                                        ></lightning-button
+                                    ></template>
                                 </div>
                             </div>
                             <div class="tl-card">
@@ -145,15 +126,14 @@
                                     >{layoutLabel}</span
                                 >
                                 <div class="tl-acts">
-                                    <button
-                                        class="linkbtn entry-change"
-                                        type="button"
+                                    <lightning-button
+                                        class="entry-change"
+                                        variant="base"
+                                        label="Change…"
                                         data-gallery="layout"
                                         aria-label="Change layout"
                                         onclick={handleOpenGallery}
-                                    >
-                                        Change…
-                                    </button>
+                                    ></lightning-button>
                                 </div>
                             </div>
                         </div>
@@ -247,14 +227,13 @@
                                                 ></c-final-color-control>
                                             </template>
                                             <template lwc:if={c.edited}>
-                                                <button
-                                                    type="button"
-                                                    class="linkbtn color-reset"
+                                                <lightning-button
+                                                    class="color-reset"
+                                                    variant="base"
+                                                    label="Reset to theme"
                                                     data-key={c.key}
                                                     onclick={handleColorReset}
-                                                >
-                                                    Reset to theme
-                                                </button>
+                                                ></lightning-button>
                                             </template>
                                         </div>
                                     </template>
@@ -469,24 +448,17 @@
                                                             <template
                                                                 lwc:elseif={c.isNumber}
                                                             >
-                                                                <div
-                                                                    class="row"
-                                                                >
-                                                                    <label
-                                                                        for={c.key}
-                                                                        >{c.label}</label
-                                                                    >
-                                                                    <input
-                                                                        id={c.key}
-                                                                        type="number"
-                                                                        data-key={c.key}
-                                                                        min={c.min}
-                                                                        max={c.max}
-                                                                        value={c.value}
-                                                                        placeholder={c.placeholder}
-                                                                        onchange={handleNumber}
-                                                                    />
-                                                                </div>
+                                                                <lightning-input
+                                                                    class="ctl-input"
+                                                                    type="number"
+                                                                    label={c.label}
+                                                                    data-key={c.key}
+                                                                    min={c.min}
+                                                                    max={c.max}
+                                                                    value={c.value}
+                                                                    placeholder={c.placeholder}
+                                                                    oncommit={handleNumber}
+                                                                ></lightning-input>
                                                             </template>
                                                             <template
                                                                 lwc:elseif={c.isFontPicker}
@@ -573,7 +545,7 @@
                                                                 lwc:elseif={c.isSelect}
                                                             >
                                                                 <div
-                                                                    class="row"
+                                                                    class="ctl-head"
                                                                 >
                                                                     <template
                                                                         lwc:if={c.edited}
@@ -583,29 +555,21 @@
                                                                             title="Customized"
                                                                         ></span>
                                                                     </template>
-                                                                    <label
-                                                                        for={c.key}
-                                                                        >{c.label}</label
+                                                                    <span
+                                                                        class="ctl-label"
+                                                                        aria-hidden="true"
+                                                                        >{c.label}</span
                                                                     >
-                                                                    <select
-                                                                        id={c.key}
-                                                                        data-key={c.key}
-                                                                        onchange={handleSelect}
-                                                                    >
-                                                                        <template
-                                                                            for:each={c.options}
-                                                                            for:item="o"
-                                                                        >
-                                                                            <option
-                                                                                key={o.value}
-                                                                                value={o.value}
-                                                                                selected={o.selected}
-                                                                            >
-                                                                                {o.label}
-                                                                            </option>
-                                                                        </template>
-                                                                    </select>
                                                                 </div>
+                                                                <lightning-combobox
+                                                                    class="ctl-input"
+                                                                    label={c.label}
+                                                                    variant="label-hidden"
+                                                                    data-key={c.key}
+                                                                    options={c.comboOptions}
+                                                                    value={c.value}
+                                                                    onchange={handleSelect}
+                                                                ></lightning-combobox>
                                                                 <template
                                                                     lwc:if={c.hint}
                                                                 >
@@ -630,17 +594,13 @@
                                                                             title="Customized"
                                                                         ></span>
                                                                     </template>
-                                                                    <label
-                                                                        for={c.key}
-                                                                        >{c.label}</label
-                                                                    >
-                                                                    <input
-                                                                        id={c.key}
+                                                                    <lightning-input
                                                                         type="checkbox"
+                                                                        label={c.label}
                                                                         data-key={c.key}
                                                                         checked={c.checked}
                                                                         onchange={handleToggle}
-                                                                    />
+                                                                    ></lightning-input>
                                                                 </div>
                                                                 <template
                                                                     lwc:if={c.hint}
@@ -656,7 +616,7 @@
                                                                 lwc:elseif={c.isRange}
                                                             >
                                                                 <div
-                                                                    class="row"
+                                                                    class="ctl-slider"
                                                                 >
                                                                     <template
                                                                         lwc:if={c.edited}
@@ -666,19 +626,14 @@
                                                                             title="Customized"
                                                                         ></span>
                                                                     </template>
-                                                                    <label
-                                                                        for={c.key}
-                                                                        >{c.label}</label
-                                                                    >
-                                                                    <input
-                                                                        id={c.key}
-                                                                        type="range"
+                                                                    <lightning-slider
+                                                                        label={c.label}
                                                                         data-key={c.key}
                                                                         min={c.min}
                                                                         max={c.max}
                                                                         value={c.value}
-                                                                        oninput={handleRange}
-                                                                    />
+                                                                        onchange={handleRange}
+                                                                    ></lightning-slider>
                                                                 </div>
                                                                 <template
                                                                     lwc:if={c.hint}
@@ -691,38 +646,29 @@
                                                                 </template>
                                                             </template>
                                                             <template lwc:else>
-                                                                <div
-                                                                    class="row"
-                                                                >
-                                                                    <label
-                                                                        for={c.key}
-                                                                        >{c.label}</label
-                                                                    >
-                                                                    <input
-                                                                        id={c.key}
-                                                                        type="text"
-                                                                        data-key={c.key}
-                                                                        value={c.value}
-                                                                        placeholder={c.placeholder}
-                                                                        onchange={handleText}
-                                                                    />
-                                                                </div>
+                                                                <lightning-input
+                                                                    class="ctl-input"
+                                                                    label={c.label}
+                                                                    data-key={c.key}
+                                                                    value={c.value}
+                                                                    placeholder={c.placeholder}
+                                                                    oncommit={handleText}
+                                                                ></lightning-input>
                                                             </template>
                                                         </div>
                                                     </template>
                                                 </div>
                                             </details>
                                             <template lwc:if={g.edited}
-                                                ><button
-                                                    class="linkbtn resetchip group-reset"
-                                                    type="button"
+                                                ><lightning-button
+                                                    class="group-reset"
+                                                    variant="base"
+                                                    label="Reset"
                                                     data-group={g.key}
                                                     aria-label={g.resetLabel}
                                                     onclick={handleGroupReset}
-                                                >
-                                                    Reset
-                                                </button></template
-                                            >
+                                                ></lightning-button
+                                            ></template>
                                         </div>
                                     </template>
                                 </template>
@@ -787,29 +733,25 @@
                                 <template
                                     for:each={simpleVM.labels}
                                     for:item="c"
-                                    ><div class="row simple-text" key={c.key}>
-                                        <label for={c.key}>{c.label}</label
-                                        ><input
-                                            id={c.key}
-                                            type="text"
-                                            data-key={c.key}
-                                            value={c.value}
-                                            placeholder={c.placeholder}
-                                            onchange={handleText}
-                                        /></div
+                                    ><lightning-input
+                                        key={c.key}
+                                        class="simple-text"
+                                        label={c.label}
+                                        data-key={c.key}
+                                        value={c.value}
+                                        placeholder={c.placeholder}
+                                        oncommit={handleText}
+                                    ></lightning-input
                                 ></template>
                                 <template lwc:if={simpleVM.asTitle}
-                                    ><div class="row simple-text">
-                                        <label for="s-confirmation-title"
-                                            >Confirmation title</label
-                                        ><input
-                                            id="s-confirmation-title"
-                                            type="text"
-                                            data-key="asTitle"
-                                            value={simpleVM.asTitle.value}
-                                            placeholder={simpleVM.asTitle.placeholder}
-                                            onchange={handleText}
-                                        /></div
+                                    ><lightning-input
+                                        class="simple-text"
+                                        label="Confirmation title"
+                                        data-key="asTitle"
+                                        value={simpleVM.asTitle.value}
+                                        placeholder={simpleVM.asTitle.placeholder}
+                                        oncommit={handleText}
+                                    ></lightning-input
                                 ></template>
                                 <template lwc:if={simpleVM.asMessage}
                                     ><div class="richtext">
@@ -829,14 +771,13 @@
                                         confirmation screen content is
                                         preserved.
                                     </p>
-                                    <button
-                                        class="linkbtn"
-                                        type="button"
+                                    <lightning-button
+                                        class="completion-link"
+                                        variant="base"
+                                        label="Open after-submit settings"
                                         onclick={handleCompletionSettings}
-                                    >
-                                        Open after-submit settings
-                                    </button></template
-                                >
+                                    ></lightning-button
+                                ></template>
                             </div>
                         </section>
                     </template>

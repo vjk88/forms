@@ -2,13 +2,14 @@
 
 /* Builder chrome, te- prefixed (LEX global-CSS collision rule). The dialog
    shell is c/finalStudioDialog; this is its body: the form on the left, a
-   sticky live preview on the right, one column on narrow windows. */
+   sticky live preview on the right, one column on narrow windows. Studio
+   tokens only (DESIGN_SYSTEM §4). */
 .te {
     display: grid;
     grid-template-columns: minmax(0, 1.25fr) minmax(260px, 1fr);
-    gap: 24px;
+    gap: var(--c-studio-space-6);
     align-items: start;
-    font-size: 13px;
+    font-size: var(--c-studio-fs-body);
     color: var(--c-studio-text);
 }
 
@@ -21,43 +22,34 @@
 .te-form {
     display: flex;
     flex-direction: column;
-    gap: 22px;
+    gap: var(--c-studio-space-6);
     min-width: 0;
 }
 
 .te-step {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--c-studio-space-3);
 }
 
 .te-h {
     margin: 0;
-    font-size: 14px;
-    font-weight: 700;
+    font-size: var(--c-studio-fs-subhead);
+    font-weight: var(--c-studio-fw-strong);
+    line-height: var(--c-studio-lh-tight);
 }
 
 .te-sub {
     margin: 0;
-    font-size: 12px;
-    font-weight: 600;
+    font-size: var(--c-studio-fs-body);
+    font-weight: var(--c-studio-fw-strong);
 }
 
 .te-hint {
     margin: 0;
-    font-size: 12.5px;
-    line-height: 1.4;
+    font-size: var(--c-studio-fs-small);
+    line-height: var(--c-studio-lh-body);
     color: var(--c-studio-text-weak);
-}
-
-.te-name,
-.te-select {
-    font: inherit;
-    padding: 6px 8px;
-    border: 1px solid var(--c-studio-border-strong);
-    border-radius: 6px;
-    background: var(--c-studio-surface);
-    color: var(--c-studio-text);
 }
 
 .te-name {
@@ -65,90 +57,54 @@
 }
 
 .te-select {
+    display: block;
     width: 100%;
     max-width: 280px;
 }
 
-.te-name:focus-visible,
-.te-select:focus-visible,
-.te-btn:focus-visible,
-.te-seg:focus-visible,
-.te-link:focus-visible {
-    outline: 2px solid var(--c-studio-focus);
-    outline-offset: 2px;
-}
-
-/* Start from: one segmented choice, then what it needs */
+/* Start from: the shared button group, then what it needs */
 .te-segs {
-    display: inline-flex;
     align-self: flex-start;
-    border: 1px solid var(--c-studio-border-strong);
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-.te-seg {
-    border: 0;
-    border-left: 1px solid var(--c-studio-border);
-    background: var(--c-studio-surface);
-    padding: 7px 16px;
-    font: inherit;
-    font-weight: 600;
-    font-size: 12.5px;
-    color: var(--c-studio-text);
-    cursor: pointer;
-}
-
-.te-seg:first-child {
-    border-left: 0;
-}
-
-/* solid, like Simple / Advanced design and Build / Design */
-.te-seg.on {
-    background: var(--c-studio-accent);
-    color: var(--c-studio-on-accent);
 }
 
 .te-startbox {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 14px;
+    gap: var(--c-studio-space-3);
+    padding: var(--c-studio-space-4);
     border: 1px solid var(--c-studio-border);
-    border-radius: 10px;
+    border-radius: var(--c-studio-radius-md);
     background: var(--c-studio-surface-subtle);
 }
 
 .te-rebuild {
-    padding: 10px 12px;
+    padding: var(--c-studio-space-4);
     border: 1px solid var(--c-studio-warning-border);
-    border-radius: 8px;
+    border-radius: var(--c-studio-radius-md);
     background: var(--c-studio-warning-surface);
     color: var(--c-studio-warning-text);
 }
 
 .te-rebuild p {
-    margin: 0 0 8px;
+    margin: 0 0 var(--c-studio-space-3);
 }
 
-/* Colours: two columns of rows per group */
+/* Colours: two columns of rows per group, each group a titled set (5.5) */
 .te-cgroup + .te-cgroup {
-    margin-top: 10px;
+    margin-top: var(--c-studio-space-4);
 }
 
 .te-cgroup-h {
-    margin: 0 0 6px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: var(--c-studio-text-weak);
+    margin: 0 0 var(--c-studio-space-3);
+    font-size: var(--c-studio-fs-body);
+    font-weight: var(--c-studio-fw-strong);
+    color: var(--c-studio-text);
 }
 
 .te-crows {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px 16px;
+    gap: var(--c-studio-space-3) var(--c-studio-space-5);
     align-items: end;
 }
 
@@ -161,8 +117,9 @@
 .te-crow-top {
     display: flex;
     justify-content: flex-end;
-    gap: 6px;
-    font-size: 11px;
+    align-items: center;
+    gap: var(--c-studio-space-2);
+    font-size: var(--c-studio-fs-small);
 }
 
 .te-crow-top:empty {
@@ -174,88 +131,86 @@
 }
 
 .te-pin {
+    display: inline-flex;
+    align-items: center;
     color: var(--c-studio-accent-text);
-    font-weight: 600;
-    font-size: 11px;
+    font-weight: var(--c-studio-fw-strong);
+    font-size: var(--c-studio-fs-caption);
 }
 
+/* A readability warning badge (5.22) that jumps to Fix for me */
 .te-flag {
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
     margin-right: auto;
-    padding: 0 6px;
+    padding: 0 var(--c-studio-space-2);
     border: 0;
     font: inherit;
+    font-size: var(--c-studio-fs-caption);
+    font-weight: var(--c-studio-fw-strong);
     cursor: pointer;
-    border-radius: 999px;
+    border-radius: var(--c-studio-radius-sm);
     background: var(--c-studio-error-surface);
     color: var(--c-studio-error-text);
-    font-weight: 700;
+}
+
+.te-flag:focus-visible {
+    outline: 2px solid var(--c-studio-focus);
+    outline-offset: 2px;
 }
 
 /* a fill that isn't a colour: say so instead of drawing a fake swatch */
 .te-none {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    padding: 8px 10px;
+    gap: var(--c-studio-space-2);
+    padding: var(--c-studio-space-3) var(--c-studio-space-4);
     border: 1px dashed var(--c-studio-border-strong);
-    border-radius: 8px;
+    border-radius: var(--c-studio-radius-md);
 }
 
 .te-none-state {
-    font-weight: 600;
+    font-weight: var(--c-studio-fw-strong);
     color: var(--c-studio-text-weak);
 }
 
 .te-seethrough {
     align-self: flex-start;
-    margin-top: 4px;
-    font-size: 12px;
-}
-
-.te-link {
-    padding: 0;
-    border: 0;
-    background: none;
-    font: inherit;
-    color: var(--c-studio-accent-text);
-    text-decoration: underline;
-    cursor: pointer;
 }
 
 /* Shape & type */
 .te-font {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--c-studio-space-2);
 }
 
 .te-shape {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px 16px;
+    gap: var(--c-studio-space-4) var(--c-studio-space-5);
     align-items: end;
 }
 
 .te-field {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--c-studio-space-2);
 }
 
-.te-check {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+.te-field .te-select {
+    max-width: none;
 }
 
 /* Readability: green only when everything was measured */
 .te-readable {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    padding: 12px 14px;
+    gap: var(--c-studio-space-3);
+    padding: var(--c-studio-space-4);
     border: 1px solid;
-    border-radius: 10px;
+    border-radius: var(--c-studio-radius-md);
 }
 
 .te-readable p {
@@ -282,55 +237,27 @@
 
 .te-lines {
     margin: 0;
-    padding-left: 18px;
+    padding-left: var(--c-studio-space-5);
 }
 
 .te-lines li + li {
-    margin-top: 3px;
+    margin-top: var(--c-studio-space-1);
 }
 
 .te-row {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--c-studio-space-3);
     flex-wrap: wrap;
 }
 
 .te-note {
-    font-size: 12px;
+    font-size: var(--c-studio-fs-small);
 }
 
 .te-note:empty,
 .te-error:empty {
     display: none;
-}
-
-/* Buttons inside the body (the footer's are the dialog's own) */
-.te-btn {
-    font: inherit;
-    font-weight: 600;
-    border: 1px solid var(--c-studio-border-strong);
-    border-radius: 6px;
-    background: var(--c-studio-surface);
-    color: var(--c-studio-text);
-    padding: 6px 14px;
-    cursor: pointer;
-}
-
-.te-btn--primary {
-    background: var(--c-studio-accent);
-    border-color: var(--c-studio-accent);
-    color: var(--c-studio-on-accent);
-}
-
-.te-btn--primary:hover:not(:disabled) {
-    background: var(--c-studio-accent-hover);
-    border-color: var(--c-studio-accent-hover);
-}
-
-.te-btn:disabled {
-    opacity: 0.45;
-    cursor: default;
 }
 
 /* Preview */
@@ -339,7 +266,7 @@
     top: 0;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--c-studio-space-4);
 }
 
 .te-roles {
@@ -348,37 +275,37 @@
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    font-size: 12.5px;
-    line-height: 1.4;
+    gap: var(--c-studio-space-2);
+    font-size: var(--c-studio-fs-small);
+    line-height: var(--c-studio-lh-body);
 }
 
 .te-role {
     display: flex;
     align-items: flex-start;
-    gap: 8px;
+    gap: var(--c-studio-space-3);
 }
 
 .te-role-chip {
     flex: none;
     width: 14px;
     height: 14px;
-    margin-top: 2px;
-    border-radius: 4px;
-    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 20%);
+    margin-top: var(--c-studio-space-1);
+    border-radius: var(--c-studio-radius-sm);
+    box-shadow: var(--c-studio-swatch-edge);
 }
 
 .te-foot {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--c-studio-space-4);
 }
 
 .te-error {
     margin: 0;
     max-width: 52ch;
-    font-size: 12.5px;
-    line-height: 1.4;
+    font-size: var(--c-studio-fs-small);
+    line-height: var(--c-studio-lh-body);
     color: var(--c-studio-error-text);
 }
 

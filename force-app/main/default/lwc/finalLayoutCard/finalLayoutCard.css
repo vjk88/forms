@@ -4,32 +4,28 @@
 .lc {
     cursor: pointer;
     border: 1px solid var(--c-studio-border);
-    border-radius: 14px;
+    border-radius: var(--c-studio-radius-md);
     overflow: hidden;
     background: var(--c-studio-surface);
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
     transition:
-        transform 0.15s ease,
-        border-color 0.15s ease,
-        box-shadow 0.15s ease;
+        border-color var(--c-studio-duration) var(--c-studio-ease),
+        box-shadow var(--c-studio-duration) var(--c-studio-ease);
 }
 
+/* Selectable card (DESIGN_SYSTEM 5.11): hover strengthens the edge,
+   selected is an accent edge and ring. */
 .lc:hover {
-    transform: translateY(-2px);
-    border-color: var(--c-studio-accent);
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+    border-color: var(--c-studio-border-strong);
 }
 
 .lc:focus-visible {
     outline: 2px solid var(--c-studio-focus);
-    outline-offset: 4px;
-    border-color: var(--c-studio-accent);
-    box-shadow: 0 0 0 3px var(--c-studio-focus-halo);
+    outline-offset: 2px;
 }
 
 .lc.is-on {
     border-color: var(--c-studio-accent);
-    box-shadow: 0 0 0 2px var(--c-studio-accent);
+    box-shadow: var(--c-studio-selected-ring);
 }
 
 /* --- Theme-tinted mockup (layoutThumb treatment; everything below rides
@@ -301,20 +297,20 @@
 
 /* --- meta --- */
 .lc-meta {
-    padding: 12px 14px 14px;
+    padding: var(--c-studio-space-4);
 }
 .lc-top {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: var(--c-studio-space-3);
 }
 .lc-icon {
     --slds-c-icon-color-foreground-default: var(--c-studio-text);
     flex: none;
 }
 .lc-name {
-    font-weight: 650;
-    font-size: 0.98rem;
+    font-weight: var(--c-studio-fw-strong);
+    font-size: var(--c-studio-fs-body);
     color: var(--c-studio-text);
     flex: 1;
 }
@@ -322,8 +318,8 @@
     --slds-c-icon-color-foreground-default: var(--c-studio-accent);
 }
 .lc-hint {
-    margin: 3px 0 0;
-    font-size: 0.75rem;
+    margin: var(--c-studio-space-1) 0 0;
+    font-size: var(--c-studio-fs-small);
     color: var(--c-studio-text-weak);
 }
 
@@ -362,9 +358,7 @@
 }
 
 .lc[role='img']:hover {
-    transform: none;
     border-color: var(--c-studio-border);
-    box-shadow: none;
 }
 
 /* compact: a short picture, no text under it */

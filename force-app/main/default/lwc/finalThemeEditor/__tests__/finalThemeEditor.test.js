@@ -85,7 +85,7 @@ const preview = (el) => q(el, '.te-preview c-final-theme-card').themeProps;
 async function setName(el, value) {
     const input = q(el, '.te-name');
     input.value = value;
-    input.dispatchEvent(new CustomEvent('input'));
+    input.dispatchEvent(new CustomEvent('change'));
     await flush();
 }
 async function pick(el, path, value) {
@@ -105,7 +105,9 @@ async function fill(el, path, solid, gradient = null) {
 const G = { type: 'linear', angle: 90, start: '#1e3a8a', end: '#0f172a' };
 
 async function start(el, value) {
-    q(el, `.te-seg[data-value="${value}"]`).click();
+    q(el, '.te-segs').dispatchEvent(
+        new CustomEvent('change', { detail: { value } })
+    );
     await flush();
 }
 async function confirm(el) {
@@ -153,7 +155,7 @@ describe('c-final-theme-editor', () => {
         const el = await mount({ startFrom: 'nordic' });
         expect(shell(el).label).toBe('New theme');
         expect(shell(el).confirmLabel).toBe('Create theme');
-        expect(q(el, '.te-seg.on').dataset.value).toBe('theme');
+        expect(q(el, '.te-segs').value).toBe('theme');
         expect(color(el, 'palette.accent').value).toBe(
             getBuiltinTheme('nordic').palette.accent
         );
@@ -184,28 +186,26 @@ describe('c-final-theme-editor', () => {
 
     it('Save as new saves a copy, never the record', async () => {
         const el = await mount({ themeId: 'a0AXX0000001', themeName: 'X' });
-        [...qa(el, '.te-btn')]
-            .find((b) => b.textContent.trim() === 'Save as new')
-            .click();
+        q(el, '.te-save-new').click();
         await flush();
         expect(saveCustomTheme.mock.calls[0][0].themeId).toBeNull();
     });
 
     it('an older theme (no starting point saved) opens as saved, and asks before a rebuild', async () => {
         const el = await mount({ themeId: 'a0AXX0000001', themeName: 'Old' });
-        expect(q(el, '.te-seg.on').dataset.value).toBe('current');
+        expect(q(el, '.te-segs').value).toBe('current');
         await start(el, 'theme');
         expect(q(el, '.te-rebuild').textContent).toContain(
             'recalculates every color'
         );
         // Keep as saved changes nothing
-        [...qa(el, '.te-rebuild .te-btn')][1].click();
+        q(el, '.te-rebuild-no').click();
         await flush();
         expect(color(el, 'palette.accent').value).toBe('#111111');
         await start(el, 'theme');
-        [...qa(el, '.te-rebuild .te-btn')][0].click();
+        q(el, '.te-rebuild-yes').click();
         await flush();
-        expect(q(el, '.te-seg.on').dataset.value).toBe('theme');
+        expect(q(el, '.te-segs').value).toBe('theme');
         expect(color(el, 'palette.accent').value).toBe(
             getBuiltinTheme('editorialIvory').palette.accent
         );
@@ -222,7 +222,7 @@ describe('c-final-theme-editor', () => {
             )
         );
         const el = await mount({ themeId: 'a0AXX0000001', themeName: 'B' });
-        expect(q(el, '.te-seg.on').dataset.value).toBe('brand');
+        expect(q(el, '.te-segs').value).toBe('brand');
         const inputs = q(el, 'c-final-brand-inputs');
         expect(inputs.initialColor).toBe('#e11d48');
         expect(inputs.initialSecond).toBe('#1e3a8a');
@@ -235,9 +235,9 @@ describe('c-final-theme-editor', () => {
         const el = await mount({ startFrom: 'nordic' });
         await pick(el, 'palette.text', '#7a1f1f');
         expect(row(el, 'palette.text').textContent).toContain('Changed by you');
-        const select = q(el, '#te-theme') || q(el, '.te-startbox select');
-        select.value = 'dracula';
-        select.dispatchEvent(new CustomEvent('change'));
+        q(el, '.te-theme').dispatchEvent(
+            new CustomEvent('change', { detail: { value: 'dracula' } })
+        );
         await flush();
         expect(color(el, 'palette.text').value).toBe('#7a1f1f');
         expect(color(el, 'palette.accent').value).toBe(
@@ -247,7 +247,7 @@ describe('c-final-theme-editor', () => {
 
     it('Your brand: a new Main recalculates the accent but keeps a hand-set Text', async () => {
         const el = await mount({ startMode: 'brand' });
-        expect(q(el, '.te-seg.on').dataset.value).toBe('brand');
+        expect(q(el, '.te-segs').value).toBe('brand');
         await brand(el, { color: '#e11d48' });
         const firstAccent = color(el, 'palette.accent').value;
         await pick(el, 'palette.text', '#7a1f1f');
@@ -285,7 +285,7 @@ describe('c-final-theme-editor', () => {
         getCustomTheme.mockResolvedValueOnce(JSON.stringify(saved));
         document.body.removeChild(el);
         const again = await mount({ themeId: 'a0AXX0000001', themeName: 'P' });
-        expect(q(again, '.te-seg.on').dataset.value).toBe('theme');
+        expect(q(again, '.te-segs').value).toBe('theme');
         expect(row(again, 'palette.text').textContent).toContain(
             'Changed by you'
         );
@@ -348,9 +348,13 @@ describe('c-final-theme-editor', () => {
         const pill = row(el, 'palette.textWeak').querySelector('.te-flag');
         expect(pill.title).toMatch(/^on /);
         expect(pill.textContent).toContain('Go to Fix for me');
+        // Salesforce buttons take focus inside their own shadow, which the
+        // test stand-in can't: check the focus call landed on Fix for me
+        const focus = jest.spyOn(HTMLElement.prototype, 'focus');
         pill.click();
         await flush();
-        expect(el.shadowRoot.activeElement).toBe(q(el, '.te-fix'));
+        expect(focus.mock.contexts).toContain(q(el, '.te-fix'));
+        focus.mockRestore();
         const label = row(el, 'palette.textWeak').getAttribute('aria-label');
         expect(label).toBe('Muted text, hard to read, changed by you');
         // one status line, not the whole box, is read out
@@ -507,9 +511,9 @@ describe('c-final-theme-editor', () => {
         expect(gradientRow(el, 'palette.headerBg').gradient).toEqual(G);
         await fill(el, 'palette.headerBg', '#123456', null);
         expect(preview(el).palette.headerBgGradient).toBeNull();
-        const select = q(el, '.te-startbox select');
-        select.value = 'dracula';
-        select.dispatchEvent(new CustomEvent('change'));
+        q(el, '.te-theme').dispatchEvent(
+            new CustomEvent('change', { detail: { value: 'dracula' } })
+        );
         await flush();
         expect(preview(el).palette.headerBgGradient).toBeNull();
         expect(preview(el).palette.headerBg).toBe('#123456');
@@ -629,11 +633,13 @@ describe('c-final-theme-editor', () => {
 
     it('keyboard focus follows the fill buttons instead of getting lost', async () => {
         const el = await mount({ startFrom: 'nordic' });
+        const focus = jest.spyOn(HTMLElement.prototype, 'focus');
         row(el, 'palette.pageBg').querySelector('.te-seethrough').click();
         await flush();
-        expect(el.shadowRoot.activeElement).toBe(
+        expect(focus.mock.contexts).toContain(
             row(el, 'palette.pageBg').querySelector('.te-add-solid')
         );
+        focus.mockRestore();
         row(el, 'palette.pageBg').querySelector('.te-add-gradient').click();
         await flush();
         expect(el.shadowRoot.activeElement).toBe(
@@ -664,9 +670,7 @@ describe('c-final-theme-editor', () => {
         expect(text).toContain('Translucent');
         expect(text).toContain('Replace with solid makes it opaque');
         expect(
-            row(el, 'palette.contentBg')
-                .querySelector('.te-add-solid')
-                .textContent.trim()
+            row(el, 'palette.contentBg').querySelector('.te-add-solid').label
         ).toBe('Replace with solid');
     });
 
@@ -695,9 +699,9 @@ describe('c-final-theme-editor', () => {
 
     it('a shape choice of None is saved as a real value and pinned', async () => {
         const el = await mount({ startFrom: 'nordic' });
-        const mesh = q(el, 'select[data-key="mesh"]');
-        mesh.value = '';
-        mesh.dispatchEvent(new CustomEvent('change'));
+        q(el, 'lightning-combobox[data-key="mesh"]').dispatchEvent(
+            new CustomEvent('change', { detail: { value: '' } })
+        );
         await flush();
         await setName(el, 'No mesh');
         await confirm(el);

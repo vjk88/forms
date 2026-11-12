@@ -571,7 +571,11 @@ describe('c-final-form-studio', () => {
         // the old strip above the preview is gone in every mode
         expect(root.querySelector('c-final-design-toolbar')).toBeNull();
         const panel = root.querySelector('c-final-design-panel');
-        panel.shadowRoot.querySelectorAll('.lens-btn')[1].click();
+        panel.shadowRoot
+            .querySelector('c-final-button-group.lens')
+            .dispatchEvent(
+                new CustomEvent('change', { detail: { value: 'advanced' } })
+            );
         await micro(20);
         expect(root.querySelector('c-final-design-toolbar')).toBeNull();
         panel.shadowRoot.querySelector('c-final-design-search').dispatchEvent(

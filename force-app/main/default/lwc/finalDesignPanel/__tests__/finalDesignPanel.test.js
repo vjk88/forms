@@ -42,7 +42,11 @@ function lastSpec(handler) {
 }
 
 async function goAdvanced(el) {
-    el.shadowRoot.querySelectorAll('.lens-btn')[1].click();
+    el.shadowRoot.querySelector('c-final-button-group.lens').dispatchEvent(
+        new CustomEvent('change', {
+            detail: { value: 'advanced' }
+        })
+    );
     await flush();
 }
 
@@ -345,7 +349,7 @@ describe('c-final-design-panel', () => {
             );
             await openArea(el, 'navigation');
             const actual = [
-                ...el.shadowRoot.querySelectorAll('.simple-text input')
+                ...el.shadowRoot.querySelectorAll('lightning-input.simple-text')
             ]
                 .map((input) => input.dataset.key)
                 .filter((key) => key !== 'asTitle');
@@ -383,15 +387,21 @@ describe('c-final-design-panel', () => {
         ).toBe('Welcome & hello');
         await goAdvanced(el);
         await openArea(el, 'completion');
-        el.shadowRoot.querySelectorAll('.lens-btn')[0].click();
+        el.shadowRoot.querySelector('c-final-button-group.lens').dispatchEvent(
+            new CustomEvent('change', {
+                detail: { value: 'simple' }
+            })
+        );
         await flush();
         // Finish has no Simple tab: its confirmation lives on Simple's Buttons
         expect(rail(el).value).toBe('navigation');
         expect(handler).not.toHaveBeenCalled();
         expect(el.spec).toEqual(spec);
-        const title = el.shadowRoot.querySelector('input[data-key="asTitle"]');
+        const title = el.shadowRoot.querySelector(
+            'lightning-input[data-key="asTitle"]'
+        );
         title.value = 'Finished';
-        title.dispatchEvent(new CustomEvent('change'));
+        title.dispatchEvent(new CustomEvent('commit'));
         await flush();
         const expected = JSON.parse(JSON.stringify(spec));
         expected.settings.completion.title = 'Finished';
@@ -438,9 +448,8 @@ describe('c-final-design-panel', () => {
         expect(
             el.shadowRoot.querySelector('[data-key="asMessage"]')
         ).toBeNull();
-        const link = [
-            ...el.shadowRoot.querySelectorAll('.simple-body button')
-        ].find((b) => b.textContent.includes('after-submit'));
+        const link = el.shadowRoot.querySelector('.completion-link');
+        expect(link.label).toBe('Open after-submit settings');
         link.click();
         await flush();
         expect(rail(el).value).toBe('completion');
@@ -559,7 +568,11 @@ describe('c-final-design-panel', () => {
         await goAdvanced(el);
         expect(rail(el).value).toBe('brand');
         await openArea(el, 'colors');
-        el.shadowRoot.querySelectorAll('.lens-btn')[0].click();
+        el.shadowRoot.querySelector('c-final-button-group.lens').dispatchEvent(
+            new CustomEvent('change', {
+                detail: { value: 'simple' }
+            })
+        );
         await flush();
         expect(rail(el).value).toBe('theme');
     });
@@ -598,7 +611,7 @@ describe('c-final-design-panel', () => {
         );
         expect(adv.value).toBe('#123456');
         expect(adv.edited).toBe(true);
-        expect(el.shadowRoot.querySelector('.resetchip')).not.toBeNull();
+        expect(el.shadowRoot.querySelector('.group-reset')).not.toBeNull();
         expect(el.shadowRoot.querySelector('.changes')).not.toBeNull();
     });
 
@@ -634,7 +647,7 @@ describe('c-final-design-panel', () => {
         await flush();
         await goAdvanced(el);
         await openArea(el, 'brand');
-        el.shadowRoot.querySelector('.resetchip').click();
+        el.shadowRoot.querySelector('.group-reset').click();
         await flush();
         expect(lastSpec(handler).theme.overrides.palette).toBeUndefined();
     });
@@ -717,11 +730,17 @@ describe('c-final-design-panel', () => {
         const el = mount();
         await goAdvanced(el);
         await openArea(el, 'page');
-        const shadow = el.shadowRoot.querySelector('select[data-key="shadow"]');
+        const shadow = el.shadowRoot.querySelector(
+            'lightning-combobox[data-key="shadow"]'
+        );
         shadow.value = 'floating';
         shadow.dispatchEvent(new CustomEvent('change'));
         await flush();
-        el.shadowRoot.querySelectorAll('.lens-btn')[0].click();
+        el.shadowRoot.querySelector('c-final-button-group.lens').dispatchEvent(
+            new CustomEvent('change', {
+                detail: { value: 'simple' }
+            })
+        );
         await flush();
         // one status line: the change count, and how many live in Advanced
         expect(el.shadowRoot.querySelector('.changes-count').textContent).toBe(
@@ -739,7 +758,7 @@ describe('c-final-design-panel', () => {
         await goAdvanced(el);
         await openArea(el, 'page');
         expect(
-            el.shadowRoot.querySelector('input[data-key="fullBleed"]')
+            el.shadowRoot.querySelector('lightning-input[data-key="fullBleed"]')
         ).not.toBeNull();
         await openArea(el, 'navigation');
         expect(
@@ -760,7 +779,7 @@ describe('c-final-design-panel', () => {
         await openArea(el, 'navigation');
         expect(el.shadowRoot.querySelector('.narrate')).toBeNull();
         expect(
-            el.shadowRoot.querySelector('input[data-key="fullBleed"]')
+            el.shadowRoot.querySelector('lightning-input[data-key="fullBleed"]')
         ).toBeNull();
 
         const mode = el.shadowRoot.querySelector(
@@ -776,7 +795,9 @@ describe('c-final-design-panel', () => {
         // placement was removed (owner 2026-07-11: the strip is always on
         // top); Small screens picks the narrow collapse instead
         expect(
-            el.shadowRoot.querySelector('select[data-key="stepperPlacement"]')
+            el.shadowRoot.querySelector(
+                'lightning-combobox[data-key="stepperPlacement"]'
+            )
         ).toBeNull();
         const narrow = el.shadowRoot.querySelector(
             'c-final-picture-choice[data-key="stepperNarrow"]'
@@ -802,7 +823,7 @@ describe('c-final-design-panel', () => {
             )
         ).not.toBeNull();
         const style = el.shadowRoot.querySelector(
-            'select[data-key="sectionStyle"]'
+            'lightning-combobox[data-key="sectionStyle"]'
         );
         expect(style).not.toBeNull();
         style.value = 'boxed';
@@ -813,7 +834,9 @@ describe('c-final-design-panel', () => {
         // border hiding (owner 2026-07-12): None/Hidden retire their color
         // pickers (needsValue notEquals gate)
         await openArea(el, 'page');
-        const bw = el.shadowRoot.querySelector('select[data-key="border"]');
+        const bw = el.shadowRoot.querySelector(
+            'lightning-combobox[data-key="border"]'
+        );
         bw.value = 'none';
         bw.dispatchEvent(new CustomEvent('change'));
         await flush();
@@ -825,7 +848,7 @@ describe('c-final-design-panel', () => {
         ).toBeNull();
         await openArea(el, 'fields');
         const sb = el.shadowRoot.querySelector(
-            'select[data-key="sectionBorder"]'
+            'lightning-combobox[data-key="sectionBorder"]'
         );
         sb.value = 'none';
         sb.dispatchEvent(new CustomEvent('change'));
@@ -852,7 +875,9 @@ describe('c-final-design-panel', () => {
         await goAdvanced(el2);
         await openArea(el2, 'page');
         expect(
-            el2.shadowRoot.querySelector('input[data-key="oaatBleed"]')
+            el2.shadowRoot.querySelector(
+                'lightning-input[data-key="oaatBleed"]'
+            )
         ).not.toBeNull();
 
         // scroll gets Page dividers (and loses the "nothing to page" line)
@@ -862,7 +887,9 @@ describe('c-final-design-panel', () => {
         await goAdvanced(el3);
         await openArea(el3, 'navigation');
         expect(
-            el3.shadowRoot.querySelector('input[data-key="showDividers"]')
+            el3.shadowRoot.querySelector(
+                'lightning-input[data-key="showDividers"]'
+            )
         ).not.toBeNull();
         expect(el3.shadowRoot.querySelector('.narrate')).toBeNull();
     });
@@ -930,15 +957,18 @@ describe('c-final-design-panel', () => {
         await goAdvanced(el2);
         await openArea(el2, 'navigation');
         const railContent = el2.shadowRoot.querySelector(
-            'select[data-key="railContent"]'
+            'lightning-combobox[data-key="railContent"]'
         );
         expect(railContent).not.toBeNull();
         // 'Progress only' was cut (owner 2026-07-11): links, or links+progress
+        expect(railContent.options.map((o) => o.value)).toEqual([
+            '__default__', // the empty layout-default option's stand-in
+            'both'
+        ]);
         expect(
-            [...railContent.querySelectorAll('option')].map((o) => o.value)
-        ).toEqual(['', 'both']);
-        expect(
-            el2.shadowRoot.querySelector('select[data-key="railNavigation"]')
+            el2.shadowRoot.querySelector(
+                'lightning-combobox[data-key="railNavigation"]'
+            )
         ).not.toBeNull();
 
         const el3 = mount(
@@ -947,10 +977,14 @@ describe('c-final-design-panel', () => {
         await goAdvanced(el3);
         await openArea(el3, 'navigation');
         expect(
-            el3.shadowRoot.querySelector('input[data-key="advanceLabel"]')
+            el3.shadowRoot.querySelector(
+                'lightning-input[data-key="advanceLabel"]'
+            )
         ).not.toBeNull();
         expect(
-            el3.shadowRoot.querySelector('input[data-key="oaatProgress"]')
+            el3.shadowRoot.querySelector(
+                'lightning-input[data-key="oaatProgress"]'
+            )
         ).not.toBeNull();
     });
 
@@ -961,18 +995,23 @@ describe('c-final-design-panel', () => {
         await goAdvanced(el);
         await openArea(el, 'navigation');
         expect(
-            el.shadowRoot.querySelector('input[data-key="allowMultiple"]')
+            el.shadowRoot.querySelector(
+                'lightning-input[data-key="allowMultiple"]'
+            )
         ).not.toBeNull();
         expect(
-            el.shadowRoot.querySelector('input[data-key="firstPanelOpen"]')
+            el.shadowRoot.querySelector(
+                'lightning-input[data-key="firstPanelOpen"]'
+            )
         ).not.toBeNull();
         const iconPos = el.shadowRoot.querySelector(
-            'select[data-key="iconPosition"]'
+            'lightning-combobox[data-key="iconPosition"]'
         );
         expect(iconPos).not.toBeNull();
-        expect(
-            [...iconPos.querySelectorAll('option')].map((o) => o.value)
-        ).toEqual(['', 'trailing']);
+        expect(iconPos.options.map((o) => o.value)).toEqual([
+            '__default__', // the empty layout-default option's stand-in
+            'trailing'
+        ]);
 
         const el2 = mount(
             buildSampleSpec({ layout: 'tabs', themeKey: 'nordic' })
@@ -980,7 +1019,9 @@ describe('c-final-design-panel', () => {
         await goAdvanced(el2);
         await openArea(el2, 'navigation');
         expect(
-            el2.shadowRoot.querySelector('input[data-key="allowMultiple"]')
+            el2.shadowRoot.querySelector(
+                'lightning-input[data-key="allowMultiple"]'
+            )
         ).toBeNull();
     });
 
@@ -1104,7 +1145,9 @@ describe('c-final-design-panel', () => {
         const picker = el.shadowRoot.querySelector(
             'c-final-font-picker[data-key="typography"]'
         );
-        const reset = picker.closest('.group-wrap').querySelector('.resetchip');
+        const reset = picker
+            .closest('.group-wrap')
+            .querySelector('.group-reset');
         expect(reset).not.toBeNull();
         reset.click();
         await flush();
@@ -1224,13 +1267,17 @@ describe('c-final-design-panel', () => {
     });
 
     const setToggle = async (el, key, on) => {
-        const input = el.shadowRoot.querySelector(`input[data-key="${key}"]`);
+        const input = el.shadowRoot.querySelector(
+            `lightning-input[data-key="${key}"]`
+        );
         input.checked = on;
         input.dispatchEvent(new CustomEvent('change'));
         await flush();
     };
     const setSelect = async (el, key, value) => {
-        const sel = el.shadowRoot.querySelector(`select[data-key="${key}"]`);
+        const sel = el.shadowRoot.querySelector(
+            `lightning-combobox[data-key="${key}"]`
+        );
         if (sel) {
             sel.value = value;
             sel.dispatchEvent(new CustomEvent('change'));
@@ -1465,7 +1512,13 @@ describe('c-final-design-panel', () => {
             details.open = false;
             details.dispatchEvent(new CustomEvent('toggle'));
             await flush();
-            el.shadowRoot.querySelectorAll('.lens-btn')[0].click(); // Simple
+            el.shadowRoot
+                .querySelector('c-final-button-group.lens')
+                .dispatchEvent(
+                    new CustomEvent('change', {
+                        detail: { value: 'simple' }
+                    })
+                ); // Simple
             await flush();
             await goAdvanced(el);
             await openArea(el, 'brand');

@@ -13,16 +13,16 @@
             <template lwc:if={ready}>
                 <div class="te-form">
                     <section class="te-step">
-                        <label class="te-h" for="te-name">Theme name</label>
-                        <input
-                            id="te-name"
+                        <h2 class="te-h" aria-hidden="true">Theme name</h2>
+                        <lightning-input
                             class="te-name"
-                            type="text"
-                            maxlength="80"
+                            label="Theme name"
+                            variant="label-hidden"
+                            max-length="80"
                             value={name}
                             placeholder="e.g. Brand Purple"
-                            oninput={handleName}
-                        />
+                            onchange={handleName}
+                        ></lightning-input>
                     </section>
 
                     <section class="te-step" aria-labelledby="te-start-h">
@@ -31,24 +31,13 @@
                             Everything below is calculated from this. Anything
                             you change by hand stays when you change it.
                         </p>
-                        <div
+                        <c-final-button-group
                             class="te-segs"
-                            role="group"
-                            aria-label="Start from"
-                        >
-                            <template for:each={startOptions} for:item="o">
-                                <button
-                                    key={o.value}
-                                    type="button"
-                                    class={o.cls}
-                                    data-value={o.value}
-                                    aria-pressed={o.pressed}
-                                    onclick={handleStart}
-                                >
-                                    {o.label}
-                                </button>
-                            </template>
-                        </div>
+                            label="Start from"
+                            options={startOptions}
+                            value={start}
+                            onchange={handleStart}
+                        ></c-final-button-group>
                         <div class="te-startbox">
                             <template lwc:if={confirmRebuild}>
                                 <div class="te-rebuild" role="alert">
@@ -58,20 +47,17 @@
                                         Settings you change after this are kept.
                                     </p>
                                     <div class="te-row">
-                                        <button
-                                            type="button"
-                                            class="te-btn te-btn--primary"
+                                        <lightning-button
+                                            class="te-btn te-rebuild-yes"
+                                            variant="brand"
+                                            label="Recalculate"
                                             onclick={handleRebuildYes}
-                                        >
-                                            Recalculate
-                                        </button>
-                                        <button
-                                            type="button"
-                                            class="te-btn"
+                                        ></lightning-button>
+                                        <lightning-button
+                                            class="te-btn te-rebuild-no"
+                                            label="Keep as saved"
                                             onclick={handleRebuildNo}
-                                        >
-                                            Keep as saved
-                                        </button>
+                                        ></lightning-button>
                                     </div>
                                 </div>
                             </template>
@@ -84,27 +70,13 @@
                                 </p>
                             </template>
                             <template lwc:if={isThemeStart}>
-                                <label class="te-sub" for="te-theme"
-                                    >Theme</label
-                                >
-                                <select
-                                    id="te-theme"
-                                    class="te-select"
+                                <lightning-combobox
+                                    class="te-select te-theme"
+                                    label="Theme"
+                                    options={themeOptions}
+                                    value={baseKey}
                                     onchange={handleThemeSelect}
-                                >
-                                    <template
-                                        for:each={themeOptions}
-                                        for:item="o"
-                                    >
-                                        <option
-                                            key={o.value}
-                                            value={o.value}
-                                            selected={o.selected}
-                                        >
-                                            {o.label}
-                                        </option>
-                                    </template>
-                                </select>
+                                ></lightning-combobox>
                             </template>
                             <template lwc:if={isBrandStart}>
                                 <c-final-brand-inputs
@@ -143,15 +115,14 @@
                                                 <template
                                                     lwc:if={c.canSeeThrough}
                                                 >
-                                                    <button
-                                                        type="button"
+                                                    <lightning-button
                                                         class="te-link te-seethrough"
+                                                        variant="base"
+                                                        label="Make see-through"
                                                         data-path={c.path}
                                                         data-gradient-path={c.gradientPath}
                                                         onclick={handleSeeThrough}
-                                                    >
-                                                        Make see-through
-                                                    </button>
+                                                    ></lightning-button>
                                                 </template>
                                                 <template lwc:if={c.flagged}>
                                                     <button
@@ -172,15 +143,14 @@
                                                     <span class="te-pin"
                                                         >Changed by
                                                         you&nbsp;·&nbsp;
-                                                        <button
-                                                            type="button"
+                                                        <lightning-button
                                                             class="te-link"
+                                                            variant="base"
+                                                            label="Use calculated"
                                                             data-path={c.bothPaths}
                                                             onclick={handleUseCalculated}
-                                                        >
-                                                            Use calculated
-                                                        </button></span
-                                                    >
+                                                        ></lightning-button
+                                                    ></span>
                                                 </template>
                                                 <template
                                                     lwc:elseif={c.automatic}
@@ -249,24 +219,20 @@
                                                             >
                                                         </template>
                                                         <div class="te-row">
-                                                            <button
-                                                                type="button"
+                                                            <lightning-button
                                                                 class="te-btn te-add-solid"
+                                                                label={c.solidVerb}
                                                                 data-path={c.path}
                                                                 data-gradient-path={c.gradientPath}
                                                                 onclick={handleAddSolid}
-                                                            >
-                                                                {c.solidVerb}
-                                                            </button>
-                                                            <button
-                                                                type="button"
+                                                            ></lightning-button>
+                                                            <lightning-button
                                                                 class="te-btn te-add-gradient"
+                                                                label="Add a gradient"
                                                                 data-path={c.path}
                                                                 data-gradient-path={c.gradientPath}
                                                                 onclick={handleAddGradient}
-                                                            >
-                                                                Add a gradient
-                                                            </button>
+                                                            ></lightning-button>
                                                         </div>
                                                     </div>
                                                 </template>
@@ -303,65 +269,48 @@
                             <template lwc:if={fontPinned}>
                                 <span class="te-pin"
                                     >Changed by you&nbsp;·&nbsp;
-                                    <button
-                                        type="button"
+                                    <lightning-button
                                         class="te-link"
+                                        variant="base"
+                                        label="Use calculated"
                                         data-path={fontPaths}
                                         onclick={handleUseCalculated}
-                                    >
-                                        Use calculated
-                                    </button></span
-                                >
+                                    ></lightning-button
+                                ></span>
                             </template>
                         </div>
                         <div class="te-shape">
                             <template for:each={selectRows} for:item="s">
                                 <div class="te-field" key={s.key}>
-                                    <label class="te-sub" for={s.key}
-                                        >{s.label}</label
-                                    >
-                                    <select
-                                        id={s.key}
+                                    <lightning-combobox
                                         class="te-select"
+                                        label={s.label}
                                         data-key={s.key}
+                                        options={s.comboOptions}
+                                        value={s.value}
                                         onchange={handleSelect}
-                                    >
-                                        <template
-                                            for:each={s.options}
-                                            for:item="o"
-                                        >
-                                            <option
-                                                key={o.value}
-                                                value={o.value}
-                                                selected={o.selected}
-                                            >
-                                                {o.label}
-                                            </option>
-                                        </template>
-                                    </select>
+                                    ></lightning-combobox>
                                     <template lwc:if={s.pinned}>
                                         <span class="te-pin"
                                             >Changed by you&nbsp;·&nbsp;
-                                            <button
-                                                type="button"
+                                            <lightning-button
                                                 class="te-link"
+                                                variant="base"
+                                                label="Use calculated"
                                                 data-path={s.path}
                                                 onclick={handleUseCalculated}
-                                            >
-                                                Use calculated
-                                            </button></span
-                                        >
+                                            ></lightning-button
+                                        ></span>
                                     </template>
                                 </div>
                             </template>
-                            <label class="te-check">
-                                <input
-                                    type="checkbox"
-                                    checked={glassChecked}
-                                    onchange={handleGlass}
-                                />
-                                Glass blur
-                            </label>
+                            <lightning-input
+                                class="te-check"
+                                type="checkbox"
+                                label="Glass blur"
+                                checked={glassChecked}
+                                onchange={handleGlass}
+                            ></lightning-input>
                         </div>
                     </section>
 
@@ -397,13 +346,12 @@
                                 </p>
                             </template>
                             <div class="te-row">
-                                <button
-                                    type="button"
-                                    class="te-btn te-btn--primary te-fix"
+                                <lightning-button
+                                    class="te-btn te-fix"
+                                    variant="brand"
+                                    label="Fix for me"
                                     onclick={handleFix}
-                                >
-                                    Fix for me
-                                </button>
+                                ></lightning-button>
                                 <span class="te-hint"
                                     >Nudges just these colors until they pass,
                                     where that’s possible. You can still save as
@@ -458,14 +406,12 @@
         </div>
         <div slot="footer-start" class="te-foot">
             <template lwc:if={isEdit}>
-                <button
-                    type="button"
-                    class="te-btn"
+                <lightning-button
+                    class="te-btn te-save-new"
+                    label="Save as new"
                     disabled={saving}
                     onclick={handleSaveAsNew}
-                >
-                    Save as new
-                </button>
+                ></lightning-button>
             </template>
             <p class="te-error" role="alert">{error}</p>
         </div>
