@@ -145,7 +145,7 @@
     position: absolute;
     top: 0;
     bottom: 0;
-    z-index: -1;
+    z-index: var(--c-studio-z-behind);
     width: var(--ps-margin, 0);
     pointer-events: none;
     background: var(--ps-hatch);

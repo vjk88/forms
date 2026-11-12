@@ -1,34 +1,22 @@
 @import 'c/finalStudioStyles';
 
+/* New form: kind → layout or template → theme → details. Studio tokens only
+   (DESIGN_SYSTEM §4); the form previews keep their own theme. */
 :host {
     display: block;
-    background: var(--g-bg);
     min-height: 100%;
-    font-family:
-        -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-
-    /* Gallery aliases share Studio chrome; form previews keep their own tokens. */
-    --g-bg: var(--c-studio-workspace);
-    --g-surface: var(--c-studio-surface);
-    --g-ink: var(--c-studio-text);
-    --g-muted: var(--c-studio-text-weak);
-    --g-faint: var(--c-studio-text-weak);
-    --g-line: var(--c-studio-border);
-    --g-line-soft: var(--c-studio-border-subtle);
-    --g-accent: var(--c-studio-accent);
-    --g-accent-ink: var(--c-studio-accent-text);
-    --g-danger: var(--c-studio-error);
-
-    /* Minimum comfortable tap target for chrome controls. */
-    --g-tap: 36px;
-    --g-tap-icon: 40px;
+    background: var(--c-studio-workspace);
+    font-family: var(--c-studio-font);
+    font-size: var(--c-studio-fs-body);
+    color: var(--c-studio-text);
 }
 
 /* No width cap: the gallery fills its window, which fills the screen
    (owner 2026-10-31) */
 .gallery-root {
     margin: 0 auto;
-    padding: 1.5rem 1.75rem 3rem;
+    padding: var(--c-studio-space-6) var(--c-studio-space-7)
+        var(--c-studio-space-8);
 }
 
 /* ---------------------------------------------------------------- header */
@@ -37,71 +25,32 @@
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 1rem;
+    gap: var(--c-studio-space-5);
+    margin-bottom: var(--c-studio-space-5);
 }
-.g-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--g-ink);
+.g-head .d-back {
+    display: block;
+    margin-bottom: var(--c-studio-space-2);
+}
+.g-title,
+.thm-title,
+.done-title {
     margin: 0;
+    font-size: var(--c-studio-fs-display);
+    font-weight: var(--c-studio-fw-strong);
+    line-height: var(--c-studio-lh-tight);
+    color: var(--c-studio-text);
 }
-.g-sub {
-    color: var(--g-muted);
-    margin: 0.25rem 0 0;
-    font-size: 0.9rem;
-}
-.g-close {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: var(--g-tap-icon);
-    min-height: var(--g-tap-icon);
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    padding: 0.35rem;
-    border-radius: 0.5rem;
-    color: var(--g-muted);
-}
-.g-close:hover {
-    background: var(--c-studio-hover);
+.g-sub,
+.thm-sub {
+    margin: var(--c-studio-space-2) 0 0;
+    font-size: var(--c-studio-fs-body);
+    color: var(--c-studio-text-weak);
 }
 
 /* ------------------------------------------------------------ entry toggle */
 .entry-bar {
-    display: inline-flex;
-    gap: 0.25rem;
-    margin-bottom: 1.5rem;
-    padding: 0.25rem;
-    background: var(--c-studio-workspace);
-    border-radius: 12px;
-}
-.entry-tab {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    min-height: var(--g-tap);
-    border: none;
-    background: transparent;
-    color: var(--g-muted);
-    border-radius: 9px;
-    padding: 0.45rem 1rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    font-family: inherit;
-    cursor: pointer;
-    transition:
-        background 0.14s ease,
-        color 0.14s ease;
-}
-.entry-tab:hover {
-    color: var(--g-ink);
-}
-.entry-tab.is-active {
-    background: var(--g-surface);
-    color: var(--g-ink);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    margin-bottom: var(--c-studio-space-6);
 }
 
 /* Template mode placeholder */
@@ -109,192 +58,144 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
+    gap: var(--c-studio-space-3);
     text-align: center;
-    background: var(--g-surface);
-    border: 1px dashed var(--g-line);
-    border-radius: 0.85rem;
-    padding: 3.5rem 1rem;
+    background: var(--c-studio-surface);
+    border: 1px dashed var(--c-studio-border-strong);
+    border-radius: var(--c-studio-radius-md);
+    padding: var(--c-studio-space-8) var(--c-studio-space-5);
 }
 .tpl-empty-icon {
     --slds-c-icon-color-foreground-default: var(--c-studio-text-weak);
 }
 .tpl-empty-title {
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: var(--g-ink);
-    margin: 0.25rem 0 0;
+    margin: var(--c-studio-space-2) 0 0;
+    font-size: var(--c-studio-fs-title);
+    font-weight: var(--c-studio-fw-strong);
 }
 .tpl-empty-sub {
-    color: var(--g-muted);
-    font-size: 0.85rem;
     margin: 0;
+    color: var(--c-studio-text-weak);
 }
 
 /* ------------------------------------------------ scratch: grouped layouts */
 .lg-group {
-    margin-bottom: 2rem;
+    margin-bottom: var(--c-studio-space-7);
 }
 .lg-head {
     display: flex;
     align-items: baseline;
-    gap: 0.6rem;
-    margin-bottom: 0.75rem;
+    gap: var(--c-studio-space-3);
+    margin-bottom: var(--c-studio-space-4);
 }
 .lg-title {
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: var(--g-ink);
     margin: 0;
+    font-size: var(--c-studio-fs-subhead);
+    font-weight: var(--c-studio-fw-strong);
 }
 .lg-hint {
-    font-size: 0.8rem;
-    color: var(--g-faint);
+    font-size: var(--c-studio-fs-small);
+    color: var(--c-studio-text-weak);
 }
 
 .card-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 1.1rem;
+    gap: var(--c-studio-space-5);
 }
 
 /* -------------------------------------------------------- theme step head */
 .thm-head {
-    margin-bottom: 1rem;
-}
-.thm-title {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: var(--g-ink);
-    margin: 0;
-}
-.thm-sub {
-    color: var(--g-muted);
-    margin: 0.25rem 0 0;
-    font-size: 0.9rem;
+    margin-bottom: var(--c-studio-space-5);
 }
 
 /* ----------------------------------------------------------------- detail */
-.d-back {
-    display: inline-flex;
-    align-items: center;
-    min-height: var(--g-tap);
-    gap: 0.35rem;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    color: var(--c-studio-text-weak);
-    font-size: 0.85rem;
-    font-family: inherit;
-    padding: 0.35rem 0.4rem;
-    border-radius: 0.5rem;
-}
-.d-back:hover {
-    background: var(--c-studio-hover);
-}
 .d-body {
     display: grid;
     grid-template-columns: minmax(280px, 360px) 1fr;
-    gap: 1.5rem;
+    gap: var(--c-studio-space-6);
     align-items: start;
 }
 .d-config {
-    background: var(--g-surface);
-    border: 1px solid var(--g-line);
-    border-radius: 0.85rem;
-    padding: 1.25rem;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: var(--c-studio-space-5);
+    padding: var(--c-studio-space-6);
+    background: var(--c-studio-surface);
+    border: 1px solid var(--c-studio-border);
+    border-radius: var(--c-studio-radius-md);
 }
 .d-field-label {
-    font-size: 0.78rem;
-    color: var(--g-ink);
-    margin-top: 0.5rem;
+    font-size: var(--c-studio-fs-body);
+    color: var(--c-studio-text);
 }
 .d-input {
-    min-height: var(--g-tap);
-    border: 1px solid var(--c-studio-border-strong);
-    border-radius: 0.5rem;
-    padding: 0 0.75rem;
-    font-size: 0.9rem;
-    font-family: inherit;
-    color: var(--g-ink);
-    background: var(--g-surface);
-    outline: none;
-    width: 100%;
-    box-sizing: border-box;
-}
-.d-input:focus {
-    border-color: var(--g-accent);
-    box-shadow: 0 0 0 3px var(--c-studio-focus-halo);
-}
-.d-select {
-    appearance: auto;
-    cursor: pointer;
+    display: block;
 }
 .d-section-label {
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--g-faint);
-    margin: 1rem 0 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: var(--c-studio-space-3);
+    margin-top: var(--c-studio-space-3);
+    font-size: var(--c-studio-fs-body);
+    font-weight: var(--c-studio-fw-strong);
+}
+.d-section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--c-studio-border);
 }
 .d-error {
     display: flex;
     align-items: flex-start;
-    gap: 0.4rem;
-    color: var(--g-danger);
+    gap: var(--c-studio-space-3);
+    padding: var(--c-studio-space-3) var(--c-studio-space-4);
+    color: var(--c-studio-error-text);
     background: var(--c-studio-error-surface);
     border: 1px solid var(--c-studio-error-border);
-    border-radius: 0.5rem;
-    padding: 0.5rem 0.65rem;
-    font-size: 0.82rem;
-    margin-top: 0.5rem;
+    border-radius: var(--c-studio-radius-md);
+    font-size: var(--c-studio-fs-small);
 }
 .d-actions {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
-    margin-top: 0.75rem;
+    gap: var(--c-studio-space-3);
 }
 
 /* ---- theme "chip" (opens the theme step instead of a dropdown) ---- */
 .d-theme-field {
     display: flex;
     flex-direction: column;
-    gap: 0.3rem;
-    margin-top: 0.5rem;
+    gap: var(--c-studio-space-2);
 }
 .d-theme-chip {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.5rem;
-    min-height: var(--g-tap);
+    gap: var(--c-studio-space-3);
+    min-height: var(--c-studio-control-h);
+    padding: 0 var(--c-studio-space-4);
     border: 1px solid var(--c-studio-border-strong);
-    background: var(--g-surface);
-    border-radius: 0.5rem;
-    padding: 0.5rem 0.75rem;
+    border-radius: var(--c-studio-radius-md);
+    background: var(--c-studio-surface);
+    color: var(--c-studio-text);
+    font: inherit;
     cursor: pointer;
-    color: var(--g-ink);
-    font-size: 0.9rem;
-    font-family: inherit;
 }
 .d-theme-chip:hover {
-    border-color: var(--c-studio-text-weak);
+    background: var(--c-studio-hover);
 }
 .d-theme-name {
-    font-weight: 600;
+    font-weight: var(--c-studio-fw-strong);
 }
 .d-theme-change {
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
-    color: var(--g-accent-ink);
-    font-size: 0.8rem;
-    font-weight: 600;
+    gap: var(--c-studio-space-2);
+    color: var(--c-studio-accent-text);
+    font-size: var(--c-studio-fs-small);
+    font-weight: var(--c-studio-fw-strong);
 }
 
 /* --------------------------------------------------- searchable object picker */
@@ -303,25 +204,26 @@
 }
 .obj-list {
     position: absolute;
-    z-index: 20;
+    z-index: var(--c-studio-z-dropdown);
     left: 0;
     right: 0;
-    top: calc(100% + 4px);
+    top: calc(100% + var(--c-studio-space-2));
     max-height: 280px;
     overflow-y: auto;
-    background: var(--g-surface);
-    border: 1px solid var(--g-line);
-    border-radius: 10px;
-    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
-    padding: 0.25rem;
+    padding: var(--c-studio-space-2);
+    background: var(--c-studio-surface);
+    border: 1px solid var(--c-studio-border);
+    border-radius: var(--c-studio-radius-md);
+    box-shadow: var(--c-studio-shadow-2);
 }
 .obj-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.5rem 0.6rem;
-    border-radius: 7px;
+    gap: var(--c-studio-space-4);
+    min-height: var(--c-studio-control-h);
+    padding: 0 var(--c-studio-space-3);
+    border-radius: calc(var(--c-studio-radius-md) - var(--c-studio-space-2));
     cursor: pointer;
 }
 .obj-item:hover,
@@ -329,77 +231,49 @@
     background: var(--c-studio-accent-surface);
 }
 .obj-label {
-    font-size: 0.88rem;
-    color: var(--g-ink);
+    font-size: var(--c-studio-fs-body);
 }
 .obj-api {
-    font-size: 0.72rem;
+    font-size: var(--c-studio-fs-small);
     color: var(--c-studio-text-weak);
-    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-family: var(--c-studio-font-mono);
 }
 .obj-empty {
-    padding: 0.6rem;
-    font-size: 0.85rem;
+    padding: var(--c-studio-space-3);
     color: var(--c-studio-text-weak);
     text-align: center;
 }
 
 /* ------------------------------------------------------------ preview pane */
 .d-preview {
-    background: var(--g-surface);
-    border: 1px solid var(--g-line);
-    border-radius: 0.85rem;
+    background: var(--c-studio-surface);
+    border: 1px solid var(--c-studio-border);
+    border-radius: var(--c-studio-radius-md);
     overflow: hidden;
 }
 .d-preview-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.6rem 0.9rem;
-    border-bottom: 1px solid var(--g-line-soft);
+    min-height: var(--c-studio-bar-h);
+    padding: 0 var(--c-studio-space-5);
+    border-bottom: 1px solid var(--c-studio-border);
 }
 .d-preview-label {
-    font-size: 0.78rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--g-faint);
-}
-.dev-toggle {
-    display: flex;
-    gap: 0.25rem;
-}
-.dev-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: var(--g-tap-icon);
-    min-height: var(--g-tap-icon);
-    border: 1px solid var(--c-studio-border-strong);
-    background: var(--g-surface);
-    border-radius: 0.4rem;
-    padding: 0.25rem 0.4rem;
-    cursor: pointer;
-    color: var(--c-studio-text-weak);
-}
-.dev-btn.is-on {
-    background: var(--g-accent);
-    border-color: var(--g-accent);
-    color: var(--c-studio-on-accent);
-}
-.dev-btn.is-on lightning-icon {
-    --slds-c-icon-color-foreground-default: var(--c-studio-on-accent);
+    font-size: var(--c-studio-fs-subhead);
+    font-weight: var(--c-studio-fw-strong);
 }
 /* The preview fills the window's height (the window fills the screen):
    viewport less the window margin, the gallery's head and the preview bar. */
 .d-stage {
-    padding: 1rem;
+    padding: var(--c-studio-space-6);
     max-height: max(560px, calc(100vh - 250px));
     overflow: auto;
     /* a scrollbar coming and going must not change the width the picture
        shrinks to (_fitPreview), or the two would chase each other */
     /* both edges, so the reserved strip keeps the picture centred */
     scrollbar-gutter: stable both-edges;
-    background: var(--c-studio-surface-subtle);
+    background: var(--c-studio-workspace);
 }
 /* Holds the frame at its shrunk size (set inline), centred in the pane */
 .pv-fit {
@@ -411,13 +285,13 @@
    draws it smaller with a scale transform (_fitPreview). */
 .pv-frame_tablet,
 .pv-frame_mobile {
-    border: 1px solid var(--g-line);
-    border-radius: 20px;
-    background: var(--g-surface);
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.14);
-    padding: 0.75rem;
-    overflow: hidden;
     margin: 0 auto;
+    padding: var(--c-studio-space-4);
+    overflow: hidden;
+    background: var(--c-studio-surface);
+    border: 1px solid var(--c-studio-border);
+    border-radius: var(--c-studio-radius-lg);
+    box-shadow: var(--c-studio-shadow-2);
 }
 
 /* ------------------------------------------------------------------- done */
@@ -425,69 +299,46 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.75rem;
+    gap: var(--c-studio-space-4);
     text-align: center;
-    padding: 4rem 1rem;
-}
-.done-title {
-    font-size: 1.35rem;
-    font-weight: 700;
-    color: var(--g-ink);
-    margin: 0;
+    padding: var(--c-studio-space-8) var(--c-studio-space-5);
 }
 .done-sub {
-    color: var(--g-muted);
     margin: 0;
+    color: var(--c-studio-text-weak);
 }
 .done-actions {
     display: flex;
-    gap: 0.6rem;
-    margin-top: 0.75rem;
+    align-items: center;
+    gap: var(--c-studio-space-3);
+    margin-top: var(--c-studio-space-4);
 }
 
-/* --------------------------------------------------------------- buttons */
-.cg-create {
-    min-height: var(--g-tap);
-    padding: 0 1.1rem;
-    border: none;
-    border-radius: 0.5rem;
-    background: var(--g-accent);
+/* "Open in Studio" stays a real link (browsers never block it), drawn as the
+   primary button (5.1). */
+.cg-open-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--c-studio-control-h);
+    padding: 0 var(--c-studio-space-4);
+    border-radius: var(--c-studio-radius-md);
+    background: var(--c-studio-accent);
     color: var(--c-studio-on-accent);
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: inherit;
+    font-weight: var(--c-studio-fw-strong);
+    text-decoration: none;
 }
-.cg-create:disabled {
-    background: var(--c-studio-hover);
-    color: var(--c-studio-text-weak);
-    cursor: default;
-}
-.cg-create:hover:not(:disabled) {
+.cg-open-link:hover {
     background: var(--c-studio-accent-hover);
-}
-.cg-secondary {
-    min-height: var(--g-tap);
-    padding: 0 1.1rem;
-    border: 1px solid var(--c-studio-border-strong);
-    border-radius: 0.5rem;
-    background: var(--g-surface);
-    color: var(--c-studio-text-weak);
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: inherit;
+    color: var(--c-studio-on-accent);
+    text-decoration: none;
 }
 
 /* --------------------------------------------------------------- a11y */
-.entry-tab:focus-visible,
-.dev-btn:focus-visible,
-.g-close:focus-visible,
-.d-back:focus-visible,
 .d-theme-chip:focus-visible,
-.cg-create:focus-visible,
-.cg-secondary:focus-visible {
-    outline: 2px solid var(--g-accent);
+.cg-open-link:focus-visible,
+.type-card:focus-visible,
+.tpl-card:focus-visible {
+    outline: 2px solid var(--c-studio-focus);
     outline-offset: 2px;
 }
 
@@ -499,125 +350,103 @@
 /* A phone: the window's margin would eat a quarter of the screen */
 @media (max-width: 600px) {
     .gallery-root {
-        padding-inline: 1rem;
+        padding-inline: var(--c-studio-space-5);
     }
 }
 
-/* ---- the Surveys shelf (S5) ---- */
+/* ---- the Surveys shelf: selectable cards (5.11) ---- */
 .tpl-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 14px;
-    margin-bottom: 14px;
+    gap: var(--c-studio-space-5);
+    margin-bottom: var(--c-studio-space-5);
 }
 .tpl-card {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
-    padding: 18px;
-    border: 1.5px solid var(--c-studio-border);
-    border-radius: 12px;
+    gap: var(--c-studio-space-3);
+    padding: var(--c-studio-space-5);
+    border: 1px solid var(--c-studio-border);
+    border-radius: var(--c-studio-radius-md);
     background: var(--c-studio-surface);
     cursor: pointer;
     text-align: left;
     font: inherit;
-    transition: border-color 120ms;
+    transition: border-color var(--c-studio-duration) var(--c-studio-ease);
 }
 .tpl-card:hover:not(:disabled) {
-    border-color: var(--c-studio-accent);
+    border-color: var(--c-studio-border-strong);
 }
 .tpl-card:disabled {
     opacity: 0.6;
     cursor: default;
 }
+/* selected template card (survey path keeps the pick visible on back) */
+.tpl-card.is-selected {
+    border-color: var(--c-studio-accent);
+    box-shadow: var(--c-studio-selected-ring);
+}
 .tpl-name {
-    font-weight: 700;
-    font-size: 0.95rem;
+    font-weight: var(--c-studio-fw-strong);
+    font-size: var(--c-studio-fs-subhead);
 }
 .tpl-blurb {
-    font-size: 0.8rem;
+    font-size: var(--c-studio-fs-small);
+    line-height: var(--c-studio-lh-body);
     color: var(--c-studio-text-weak);
 }
 
-.tpl-name-input {
-    width: min(420px, 100%);
-    border: 1.5px solid var(--c-studio-border);
-    border-radius: 8px;
-    padding: 9px 12px;
-    font: inherit;
-    margin-bottom: 12px;
-}
-.cg-open-link {
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-}
-
-/* ---- type chooser (screen 0: Form or Survey, owner 2026-07-31) ---- */
+/* ---- type chooser (screen 0: Form, Survey or Freeform): selectable
+   cards (5.11), no lift on hover ---- */
 .type-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 420px));
-    gap: 18px;
+    gap: var(--c-studio-space-5);
     justify-content: center;
-    padding: 24px 0 40px;
+    padding: var(--c-studio-space-6) 0 var(--c-studio-space-8);
 }
 .type-card {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 10px;
-    padding: 28px 26px;
-    border: 1.5px solid var(--c-studio-border);
-    border-radius: 16px;
+    gap: var(--c-studio-space-3);
+    padding: var(--c-studio-space-6);
+    border: 1px solid var(--c-studio-border);
+    border-radius: var(--c-studio-radius-md);
     background: var(--c-studio-surface);
     cursor: pointer;
     text-align: left;
     font: inherit;
-    transition:
-        border-color 120ms ease,
-        transform 120ms ease,
-        box-shadow 120ms ease;
+    transition: border-color var(--c-studio-duration) var(--c-studio-ease);
 }
 .type-card:hover {
-    border-color: var(--c-studio-accent);
-    transform: translateY(-2px);
-    box-shadow: 0 10px 24px var(--c-studio-focus-halo);
+    border-color: var(--c-studio-border-strong);
 }
 .type-icon {
+    --slds-c-icon-color-foreground-default: var(--c-studio-accent);
     color: var(--c-studio-accent);
 }
 .type-name {
-    font-weight: 800;
-    font-size: 1.25rem;
+    font-weight: var(--c-studio-fw-strong);
+    font-size: var(--c-studio-fs-title);
 }
 .type-blurb {
-    font-size: 0.875rem;
+    font-size: var(--c-studio-fs-body);
+    line-height: var(--c-studio-lh-body);
     color: var(--c-studio-text-weak);
-    line-height: 1.45;
 }
 .type-foot {
-    margin-top: 6px;
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: var(--c-studio-accent);
-}
-
-/* selected template card (survey path keeps the pick visible on back) */
-.tpl-card.is-selected {
-    border-color: var(--c-studio-accent);
-    box-shadow: 0 0 0 1px var(--c-studio-accent) inset;
+    margin-top: var(--c-studio-space-2);
+    font-size: var(--c-studio-fs-body);
+    font-weight: var(--c-studio-fw-strong);
+    color: var(--c-studio-accent-text);
 }
 
 /* survey details furniture */
-.d-optional {
-    font-weight: 400;
-    color: var(--c-studio-text-weak);
-    text-transform: none;
-}
 .d-help {
-    margin: 6px 0 14px;
-    font-size: 0.8rem;
+    margin: 0;
+    font-size: var(--c-studio-fs-small);
+    line-height: var(--c-studio-lh-body);
     color: var(--c-studio-text-weak);
-    line-height: 1.45;
 }

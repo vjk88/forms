@@ -57,13 +57,13 @@
 .ta-input:focus {
     outline: none;
     border-color: var(--ta-brand);
-    box-shadow: 0 0 0 1px var(--ta-brand);
+    box-shadow: var(--c-studio-ring-focus);
 }
 
 .ta-input--error,
 .ta-input--error:focus {
     border-color: var(--ta-error);
-    box-shadow: 0 0 0 1px var(--ta-error);
+    box-shadow: var(--c-studio-ring-error);
 }
 
 .ta-error {

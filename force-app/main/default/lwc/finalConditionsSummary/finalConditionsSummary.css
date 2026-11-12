@@ -11,10 +11,8 @@
 
 .cs-heading {
     margin: 0;
-    font-size: 0.6875rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    font-size: var(--c-studio-fs-small);
+    font-weight: var(--c-studio-fw-strong);
     color: var(--c-studio-text-weak);
 }
 
@@ -32,15 +30,15 @@
     gap: 0.5rem;
     padding: 0.25rem 0.5rem;
     border-left: 2px solid var(--c-studio-accent);
-    border-radius: 3px;
+    border-radius: var(--c-studio-radius-sm);
     background: var(--c-studio-surface-subtle);
-    font-size: 0.8125rem;
+    font-size: var(--c-studio-fs-body);
     line-height: 1.4;
 }
 
 .cs-num {
     flex: none;
-    font-weight: 700;
+    font-weight: var(--c-studio-fw-strong);
     color: var(--c-studio-text-weak);
 }
 
@@ -53,7 +51,7 @@
 .cs-logic,
 .cs-empty {
     margin: 0;
-    font-size: 0.75rem;
+    font-size: var(--c-studio-fs-small);
     color: var(--c-studio-text-weak);
 }
 

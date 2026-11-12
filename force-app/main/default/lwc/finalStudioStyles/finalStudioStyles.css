@@ -28,7 +28,6 @@
     --c-studio-info-text: #364d6b;
     --c-studio-info-surface: #eef3fa;
     --c-studio-overlay: rgb(8 15 26 / 52%);
-    --c-studio-dialog-shadow: var(--c-studio-shadow-3);
     --c-studio-radius-lg: 12px;
     --c-studio-space-lg: 24px;
     /* Design-system foundations (DESIGN_SYSTEM.md §4). New names only: nothing
@@ -67,6 +66,18 @@
     /* Selected (DESIGN_SYSTEM §2): a ring around cards, a leading bar on rows. */
     --c-studio-selected-ring: 0 0 0 1px var(--c-studio-accent);
     --c-studio-selected-bar: inset 3px 0 0 var(--c-studio-accent);
+    /* Drag and drop (DESIGN_SYSTEM 5.12): the line where an item will land,
+       and the box it will land in. */
+    --c-studio-drop-before: 0 -2px 0 0 var(--c-studio-accent);
+    --c-studio-drop-after: 0 2px 0 0 var(--c-studio-accent);
+    --c-studio-drop-target:
+        0 0 0 1px var(--c-studio-accent),
+        inset 0 0 0 100vmax
+            color-mix(in srgb, var(--c-studio-accent) 8%, transparent);
+    /* A hand-built field's edge when it is focused or wrong (5.3). */
+    --c-studio-ring-focus: 0 0 0 1px var(--c-studio-focus);
+    --c-studio-ring-error: 0 0 0 1px var(--c-studio-error);
+    --c-studio-z-behind: -1;
     --c-studio-z-raised: 2;
     --c-studio-z-dropdown: 20;
     --c-studio-z-menu: 30;
@@ -133,6 +144,13 @@ lightning-button,
 lightning-button-icon,
 lightning-button-menu {
     --slds-c-button-radius-border: var(--c-studio-radius-md);
+    /* neutral and base buttons read in the Studio accent text (the Actions
+       menu included), never Salesforce blue */
+    --slds-c-button-text-color: var(--c-studio-accent-text);
+    --slds-c-button-text-color-hover: var(--c-studio-accent-hover);
+    /* the Studio focus ring, never Salesforce blue (measured on VF) */
+    --slds-c-button-shadow-focus:
+        0 0 0 2px var(--c-studio-surface), 0 0 0 4px var(--c-studio-focus);
     /* The LEX tab runs the newer Salesforce design system, which reads this
        global colour instead of the --slds-c-* hooks (measured 2026-11-02). */
     --slds-g-color-accent-container-1: var(--c-studio-accent);
@@ -144,6 +162,8 @@ lightning-button-menu {
 lightning-button-icon {
     --slds-c-icon-color-foreground-default: var(--c-studio-text-weak);
     --slds-s-button-color: var(--c-studio-text-weak);
+    --slds-c-button-text-color: var(--c-studio-text-weak);
+    --slds-c-button-text-color-hover: var(--c-studio-text);
 }
 
 lightning-input,

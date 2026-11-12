@@ -183,9 +183,12 @@ an alias. 2 is for optical fixes and tight insets only.
 | `--c-studio-radius-pill` | 999px | Toggles, round markers. Never buttons. |
 | `--c-studio-shadow-2` | `0 10px 24px rgb(15 23 42 / 12%)` | Menus, popovers, dropdowns |
 | `--c-studio-selected-ring` / `--c-studio-selected-bar` | `0 0 0 1px` accent / `inset 3px 0 0` accent | Selected: the ring around a card, the leading bar on a row or rail tab (§2) |
-| `--c-studio-shadow-3` | `0 20px 48px rgb(0 0 0 / 28%)` | Dialogs, drawers (replaces `--c-studio-dialog-shadow`) |
+| `--c-studio-shadow-3` | `0 20px 48px rgb(0 0 0 / 28%)` | Dialogs, drawers (the old `--c-studio-dialog-shadow` alias is gone) |
 | `--c-studio-z-raised` / `-dropdown` / `-menu` / `-drawer` / `-action-dialog` / `-backdrop` / `-modal` / `-popover` | 2 / 20 / 30 / 1000 / 1100 / 9000 / 9001 / 9500 | Today's numbers, named. Check the real stacking context before trusting one. |
 | `--c-studio-duration` / `--c-studio-ease` | 150ms / `ease` | State changes only (hover, toggle knob, width). Never focus or errors. |
+| `--c-studio-drop-before` / `-drop-after` / `-drop-target` | 2px accent line above / below; 1px accent ring + 8% accent tint | Drag and drop: where an item will land, and the box it lands in. |
+| `--c-studio-ring-focus` / `-ring-error` | `0 0 0 1px` focus / error | A hand-built field's edge when focused or wrong (5.3), beside its edge color. |
+| `--c-studio-z-behind` | -1 | Decoration painted behind its own box (the preview stage's hatching). |
 | `--c-studio-duration-long` | 1600ms | A tint that fades after a jump (the setting a Design search lands on). Nothing else. |
 | `--c-studio-swatch-edge` / `--c-studio-swatch-ring` | `inset 0 0 0 1px rgb(15 23 42 / 22%)` / `0 0 0 2px` surface, `0 0 0 4px` accent | Color chips (5.27): a see-through edge that shows on any color, and the chosen chip's ring. |
 
@@ -346,6 +349,7 @@ the missing one here first.
 
 ## Change log
 
+- **2026-11-11 v2.12.** The screens around the Studio moved onto the system (plan step 5): forms library (data table 5.21, kind badge 5.22, Salesforce buttons and Show filter), New form (Close and Back are Salesforce buttons, How to start and Preview width are `finalButtonGroup`, the name, object and layout boxes are Salesforce controls, kind and template cards follow 5.11; no em dashes or arrows in its labels), the Studio dialogs, settings drawer, Publish (now on the Studio teal), conditions, rule, validation, Autofill and record-link panels. New tokens: `drop-before`, `drop-after`, `drop-target`, `ring-focus`, `ring-error`, `z-behind`. The `dialog-shadow` alias and the last dead `var(--c-studio-x, #hex)` fallbacks are gone. The guard's allowlist is empty. Salesforce icon buttons and button menus take the Studio focus ring and text colors too (the Actions menu and dialog Close were Salesforce blue), and sliders take the accent (VF reads `--slds-c-slider-thumb-color-foreground`).
 - **2026-11-11 v2.11.** Design screen moved onto the system (plan step 4): the Design pane, theme dialog, brand inputs, gradient, image, font and color controls, galleries and cards. Hand-built buttons, dropdowns, toggles, sliders and text boxes became Salesforce ones; Simple / Advanced design, Solid / Gradient, Start from and Preview in became `finalButtonGroup`; Salesforce controls in a settings row take their label above (5.4). Theme and layout cards follow 5.11 (no lift on hover). New tokens: `duration-long`, `swatch-edge`, `swatch-ring`. The guard skips the §8 specimens by selector. Kept hand-built: the logo color swatches (color chips with a role, not a button group), color pickers, presets, font selects (groups), Design search, after-submit tiles.
 - **2026-11-04 v2.10.** Owner OK on the Design pane mock: one change status line (5.28), Theme and layout as compact pictures of the form's own theme and layout, Accent as a clean 8-to-a-row grid with plain readability words (5.27), Design dropdowns with a look as drawn tiles (5.24), group titles with a hairline and their own Reset (5.29). Too-pale accent presets stay, faded, without the slash (owner ruling).
 - **2026-11-04 v2.9.** Owner: How it works (5.26) is an info icon by the dialog title, not a strip that hides for good. The Autofill rule's plain summary (5.25) is one short line in the footer.

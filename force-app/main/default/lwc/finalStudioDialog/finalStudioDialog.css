@@ -5,14 +5,14 @@
 .sd-backdrop {
     position: fixed;
     inset: 0;
-    z-index: 9000;
+    z-index: var(--c-studio-z-backdrop);
     background: var(--c-studio-overlay);
 }
 
 .sd {
     position: fixed;
     inset: 0;
-    z-index: 9001;
+    z-index: var(--c-studio-z-modal);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -25,7 +25,7 @@
     flex-direction: column;
     background: var(--c-studio-surface);
     border-radius: var(--c-studio-radius-lg);
-    box-shadow: var(--c-studio-dialog-shadow);
+    box-shadow: var(--c-studio-shadow-3);
     overflow: hidden;
 }
 
@@ -97,7 +97,7 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.75rem 1rem;
-    border-top: 1px solid var(--c-studio-border, #e5e5e5);
+    border-top: 1px solid var(--c-studio-border);
     background: var(--c-studio-surface-subtle);
 }
 
@@ -129,18 +129,18 @@
     background: var(--c-studio-surface);
     border: 1px solid var(--c-studio-border);
     border-radius: var(--c-studio-radius-lg);
-    box-shadow: var(--c-studio-dialog-shadow);
+    box-shadow: var(--c-studio-shadow-3);
 }
 
 .sd-ask-title {
     margin: 0 0 0.375rem;
-    font-size: 1rem;
-    font-weight: 700;
+    font-size: var(--c-studio-fs-title);
+    font-weight: var(--c-studio-fw-strong);
 }
 
 .sd-ask-text {
     margin: 0 0 1rem;
-    font-size: 0.875rem;
+    font-size: var(--c-studio-fs-body);
     color: var(--c-studio-text-weak);
 }
 

@@ -72,5 +72,5 @@
 .ms-text--error,
 .ms-text--error:focus {
     border-color: var(--c-studio-error);
-    box-shadow: 0 0 0 1px var(--c-studio-error);
+    box-shadow: var(--c-studio-ring-error);
 }

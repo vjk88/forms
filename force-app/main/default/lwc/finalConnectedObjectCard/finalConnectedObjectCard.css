@@ -116,7 +116,7 @@
 .oc-object:focus-visible {
     background: var(--c-studio-hover);
     outline: 0;
-    box-shadow: inset 0 0 0 2px var(--c-studio-accent);
+    box-shadow: var(--c-studio-selected-ring);
 }
 
 .oc-object-label {

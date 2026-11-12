@@ -97,7 +97,8 @@ describe('type-first creation flow', () => {
         );
         await flush();
         // survey details: create enabled WITHOUT an object (it's optional)
-        const create = byText(el.shadowRoot, 'button', 'Create survey');
+        const create = el.shadowRoot.querySelector('.cg-create');
+        expect(create.label).toBe('Create survey');
         expect(create.disabled).toBe(false);
         create.click();
         await flush();

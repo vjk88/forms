@@ -456,11 +456,11 @@
 
 /* where a dragged option will land */
 .pp-optgroup.drop-before {
-    box-shadow: 0 -2px 0 0 var(--c-studio-accent);
+    box-shadow: var(--c-studio-drop-before);
 }
 
 .pp-optgroup.drop-after {
-    box-shadow: 0 2px 0 0 var(--c-studio-accent);
+    box-shadow: var(--c-studio-drop-after);
 }
 
 /* Salesforce's own choices under Default to schema: read-only */

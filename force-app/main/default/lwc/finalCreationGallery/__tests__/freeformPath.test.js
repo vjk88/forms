@@ -136,13 +136,13 @@ describe('freeform creation path', () => {
         await walkToDetails(el);
         const name = el.shadowRoot.querySelector('.d-config .d-input');
         name.value = 'Partner application';
-        name.dispatchEvent(new CustomEvent('input'));
+        name.dispatchEvent(new CustomEvent('change'));
         await flush();
 
         const created = jest.fn();
         el.addEventListener('formcreated', created);
         [...el.shadowRoot.querySelectorAll('.cg-create')]
-            .find((b) => b.textContent.includes('Create freeform'))
+            .find((b) => b.label === 'Create freeform')
             .click();
         await flush();
 
@@ -190,7 +190,7 @@ describe('freeform creation path', () => {
         const el = await mount();
         await walkToDetails(el);
         [...el.shadowRoot.querySelectorAll('.cg-create')]
-            .find((b) => b.textContent.includes('Create freeform'))
+            .find((b) => b.label === 'Create freeform')
             .click();
         await flush();
         expect(createFreeformFromTemplate).toHaveBeenCalledWith(

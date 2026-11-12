@@ -118,15 +118,12 @@
 /* "drops in here" — a field/element landing inside this section */
 .bc-drop-on {
     border-color: var(--c-studio-accent) !important;
-    box-shadow:
-        0 0 0 1px var(--c-studio-accent),
-        inset 0 0 0 100vmax
-            color-mix(in srgb, var(--c-studio-accent) 8%, transparent);
+    box-shadow: var(--c-studio-drop-target);
 }
 
 /* insertion line ABOVE the node — section reorder / element placement */
 .bc-drop-before {
-    box-shadow: 0 -3px 0 0 var(--c-studio-accent);
+    box-shadow: var(--c-studio-drop-before);
 }
 
 /* inter-section gap: invisible until a section drag is over it */
