@@ -103,6 +103,14 @@ public inherited sharing class FinalSubmitService {
         public String message;
         @AuraEnabled
         public List<String> fields;
+        /** The repeating group a refused related record came from; blank
+         *  for the main record (IMPL_PLAN_RELATED_RECORDS §4). */
+        @AuraEnabled
+        public String sectionId;
+        /** Zero-based position of that entry in the list AS SENT, blank
+         *  entries included. Null for the main record. */
+        @AuraEnabled
+        public Integer entryIndex;
     }
 
     // ------------------------------------------------- lookup enforcement
@@ -300,13 +308,11 @@ public inherited sharing class FinalSubmitService {
                 Map<String, Object> sec = asMap(secObj);
                 Map<String, Object> repeatCfg = asMap(sec.get('repeat'));
                 if (repeatCfg != null) {
-                    RepeatPlan plan = new RepeatPlan();
-                    plan.sectionId = (String) sec.get('id');
+                    RepeatPlan plan = repeatPlan(asMap(pageObj), sec);
                     plan.childObject = (String) repeatCfg.get('childObject');
                     plan.relationshipField = (String) repeatCfg.get(
                         'relationshipField'
                     );
-                    plan.elements = asList(sec.get('elements'));
                     repeatPlans.add(plan);
                     continue;
                 }
@@ -378,6 +384,15 @@ public inherited sharing class FinalSubmitService {
             }
         }
 
+        // Limits, the cap, the minimum and the row budget, before anything
+        // is written (IMPL_PLAN_RELATED_RECORDS §5).
+        checkGroups(repeatPlans, repeats);
+        Integer groupRows = 0;
+        for (RepeatPlan plan : repeatPlans) {
+            groupRows += startedCount(plan, repeats);
+        }
+        checkBudget(groupRows);
+
         List<FieldError> badLookups = lookupErrors(spec, answers, mode);
         if (!badLookups.isEmpty()) {
             SubmitOutcome refused = new SubmitOutcome();
@@ -421,6 +436,18 @@ public inherited sharing class FinalSubmitService {
         } catch (AuraHandledException e) {
             Database.rollback(sp);
             throw e;
+        } catch (EntryDmlException e) {
+            // a related record was refused: the errors already name the
+            // group and the entry; guests still get the flat refusal
+            Database.rollback(sp);
+            if (mode == Posture.GUEST) {
+                throw new AuraHandledException(
+                    'Your response could not be saved. Nothing was recorded.'
+                );
+            }
+            SubmitOutcome res = new SubmitOutcome();
+            res.errors = e.errors;
+            return res;
         } catch (DmlException e) {
             Database.rollback(sp);
             // A GUEST is told nothing about which field of which object
@@ -444,9 +471,193 @@ public inherited sharing class FinalSubmitService {
 
     private class RepeatPlan {
         String sectionId;
+        String title;
         String childObject;
         String relationshipField;
         List<Object> elements;
+        /** Null when the published limits are fine, else why not. */
+        String limitProblem;
+        Integer min = 1;
+        Integer max = FinalPublishWarnings.MAX_ENTRIES_PER_GROUP;
+        /** Neither the group nor its page carries a visibility rule. */
+        Boolean alwaysShown = true;
+    }
+
+    // ------------------------------------------ repeating groups (§4, §5)
+
+    /**
+     * Rows all groups may produce in one submission: related records for a
+     * Form; answer rows plus their topic links for a Survey. A budget for
+     * group-generated writes, leaving headroom for the rest of the
+     * transaction; never a promise that arbitrary automation fits.
+     */
+    @TestVisible
+    private static Integer groupRowBudget = 2000;
+
+    /** Thrown inside the savepoint when a related record is refused, with
+     *  the errors already naming the group and the entry. */
+    private class EntryDmlException extends Exception {
+        List<FieldError> errors;
+    }
+
+    /** A group's plan with the limits it RUNS with: blank/0 Max = 50, a
+     *  positive Max above 50 (an older publish) is held to 50. */
+    private static RepeatPlan repeatPlan(
+        Map<String, Object> page,
+        Map<String, Object> sec
+    ) {
+        RepeatPlan plan = new RepeatPlan();
+        plan.sectionId = (String) sec.get('id');
+        plan.title = sec.get('title') instanceof String
+            ? (String) sec.get('title')
+            : null;
+        plan.elements = asList(sec.get('elements'));
+        plan.alwaysShown = !hasRule(sec) && !hasRule(page);
+        Map<String, Object> cfg = asMap(sec.get('repeat'));
+        Object rawMin = cfg == null ? null : cfg.get('min');
+        Object rawMax = cfg == null ? null : cfg.get('max');
+        Integer min = FinalPublishWarnings.isUnset(rawMin)
+            ? 1
+            : FinalPublishWarnings.wholeOrNull(rawMin);
+        Integer max = FinalPublishWarnings.isUnset(rawMax)
+            ? 0
+            : FinalPublishWarnings.wholeOrNull(rawMax);
+        Integer cap = FinalPublishWarnings.MAX_ENTRIES_PER_GROUP;
+        Integer effective = max == null
+            ? null
+            : (max == 0 ? cap : Math.min(max, cap));
+        if (
+            min == null ||
+            min < 0 ||
+            min > cap ||
+            max == null ||
+            max < 0 ||
+            min > effective
+        ) {
+            plan.limitProblem =
+                'The entry limits for ' +
+                (String.isBlank(plan.title)
+                    ? 'a repeating group'
+                    : plan.title) +
+                ' need to be corrected by the form owner.';
+            return plan;
+        }
+        plan.min = min;
+        plan.max = effective;
+        return plan;
+    }
+
+    /** A visibility block with at least one rule. */
+    private static Boolean hasRule(Map<String, Object> node) {
+        Map<String, Object> vis = node == null
+            ? null
+            : asMap(node.get('visibility'));
+        return vis != null && !asList(vis.get('rules')).isEmpty();
+    }
+
+    /** Blank: nothing, a blank string, an empty list or map. `false` is an
+     *  answer, as in the browser (finalRepeatGroups.isBlankAnswer). */
+    private static Boolean isBlankValue(Object v) {
+        if (v == null) {
+            return true;
+        }
+        if (v instanceof String) {
+            return String.isBlank((String) v);
+        }
+        if (v instanceof List<Object>) {
+            return ((List<Object>) v).isEmpty();
+        }
+        if (v instanceof Map<String, Object>) {
+            return ((Map<String, Object>) v).isEmpty();
+        }
+        return false;
+    }
+
+    /** An entry with at least one answer for one of the group's questions. */
+    private static Boolean isStarted(RepeatPlan plan, Object entryObj) {
+        Map<String, Object> entry = asMap(entryObj);
+        if (entry == null || entry.isEmpty()) {
+            return false;
+        }
+        for (Object elObj : plan.elements) {
+            Map<String, Object> el = asMap(elObj);
+            String elId = el == null ? null : (String) el.get('id');
+            if (
+                elId != null &&
+                entry.containsKey(elId) &&
+                !isBlankValue(entry.get(elId))
+            ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static List<Object> sentEntries(
+        RepeatPlan plan,
+        Map<String, Object> repeats
+    ) {
+        return repeats == null
+            ? new List<Object>()
+            : asList(repeats.get(plan.sectionId));
+    }
+
+    private static Integer startedCount(
+        RepeatPlan plan,
+        Map<String, Object> repeats
+    ) {
+        Integer n = 0;
+        for (Object entry : sentEntries(plan, repeats)) {
+            if (isStarted(plan, entry)) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    /**
+     * Before anything is written: limits a respondent can meet, at most Max
+     * (never above 50) items on the RAW list, blanks included, and the
+     * minimum, for a group no rule can hide. A rule-hidden group is left out
+     * of the payload on purpose and this server runs no rules, so there the
+     * browser's check is the only one (IMPL_PLAN_RELATED_RECORDS §5).
+     */
+    private static void checkGroups(
+        List<RepeatPlan> plans,
+        Map<String, Object> repeats
+    ) {
+        for (RepeatPlan plan : plans) {
+            if (plan.limitProblem != null) {
+                throw FinalMappingRules.refusal(plan.limitProblem);
+            }
+            if (sentEntries(plan, repeats).size() > plan.max) {
+                throw FinalMappingRules.refusal(
+                    'Too many entries in ' +
+                        (String.isBlank(plan.title)
+                            ? 'a repeating group'
+                            : plan.title) +
+                        '.'
+                );
+            }
+            if (plan.alwaysShown && startedCount(plan, repeats) < plan.min) {
+                throw FinalMappingRules.refusal(
+                    'Fill in at least ' +
+                        plan.min +
+                        (plan.min == 1 ? ' entry' : ' entries') +
+                        (String.isBlank(plan.title)
+                            ? '.'
+                            : ' in ' + plan.title + '.')
+                );
+            }
+        }
+    }
+
+    private static void checkBudget(Integer rows) {
+        if (rows > groupRowBudget) {
+            throw FinalMappingRules.refusal(
+                'This response has too many entries. Remove some and try again.'
+            );
+        }
     }
 
     // ===== SURVEY: answer-store submit (SURVEY_PLAN §6 · IMPL_PLAN_SURVEY_S1) =====
@@ -495,6 +706,7 @@ public inherited sharing class FinalSubmitService {
         List<Map<String, Object>> flat = new List<Map<String, Object>>();
         List<RepeatPlan> plans = new List<RepeatPlan>();
         collectElements(spec, flat, plans);
+        checkGroups(plans, repeats);
 
         Set<Id> validTopics = validTopicIds(flat, plans);
 
@@ -539,6 +751,17 @@ public inherited sharing class FinalSubmitService {
                 topicsPerRow,
                 sink
             );
+            // The budget counts what the groups would write: their answer
+            // rows AND those rows' topic links. Only countable once the rows
+            // exist (each carries the response Id); a refusal here rolls the
+            // response back with everything else.
+            Integer groupRows = 0;
+            for (Integer i = 0; i < rows.size(); i++) {
+                if (rows[i].get('Entry_Index__c') != null) {
+                    groupRows += 1 + topicsPerRow[i].size();
+                }
+            }
+            checkBudget(groupRows);
             if (!rows.isEmpty()) {
                 insertFenced(rows);
             }
@@ -669,6 +892,7 @@ public inherited sharing class FinalSubmitService {
         List<Map<String, Object>> flat = new List<Map<String, Object>>();
         List<RepeatPlan> plans = new List<RepeatPlan>();
         collectElements(spec, flat, plans);
+        checkGroups(plans, repeats);
 
         List<FieldError> badLookups = lookupErrors(spec, answers, mode);
         if (!badLookups.isEmpty()) {
@@ -849,10 +1073,7 @@ public inherited sharing class FinalSubmitService {
                     continue;
                 }
                 if (asMap(sec.get('repeat')) != null) {
-                    RepeatPlan plan = new RepeatPlan();
-                    plan.sectionId = (String) sec.get('id');
-                    plan.elements = asList(sec.get('elements'));
-                    plans.add(plan);
+                    plans.add(repeatPlan(asMap(pageObj), sec));
                     continue;
                 }
                 for (Object elObj : asList(sec.get('elements'))) {
@@ -1751,8 +1972,11 @@ public inherited sharing class FinalSubmitService {
             }
         }
         List<SObject> children = new List<SObject>();
-        for (Object entryObj : entries) {
-            Map<String, Object> entry = asMap(entryObj);
+        // children[k] came from entries[sentIndex[k]]: blanks are skipped,
+        // but a refusal must name the entry by its place in the list AS SENT
+        List<Integer> sentIndex = new List<Integer>();
+        for (Integer i = 0; i < entries.size(); i++) {
+            Map<String, Object> entry = asMap(entries[i]);
             if (entry == null || entry.isEmpty()) {
                 continue;
             }
@@ -1762,7 +1986,7 @@ public inherited sharing class FinalSubmitService {
                 if (entry.containsKey(elId)) {
                     Object v = entry.get(elId);
                     bindings.put(fieldByElement.get(elId), v);
-                    if (v != null && String.valueOf(v) != '') {
+                    if (!isBlankValue(v)) {
                         hasValue = true;
                     }
                 }
@@ -1771,6 +1995,7 @@ public inherited sharing class FinalSubmitService {
                 continue; // an untouched blank entry inserts nothing
             }
             children.add(buildRecord(childType, bindings));
+            sentIndex.add(i);
         }
         if (children.isEmpty()) {
             return 0;
@@ -1781,7 +2006,30 @@ public inherited sharing class FinalSubmitService {
         for (SObject child : stripped) {
             child.put(plan.relationshipField, parentId);
         }
-        doInsert(stripped, mode);
+        try {
+            doInsert(stripped, mode);
+        } catch (DmlException e) {
+            EntryDmlException failed = new EntryDmlException(e.getMessage());
+            failed.errors = new List<FieldError>();
+            for (FieldError fe : dmlErrors(e)) {
+                fe.sectionId = plan.sectionId;
+                failed.errors.add(fe);
+            }
+            for (
+                Integer i = 0;
+                i < e.getNumDml() &&
+                i < failed.errors.size();
+                i++
+            ) {
+                Integer row = e.getDmlIndex(i);
+                failed.errors[i].entryIndex = row != null &&
+                    row >= 0 &&
+                    row < sentIndex.size()
+                    ? sentIndex[row]
+                    : null;
+            }
+            throw failed;
+        }
         return stripped.size();
     }
 

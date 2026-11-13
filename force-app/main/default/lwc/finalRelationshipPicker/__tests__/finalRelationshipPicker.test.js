@@ -77,4 +77,69 @@ describe('c-final-relationship-picker', () => {
         el.shadowRoot.querySelector('.rp-overlay').click();
         expect(cancels).toHaveLength(2);
     });
+
+    const search = async (el, text) => {
+        const box = el.shadowRoot.querySelector('.rp-search');
+        box.value = text;
+        box.dispatchEvent(new CustomEvent('change'));
+        await Promise.resolve();
+    };
+
+    it('search filters by object label, API name and link label', async () => {
+        const el = mount();
+        describeChildRelationships.emit([
+            ...RELS,
+            {
+                relationshipName: 'Cases',
+                childObject: 'Case',
+                childObjectLabel: 'Case',
+                linkingField: 'Parent_Account__c',
+                linkingFieldLabel: 'Parent org'
+            }
+        ]);
+        await Promise.resolve();
+        const labels = () =>
+            [...el.shadowRoot.querySelectorAll('.rp-item-label')].map((n) =>
+                n.textContent.trim()
+            );
+        await search(el, 'cas');
+        expect(labels()).toEqual(['Case']);
+        await search(el, 'OPPORTUNITY');
+        expect(labels()).toEqual(['Opportunity']);
+        await search(el, 'parent org');
+        expect(labels()).toEqual(['Case']);
+        await search(el, '');
+        expect(labels()).toHaveLength(3);
+    });
+
+    it('no match says so', async () => {
+        const el = mount();
+        describeChildRelationships.emit(RELS);
+        await Promise.resolve();
+        await search(el, 'xyz');
+        expect(el.shadowRoot.querySelectorAll('.rp-item')).toHaveLength(0);
+        expect(el.shadowRoot.querySelector('.rp-note').textContent).toBe(
+            'No objects match “xyz”.'
+        );
+    });
+
+    it('Escape clears the search first, then closes', async () => {
+        const el = mount();
+        describeChildRelationships.emit(RELS);
+        await Promise.resolve();
+        const cancels = [];
+        el.addEventListener('cancel', () => cancels.push(1));
+        await search(el, 'opp');
+        const dialog = el.shadowRoot.querySelector('.rp-dialog');
+        dialog.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+        );
+        await Promise.resolve();
+        expect(cancels).toHaveLength(0);
+        expect(el.shadowRoot.querySelectorAll('.rp-item')).toHaveLength(2);
+        dialog.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+        );
+        expect(cancels).toHaveLength(1);
+    });
 });

@@ -1,3 +1,5 @@
+import { repeatLimits } from 'c/finalRepeatGroups';
+
 /** Studio-only reconciliation. Values (including file bodies) are never serialized. */
 function index(spec) {
     const fields = new Map();
@@ -110,10 +112,9 @@ export function reconcileAnswers(answers, previousSpec, nextSpec) {
         const newFields = new Map(
             (section.elements || []).map((el) => [el.id, el])
         );
-        const max = Number(section.repeat.max);
-        const rows = max > 0 ? answers[id].slice(0, max) : answers[id];
+        const { min, max } = repeatLimits(section.repeat);
+        const rows = answers[id].slice(0, max);
         result[id] = rows.map((row) => pruneFields(row, oldFields, newFields));
-        const min = Math.max(Number(section.repeat.min) || 1, 1);
         while (result[id].length < min) result[id].push({});
     }
     return result;

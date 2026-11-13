@@ -205,7 +205,7 @@ Version records are never edited in place. "Fix the live form" = edit records �
       "collapsible": false,
       "defaultCollapsed": false,
       "visibility": null,
-      "repeat": null, // §4.1 — or { "childObject":"Contact", "relationshipField":"AccountId", "min":1, "max":5, "style":"stacked", "addLabel":"Add", "removeLabel":"Remove", "entryLabel":"Contact {index}" }
+      "repeat": null, // §4.1 — or { "childObject":"Contact", "relationshipField":"AccountId", "min":1, "max":5 /* §4.1 limits */, "style":"stacked", "addLabel":"Add", "removeLabel":"Remove", "entryLabel":"Contact {index}" }
       // repeat.style: "stacked" | "table" | "tileModal" (mirrors catalog §3)
       "block": false, // authoring marker: a STANDALONE content block between sections is a
       // wrapper section carrying one content element (the legacy formStudio
@@ -301,6 +301,23 @@ a first-class **Repeating Group** item, catalog §5).
   the drop. A flat `files` array keyed by `elementId` can't attach entry 1's file vs entry 2's to
   the right child record — and ~4.3 MB base64 × N entries is a heap bomb. The files entry shape
   reserves `entryIndex` (ignore-unknown = additive) for when this is genuinely wanted.
+- **Entries and their checks** ([IMPL_PLAN_RELATED_RECORDS](./IMPL_PLAN_RELATED_RECORDS.md) Part 1).
+  An entry is **started** once a question it shows has an answer (`false` counts; blank text, an empty
+  list or map doesn't). Started entries get every check a normal question gets; untouched entries are
+  never checked and never saved. A question a rule hides in one entry sends nothing for that entry.
+- **Limits.** `min`: a whole number 0–50, blank = 1; 0 starts the group empty with only its Add
+  button. `max`: blank or 0 = up to 50, else a whole number 1–50. `min` never exceeds the effective
+  maximum. One absolute cap of **50 entries per group**, checked by the server on the raw list
+  (blanks included). Publish and both import paths refuse limits outside these bounds
+  (`FinalPublishWarnings.repeatLimitProblems`); an older published spec with an unmeetable limit does
+  not open, and a positive `max` above 50 runs as 50 without rewriting the spec.
+- **Where the minimum is enforced.** The browser always. The server only for a group whose section
+  and page carry **no** visibility rule (the server runs no rules, and a rule-hidden group is left
+  out of the payload on purpose).
+- **Row budget.** At most 2,000 rows from groups per submission: related records on a Form; answer
+  rows **plus their topic links** on a Survey (counted before insert, rolled back with the response).
+- **Refused related records** come back as `FieldError` with `sectionId` and a zero-based
+  `entryIndex` counted in the list **as sent**, blanks included. Guests still get one flat refusal.
 
 ## 5 · The `resolved` block (resolve-at-publish)
 

@@ -1085,6 +1085,7 @@
                         value={repeatStyleSeg.value}
                         onchange={handleRepeatStyle}
                     ></c-final-button-group>
+                    <p class="pp-hint">Table and Tiles are coming soon.</p>
                 </div>
                 <lightning-input
                     label="Add-button label"
@@ -1092,6 +1093,28 @@
                     value={repeat.addLabel}
                     onchange={handleAddLabel}
                 ></lightning-input>
+                <div class="pp-fld">
+                    <lightning-input
+                        label="Entry title"
+                        data-prop="entrylabel"
+                        value={repeat.entryLabel}
+                        placeholder={entryTitlePlaceholder}
+                        onchange={handleEntryLabel}
+                    ></lightning-input>
+                    <p class="pp-hint">{entryTitleHelp}</p>
+                </div>
+                <div class="pp-fld">
+                    <lightning-input
+                        label="Remove button label"
+                        data-prop="removelabel"
+                        value={repeat.removeLabel}
+                        placeholder="Remove"
+                        onchange={handleRemoveLabel}
+                    ></lightning-input>
+                    <p class="pp-hint">
+                        Read out by screen readers and shown on hover.
+                    </p>
+                </div>
                 <div class="pp-minmax">
                     <lightning-input
                         type="number"
@@ -1099,17 +1122,24 @@
                         data-prop="min"
                         value={repeat.min}
                         min="0"
+                        max="50"
+                        step="1"
                         onchange={handleMin}
                     ></lightning-input>
                     <lightning-input
                         type="number"
-                        label="Max rows (0 = unlimited)"
+                        label="Max rows (0 = up to 50)"
                         data-prop="max"
                         value={repeat.max}
                         min="0"
+                        max="50"
+                        step="1"
                         onchange={handleMax}
                     ></lightning-input>
                 </div>
+                <template lwc:if={repeatLimitError}>
+                    <p class="pp-error" role="alert">{repeatLimitError}</p>
+                </template>
             </div>
 
             <div class="pp-group">

@@ -600,6 +600,109 @@ public with sharing class FinalPublishWarnings {
             forms[0].Allowed_Adapters__c.contains('Public_Guest');
     }
 
+    // ---------------------------------------------- repeating group limits
+
+    /** One absolute cap per group, whatever Max says
+     *  (IMPL_PLAN_RELATED_RECORDS §5). */
+    public static final Integer MAX_ENTRIES_PER_GROUP = 50;
+
+    /**
+     * A whole number, or null. JSON gives Integer, Long or Decimal; a plain
+     * numeric String is accepted too, the same as the browser.
+     */
+    public static Integer wholeOrNull(Object v) {
+        if (v instanceof Integer) {
+            return (Integer) v;
+        }
+        if (v instanceof Long) {
+            Long l = (Long) v;
+            return l > 100000 || l < -100000 ? null : l.intValue();
+        }
+        if (v instanceof Decimal) {
+            Decimal d = (Decimal) v;
+            if (d != d.round(System.RoundingMode.DOWN)) {
+                return null;
+            }
+            return d > 100000 || d < -100000 ? null : d.intValue();
+        }
+        if (v instanceof String) {
+            String t = ((String) v).trim();
+            if (Pattern.matches('-?[0-9]{1,6}', t)) {
+                return Integer.valueOf(t);
+            }
+        }
+        return null;
+    }
+
+    /** Blank in the spec: missing, null or an empty string. */
+    public static Boolean isUnset(Object v) {
+        return v == null || (v instanceof String && String.isBlank((String) v));
+    }
+
+    /**
+     * What may be PUBLISHED or IMPORTED for one group (§5): Min a whole
+     * number 0–50 (blank = 1), Max blank, 0 or a whole number 1–50, and Min
+     * no higher than the effective maximum (blank/0 Max = 50). Null when the
+     * limits are fine, else the sentence that says how to fix them.
+     */
+    public static String repeatLimitProblem(
+        Map<String, Object> repeat,
+        String title
+    ) {
+        if (repeat == null) {
+            return null;
+        }
+        String name = String.isBlank(title) ? 'this repeating group' : title;
+        Object rawMin = repeat.get('min');
+        Object rawMax = repeat.get('max');
+        Integer min = isUnset(rawMin) ? 1 : wholeOrNull(rawMin);
+        Integer max = isUnset(rawMax) ? 0 : wholeOrNull(rawMax);
+        if (min == null || min < 0 || min > MAX_ENTRIES_PER_GROUP) {
+            return 'Min rows for ' +
+                name +
+                ' must be a whole number from 0 to 50.';
+        }
+        if (max == null || max < 0 || max > MAX_ENTRIES_PER_GROUP) {
+            return 'Max rows for ' +
+                name +
+                ' must be blank or a whole number from 0 to 50.';
+        }
+        Integer effective = max == 0 ? MAX_ENTRIES_PER_GROUP : max;
+        if (min > effective) {
+            return 'Min rows for ' + name + ' can’t exceed Max rows.';
+        }
+        return null;
+    }
+
+    /** Every group's limit problem, in form order (§5). */
+    public static List<String> repeatLimitProblems(Map<String, Object> spec) {
+        List<String> out = new List<String>();
+        if (spec == null) {
+            return out;
+        }
+        for (Object pageObj : asList(spec.get('pages'))) {
+            Map<String, Object> page = asMap(pageObj);
+            for (
+                Object secObj : asList(
+                    page == null ? null : page.get('sections')
+                )
+            ) {
+                Map<String, Object> sec = asMap(secObj);
+                Map<String, Object> repeat = sec == null
+                    ? null
+                    : asMap(sec.get('repeat'));
+                String problem = repeatLimitProblem(
+                    repeat,
+                    sec == null ? null : (String) sec.get('title')
+                );
+                if (problem != null) {
+                    out.add(problem);
+                }
+            }
+        }
+        return out;
+    }
+
     private static Map<String, Object> asMap(Object o) {
         return o instanceof Map<String, Object>
             ? (Map<String, Object>) o

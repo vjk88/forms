@@ -36,8 +36,18 @@
         <template lwc:if={showBody}>
             <template lwc:if={isRepeat}>
                 <div class="rep-entries">
+                    <template lwc:if={minMessage}>
+                        <!-- polite: the "Fix N fields" line by the button is
+                             the one alert of a blocked click -->
+                        <p class="rep-min" role="status">{minMessage}</p>
+                    </template>
                     <template for:each={repeatEntries} for:item="entry">
-                        <div key={entry.key} class="rep-entry">
+                        <div
+                            key={entry.key}
+                            class="rep-entry"
+                            role="group"
+                            aria-label={entry.label}
+                        >
                             <div class="rep-entry-head">
                                 <span class="rep-entry-label"
                                     >{entry.label}</span
@@ -46,7 +56,8 @@
                                     <button
                                         type="button"
                                         class="rep-remove"
-                                        title={removeTitle}
+                                        title={entry.removeLabel}
+                                        aria-label={entry.removeLabel}
                                         data-key={entry.key}
                                         onclick={handleRemoveEntry}
                                     >
@@ -75,7 +86,7 @@
                             class="rep-add"
                             onclick={handleAddEntry}
                         >
-                            + {addLabel}
+                            <span aria-hidden="true">+ </span>{addLabel}
                         </button>
                     </template>
                 </div>

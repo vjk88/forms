@@ -123,7 +123,12 @@ public with sharing class FinalFormPackageService {
         );
         plan.description = optionalString(metadata.get('description'));
         if (formType == 'survey') {
-            FinalSurveyImportNormalizer.normalize(spec, plan.warnings);
+            try {
+                FinalSurveyImportNormalizer.normalize(spec, plan.warnings);
+            } catch (FinalSpecDescribeValidator.LimitException e) {
+                // a group's Min/Max can't be met: refused, never simplified
+                throw new PackageException(e.getMessage());
+            }
         }
         try {
             plan.prepared = FinalSpecTransferService.prepareClone(

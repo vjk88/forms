@@ -39,6 +39,10 @@
     color: var(--c-studio-text-weak);
 }
 
+.rp-searchrow {
+    padding: 0 var(--c-studio-space-5) var(--c-studio-space-2);
+}
+
 .rp-list {
     list-style: none;
     margin: 0;

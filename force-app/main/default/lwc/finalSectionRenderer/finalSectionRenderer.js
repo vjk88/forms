@@ -1,4 +1,5 @@
 import { LightningElement, api } from 'lwc';
+import { repeatLimits, isAnswerable } from 'c/finalRepeatGroups';
 
 /**
  * finalSectionRenderer — one spec section: header, style treatment, field grid.
@@ -22,6 +23,12 @@ const KNOWN_STYLES = ['plain', 'card', 'boxed'];
 /** `n:sectionId` unfolds already done. Module-level, so a section drawn
  *  again (page left and come back to) never re-opens on an old click. */
 const unfoldDone = new Set();
+
+/** Repeating-group focus: this component's own focus numbers (strings, so
+ *  they can never collide with the viewer's numeric ones in the element
+ *  renderer's once-only set), and the viewer's Add-button requests done. */
+let repFocusSeq = 0;
+const repFocusDone = new Set();
 
 /** Elements that always span the full grid regardless of width. */
 const FULL_WIDTH_TYPES = new Set(['divider', 'spacer']);
@@ -50,21 +57,45 @@ export default class FinalSectionRenderer extends LightningElement {
         return this._section;
     }
     set section(value) {
+        // A repeating group is seeded from what the FORM has stored (the
+        // viewer's `entries`), never from this component's own memory: when
+        // it is first drawn (back from another page, its group shown again)
+        // and when a different section or a new preview revision arrives.
+        // While it stays drawn it keeps the in-progress typing itself, so a
+        // new list with the same keys never overwrites a control mid-typing
+        // (IMPL_PLAN_RELATED_RECORDS §3).
+        const seedKey = `${value?.id}|${value?.previewRevision ?? ''}`;
         if (
-            value?.previewRevision !== undefined &&
-            (value.previewRevision !== this._section?.previewRevision ||
-                value.id !== this._section?.id)
+            value?.repeat &&
+            (this.entryKeys === null || seedKey !== this._seededFor)
         ) {
-            const rows = [...(value.previewEntries || [])];
-            const min = Math.max(Number(value.repeat?.min) || 1, 1);
-            while (rows.length < min) rows.push({});
-            this.entryKeys = rows.map((row, i) => `en_${i}`);
-            this._entryValues = Object.fromEntries(
-                rows.map((row, i) => [`en_${i}`, { ...row }])
-            );
-            this._entrySeq = rows.length;
+            this._seed(value, seedKey);
         }
         this._section = value;
+    }
+
+    _seed(value, seedKey) {
+        const sameGroup = this._seededFor?.split('|')[0] === value.id;
+        this._seededFor = seedKey;
+        let entries = value.entries;
+        if (!Array.isArray(entries)) {
+            // a host that predates the entries contract: `min` blank entries
+            const min = repeatLimits(value.repeat).min;
+            entries = Array.from({ length: min }, (x, i) => ({
+                key: `en_${i}`,
+                values: {}
+            }));
+        }
+        this.entryKeys = entries.map((e) => e.key);
+        this._entryValues = Object.fromEntries(
+            entries.map((e) => [e.key, { ...(e.values || {}) }])
+        );
+        // The counter travels with the entries, so a removed key is never
+        // handed out again; a preview revision of the same group never
+        // lowers it.
+        const seq = Number(value.nextEntrySeq);
+        const given = Number.isInteger(seq) ? seq : entries.length;
+        this._entrySeq = sameGroup ? Math.max(given, this._entrySeq) : given;
     }
 
     get sec() {
@@ -138,13 +169,18 @@ export default class FinalSectionRenderer extends LightningElement {
     // ---- repeatable sections (schema §4.1 — defined once, instantiated
     // at runtime; entries answer as ONE consolidated value) ----
 
-    /** Entry keys are LOCAL state (reactive); values live off-render. The
-     *  consolidated answer rides the ordinary valuechange chain as
-     *  elementId `repeat:{sectionId}` → the §8 entries array — no new
-     *  event plumbing through the seven navs. */
+    /** Entry keys are LOCAL state (reactive), seeded from the viewer's
+     *  `entries`; values live off-render. The consolidated answer rides the
+     *  ordinary valuechange chain as elementId `repeat:{sectionId}` → the §8
+     *  entries array, plus `keys`, `nextEntrySeq` and `change`
+     *  (IMPL_PLAN_RELATED_RECORDS §3) — no new event plumbing through the
+     *  seven navs, which forward `detail` whole. */
     entryKeys = null;
     _entrySeq = 0;
     _entryValues = {};
+    _seededFor = null;
+    /** Focus to place after this render: { key } (new entry) or 'add'. */
+    _pendingFocus = null;
 
     get isRepeat() {
         return Boolean(this.sec.repeat);
@@ -154,45 +190,80 @@ export default class FinalSectionRenderer extends LightningElement {
         return this.sec.repeat || {};
     }
 
+    /** The limits the viewer checked ({ min, max }, max never above 50). */
+    get limits() {
+        return this.sec.repeatLimits || repeatLimits(this.repeatCfg);
+    }
+
     get minEntries() {
-        return Math.max(Number(this.repeatCfg.min) || 1, 1);
+        return this.limits.min;
     }
 
     _currentKeys() {
-        if (!this.entryKeys) {
-            const keys = [];
-            for (let i = 0; i < this.minEntries; i++) {
-                keys.push(`en_${i}`);
-            }
-            this._entrySeq = this.minEntries;
-            return keys;
-        }
-        return this.entryKeys;
+        return this.entryKeys || [];
+    }
+
+    _entryTitle(index) {
+        return (this.repeatCfg.entryLabel || 'Entry {index}')
+            .split('{index}')
+            .join(String(index + 1));
+    }
+
+    /** "Remove Case 2". A title without {index} ("Case") would give every
+     *  × the same name, so the number is added for screen readers. */
+    _removeName(index, title) {
+        const numbered = (
+            this.repeatCfg.entryLabel || 'Entry {index}'
+        ).includes('{index}');
+        return `${this.removeTitle} ${title}${numbered ? '' : ` ${index + 1}`}`;
     }
 
     get repeatEntries() {
         const keys = this._currentKeys();
-        const template = this.repeatCfg.entryLabel || 'Entry {index}';
+        const byKey = new Map((this.sec.entries || []).map((e) => [e.key, e]));
         const canRemove = keys.length > this.minEntries;
-        return keys.map((key, i) => ({
-            key,
-            label: template.replace('{index}', String(i + 1)),
-            canRemove,
-            elements: this._gridFor(
-                this.sec.previewRevision !== undefined
-                    ? (this.sec.elements || []).map((el) => ({
-                          ...el,
-                          value: this._entryValues[key]?.[el.id]
-                      }))
-                    : this.sec.elements,
-                key
-            )
-        }));
+        const pending = this._pendingFocus;
+        return keys.map((key, i) => {
+            const info = byKey.get(key) || {};
+            const hidden = new Set(info.hidden || []);
+            const errors = info.errors || {};
+            const values = this._entryValues[key] || {};
+            const label = this._entryTitle(i);
+            // The new entry's first question takes the cursor after Add.
+            const addFocus =
+                pending && pending.key === key
+                    ? (this.sec.elements || []).find(
+                          (el) => !hidden.has(el.id) && isAnswerable(el)
+                      )
+                    : null;
+            const elements = (this.sec.elements || [])
+                .filter((el) => !hidden.has(el.id))
+                .map((el) => {
+                    // every question is handed the answer the form holds,
+                    // so what shows is what will be sent
+                    let e = { ...el, value: values[el.id] };
+                    if (errors[el.id] && errors[el.id].length) {
+                        e = { ...e, errors: errors[el.id] };
+                    }
+                    if (info.focus && info.focus.elementId === el.id) {
+                        e = { ...e, focusRequest: info.focus.n };
+                    } else if (addFocus && addFocus.id === el.id) {
+                        e = { ...e, focusRequest: pending.n };
+                    }
+                    return e;
+                });
+            return {
+                key,
+                label,
+                canRemove,
+                removeLabel: this._removeName(i, label),
+                elements: this._gridFor(elements, key)
+            };
+        });
     }
 
     get showAdd() {
-        const max = Number(this.repeatCfg.max);
-        return !(max > 0 && this._currentKeys().length >= max);
+        return this._currentKeys().length < this.limits.max;
     }
 
     get addLabel() {
@@ -203,27 +274,81 @@ export default class FinalSectionRenderer extends LightningElement {
         return this.repeatCfg.removeLabel || 'Remove';
     }
 
+    get minMessage() {
+        return this.sec.minMessage || '';
+    }
+
     handleAddEntry() {
-        this.entryKeys = [...this._currentKeys(), `en_${this._entrySeq++}`];
-        this._dispatchRepeat();
+        if (!this.showAdd) {
+            return;
+        }
+        const key = `en_${this._entrySeq}`;
+        this._entrySeq += 1;
+        this.entryKeys = [...this._currentKeys(), key];
+        repFocusSeq += 1;
+        this._pendingFocus = { key, n: `rep:${repFocusSeq}` };
+        this._dispatchRepeat({ kind: 'add', key });
     }
 
     handleRemoveEntry(event) {
         const key = event.currentTarget.dataset.key;
         this.entryKeys = this._currentKeys().filter((k) => k !== key);
         delete this._entryValues[key];
-        this._dispatchRepeat();
+        this._pendingFocus = 'add';
+        this._dispatchRepeat({ kind: 'remove', key });
     }
 
-    _dispatchRepeat() {
-        const entries = this._currentKeys().map((key) => ({
-            ...this._entryValues[key]
-        }));
+    _dispatchRepeat(change) {
+        const keys = [...this._currentKeys()];
+        const entries = keys.map((key) => ({ ...this._entryValues[key] }));
         this.dispatchEvent(
             new CustomEvent('valuechange', {
-                detail: { elementId: `repeat:${this.sec.id}`, value: entries }
+                detail: {
+                    elementId: `repeat:${this.sec.id}`,
+                    value: entries,
+                    keys,
+                    nextEntrySeq: this._entrySeq,
+                    change
+                }
             })
         );
+    }
+
+    /** Puts the cursor where the last Add / × / blocked click asked. */
+    _placeRepeatFocus() {
+        const pending = this._pendingFocus;
+        if (pending === 'add') {
+            this._pendingFocus = null;
+            this._focusAdd();
+        } else if (pending && pending.key) {
+            // the element renderer takes `focusRequest` itself; with no
+            // question to take it, the Add button does
+            const entry = this.repeatEntries.find((e) => e.key === pending.key);
+            this._pendingFocus = null;
+            if (!entry || !entry.elements.some((g) => g.el.focusRequest)) {
+                this._focusAdd();
+            }
+        }
+        // The viewer's fallback for a minimum it can't point inside an
+        // entry: the Add button, else the heading scrolled into view.
+        const n = this.sec.focusAdd;
+        const key = `${n}:${this.sec.id}`;
+        if (n && !repFocusDone.has(key)) {
+            repFocusDone.add(key);
+            this._focusAdd();
+        }
+    }
+
+    _focusAdd() {
+        const add = this.template.querySelector('.rep-add');
+        if (add) {
+            add.focus();
+            return;
+        }
+        const head = this.template.querySelector('.sec-head, .rep-entries');
+        if (head && typeof head.scrollIntoView === 'function') {
+            head.scrollIntoView({ block: 'center', inline: 'nearest' });
+        }
     }
 
     get hasHeader() {
@@ -258,6 +383,9 @@ export default class FinalSectionRenderer extends LightningElement {
     headersHidden = false;
 
     renderedCallback() {
+        if (this.isRepeat) {
+            this._placeRepeatFocus();
+        }
         const hidden =
             getComputedStyle(this.template.host)
                 .getPropertyValue('--c-sec-head-display')
@@ -333,7 +461,7 @@ export default class FinalSectionRenderer extends LightningElement {
                 const values = this._entryValues[key] || {};
                 values[elId] = value;
                 this._entryValues[key] = values;
-                this._dispatchRepeat();
+                this._dispatchRepeat({ kind: 'answer', key, elementId: elId });
                 return;
             }
         }

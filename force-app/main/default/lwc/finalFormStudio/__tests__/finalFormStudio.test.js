@@ -1520,6 +1520,10 @@ describe('c-final-form-studio', () => {
             })
         );
         await Promise.resolve();
+        // a question's rule never offers the question itself
+        expect(
+            el.shadowRoot.querySelector('c-final-property-panel').ruleSources
+        ).toEqual([]);
         el.shadowRoot.querySelector('c-final-property-panel').dispatchEvent(
             new CustomEvent('validationchange', {
                 detail: {

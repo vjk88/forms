@@ -751,7 +751,8 @@ public with sharing class FinalStudioController {
                 !child.isAccessible() ||
                 !child.isCreateable() ||
                 !child.isQueryable() ||
-                child.isDeprecatedAndHidden()
+                child.isDeprecatedAndHidden() ||
+                isSystemOnlyChild(child)
             ) {
                 continue;
             }
@@ -770,6 +771,45 @@ public with sharing class FinalStudioController {
             );
         }
         return out;
+    }
+
+    /**
+     * Objects nobody fills in on a form: feeds, history, sharing, change
+     * events, custom settings and Salesforce's own plumbing
+     * (IMPL_PLAN_RELATED_RECORDS §7). Only the picker hides them;
+     * FinalSpecDescribeValidator.validateRepeat does not use this list, so a
+     * spec that already names one is never refused because of it.
+     */
+    private static final Set<String> SYSTEM_ONLY_CHILDREN = new Set<String>{
+        'Attachment',
+        'Note',
+        'NoteAndAttachment',
+        'CombinedAttachment',
+        'AttachedContentDocument',
+        'ContentDocumentLink',
+        'ContentVersion',
+        'ContentDistribution',
+        'EntitySubscription',
+        'TopicAssignment',
+        'ProcessInstance',
+        'ProcessInstanceHistory',
+        'RecordAction',
+        'FlowRecordRelation',
+        'ActivityHistory',
+        'OpenActivity'
+    };
+
+    @TestVisible
+    private static Boolean isSystemOnlyChild(
+        Schema.DescribeSObjectResult child
+    ) {
+        String name = child.getName();
+        return SYSTEM_ONLY_CHILDREN.contains(name) ||
+            name.endsWith('Feed') ||
+            name.endsWith('History') ||
+            name.endsWith('Share') ||
+            name.endsWith('ChangeEvent') ||
+            child.isCustomSetting();
     }
 
     /** DisplayType → spec inputType; null = not palette material (v1). */

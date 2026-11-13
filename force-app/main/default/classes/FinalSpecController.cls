@@ -143,6 +143,16 @@ public with sharing class FinalSpecController {
             );
         }
 
+        // Repeating groups (IMPL_PLAN_RELATED_RECORDS §5): entry limits a
+        // respondent can meet, through the same check imports use; and, on a
+        // Form, a child object and link field that really point at the
+        // form's object. Normal Publish checked neither before.
+        List<String> badLimits = FinalPublishWarnings.repeatLimitProblems(spec);
+        if (!badLimits.isEmpty()) {
+            throw FinalMappingRules.refusal(badLimits[0]);
+        }
+        validateRepeatLinks(spec);
+
         Savepoint sp = Database.setSavepoint();
         try {
             List<AggregateResult> maxRows = [
@@ -220,6 +230,61 @@ public with sharing class FinalSpecController {
             throw new AuraHandledException(
                 'Publishing failed: ' + e.getMessage()
             );
+        }
+    }
+
+    /** Every group on a Form must create its records through a link field
+     *  that points at the form's object (FinalSpecDescribeValidator). */
+    private static void validateRepeatLinks(Map<String, Object> spec) {
+        String formType = FinalFormTypes.fromSpecOrDefault(
+            spec,
+            FinalFormTypes.FORM
+        );
+        if (formType != FinalFormTypes.FORM) {
+            return;
+        }
+        Object formObj = spec.get('form');
+        String target = formObj instanceof Map<String, Object>
+            ? (String) ((Map<String, Object>) formObj).get('targetObject')
+            : null;
+        Object pagesObj = spec.get('pages');
+        if (!(pagesObj instanceof List<Object>)) {
+            return;
+        }
+        for (Object pageObj : (List<Object>) pagesObj) {
+            if (!(pageObj instanceof Map<String, Object>)) {
+                continue;
+            }
+            Object secs = ((Map<String, Object>) pageObj).get('sections');
+            if (!(secs instanceof List<Object>)) {
+                continue;
+            }
+            for (Object secObj : (List<Object>) secs) {
+                if (!(secObj instanceof Map<String, Object>)) {
+                    continue;
+                }
+                Map<String, Object> sec = (Map<String, Object>) secObj;
+                Object repeatObj = sec.get('repeat');
+                if (!(repeatObj instanceof Map<String, Object>)) {
+                    continue;
+                }
+                // a copy: publishing stores the spec exactly as sent
+                Map<String, Object> repeat = new Map<String, Object>(
+                    (Map<String, Object>) repeatObj
+                );
+                try {
+                    FinalSpecDescribeValidator.validateRepeat(repeat, target);
+                } catch (Exception e) {
+                    String title = (String) sec.get('title');
+                    throw FinalMappingRules.refusal(
+                        (String.isBlank(title)
+                                ? 'A repeating group'
+                                : '“' + title + '”') +
+                            ' can’t be published: ' +
+                            e.getMessage()
+                    );
+                }
+            }
         }
     }
 }
