@@ -712,7 +712,7 @@ private class FinalSubmitControllerTest {
     }
 
     @IsTest
-    static void updateModeSavesTheRecordAndLeavesItsListsAlone() {
+    static void updateModeSavesTheRecordAndAddsNewRows() {
         // On a record page a group is a related list (IMPL_PLAN_RELATED_RECORDS
         // Part 2). Slice 1 only shows it: the edit saves the record, sends
         // nothing for the list, and an edit that DOES send entries is refused
@@ -763,16 +763,20 @@ private class FinalSubmitControllerTest {
         }
         Test.stopTest();
 
+        // slice 2: an entry without `$id` on a record page is a new Case
+        Assert.isNull(refused);
         Assert.areEqual(
-            'Related records can’t be changed from a record page yet.',
-            refused
+            'Again',
+            [SELECT Title FROM Contact WHERE Id = :c.Id].Title
         );
         Assert.areEqual(
-            'After',
-            [SELECT Title FROM Contact WHERE Id = :c.Id].Title,
-            'the refusal happens BEFORE anything is written'
+            1,
+            [
+                SELECT COUNT()
+                FROM Case
+                WHERE ContactId = :c.Id AND Subject = 'Dup'
+            ]
         );
-        Assert.areEqual(0, [SELECT COUNT() FROM Case WHERE ContactId = :c.Id]);
     }
 
     // ===== SERVER FIELD ERRORS =====================================

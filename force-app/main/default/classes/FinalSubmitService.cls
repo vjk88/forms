@@ -309,6 +309,7 @@ public inherited sharing class FinalSubmitService {
                 Map<String, Object> repeatCfg = asMap(sec.get('repeat'));
                 if (repeatCfg != null) {
                     RepeatPlan plan = repeatPlan(asMap(pageObj), sec);
+                    plan.show = asMap(repeatCfg.get('show'));
                     plan.childObject = (String) repeatCfg.get('childObject');
                     plan.relationshipField = (String) repeatCfg.get(
                         'relationshipField'
@@ -349,6 +350,7 @@ public inherited sharing class FinalSubmitService {
             );
         }
         Id existingId = null;
+        ListSave listSave = null;
         if (isUpdate) {
             // Belt to FinalGuestController's brace (it refuses an update spec
             // before reaching here). A guest must never update anything.
@@ -374,17 +376,14 @@ public inherited sharing class FinalSubmitService {
                 );
             }
             // On a record page each group is a related list of the record's
-            // existing children (IMPL_PLAN_RELATED_RECORDS Part 2). Slice 1
-            // only SHOWS them, read-only: nothing about them is saved yet,
-            // so an edit that carries group answers is refused rather than
-            // inserting duplicates next to the records already there (the
-            // reason for owner D2, 2026-09-08).
-            for (RepeatPlan plan : repeatPlans) {
-                if (!sentEntries(plan, repeats).isEmpty()) {
-                    throw FinalMappingRules.refusal(
-                        'Related records can’t be changed from a record page yet.'
-                    );
-                }
+            // existing children (IMPL_PLAN_RELATED_RECORDS Part 2, slice 2):
+            // an entry with `$id` changes that child, one without adds a new
+            // one. Everything is checked here, before the first write.
+            listSave = prepareListSave(repeatPlans, repeats, existingId);
+            if (!listSave.errors.isEmpty()) {
+                SubmitOutcome refused = new SubmitOutcome();
+                refused.errors = listSave.errors;
+                return refused;
             }
         }
 
@@ -430,6 +429,9 @@ public inherited sharing class FinalSubmitService {
             }
 
             Integer childCount = 0;
+            if (listSave != null) {
+                childCount += applyListUpdates(listSave, mode);
+            }
             for (RepeatPlan plan : repeatPlans) {
                 childCount += insertEntries(plan, repeats, parentId, mode);
             }
@@ -491,6 +493,8 @@ public inherited sharing class FinalSubmitService {
         Boolean alwaysShown = true;
         /** A look-only list: it takes no entries and has no minimum. */
         Boolean readOnly = false;
+        /** The list's "Show" conditions (lookup filter shape), or null. */
+        Map<String, Object> show;
     }
 
     // ------------------------------------------ repeating groups (§4, §5)
@@ -642,6 +646,14 @@ public inherited sharing class FinalSubmitService {
             if (plan.limitProblem != null) {
                 throw FinalMappingRules.refusal(plan.limitProblem);
             }
+            for (Object entry : sentEntries(plan, repeats)) {
+                Map<String, Object> e = asMap(entry);
+                if (e != null && e.containsKey(ID_KEY)) {
+                    throw FinalMappingRules.refusal(
+                        'Existing records can only be changed on a record page.'
+                    );
+                }
+            }
             if (plan.readOnly) {
                 // look-only: never shown on a form that creates a record,
                 // so it can never send anything, and has no minimum
@@ -674,6 +686,306 @@ public inherited sharing class FinalSubmitService {
                 );
             }
         }
+    }
+
+    // ---------------------------- related lists on a record page (Part 2)
+
+    /** The key an entry uses to name the existing record it changes. */
+    @TestVisible
+    private static final String ID_KEY = '$id';
+
+    /** One existing child to update: its fields and where it was sent. */
+    private class ChildUpdate {
+        SObject record;
+        String sectionId;
+        Integer entryIndex;
+    }
+
+    /** What a record page's lists will write, checked before the first DML. */
+    private class ListSave {
+        List<FieldError> errors = new List<FieldError>();
+        Map<Id, ChildUpdate> updates = new Map<Id, ChildUpdate>();
+    }
+
+    private static FieldError entryError(
+        String message,
+        String sectionId,
+        Integer entryIndex
+    ) {
+        FieldError fe = new FieldError();
+        fe.message = message;
+        fe.fields = new List<String>();
+        fe.sectionId = sectionId;
+        fe.entryIndex = entryIndex;
+        return fe;
+    }
+
+    /**
+     * Every list's changes on a record page, checked as the user before
+     * anything is written (IMPL_PLAN_RELATED_RECORDS P2.4 and the counts
+     * contract of 2026-11-13):
+     *  - a read-only list takes nothing;
+     *  - at most 50 entries per list in one request;
+     *  - every `$id` is a child of THIS record that matches the list's own
+     *    conditions as stored now (a crafted id for someone else's Case is
+     *    refused; changing Status so it leaves the list is fine);
+     *  - Max judges only additions: members + new rows must fit, and a
+     *    list is never refused for the state it was already in;
+     *  - one record changed through two lists with two different values for
+     *    the same field is refused.
+     */
+    private static ListSave prepareListSave(
+        List<RepeatPlan> plans,
+        Map<String, Object> repeats,
+        Id parentId
+    ) {
+        ListSave out = new ListSave();
+        for (RepeatPlan plan : plans) {
+            List<Object> entries = sentEntries(plan, repeats);
+            if (entries.isEmpty()) {
+                continue;
+            }
+            String title = String.isBlank(plan.title)
+                ? 'This list'
+                : plan.title;
+            if (plan.limitProblem != null) {
+                throw FinalMappingRules.refusal(plan.limitProblem);
+            }
+            if (plan.readOnly) {
+                throw FinalMappingRules.refusal(
+                    title + ' is read-only, so nothing in it can be changed.'
+                );
+            }
+            if (entries.size() > FinalPublishWarnings.MAX_ENTRIES_PER_GROUP) {
+                throw FinalMappingRules.refusal(
+                    'Too many entries in ' + title + '.'
+                );
+            }
+            Schema.SObjectType childType = Schema.getGlobalDescribe()
+                .get(plan.childObject);
+            if (childType == null) {
+                throw FinalMappingRules.refusal(
+                    'Unknown object: ' + plan.childObject
+                );
+            }
+            Schema.DescribeSObjectResult child = childType.getDescribe();
+            FinalLookupService.Compiled c = plan.show == null
+                ? new FinalLookupService.Compiled()
+                : FinalLookupService.compile(plan.show, null, child.getName());
+            if (c.blocked) {
+                throw FinalMappingRules.refusal(
+                    title + ' can’t be saved: ' + c.blockedReason
+                );
+            }
+            Map<String, String> fieldByElement = boundFields(plan);
+
+            // which entries change which record
+            Map<Id, Integer> indexById = new Map<Id, Integer>();
+            Integer adds = 0;
+            for (Integer i = 0; i < entries.size(); i++) {
+                Map<String, Object> entry = asMap(entries[i]);
+                if (entry == null) {
+                    continue;
+                }
+                if (!entry.containsKey(ID_KEY)) {
+                    if (isStarted(plan, entry)) {
+                        adds++;
+                    }
+                    continue;
+                }
+                Id recordId = idOrNull(entry.get(ID_KEY));
+                if (
+                    recordId == null ||
+                    recordId.getSObjectType() != childType
+                ) {
+                    out.errors.add(
+                        entryError(
+                            'This ' +
+                                child.getLabel() +
+                                ' can’t be changed here.',
+                            plan.sectionId,
+                            i
+                        )
+                    );
+                    continue;
+                }
+                indexById.put(recordId, i);
+            }
+
+            Map<String, Object> binds = new Map<String, Object>(c.binds);
+            binds.put('parentId', parentId);
+            String listWhere = plan.relationshipField + ' = :parentId';
+            if (String.isNotBlank(c.whereClause)) {
+                listWhere += ' AND (' + c.whereClause + ')';
+            }
+
+            // membership, as stored now, as the user
+            if (!indexById.isEmpty()) {
+                Map<String, Object> idBinds = new Map<String, Object>(binds);
+                idBinds.put('ids', indexById.keySet());
+                Set<Id> members = new Set<Id>();
+                for (
+                    SObject rec : Database.queryWithBinds(
+                        'SELECT Id FROM ' +
+                            child.getName() +
+                            ' WHERE Id IN :ids AND ' +
+                            listWhere,
+                        idBinds,
+                        AccessLevel.USER_MODE
+                    )
+                ) {
+                    members.add(rec.Id);
+                }
+                for (Id recordId : indexById.keySet()) {
+                    Integer i = indexById.get(recordId);
+                    if (!members.contains(recordId)) {
+                        out.errors.add(
+                            entryError(
+                                'This ' +
+                                    child.getLabel() +
+                                    ' no longer exists, or is no longer in ' +
+                                    title +
+                                    '.',
+                                plan.sectionId,
+                                i
+                            )
+                        );
+                        continue;
+                    }
+                    Map<String, Object> entry = asMap(entries[i]);
+                    SObject record = childType.newSObject(recordId);
+                    Map<String, Schema.SObjectField> fields = child.fields.getMap();
+                    for (String elId : fieldByElement.keySet()) {
+                        if (!entry.containsKey(elId)) {
+                            continue; // only what the person changed
+                        }
+                        String fieldName = fieldByElement.get(elId);
+                        if (fieldName == plan.relationshipField) {
+                            continue; // the link is never the person's
+                        }
+                        Schema.SObjectField f = fields.get(fieldName);
+                        if (f == null) {
+                            continue;
+                        }
+                        record.put(
+                            fieldName,
+                            coerce(f.getDescribe().getType(), entry.get(elId))
+                        );
+                    }
+                    ChildUpdate prior = out.updates.get(recordId);
+                    if (prior == null) {
+                        ChildUpdate u = new ChildUpdate();
+                        u.record = record;
+                        u.sectionId = plan.sectionId;
+                        u.entryIndex = i;
+                        out.updates.put(recordId, u);
+                        continue;
+                    }
+                    // the same record changed through two lists: merge,
+                    // unless they disagree about a field
+                    Map<String, Object> mine = record.getPopulatedFieldsAsMap();
+                    for (String fieldName : mine.keySet()) {
+                        if (fieldName == 'Id') {
+                            continue;
+                        }
+                        Map<String, Object> theirs = prior.record.getPopulatedFieldsAsMap();
+                        if (
+                            theirs.containsKey(fieldName) &&
+                            theirs.get(fieldName) != mine.get(fieldName)
+                        ) {
+                            out.errors.add(
+                                entryError(
+                                    'This ' +
+                                        child.getLabel() +
+                                        ' is changed in two lists with different values. Change it in one of them.',
+                                    plan.sectionId,
+                                    i
+                                )
+                            );
+                            break;
+                        }
+                        prior.record.put(fieldName, mine.get(fieldName));
+                    }
+                }
+            }
+
+            // Max judges only what this Save adds
+            if (adds > 0) {
+                Integer members = Database.countQueryWithBinds(
+                    'SELECT COUNT() FROM ' +
+                        child.getName() +
+                        ' WHERE ' +
+                        listWhere,
+                    binds,
+                    AccessLevel.USER_MODE
+                );
+                if (members + adds > plan.max) {
+                    throw FinalMappingRules.refusal(
+                        title +
+                            ' can have at most ' +
+                            plan.max +
+                            ' ' +
+                            (plan.max == 1
+                                ? child.getLabel()
+                                : child.getLabelPlural()) +
+                            '.'
+                    );
+                }
+            }
+        }
+        return out;
+    }
+
+    /** questionId → the child field it binds, once per list. */
+    private static Map<String, String> boundFields(RepeatPlan plan) {
+        Map<String, String> fieldByElement = new Map<String, String>();
+        for (Object elObj : plan.elements) {
+            Map<String, Object> el = asMap(elObj);
+            Map<String, Object> binding = el == null
+                ? null
+                : asMap(el.get('binding'));
+            if (binding != null && binding.get('field') != null) {
+                fieldByElement.put(
+                    (String) el.get('id'),
+                    (String) binding.get('field')
+                );
+            }
+        }
+        return fieldByElement;
+    }
+
+    /**
+     * Writes the checked changes: only the changed fields, updatable ones
+     * only, `update as user`. A refusal names its list and entry.
+     */
+    private static Integer applyListUpdates(ListSave listSave, Posture mode) {
+        if (listSave.updates.isEmpty()) {
+            return 0;
+        }
+        List<ChildUpdate> order = listSave.updates.values();
+        List<SObject> records = new List<SObject>();
+        for (ChildUpdate u : order) {
+            records.add(u.record);
+        }
+        List<SObject> stripped = stripForUpdate(records, mode);
+        try {
+            doUpdate(stripped, mode);
+        } catch (DmlException e) {
+            EntryDmlException failed = new EntryDmlException(e.getMessage());
+            failed.errors = new List<FieldError>();
+            List<FieldError> raw = dmlErrors(e);
+            for (Integer i = 0; i < raw.size(); i++) {
+                FieldError fe = raw[i];
+                Integer row = i < e.getNumDml() ? e.getDmlIndex(i) : null;
+                if (row != null && row >= 0 && row < order.size()) {
+                    fe.sectionId = order[row].sectionId;
+                    fe.entryIndex = order[row].entryIndex;
+                }
+                failed.errors.add(fe);
+            }
+            throw failed;
+        }
+        return stripped.size();
     }
 
     private static void checkBudget(Integer rows) {
@@ -2001,8 +2313,8 @@ public inherited sharing class FinalSubmitService {
         List<Integer> sentIndex = new List<Integer>();
         for (Integer i = 0; i < entries.size(); i++) {
             Map<String, Object> entry = asMap(entries[i]);
-            if (entry == null || entry.isEmpty()) {
-                continue;
+            if (entry == null || entry.isEmpty() || entry.containsKey(ID_KEY)) {
+                continue; // `$id` entries change an existing record (above)
             }
             Map<String, Object> bindings = new Map<String, Object>();
             Boolean hasValue = false;

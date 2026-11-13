@@ -209,3 +209,116 @@ describe('c-final-section-renderer related lists', () => {
         expect(el.shadowRoot.querySelector('.rep-add')).toBeNull();
     });
 });
+
+describe('c-final-section-renderer editable related lists (slice 2)', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+    });
+
+    const EDITABLE = (style = 'stacked') => ({
+        id: 'sec_cases',
+        title: 'Open cases',
+        columns: 1,
+        repeat: {
+            childObject: 'Case',
+            relationshipField: 'ContactId',
+            entryLabel: 'Case {index}',
+            style
+        },
+        elements: [
+            {
+                id: 'el_subj',
+                type: 'field',
+                label: 'Subject',
+                config: { inputType: 'text' }
+            },
+            {
+                id: 'el_prio',
+                type: 'field',
+                label: 'Priority',
+                config: { inputType: 'text' }
+            }
+        ],
+        repeatLimits: { min: 0, max: 5 },
+        nextEntrySeq: 1,
+        listRevision: 3,
+        listMore: '',
+        entries: [
+            {
+                key: '500A',
+                values: { el_subj: 'Printer', el_prio: 'High' },
+                existing: {
+                    name: '00001026',
+                    href: '/lightning/r/Case/500A/view',
+                    openSr: ' 00001026 (opens in a new tab)',
+                    canEdit: true,
+                    locked: ['el_prio'],
+                    labels: {}
+                }
+            },
+            {
+                key: '500B',
+                values: { el_subj: 'Login' },
+                existing: {
+                    name: '00001027',
+                    href: null,
+                    openSr: '',
+                    canEdit: false,
+                    locked: [],
+                    labels: {}
+                }
+            },
+            { key: 'en_0', values: { el_subj: 'New one' } }
+        ]
+    });
+
+    const els = (el) =>
+        [...el.shadowRoot.querySelectorAll('c-final-element-renderer')].map(
+            (r) => r.element
+        );
+
+    it('Cards: loaded rows carry their name and link, no ×; locked fields are read-only', async () => {
+        const el = await mount(EDITABLE());
+        const labels = [
+            ...el.shadowRoot.querySelectorAll('.rep-entry-label')
+        ].map((n) => n.textContent);
+        expect(labels).toEqual(['00001026', '00001027', 'New Case 1']);
+        const entries = el.shadowRoot.querySelectorAll('.rep-entry');
+        expect(
+            entries[0]
+                .querySelector('.rl-open')
+                .textContent.replace(/\s+/g, ' ')
+        ).toBe('Open 00001026 (opens in a new tab)');
+        expect(entries[0].querySelector('.rep-remove')).toBeNull();
+        expect(entries[2].querySelector('.rep-remove')).not.toBeNull();
+        const byId = new Map(els(el).map((e) => [e.id, e]));
+        expect(byId.get('el_subj::500A').readOnly).toBeUndefined();
+        expect(byId.get('el_prio::500A').readOnly).toBe(true);
+        expect(byId.get('el_subj::500B').readOnly).toBe(true); // no edit access
+        expect(byId.get('el_subj::en_0').value).toBe('New one');
+    });
+
+    it('Table: a control per cell without its own label, × only on new rows', async () => {
+        const el = await mount(EDITABLE('table'), 1000);
+        const table = el.shadowRoot.querySelector('.rl-table');
+        expect(table).not.toBeNull();
+        const rows = table.querySelectorAll('tbody tr');
+        expect(rows).toHaveLength(3);
+        const cell = rows[0].querySelector('td c-final-element-renderer');
+        expect(cell.element.labelPosition).toBe('hidden');
+        expect(cell.element.id).toBe('el_subj::500A');
+        expect(rows[0].querySelector('.rep-remove')).toBeNull();
+        expect(rows[2].querySelector('.rep-remove')).not.toBeNull();
+        // an editable cell needs 200px: 140 + 2 × 200 = 540 > 440 → cards
+        const mid = await mount(EDITABLE('table'), 440);
+        expect(mid.shadowRoot.querySelector('.rl-table')).toBeNull();
+        // too narrow: the same rows as cards
+        const narrow = await mount(EDITABLE('table'), 300);
+        expect(narrow.shadowRoot.querySelector('.rl-table')).toBeNull();
+        expect(narrow.shadowRoot.querySelectorAll('.rep-entry')).toHaveLength(
+            3
+        );
+    });
+});
