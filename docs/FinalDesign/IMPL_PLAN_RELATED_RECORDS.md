@@ -305,6 +305,10 @@ Throwaway forms from the 2026-11-12 test are reused: **Related Records Check 2 (
    (That it gets a fresh key is not visible by clicking; Jest covers it.)
 10. Guest: make test form 2 public, run the pre-authorized site publish, repeat checks 2-5 on the public site
     at desktop and 390 px. Then make it private again.
+    **Done 2026-11-13:** minimum message, "Fix 1 field", focus, Add/× and save all matched the signed-in run
+    (Contact "RRCheck Guest" with 2 Cases); no sideways scroll at 390 px, × 44 px on touch. Form set back to
+    `Internal_Record_Page`. Seen in passing, not this change: the Split Hero side panel stays sticky on a
+    phone and its title slides over the form.
 
 Before/after photos of the group inspector, the picker and an entry with errors go with a click-by-click test
 sheet, on the Studio preview and the Lightning tab.
@@ -434,6 +438,9 @@ Owner, in chat, 2026-11-12:
   Undo, really delete at Save. ("lets say yes for now")
 - For **signed-in people on a record page**, not guests. The **builder** sets the filter, not the person
   filling in the form.
+- **Guests, 2026-11-13: "public users cant view already created related records, they can only create
+  new ones."** On a public form a group stays add-only (Part 1 behaviour); existing records are never
+  loaded or shown to a guest, whatever the list's settings.
 - **The look: Cards and Table, both.** Shown the mock
   ([mocks/related-lists-mock.html](./mocks/related-lists-mock.html)), the owner said it "looks good", then:
   "why just one view, why cant A and B?" and **"Yes, both"**. The builder picks per list. Look C (rows
