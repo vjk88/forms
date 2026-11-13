@@ -837,7 +837,7 @@ describe('explicit record configuration', () => {
                 ]
             }
         ]);
-        const el = mount(listSpec());
+        const el = mount(listSpec({ readOnly: true }));
         await flush();
         await flush();
         expect(el.shadowRoot.querySelector('[role="alert"]')).toBeNull(); // no more "not supported"
@@ -881,7 +881,7 @@ describe('explicit record configuration', () => {
                 resolve = r;
             })
         );
-        const el = mount(listSpec());
+        const el = mount(listSpec({ readOnly: true }));
         await flush();
         expect(casesOf(el).list.loadingText).toBe('Loading Cases…');
         expect(casesOf(el).list.loading).toBe(true);
@@ -929,10 +929,98 @@ describe('explicit record configuration', () => {
                 rows: [{ id: '500000000000001AAA', name: '1', cells: {} }]
             }
         ]);
-        const el = mount(listSpec({ link: false }));
+        const el = mount(listSpec({ link: false, readOnly: true }));
         await flush();
         await flush();
         expect(casesOf(el).list.rows[0].href).toBeNull();
+    });
+
+    it('an editable list: rows become entries keyed by record id; only changes are sent', async () => {
+        loadRelatedLists.mockResolvedValue([
+            {
+                sectionId: 'sec_cases',
+                childObject: 'Case',
+                childLabel: 'Case',
+                childLabelPlural: 'Cases',
+                total: 2,
+                lockedQuestions: ['el_prio'],
+                rows: [
+                    {
+                        id: '500000000000001AAA',
+                        name: '00001026',
+                        canEdit: true,
+                        cells: { el_subj: 'Printer', el_prio: 'High' },
+                        values: { el_subj: 'Printer', el_prio: 'High' }
+                    },
+                    {
+                        id: '500000000000002AAA',
+                        name: '00001027',
+                        canEdit: false,
+                        cells: { el_subj: 'Login', el_prio: 'Low' },
+                        values: { el_subj: 'Login', el_prio: 'Low' }
+                    }
+                ]
+            }
+        ]);
+        getSpecEnvelope.mockResolvedValue({
+            versionId: 'a0Vserved',
+            spec: JSON.stringify(listSpec({ max: 5 }))
+        });
+        submitForm.mockResolvedValue({ recordId: RECORD });
+        const el = createElement('c-final-form-viewer', {
+            is: FinalFormViewer
+        });
+        el.existingRecordId = RECORD;
+        el.objectApiName = 'Contact';
+        el.versionId = 'a0Vtest';
+        document.body.appendChild(el);
+        await flush();
+        await flush();
+        loadRecord(el, { Title: 'CEO', Department: 'Sales' });
+        await flush();
+
+        const sec = casesOf(el);
+        expect(sec.list).toBeUndefined(); // drawn as entries, not a list
+        expect(sec.entries.map((e) => e.key)).toEqual([
+            '500000000000001AAA',
+            '500000000000002AAA'
+        ]);
+        expect(sec.entries[0].existing).toMatchObject({
+            name: '00001026',
+            canEdit: true,
+            locked: ['el_prio'],
+            href: '/lightning/r/Case/500000000000001AAA/view'
+        });
+        expect(sec.entries[1].existing.canEdit).toBe(false);
+        // Max 5, 2 already there: room for 3 new rows
+        expect(sec.repeatLimits).toEqual({ min: 0, max: 5 });
+        expect(sec.minMessage).toBe('');
+
+        // change one row's Subject, add one new row
+        nav(el).dispatchEvent(
+            new CustomEvent('valuechange', {
+                detail: {
+                    elementId: 'repeat:sec_cases',
+                    value: [
+                        { el_subj: 'Printer, again', el_prio: 'High' },
+                        { el_subj: 'Login', el_prio: 'Low' },
+                        { el_subj: 'Brand new' }
+                    ],
+                    keys: ['500000000000001AAA', '500000000000002AAA', 'en_0'],
+                    nextEntrySeq: 1,
+                    change: { kind: 'add', key: 'en_0' }
+                }
+            })
+        );
+        await flush();
+        nav(el).dispatchEvent(new CustomEvent('submit'));
+        await flush();
+        await flush();
+        const payload = JSON.parse(submitForm.mock.calls[0][0].payloadJson);
+        expect(payload.repeats.sec_cases).toEqual([
+            { $id: '500000000000001AAA', el_subj: 'Printer, again' },
+            { el_subj: 'Brand new' }
+        ]);
     });
 
     it('a record page sends nothing for its lists and is never blocked by their minimum', async () => {

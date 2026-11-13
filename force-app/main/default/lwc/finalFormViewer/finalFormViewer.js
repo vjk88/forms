@@ -231,6 +231,10 @@ function splitOnePerScreen(pages) {
     return out;
 }
 
+/** A server message about a related-list row itself, not one of its
+ *  questions (Part 2: "no longer exists", "changed in two lists"). */
+const ROW_ERROR = '__row';
+
 /**
  * finalFormViewer — P0 minimal viewer: fetches one published Spec_JSON__c blob,
  * parses it (FORM_SPEC_SCHEMA v1), resolves tokens, lazy-loads the nav primitive
@@ -617,6 +621,11 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
      *  null when the form is not editing a record. */
     _relatedLists = null;
     _listsGeneration = 0;
+    /** sectionId -> recordId -> the row's values as loaded: what "changed"
+     *  is measured against, so only changed fields are sent (slice 2). */
+    _listBaseline = {};
+    /** sectionId -> the entry keys in the order they were last sent. */
+    _sentKeys = {};
 
     /** Autofill state machine and active lookup queries (IMPL_PLAN_AUTOFILL_RULES §6). */
     _autofillSession = null;
@@ -1874,10 +1883,78 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 total: l.total || 0,
                 childObject: l.childObject,
                 childLabel: l.childLabel,
-                childLabelPlural: l.childLabelPlural
+                childLabelPlural: l.childLabelPlural,
+                lockedQuestions: l.lockedQuestions || []
             };
         }
         this._relatedLists = next;
+        this._seedEditableLists(next, generation);
+    }
+
+    /**
+     * An editable list's loaded rows become its entries (slice 2): keyed by
+     * record id, with their stored values as the answers, and a baseline to
+     * tell what the person changed. New rows get the usual `en_N` keys.
+     */
+    _seedEditableLists(lists, generation) {
+        const answers = { ...this._answers };
+        const keys = { ...this._repeatKeys };
+        let touched = false;
+        for (const page of (this._editSpec && this._editSpec.pages) || []) {
+            for (const section of page.sections || []) {
+                const l = lists[section.id];
+                if (
+                    !section.repeat ||
+                    section.repeat.readOnly ||
+                    !l ||
+                    l.state !== 'ready' ||
+                    l.seeded === generation
+                ) {
+                    continue;
+                }
+                l.seeded = generation;
+                l.generation = generation;
+                const baseline = {};
+                const values = l.rows.map((row) => {
+                    baseline[row.id] = { ...(row.values || {}) };
+                    return { ...(row.values || {}) };
+                });
+                this._listBaseline = {
+                    ...this._listBaseline,
+                    [section.id]: baseline
+                };
+                answers[`repeat:${section.id}`] = values;
+                keys[section.id] = {
+                    keys: l.rows.map((row) => row.id),
+                    seq: 0
+                };
+                touched = true;
+            }
+        }
+        if (touched) {
+            this._repeatKeys = keys;
+            this._answers = answers;
+        }
+    }
+
+    /** Has the person changed this loaded row? (only changed rows are sent) */
+    _changedFields(sectionId, key, values) {
+        const base = (this._listBaseline[sectionId] || {})[key];
+        if (!base) {
+            return null; // a new row
+        }
+        const out = {};
+        for (const id of Object.keys(values || {})) {
+            const a = values[id];
+            const b = base[id];
+            const same =
+                (isBlankAnswer(a) && isBlankAnswer(b)) ||
+                JSON.stringify(a) === JSON.stringify(b);
+            if (!same) {
+                out[id] = a;
+            }
+        }
+        return out;
     }
 
     /** A list's Retry (finalSectionRenderer `relatedlistretry`). */
@@ -2552,9 +2629,17 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 : [];
             const hiddenSet = new Set(hidden);
             const shown = els.filter((el) => !hiddenSet.has(el.id));
-            const started = shown.some(
-                (el) => isAnswerable(el) && !isBlankAnswer(values[el.id])
-            );
+            // A loaded row (record page) counts as started only once the
+            // person changed it: an old Case with a gap never blocks someone
+            // who came to fix something else (P2.4).
+            const changed = this._changedFields(sec.id, key, values);
+            const started = changed
+                ? shown.some((el) =>
+                      Object.prototype.hasOwnProperty.call(changed, el.id)
+                  )
+                : shown.some(
+                      (el) => isAnswerable(el) && !isBlankAnswer(values[el.id])
+                  );
             const errors = {};
             for (const el of shown) {
                 const list = [];
@@ -2572,13 +2657,18 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                     errors[el.id] = list;
                 }
             }
+            const rowErrors = (serverErrors[key] || {})[ROW_ERROR] || [];
+            if (rowErrors.length) {
+                errors[ROW_ERROR] = rowErrors;
+            }
             return { key, values, hidden, errors, started, shown };
         });
         const startedCount = entries.filter((e) => e.started).length;
         return {
             ...store,
             entries,
-            minUnmet: startedCount < store.limits.min
+            // on a record page Min judges deletes only (none before slice 3)
+            minUnmet: !this._onRecordPage && startedCount < store.limits.min
         };
     }
 
@@ -2589,8 +2679,17 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         if (!section.repeat) {
             return section;
         }
+        let listExtra = null;
         if (this._onRecordPage) {
-            return this._decorateList(section, ctx);
+            const loaded = (this._relatedLists || {})[section.id];
+            if (
+                section.repeat.readOnly ||
+                !loaded ||
+                loaded.state !== 'ready'
+            ) {
+                return this._decorateList(section, ctx);
+            }
+            listExtra = this._editableListExtra(section, loaded);
         }
         const preview = this.preservePreview || this.authoring;
         if (preview && section.repeat.readOnly) {
@@ -2607,7 +2706,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             reveal && this._hasValidation
         );
         const mine = focus && focus.groupId === section.id ? focus : null;
-        return {
+        const decorated = {
             ...section,
             repeatLimits: { min: g.limits.min, max: g.limits.max },
             nextEntrySeq: g.seq,
@@ -2619,10 +2718,82 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 values: e.values,
                 hidden: e.hidden,
                 errors: e.errors,
+                ...(listExtra && listExtra.existing[e.key]
+                    ? { existing: listExtra.existing[e.key] }
+                    : {}),
                 ...(mine && mine.key === e.key
                     ? { focus: { n: mine.n, elementId: mine.elementId } }
                     : {})
             }))
+        };
+        if (!listExtra) {
+            return decorated;
+        }
+        // a record page's editable list: its rows, room to add, its lines
+        const newRows = g.keys.filter((k) => !listExtra.existing[k]).length;
+        return {
+            ...decorated,
+            repeatLimits: {
+                min: 0,
+                max: g.keys.length - newRows + listExtra.room
+            },
+            listRevision: listExtra.revision,
+            listNote: g.keys.length ? '' : listExtra.emptyText,
+            listMore: listExtra.moreText,
+            listMoreHref: listExtra.viewAllHref
+        };
+    }
+
+    /**
+     * What an editable list adds to Part 1's entries (slice 2): each loaded
+     * row's name, link and access, and how many new rows still fit. Max
+     * judges additions only: members + new rows stay within it, and a list
+     * that shows only 50 of more takes no new rows here.
+     */
+    _editableListExtra(section, loaded) {
+        const cfg = section.repeat || {};
+        const childObject = loaded.childObject || cfg.childObject;
+        const one = loaded.childLabel || childObject || 'record';
+        const many = loaded.childLabelPlural || `${one}s`;
+        const locked = new Set(loaded.lockedQuestions || []);
+        const existing = {};
+        for (const row of loaded.rows || []) {
+            existing[row.id] = {
+                name: row.name || one,
+                href:
+                    cfg.link !== false
+                        ? `/lightning/r/${childObject}/${row.id}/view`
+                        : null,
+                openSr: ` ${row.name || ''} (opens in a new tab)`.replace(
+                    /\s+/g,
+                    ' '
+                ),
+                canEdit: row.canEdit !== false,
+                locked: Array.from(locked),
+                labels: row.cells || {}
+            };
+        }
+        const total = loaded.total || 0;
+        const shown = (loaded.rows || []).length;
+        const max = repeatLimits(cfg).max;
+        const truncated = total > shown;
+        const room = truncated ? 0 : Math.max(0, max - total);
+        let moreText = '';
+        if (truncated) {
+            moreText = `Showing ${shown} of ${total}. Add new ${many} in Salesforce.`;
+        } else if (room === 0) {
+            moreText = `This list holds up to ${max} ${max === 1 ? one : many}.`;
+        }
+        return {
+            existing,
+            revision: loaded.generation,
+            room,
+            emptyText: `No ${many} yet.`,
+            moreText,
+            viewAllHref:
+                truncated && cfg.relationshipName
+                    ? `/lightning/r/${this._editObject}/${this._editRecordId}/related/${cfg.relationshipName}/view`
+                    : null
         };
     }
 
@@ -2743,6 +2914,17 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             const red = order.find((id) => (e.errors || {})[id]);
             if (red) {
                 return { key: e.key, elementId: red };
+            }
+            if ((e.errors || {})[ROW_ERROR]) {
+                // a row-level message: the cursor goes to the row's first
+                // question it can take
+                const hidden = new Set(e.hidden || []);
+                const first = (sec.elements || []).find(
+                    (el) => !hidden.has(el.id) && isAnswerable(el)
+                );
+                return first
+                    ? { key: e.key, elementId: first.id }
+                    : { add: true };
             }
         }
         if (!sec.minMessage) {
@@ -2886,8 +3068,11 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         // enough entries are started (§4, §5); untouched entries never fail.
         return this.visiblePages.map((page) =>
             (page.sections || []).every((s) => {
-                if (s.repeat && (this._onRecordPage || s.repeat.readOnly)) {
+                if (s.repeat && s.repeat.readOnly) {
                     return true; // read-only: nothing to check
+                }
+                if (s.repeat && s.list) {
+                    return true; // still loading, or failed: nothing typed
                 }
                 if (s.repeat) {
                     const g = this._groupEntries(s, ctx, true);
@@ -3207,9 +3392,14 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                         }
                     }
                 }
-                if (!key || !ids.length) {
+                if (!key) {
                     unmapped.push(message);
                     continue;
+                }
+                if (!ids.length) {
+                    // about the row itself ("no longer exists", "changed in
+                    // two lists"): it shows on that row
+                    ids.push(ROW_ERROR);
                 }
                 const group = (entryMapped[err.sectionId] =
                     entryMapped[err.sectionId] || {});
@@ -3498,16 +3688,10 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         return this._submissionKeyValue;
     }
 
-    /** Each group's key order as it is being sent (§4). */
+    /** Each group's key order as it was just sent (§4): the keys of the
+     *  entries in the payload, so the server's entryIndex finds its entry. */
     _entryKeySnapshot() {
-        const out = {};
-        for (const key of Object.keys(this.answers)) {
-            if (key.indexOf('repeat:') === 0) {
-                const rk = this._repeatKeys[key.slice(7)];
-                out[key.slice(7)] = rk ? [...rk.keys] : [];
-            }
-        }
-        return out;
+        return JSON.parse(JSON.stringify(this._sentKeys || {}));
     }
 
     /** A group's entries on the way out: a question a rule hides in THAT
@@ -3518,15 +3702,34 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         for (const page of (this.model && this.model.pages) || []) {
             sec = (page.sections || []).find((x) => x.id === sectionId) || sec;
         }
-        if (!Array.isArray(list) || !sec || !this._hasRules) {
-            return list;
+        if (!Array.isArray(list) || !sec) {
+            this._sentKeys = { ...this._sentKeys, [sectionId]: [] };
+            return Array.isArray(list) ? list : [];
         }
         const g = this._groupEntries(sec, this._ruleCtx(), false);
-        return g.entries.map((e) => {
-            const out = { ...e.values };
-            e.hidden.forEach((id) => delete out[id]);
-            return out;
+        const sent = [];
+        const keys = [];
+        g.entries.forEach((e) => {
+            const hidden = this._hasRules ? e.hidden : [];
+            const changed = this._changedFields(sectionId, e.key, e.values);
+            let out;
+            if (changed) {
+                // a loaded row: only what the person changed, or nothing
+                out = { ...changed };
+                hidden.forEach((id) => delete out[id]);
+                if (!Object.keys(out).length) {
+                    return;
+                }
+                out.$id = e.key;
+            } else {
+                out = { ...e.values };
+                hidden.forEach((id) => delete out[id]);
+            }
+            sent.push(out);
+            keys.push(e.key);
         });
+        this._sentKeys = { ...this._sentKeys, [sectionId]: keys };
+        return sent;
     }
 
     _payload() {
@@ -3539,8 +3742,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 continue;
             }
             if (key.indexOf('repeat:') === 0) {
-                if (!this._onRecordPage) {
-                    repeats[key.slice(7)] = this._groupPayload(key.slice(7));
+                const sent = this._groupPayload(key.slice(7));
+                if (!this._onRecordPage || sent.length) {
+                    repeats[key.slice(7)] = sent;
                 }
             } else if (this._ruleTypeIndex.get(key) === 'file') {
                 for (const f of this.answers[key] || []) {

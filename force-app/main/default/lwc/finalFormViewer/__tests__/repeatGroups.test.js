@@ -440,6 +440,37 @@ describe('repeating groups in the viewer', () => {
         expect(errOf('en_2', 'el_subj')).toBeUndefined();
     });
 
+    it('a refusal about a row itself (no field) lands on that row, not only the banner', async () => {
+        const el = await mount(makeSpec({ repeat: { min: 0 } }), {
+            delegate: false
+        });
+        await add(el);
+        typeIn(el, 'el_subj::en_0', 'x');
+        await flush();
+        submitForm.mockResolvedValue({
+            errors: [
+                {
+                    message:
+                        'This Case is changed in two lists with different values. Change it in one of them.',
+                    fields: [],
+                    sectionId: 'sec_cases',
+                    entryIndex: 0
+                }
+            ]
+        });
+        await submit(el);
+        const sec = deepQueryAll(
+            el.shadowRoot,
+            'c-final-section-renderer'
+        ).find((x) => x.section.repeat).section;
+        expect(sec.entries[0].errors.__row).toEqual([
+            'This Case is changed in two lists with different values. Change it in one of them.'
+        ]);
+        expect(bar(el).blockedMessage).toBe(
+            'Some answers were not accepted. See the highlighted fields.'
+        );
+    });
+
     it('removing the refused entry clears its message; the next Submit clears everything', async () => {
         const el = await mount(makeSpec({ repeat: { min: 0 } }), {
             delegate: false

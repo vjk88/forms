@@ -41,6 +41,9 @@ public with sharing class FinalRelatedListService {
         public String childLabelPlural;
         @AuraEnabled
         public String childObject;
+        /** Questions this person can't change (field access, the link). */
+        @AuraEnabled
+        public List<String> lockedQuestions = new List<String>();
         /** Set when this list could not be loaded; the others still are. */
         @AuraEnabled
         public String error;
@@ -59,6 +62,9 @@ public with sharing class FinalRelatedListService {
          *  which "Show if" rules compare against, like any answer. */
         @AuraEnabled
         public Map<String, Object> values = new Map<String, Object>();
+        /** Salesforce sharing lets this person edit the record. */
+        @AuraEnabled
+        public Boolean canEdit = false;
     }
 
     /**
@@ -176,6 +182,9 @@ public with sharing class FinalRelatedListService {
             }
             Schema.DescribeFieldResult d = f.getDescribe();
             String elId = (String) el.get('id');
+            if (!d.isUpdateable() || d.getName() == link) {
+                rl.lockedQuestions.add(elId);
+            }
             String alias = 'c' + n++;
             // the stored value too, for the question's own rules
             if (!cols.contains(d.getName())) {
@@ -258,6 +267,25 @@ public with sharing class FinalRelatedListService {
                     );
                 }
                 rl.rows.add(r);
+            }
+            // who may edit which row: Salesforce sharing, as this person
+            Map<Id, Row> byId = new Map<Id, Row>();
+            for (Row r : rl.rows) {
+                byId.put((Id) r.id, r);
+            }
+            if (!byId.isEmpty()) {
+                for (UserRecordAccess a : [
+                    SELECT RecordId, HasEditAccess
+                    FROM UserRecordAccess
+                    WHERE
+                        UserId = :UserInfo.getUserId()
+                        AND RecordId IN :byId.keySet()
+                ]) {
+                    Row r = byId.get(a.RecordId);
+                    if (r != null) {
+                        r.canEdit = a.HasEditAccess;
+                    }
+                }
             }
         } catch (Exception e) {
             // A field this person can't query, or a condition the platform

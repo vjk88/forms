@@ -423,7 +423,24 @@ sheet, on the Studio preview and the Lightning tab.
 # Part 2: related lists on an existing record
 
 Status: DIRECTION AGREED 2026-11-12, open questions SETTLED 2026-11-13 (see "Settled 2026-11-13").
-**Slice 1 "See" BUILT 2026-11-13** (branch `feat/related-lists-see`); slices 2 and 3 not built.
+**Slice 1 "See" BUILT 2026-11-13** (PR 445). **Slice 2a "Change and add" BUILT 2026-11-13** (branch
+`feat/related-lists-edit`); slice 2b (quiet fill P2.6 + Show conditions on the main record) and slice 3
+(delete) not built. Owner pick for the fill rows, from [mocks/quiet-fill-mock.html](./mocks/quiet-fill-mock.html):
+**"B, list + dialog"** (one line per fill in the inspector, edited in a small dialog).
+
+Slice 2a as built (my calls):
+- Loaded rows are entries keyed by record id with a baseline; a loaded row counts as started only once
+  changed, so checks never run on an untouched old record. Save sends `{ $id, <changed questions> }` for a
+  changed row and nothing for an untouched one; new rows as in Part 1.
+- A row without edit access (UserRecordAccess) and a question whose field the person can't update (or the
+  link field) draw read-only. Loaded rows have no × (delete is slice 3).
+- Add room = effective Max − existing total; none when the list shows 50 of more.
+- An editable Table needs 140px + 200px per question (a control squeezed under 200px wraps its own value);
+  narrower draws as Cards. Read-only tables keep 140px per column.
+- Server (`prepareListSave` / `applyListUpdates`): membership re-checked as the user against the list's
+  clause before any write; only changed fields updated (`stripInaccessible(UPDATABLE)`, `update as user`);
+  Max judged on additions only; read-only lists refused; one record changed in two lists merges, or is
+  refused on that entry when two values disagree; a create form can never change an existing record.
 
 Slice 1 as built, where it is narrower than the text below (my calls):
 - **Show** conditions compare a child field with a fixed value or the current user, like a lookup filter

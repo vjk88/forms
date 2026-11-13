@@ -472,3 +472,44 @@
     color: var(--c-text-weak);
     font-size: var(--c-fs-secondary);
 }
+
+/* editable rows on a record page (slice 2): the Table's action column and
+   its controls sit tight in their cells; rep-* links match the list's */
+.rl-act {
+    width: calc(44px + 2 * var(--c-space-1));
+    padding-inline: var(--c-space-1) !important;
+}
+
+/* "View only": a row this person can see but not change */
+.rl-tag {
+    display: inline-block;
+    margin-inline-start: var(--c-space-2);
+    padding: 0 var(--c-space-2);
+    border-radius: var(--c-radius);
+    background: color-mix(in srgb, var(--c-text) 8%, transparent);
+    color: var(--c-text-weak);
+    font-size: var(--c-fs-secondary);
+    font-weight: 400;
+}
+
+.rl-table .field-req {
+    color: var(--c-field-error, #b42318);
+    text-decoration: none;
+}
+
+.rl-table td c-final-element-renderer {
+    display: block;
+    min-width: 0;
+}
+
+.rep-entries a {
+    color: var(--c-accent-text, var(--c-accent, var(--c-text)));
+    font-weight: 600;
+}
+
+.rep-entries a:focus-visible {
+    outline: 2px solid
+        var(--c-focus-outline, var(--c-field-focus, var(--c-accent)));
+    outline-offset: 1px;
+    box-shadow: var(--c-focus-shadow, none);
+}

@@ -33,6 +33,11 @@ let repFocusSeq = 0;
  *  (name) column plus a usable width per question. */
 const TABLE_NAME_WIDTH = 140;
 const TABLE_COLUMN_WIDTH = 140;
+/** A cell that holds a control (an editable row) needs more room than text:
+ *  a dropdown squeezed under 200px wraps its own value. */
+const TABLE_EDIT_COLUMN_WIDTH = 200;
+/** The × column: a 44px touch target plus its cell padding. */
+const TABLE_ACTION_WIDTH = 68;
 const repFocusDone = new Set();
 
 /** Elements that always span the full grid regardless of width. */
@@ -69,7 +74,9 @@ export default class FinalSectionRenderer extends LightningElement {
         // While it stays drawn it keeps the in-progress typing itself, so a
         // new list with the same keys never overwrites a control mid-typing
         // (IMPL_PLAN_RELATED_RECORDS §3).
-        const seedKey = `${value?.id}|${value?.previewRevision ?? ''}`;
+        const seedKey = `${value?.id}|${value?.previewRevision ?? ''}|${
+            value?.listRevision ?? ''
+        }`;
         if (
             value?.repeat &&
             (this.entryKeys === null || seedKey !== this._seededFor)
@@ -228,12 +235,25 @@ export default class FinalSectionRenderer extends LightningElement {
         const byKey = new Map((this.sec.entries || []).map((e) => [e.key, e]));
         const canRemove = keys.length > this.minEntries;
         const pending = this._pendingFocus;
+        let newIndex = 0;
         return keys.map((key, i) => {
             const info = byKey.get(key) || {};
             const hidden = new Set(info.hidden || []);
             const errors = info.errors || {};
             const values = this._entryValues[key] || {};
-            const label = this._entryTitle(i);
+            // a row loaded on a record page (Part 2 slice 2) is named by its
+            // record; new rows keep the builder's "Case {index}"
+            const ex = info.existing || null;
+            const locked = new Set(ex ? ex.locked || [] : []);
+            const editable = !ex || ex.canEdit;
+            // next to loaded records, a new row says it is new
+            const thisNew = ex ? -1 : newIndex++;
+            const label = ex
+                ? ex.name
+                : `${this._hasLoadedRows ? 'New ' : ''}${this._entryTitle(
+                      thisNew
+                  )}`;
+            const rowErrors = (errors.__row || []).slice();
             // The new entry's first question takes the cursor after Add.
             const addFocus =
                 pending && pending.key === key
@@ -247,6 +267,22 @@ export default class FinalSectionRenderer extends LightningElement {
                     // every question is handed the answer the form holds,
                     // so what shows is what will be sent
                     let e = { ...el, value: values[el.id] };
+                    // what this person may not change shows, but can't be
+                    // typed into (sharing, field access, the link)
+                    if (ex && (!editable || locked.has(el.id))) {
+                        e = { ...e, readOnly: true };
+                    }
+                    if (ex && e.lookup) {
+                        e = {
+                            ...e,
+                            lookup: {
+                                ...e.lookup,
+                                displayLabel:
+                                    (ex.labels || {})[el.id] ||
+                                    e.lookup.displayLabel
+                            }
+                        };
+                    }
                     if (errors[el.id] && errors[el.id].length) {
                         e = { ...e, errors: errors[el.id] };
                     }
@@ -257,14 +293,85 @@ export default class FinalSectionRenderer extends LightningElement {
                     }
                     return e;
                 });
+            const cellsByEl = new Map(elements.map((e) => [e.id, e]));
             return {
                 key,
                 label,
-                canRemove,
-                removeLabel: this._removeName(i, label),
-                elements: this._gridFor(elements, key)
+                // a loaded record isn't removed with × (delete is slice 3)
+                canRemove: ex ? false : canRemove,
+                removeLabel: this._removeName(ex ? i : thisNew, label),
+                viewOnly: Boolean(ex && !editable),
+                viewOnlySr: ex
+                    ? `You can see this ${this.entriesNameLabel} but not change it.`
+                    : '',
+                rowErrors,
+                hasRowErrors: rowErrors.length > 0,
+                nameClass: ex
+                    ? 'rep-entry-label rl-card-name'
+                    : 'rep-entry-label',
+                href: ex ? ex.href : null,
+                openSr: ex ? ex.openSr : '',
+                isNew: !ex,
+                elements: this._gridFor(elements, key),
+                // the Table's cells: one per question, empty when hidden
+                tableCells: this.tableQuestions.map((q) => {
+                    const el = cellsByEl.get(q.id);
+                    return {
+                        key: q.id,
+                        // hidden label, but the input's own name says which
+                        // row: "Priority, 00001026"
+                        el: el
+                            ? {
+                                  ...el,
+                                  id: `${el.id}::${key}`,
+                                  label: `${el.label || ''}, ${label}`,
+                                  labelPosition: 'hidden'
+                              }
+                            : null
+                    };
+                })
             };
         });
+    }
+
+    /** The Table's columns: the group's questions, in the builder's order;
+     *  a required one marks its header, since the cells hide their labels. */
+    get tableQuestions() {
+        return (this.sec.elements || [])
+            .filter((el) => isAnswerable(el))
+            .map((el) => ({
+                ...el,
+                isRequired:
+                    Boolean(el.required) ||
+                    (el.validation || []).some((v) => v.type === 'required')
+            }));
+    }
+
+    /** Read after a required column's name (a template drops a leading
+     *  space, so it is built here). */
+    get requiredSr() {
+        return ' required';
+    }
+
+    get _hasLoadedRows() {
+        return (this.sec.entries || []).some((e) => e.existing);
+    }
+
+    /** Entries drawn as a Table: chosen, and measured to fit. */
+    get showEntryTable() {
+        return this.repeatCfg.style === 'table' && this.tableFits;
+    }
+
+    get entriesNameLabel() {
+        return this.repeatCfg.childObject || '';
+    }
+
+    get listMore() {
+        return this.sec.listMore || '';
+    }
+
+    get listMoreHref() {
+        return this.sec.listMoreHref || null;
     }
 
     get showAdd() {
@@ -310,7 +417,7 @@ export default class FinalSectionRenderer extends LightningElement {
     }
 
     _measureTable() {
-        if (!this.list || this.repeatCfg.style !== 'table') {
+        if (!this.isRepeat || this.repeatCfg.style !== 'table') {
             return;
         }
         // watched only here, for a list drawn as a Table: no other section
@@ -320,8 +427,11 @@ export default class FinalSectionRenderer extends LightningElement {
             this._resize.observe(this.template.host);
         }
         const width = this.template.host.getBoundingClientRect().width;
-        const needed =
-            TABLE_NAME_WIDTH + TABLE_COLUMN_WIDTH * this.list.columns.length;
+        const needed = this.list
+            ? TABLE_NAME_WIDTH + TABLE_COLUMN_WIDTH * this.list.columns.length
+            : TABLE_NAME_WIDTH +
+              TABLE_EDIT_COLUMN_WIDTH * this.tableQuestions.length +
+              TABLE_ACTION_WIDTH;
         const fits = width >= needed;
         if (fits !== this.tableFits) {
             this.tableFits = fits;

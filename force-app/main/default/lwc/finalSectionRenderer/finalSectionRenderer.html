@@ -193,44 +193,180 @@
                              the one alert of a blocked click -->
                         <p class="rep-min" role="status">{minMessage}</p>
                     </template>
-                    <template for:each={repeatEntries} for:item="entry">
-                        <div
-                            key={entry.key}
-                            class="rep-entry"
-                            role="group"
-                            aria-label={entry.label}
-                        >
-                            <div class="rep-entry-head">
-                                <span class="rep-entry-label"
-                                    >{entry.label}</span
-                                >
-                                <template lwc:if={entry.canRemove}>
-                                    <button
-                                        type="button"
-                                        class="rep-remove"
-                                        title={entry.removeLabel}
-                                        aria-label={entry.removeLabel}
-                                        data-key={entry.key}
-                                        onclick={handleRemoveEntry}
+                    <template lwc:if={showEntryTable}>
+                        <div class="rl-table-wrap">
+                            <table class="rl-table" aria-label={sec.title}>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">{entriesNameLabel}</th>
+                                        <template
+                                            for:each={tableQuestions}
+                                            for:item="q"
+                                        >
+                                            <th key={q.id} scope="col">
+                                                {q.label}
+                                                <template lwc:if={q.isRequired}>
+                                                    <abbr
+                                                        class="field-req"
+                                                        title="required"
+                                                        aria-hidden="true"
+                                                        >*</abbr
+                                                    ><span class="rl-sr"
+                                                        >{requiredSr}</span
+                                                    >
+                                                </template>
+                                            </th>
+                                        </template>
+                                        <th scope="col" class="rl-act">
+                                            <span class="rl-sr">Remove</span>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template
+                                        for:each={repeatEntries}
+                                        for:item="entry"
                                     >
-                                        ×
-                                    </button>
-                                </template>
-                            </div>
-                            <div class={gridClass}>
-                                <template
-                                    for:each={entry.elements}
-                                    for:item="g"
-                                >
-                                    <c-final-element-renderer
-                                        onvaluechange={handleValueChange}
-                                        key={g.el.id}
-                                        element={g.el}
-                                        style={g.spanStyle}
-                                    ></c-final-element-renderer>
-                                </template>
-                            </div>
+                                        <tr key={entry.key}>
+                                            <th scope="row" class="rl-name">
+                                                <template lwc:if={entry.href}>
+                                                    <a
+                                                        href={entry.href}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        >{entry.label}<span
+                                                            class="rl-sr"
+                                                            >{newTabText}</span
+                                                        ></a
+                                                    >
+                                                </template>
+                                                <template lwc:else>
+                                                    {entry.label}
+                                                </template>
+                                                <template
+                                                    lwc:if={entry.viewOnly}
+                                                >
+                                                    <span class="rl-tag"
+                                                        >View only<span
+                                                            class="rl-sr"
+                                                            >{entry.viewOnlySr}</span
+                                                        ></span
+                                                    >
+                                                </template>
+                                                <template
+                                                    for:each={entry.rowErrors}
+                                                    for:item="msg"
+                                                >
+                                                    <p
+                                                        key={msg}
+                                                        class="rep-min"
+                                                        role="status"
+                                                    >
+                                                        {msg}
+                                                    </p>
+                                                </template>
+                                            </th>
+                                            <template
+                                                for:each={entry.tableCells}
+                                                for:item="cell"
+                                            >
+                                                <td key={cell.key}>
+                                                    <template lwc:if={cell.el}>
+                                                        <c-final-element-renderer
+                                                            onvaluechange={handleValueChange}
+                                                            element={cell.el}
+                                                        ></c-final-element-renderer>
+                                                    </template>
+                                                </td>
+                                            </template>
+                                            <td class="rl-act">
+                                                <template
+                                                    lwc:if={entry.canRemove}
+                                                >
+                                                    <button
+                                                        type="button"
+                                                        class="rep-remove"
+                                                        title={entry.removeLabel}
+                                                        aria-label={entry.removeLabel}
+                                                        data-key={entry.key}
+                                                        onclick={handleRemoveEntry}
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </template>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
                         </div>
+                    </template>
+                    <template lwc:else>
+                        <template for:each={repeatEntries} for:item="entry">
+                            <div
+                                key={entry.key}
+                                class="rep-entry"
+                                role="group"
+                                aria-label={entry.label}
+                            >
+                                <div class="rep-entry-head">
+                                    <span class={entry.nameClass}
+                                        >{entry.label}</span
+                                    >
+                                    <template lwc:if={entry.viewOnly}>
+                                        <span class="rl-tag"
+                                            >View only<span class="rl-sr"
+                                                >{entry.viewOnlySr}</span
+                                            ></span
+                                        >
+                                    </template>
+                                    <template lwc:if={entry.href}>
+                                        <a
+                                            class="rl-open"
+                                            href={entry.href}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            >Open<span class="rl-sr"
+                                                >{entry.openSr}</span
+                                            ></a
+                                        >
+                                    </template>
+                                    <template lwc:if={entry.canRemove}>
+                                        <button
+                                            type="button"
+                                            class="rep-remove"
+                                            title={entry.removeLabel}
+                                            aria-label={entry.removeLabel}
+                                            data-key={entry.key}
+                                            onclick={handleRemoveEntry}
+                                        >
+                                            ×
+                                        </button>
+                                    </template>
+                                </div>
+                                <template
+                                    for:each={entry.rowErrors}
+                                    for:item="msg"
+                                >
+                                    <p key={msg} class="rep-min" role="status">
+                                        {msg}
+                                    </p>
+                                </template>
+                                <div class={gridClass}>
+                                    <template
+                                        for:each={entry.elements}
+                                        for:item="g"
+                                    >
+                                        <c-final-element-renderer
+                                            onvaluechange={handleValueChange}
+                                            key={g.el.id}
+                                            element={g.el}
+                                            style={g.spanStyle}
+                                        ></c-final-element-renderer>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
                     </template>
                     <template lwc:if={showAdd}>
                         <button
@@ -240,6 +376,21 @@
                         >
                             <span aria-hidden="true">+ </span>{addLabel}
                         </button>
+                    </template>
+                    <template lwc:if={listMore}>
+                        <p class="rl-more">
+                            {listMore}
+                            <template lwc:if={listMoreHref}>
+                                <a
+                                    href={listMoreHref}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    >View all in Salesforce<span class="rl-sr"
+                                        >{newTabText}</span
+                                    ></a
+                                >
+                            </template>
+                        </p>
                     </template>
                 </div>
             </template>

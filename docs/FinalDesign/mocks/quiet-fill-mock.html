@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Quiet fill mock</title>
+        <style>
+            /* Quick desktop sketch for the owner's pick (IMPL_PLAN_RELATED_RECORDS P2.6:
+               fields set quietly on every new related record). Studio tokens only. */
+            :root {
+                --c-studio-surface: #ffffff;
+                --c-studio-surface-subtle: #f8fafc;
+                --c-studio-workspace: #f1f5f9;
+                --c-studio-hover: #eef2f6;
+                --c-studio-text: #1f2937;
+                --c-studio-text-weak: #526071;
+                --c-studio-border-strong: #7c8999;
+                --c-studio-border: #dce2e9;
+                --c-studio-border-subtle: #e8edf2;
+                --c-studio-accent: #0f766e;
+                --c-studio-accent-text: #115e59;
+                --c-studio-accent-surface: #e8f5f2;
+                --c-studio-overlay: rgb(15 23 42 / 40%);
+                --c-studio-font:
+                    system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                background: var(--c-studio-workspace);
+                color: var(--c-studio-text);
+                font: 400 13px/1.45 var(--c-studio-font);
+            }
+            button {
+                font: inherit;
+                cursor: pointer;
+            }
+            .top {
+                background: var(--c-studio-surface);
+                border-bottom: 1px solid var(--c-studio-border);
+                padding: 16px 24px;
+                display: flex;
+                align-items: center;
+                gap: 24px;
+                flex-wrap: wrap;
+            }
+            .top h1 {
+                font-size: 16px;
+                font-weight: 600;
+                margin: 0;
+            }
+            .top p {
+                margin: 2px 0 0;
+                color: var(--c-studio-text-weak);
+            }
+            .seg {
+                display: inline-flex;
+                border: 1px solid var(--c-studio-border-strong);
+                border-radius: 8px;
+                overflow: hidden;
+            }
+            .seg button {
+                height: 32px;
+                padding: 0 16px;
+                border: 0;
+                background: var(--c-studio-surface);
+                font-weight: 600;
+                color: var(--c-studio-text);
+            }
+            .seg button + button {
+                border-left: 1px solid var(--c-studio-border-strong);
+            }
+            .seg button[aria-pressed='true'] {
+                background: var(--c-studio-accent);
+                color: #fff;
+            }
+            .stage {
+                display: grid;
+                grid-template-columns: 320px 1fr;
+                gap: 24px;
+                padding: 24px;
+                align-items: start;
+            }
+            .panel {
+                background: var(--c-studio-surface);
+                border: 1px solid var(--c-studio-border);
+                border-radius: 12px;
+                padding: 16px;
+            }
+            .crumb {
+                color: var(--c-studio-accent-text);
+                font-weight: 600;
+            }
+            .panel h3 {
+                margin: 8px 0 0;
+                font-size: 14px;
+            }
+            .meta {
+                color: var(--c-studio-text-weak);
+                font-size: 12px;
+                margin-bottom: 12px;
+            }
+            .grp {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-weight: 600;
+                margin: 24px 0 12px;
+            }
+            .grp::after {
+                content: '';
+                flex: 1;
+                height: 1px;
+                background: var(--c-studio-border);
+            }
+            .dim {
+                opacity: 0.45;
+            }
+            .set {
+                margin-bottom: 16px;
+            }
+            .set > label,
+            .set > span.l {
+                display: block;
+                color: var(--c-studio-text-weak);
+                font-size: 12px;
+                margin-bottom: 4px;
+            }
+            .help {
+                color: var(--c-studio-text-weak);
+                font-size: 12px;
+                margin: 4px 0 0;
+            }
+            .box {
+                border: 1px solid var(--c-studio-border-strong);
+                border-radius: 8px;
+                min-height: 32px;
+                padding: 0 12px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                background: var(--c-studio-surface);
+            }
+            .box .caret::after {
+                content: '▾';
+                color: var(--c-studio-text-weak);
+            }
+            .mini-seg {
+                display: flex;
+                border: 1px solid var(--c-studio-border-strong);
+                border-radius: 8px;
+                overflow: hidden;
+            }
+            .mini-seg span {
+                flex: 1;
+                text-align: center;
+                height: 30px;
+                line-height: 30px;
+                font-weight: 600;
+            }
+            .mini-seg span + span {
+                border-left: 1px solid var(--c-studio-border-strong);
+            }
+            .mini-seg span.on {
+                background: var(--c-studio-accent);
+                color: #fff;
+            }
+            /* A: a block per fill */
+            .fill {
+                border: 1px solid var(--c-studio-border);
+                border-radius: 8px;
+                padding: 12px;
+                margin-bottom: 12px;
+                position: relative;
+            }
+            .fill .x {
+                position: absolute;
+                top: 6px;
+                right: 6px;
+                width: 24px;
+                height: 24px;
+                border: 0;
+                background: none;
+                color: var(--c-studio-text-weak);
+                border-radius: 8px;
+            }
+            .fill .set:last-child {
+                margin-bottom: 0;
+            }
+            .addplace {
+                width: 100%;
+                height: 32px;
+                border: 1px dashed var(--c-studio-border-strong);
+                border-radius: 8px;
+                background: none;
+                color: var(--c-studio-accent-text);
+                font-weight: 600;
+            }
+            /* B: a sentence per fill */
+            .line {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                min-height: 36px;
+                padding: 6px 8px 6px 12px;
+                border: 1px solid var(--c-studio-border);
+                border-radius: 8px;
+                margin-bottom: 8px;
+                background: var(--c-studio-surface);
+            }
+            .line:hover {
+                background: var(--c-studio-hover);
+            }
+            .line .t {
+                flex: 1;
+            }
+            .line .src {
+                display: block;
+                color: var(--c-studio-text-weak);
+                font-size: 12px;
+            }
+            .line .x {
+                border: 0;
+                background: none;
+                color: var(--c-studio-text-weak);
+                width: 24px;
+                height: 24px;
+            }
+            .dlg-wrap {
+                position: relative;
+                min-height: 520px;
+                border-radius: 12px;
+                background: var(--c-studio-overlay);
+                display: grid;
+                place-items: center;
+                padding: 24px;
+            }
+            .dlg {
+                width: 440px;
+                background: var(--c-studio-surface);
+                border-radius: 12px;
+                box-shadow: 0 20px 48px rgb(0 0 0 / 28%);
+            }
+            .dlg header {
+                padding: 16px 24px;
+                border-bottom: 1px solid var(--c-studio-border);
+            }
+            .dlg header h4 {
+                margin: 0;
+                font-size: 16px;
+            }
+            .dlg header p {
+                margin: 2px 0 0;
+                color: var(--c-studio-text-weak);
+                font-size: 12px;
+            }
+            .dlg .body {
+                padding: 24px;
+            }
+            .dlg footer {
+                display: flex;
+                justify-content: flex-end;
+                gap: 8px;
+                padding: 12px 24px;
+                border-top: 1px solid var(--c-studio-border);
+                background: var(--c-studio-surface-subtle);
+                border-radius: 0 0 12px 12px;
+            }
+            .btn {
+                height: 32px;
+                padding: 0 12px;
+                border-radius: 8px;
+                font-weight: 600;
+                border: 1px solid var(--c-studio-border-strong);
+                background: var(--c-studio-surface);
+            }
+            .btn.primary {
+                background: var(--c-studio-accent);
+                border-color: var(--c-studio-accent);
+                color: #fff;
+            }
+            .note {
+                background: var(--c-studio-surface);
+                border: 1px solid var(--c-studio-border);
+                border-radius: 12px;
+                padding: 16px 20px;
+            }
+            .note h4 {
+                margin: 0 0 4px;
+            }
+            .note ul {
+                margin: 8px 0 0;
+                padding-left: 18px;
+                color: var(--c-studio-text-weak);
+            }
+            [hidden] {
+                display: none !important;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="top">
+            <div>
+                <h1>Fill on new records</h1>
+                <p>
+                    Group inspector, "Open cases". Every new Case gets these
+                    values when the form is saved. The person filling it in
+                    never sees them.
+                </p>
+            </div>
+            <div class="seg" role="group" aria-label="Option">
+                <button type="button" data-opt="a" aria-pressed="true">
+                    A · Edit in the panel
+                </button>
+                <button type="button" data-opt="b" aria-pressed="false">
+                    B · List + small dialog
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= A ================= -->
+        <div class="stage" data-for="a">
+            <aside class="panel">
+                <span class="crumb">‹ Fields</span>
+                <h3>Open cases</h3>
+                <div class="meta">Repeating group · Case</div>
+
+                <div class="dim">
+                    <div class="grp">On a record page</div>
+                    <div class="help">
+                        Show conditions, Read only, Link to record
+                    </div>
+                </div>
+
+                <div class="grp">Fill on new records</div>
+                <p class="help" style="margin: -4px 0 12px">
+                    Set on every new Case when the form is saved. People don't
+                    see these.
+                </p>
+
+                <div class="fill">
+                    <button class="x" type="button" aria-label="Remove Status">
+                        ×
+                    </button>
+                    <div class="set">
+                        <label>Case field</label>
+                        <div class="box">
+                            Status <span class="caret"></span>
+                        </div>
+                    </div>
+                    <div class="set">
+                        <span class="l">Value</span>
+                        <div class="mini-seg">
+                            <span class="on">Fixed value</span
+                            ><span>From Contact</span>
+                        </div>
+                    </div>
+                    <div class="set">
+                        <div class="box">New <span class="caret"></span></div>
+                    </div>
+                </div>
+
+                <div class="fill">
+                    <button
+                        class="x"
+                        type="button"
+                        aria-label="Remove Account ID"
+                    >
+                        ×
+                    </button>
+                    <div class="set">
+                        <label>Case field</label>
+                        <div class="box">
+                            Account ID <span class="caret"></span>
+                        </div>
+                    </div>
+                    <div class="set">
+                        <span class="l">Value</span>
+                        <div class="mini-seg">
+                            <span>Fixed value</span
+                            ><span class="on">From Contact</span>
+                        </div>
+                    </div>
+                    <div class="set">
+                        <div class="box">
+                            Contact › Account ID <span class="caret"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="addplace" type="button">
+                    + Add a field to fill
+                </button>
+
+                <div class="dim">
+                    <div class="grp">Adding</div>
+                    <div class="help">
+                        Add-button label, Entry title, Min / Max rows
+                    </div>
+                </div>
+            </aside>
+
+            <div class="note">
+                <h4>A · Edit in the panel</h4>
+                Every fill is a small block right in the inspector: which Case
+                field, where its value comes from, and the value.
+                <ul>
+                    <li>Everything visible at once; no extra click.</li>
+                    <li>
+                        Gets long with 4–5 fills (each block is about 150px
+                        tall).
+                    </li>
+                    <li>
+                        The value box follows the field's type: a picklist
+                        offers its values, a date a date box, a lookup a record
+                        search.
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ================= B ================= -->
+        <div class="stage" data-for="b" hidden>
+            <aside class="panel">
+                <span class="crumb">‹ Fields</span>
+                <h3>Open cases</h3>
+                <div class="meta">Repeating group · Case</div>
+
+                <div class="dim">
+                    <div class="grp">On a record page</div>
+                    <div class="help">
+                        Show conditions, Read only, Link to record
+                    </div>
+                </div>
+
+                <div class="grp">Fill on new records</div>
+                <p class="help" style="margin: -4px 0 12px">
+                    Set on every new Case when the form is saved. People don't
+                    see these.
+                </p>
+
+                <div class="line">
+                    <span class="t"
+                        ><b>Status</b> = New
+                        <span class="src">Fixed value</span></span
+                    >
+                    <button class="x" type="button" aria-label="Remove Status">
+                        ×
+                    </button>
+                </div>
+                <div class="line">
+                    <span class="t"
+                        ><b>Account ID</b> = Contact's Account ID
+                        <span class="src">From the Contact</span></span
+                    >
+                    <button
+                        class="x"
+                        type="button"
+                        aria-label="Remove Account ID"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <button class="addplace" type="button">
+                    + Add a field to fill
+                </button>
+
+                <div class="dim">
+                    <div class="grp">Adding</div>
+                    <div class="help">
+                        Add-button label, Entry title, Min / Max rows
+                    </div>
+                </div>
+            </aside>
+
+            <div>
+                <div class="dlg-wrap">
+                    <div
+                        class="dlg"
+                        role="dialog"
+                        aria-label="Fill a field on new Cases"
+                    >
+                        <header>
+                            <h4>Fill a field on new Cases</h4>
+                            <p>
+                                Opens from "+ Add a field to fill" or a click on
+                                a line.
+                            </p>
+                        </header>
+                        <div class="body">
+                            <div class="set">
+                                <label>Case field</label>
+                                <div class="box">
+                                    Account ID <span class="caret"></span>
+                                </div>
+                            </div>
+                            <div class="set">
+                                <span class="l">Value</span>
+                                <div class="mini-seg">
+                                    <span>Fixed value</span
+                                    ><span class="on">From Contact</span>
+                                </div>
+                            </div>
+                            <div class="set">
+                                <label>Contact field</label>
+                                <div class="box">
+                                    Account ID <span class="caret"></span>
+                                </div>
+                                <p class="help">
+                                    Only Contact fields that hold the same kind
+                                    of value are offered.
+                                </p>
+                            </div>
+                        </div>
+                        <footer>
+                            <button class="btn" type="button">Cancel</button>
+                            <button class="btn primary" type="button">
+                                Apply
+                            </button>
+                        </footer>
+                    </div>
+                </div>
+                <div class="note" style="margin-top: 16px">
+                    <h4>B · List + small dialog</h4>
+                    One line per fill in the inspector; the details open in a
+                    small dialog.
+                    <ul>
+                        <li>Stays short however many fills there are.</li>
+                        <li>One more click to change a fill.</li>
+                        <li>
+                            Same look as the Autofill rules list people already
+                            know.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const buttons = document.querySelectorAll('.seg button');
+            buttons.forEach((b) =>
+                b.addEventListener('click', () => {
+                    buttons.forEach((x) =>
+                        x.setAttribute('aria-pressed', String(x === b))
+                    );
+                    document.querySelectorAll('[data-for]').forEach((el) => {
+                        el.hidden = el.dataset.for !== b.dataset.opt;
+                    });
+                })
+            );
+        </script>
+    </body>
+</html>
