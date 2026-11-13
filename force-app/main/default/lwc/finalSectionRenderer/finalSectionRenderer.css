@@ -354,3 +354,121 @@
     font-size: var(--c-fs-error);
     line-height: 1.45;
 }
+
+/* ---- related lists on a record page (IMPL_PLAN_RELATED_RECORDS Part 2,
+   slice 1): existing records, read-only, as Cards or a Table ---- */
+.rl {
+    display: flex;
+    flex-direction: column;
+    gap: var(--c-space-3);
+}
+
+.rl-status {
+    margin: 0;
+    color: var(--c-text-weak);
+    font-size: var(--c-fs-secondary);
+}
+
+.rl-failed {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--c-space-2);
+}
+
+.rl-retry {
+    border: 1px solid color-mix(in srgb, var(--c-text) 35%, transparent);
+    border-radius: var(--c-radius);
+    background: none;
+    color: var(--c-accent-text, var(--c-accent, var(--c-text)));
+    font: inherit;
+    font-size: var(--c-fs-button);
+    font-weight: 600;
+    padding: var(--c-space-1) var(--c-space-3);
+    cursor: pointer;
+}
+
+.rl-retry:focus-visible,
+.rl a:focus-visible {
+    outline: 2px solid
+        var(--c-focus-outline, var(--c-field-focus, var(--c-accent)));
+    outline-offset: 1px;
+    box-shadow: var(--c-focus-shadow, none);
+}
+
+.rl a {
+    color: var(--c-accent-text, var(--c-accent, var(--c-text)));
+    font-weight: 600;
+}
+
+/* the card's heading: a question label's size, strong, above the
+   smaller labels of its values */
+.rl-card-name {
+    color: var(--c-text);
+    font-size: var(--c-fs-label);
+}
+
+.rl-open {
+    font-size: var(--c-fs-secondary);
+}
+
+.rl-cells {
+    display: grid;
+    gap: var(--c-space-3);
+    margin: 0;
+}
+
+.rl-cell dt {
+    color: var(--c-text-weak);
+    font-size: var(--c-fs-secondary);
+}
+
+.rl-cell dd {
+    margin: 0;
+    color: var(--c-text);
+    overflow-wrap: anywhere;
+}
+
+.rl-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+.rl-table-wrap {
+    width: 100%;
+}
+
+.rl-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.rl-table th,
+.rl-table td {
+    text-align: left;
+    vertical-align: top;
+    padding: var(--c-space-2) var(--c-space-3);
+    border-bottom: 1px solid color-mix(in srgb, var(--c-text) 14%, transparent);
+    overflow-wrap: anywhere;
+}
+
+.rl-table thead th {
+    color: var(--c-text-weak);
+    font-size: var(--c-fs-secondary);
+    font-weight: 600;
+}
+
+.rl-table tbody th {
+    font-weight: 600;
+}
+
+.rl-more {
+    margin: 0;
+    color: var(--c-text-weak);
+    font-size: var(--c-fs-secondary);
+}

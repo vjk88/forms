@@ -124,12 +124,13 @@ const SPACER_SIZES = [
     { label: 'Large', value: 'large' }
 ];
 
-// Table and Tiles are not built yet: shown, greyed out, with a help line
-// saying so (owner 2026-11-12 "Show them as 'Coming soon'", DESIGN_SYSTEM
-// 5.7). Never a choice that silently does nothing.
+// Tiles is not built yet: shown, greyed out, with a help line saying so
+// (owner 2026-11-12 "Show them as 'Coming soon'", DESIGN_SYSTEM 5.7). Table
+// is built (Part 2 slice 1, owner "Yes, both"). Never a choice that
+// silently does nothing.
 const REPEAT_STYLES = [
     { label: 'Stacked', value: 'stacked' },
-    { label: 'Table', value: 'table', disabled: true },
+    { label: 'Table', value: 'table' },
     { label: 'Tiles', value: 'tileModal', disabled: true }
 ];
 
@@ -1650,10 +1651,68 @@ export default class FinalPropertyPanel extends LightningElement {
         return this.n.repeat || {};
     }
 
-    /** Only Stacked can be drawn today, so a spec that says table/tiles
-     *  still shows (and renders) Stacked. */
+    /** Tiles can't be drawn yet, so a spec that says tiles shows (and
+     *  renders) Stacked. */
     get repeatStyleSeg() {
-        return this._seg(REPEAT_STYLES, 'stacked');
+        return this._seg(
+            REPEAT_STYLES,
+            this.repeat.style === 'table' ? 'table' : 'stacked'
+        );
+    }
+
+    get repeatIsTable() {
+        return this.repeat.style === 'table';
+    }
+
+    // ---- related list settings (IMPL_PLAN_RELATED_RECORDS Part 2) ----
+
+    get repeatReadOnly() {
+        return this.repeat.readOnly === true;
+    }
+
+    get repeatEditable() {
+        return !this.repeatReadOnly;
+    }
+
+    /** Link to record is on unless the builder turned it off. */
+    get repeatLink() {
+        return this.repeat.link !== false;
+    }
+
+    /** The "Show" conditions in the lookup editor's own shape. */
+    get repeatShowValue() {
+        return {
+            filter: (this.repeat.show && this.repeat.show.filter) || null
+        };
+    }
+
+    get repeatShowLabel() {
+        return `Which ${this.repeat.childObject || 'related'} records to show`;
+    }
+
+    /** Honest about slice 1: on a record page nothing can change yet. */
+    get repeatReadOnlyHint() {
+        return this.repeatReadOnly
+            ? 'People see these records but can’t change, add or delete them. Hidden on a form that creates a record.'
+            : 'On a record page, rows can’t be changed or added yet.';
+    }
+
+    handleRepeatReadOnly(event) {
+        this._repeatPatch('readOnly', event.target.checked ? true : null);
+    }
+
+    handleRepeatLink(event) {
+        this._repeatPatch('link', event.target.checked ? null : false);
+    }
+
+    /** Only the conditions are kept: a list has no results display. */
+    handleRepeatShow(event) {
+        const filter =
+            event.detail && event.detail.value
+                ? event.detail.value.filter
+                : null;
+        const rows = (filter && filter.rows) || [];
+        this._repeatPatch('show', rows.length ? { filter } : null);
     }
 
     // `{index}` can't be written in the template: it reads as a binding.

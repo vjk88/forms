@@ -272,17 +272,35 @@ public with sharing class FinalSpecController {
                 Map<String, Object> repeat = new Map<String, Object>(
                     (Map<String, Object>) repeatObj
                 );
+                String title = (String) sec.get('title');
+                String name = String.isBlank(title)
+                    ? 'A repeating group'
+                    : '“' + title + '”';
+                String childObject;
                 try {
-                    FinalSpecDescribeValidator.validateRepeat(repeat, target);
-                } catch (Exception e) {
-                    String title = (String) sec.get('title');
-                    throw FinalMappingRules.refusal(
-                        (String.isBlank(title)
-                                ? 'A repeating group'
-                                : '“' + title + '”') +
-                            ' can’t be published: ' +
-                            e.getMessage()
+                    childObject = FinalSpecDescribeValidator.validateRepeat(
+                        repeat,
+                        target
                     );
+                } catch (Exception e) {
+                    throw FinalMappingRules.refusal(
+                        name + ' can’t be published: ' + e.getMessage()
+                    );
+                }
+                // Its "Show" conditions must compile: the related list on a
+                // record page loads through them, with the same compiler.
+                Object showObj = repeat.get('show');
+                if (showObj instanceof Map<String, Object>) {
+                    FinalLookupService.Compiled c = FinalLookupService.compile(
+                        (Map<String, Object>) showObj,
+                        null,
+                        childObject
+                    );
+                    if (c.blocked) {
+                        throw FinalMappingRules.refusal(
+                            name + ' can’t be published: ' + c.blockedReason
+                        );
+                    }
                 }
             }
         }

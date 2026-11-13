@@ -373,20 +373,28 @@ public inherited sharing class FinalSubmitService {
                         ' record.'
                 );
             }
-            // D2 (owner, 2026-09-08): repeat sections are blocked at PUBLISH on
-            // an edit form. This is the runtime half of that ruling — matching
-            // typed rows back to existing children is unbuilt, and silently
-            // inserting duplicates would be worse than refusing.
-            if (!repeatPlans.isEmpty()) {
-                throw new AuraHandledException(
-                    'This form edits a record, so it cannot contain a repeating section.'
-                );
+            // On a record page each group is a related list of the record's
+            // existing children (IMPL_PLAN_RELATED_RECORDS Part 2). Slice 1
+            // only SHOWS them, read-only: nothing about them is saved yet,
+            // so an edit that carries group answers is refused rather than
+            // inserting duplicates next to the records already there (the
+            // reason for owner D2, 2026-09-08).
+            for (RepeatPlan plan : repeatPlans) {
+                if (!sentEntries(plan, repeats).isEmpty()) {
+                    throw FinalMappingRules.refusal(
+                        'Related records can’t be changed from a record page yet.'
+                    );
+                }
             }
         }
 
         // Limits, the cap, the minimum and the row budget, before anything
         // is written (IMPL_PLAN_RELATED_RECORDS §5).
-        checkGroups(repeatPlans, repeats);
+        // An edit sends no group answers (above), so there is nothing to
+        // count: a record page is never refused for its lists' minimum.
+        if (!isUpdate) {
+            checkGroups(repeatPlans, repeats);
+        }
         Integer groupRows = 0;
         for (RepeatPlan plan : repeatPlans) {
             groupRows += startedCount(plan, repeats);
@@ -481,6 +489,8 @@ public inherited sharing class FinalSubmitService {
         Integer max = FinalPublishWarnings.MAX_ENTRIES_PER_GROUP;
         /** Neither the group nor its page carries a visibility rule. */
         Boolean alwaysShown = true;
+        /** A look-only list: it takes no entries and has no minimum. */
+        Boolean readOnly = false;
     }
 
     // ------------------------------------------ repeating groups (§4, §5)
@@ -513,6 +523,8 @@ public inherited sharing class FinalSubmitService {
             : null;
         plan.elements = asList(sec.get('elements'));
         plan.alwaysShown = !hasRule(sec) && !hasRule(page);
+        Map<String, Object> repeatCfg = asMap(sec.get('repeat'));
+        plan.readOnly = repeatCfg != null && repeatCfg.get('readOnly') == true;
         Map<String, Object> cfg = asMap(sec.get('repeat'));
         Object rawMin = cfg == null ? null : cfg.get('min');
         Object rawMax = cfg == null ? null : cfg.get('max');
@@ -629,6 +641,18 @@ public inherited sharing class FinalSubmitService {
         for (RepeatPlan plan : plans) {
             if (plan.limitProblem != null) {
                 throw FinalMappingRules.refusal(plan.limitProblem);
+            }
+            if (plan.readOnly) {
+                // look-only: never shown on a form that creates a record,
+                // so it can never send anything, and has no minimum
+                if (!sentEntries(plan, repeats).isEmpty()) {
+                    throw FinalMappingRules.refusal(
+                        (String.isBlank(plan.title)
+                            ? 'A read-only group'
+                            : plan.title) + ' can’t take new entries.'
+                    );
+                }
+                continue;
             }
             if (sentEntries(plan, repeats).size() > plan.max) {
                 throw FinalMappingRules.refusal(

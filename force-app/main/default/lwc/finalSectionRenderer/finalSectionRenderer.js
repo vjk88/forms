@@ -28,6 +28,11 @@ const unfoldDone = new Set();
  *  they can never collide with the viewer's numeric ones in the element
  *  renderer's once-only set), and the viewer's Add-button requests done. */
 let repFocusSeq = 0;
+
+/** A Table needs this much width, or the list draws as Cards: the first
+ *  (name) column plus a usable width per question. */
+const TABLE_NAME_WIDTH = 140;
+const TABLE_COLUMN_WIDTH = 140;
 const repFocusDone = new Set();
 
 /** Elements that always span the full grid regardless of width. */
@@ -278,6 +283,73 @@ export default class FinalSectionRenderer extends LightningElement {
         return this.sec.minMessage || '';
     }
 
+    // ---- related list on a record page (Part 2, slice 1: read-only) ----
+
+    get list() {
+        return this.sec.list || null;
+    }
+
+    /** Read after a link's own words; built here because a template
+     *  drops the space at the start of an element's text. */
+    get newTabText() {
+        return ' (opens in a new tab)';
+    }
+
+    /** The Studio preview's line for a read-only list. */
+    get listNote() {
+        return this.sec.listNote || '';
+    }
+
+    /** Measured, never guessed: does a column per question fit here? */
+    tableFits = false;
+
+    /** Table when the builder chose it AND it fits this component's own
+     *  width; Cards otherwise (a phone, a narrow column, many questions). */
+    get showTable() {
+        return this.repeatCfg.style === 'table' && this.tableFits;
+    }
+
+    _measureTable() {
+        if (!this.list || this.repeatCfg.style !== 'table') {
+            return;
+        }
+        // watched only here, for a list drawn as a Table: no other section
+        // pays for an observer
+        if (!this._resize && typeof ResizeObserver === 'function') {
+            this._resize = new ResizeObserver(() => this._measureTable());
+            this._resize.observe(this.template.host);
+        }
+        const width = this.template.host.getBoundingClientRect().width;
+        const needed =
+            TABLE_NAME_WIDTH + TABLE_COLUMN_WIDTH * this.list.columns.length;
+        const fits = width >= needed;
+        if (fits !== this.tableFits) {
+            this.tableFits = fits;
+        }
+    }
+
+    disconnectedCallback() {
+        if (this._resize) {
+            this._resize.disconnect();
+            this._resize = null;
+        }
+    }
+
+    handleListRetry() {
+        // the button goes away on click: keep the cursor on the list
+        const box = this.template.querySelector('.rl');
+        if (box) {
+            box.focus();
+        }
+        this.dispatchEvent(
+            new CustomEvent('relatedlistretry', {
+                bubbles: true,
+                composed: true,
+                detail: { sectionId: this.sec.id }
+            })
+        );
+    }
+
     handleAddEntry() {
         if (!this.showAdd) {
             return;
@@ -385,6 +457,7 @@ export default class FinalSectionRenderer extends LightningElement {
     renderedCallback() {
         if (this.isRepeat) {
             this._placeRepeatFocus();
+            this._measureTable();
         }
         const hidden =
             getComputedStyle(this.template.host)

@@ -565,18 +565,80 @@ describe('c-final-property-panel (the FormStudio port)', () => {
             box.dispatchEvent(new CustomEvent('change'));
         };
 
-        it('Table and Tiles are greyed out with a line saying they are coming', async () => {
+        it('Table can be picked; Tiles is greyed with a line saying it is coming', async () => {
             const el = group({ style: 'table' });
             await flush();
             const buttons = [...seg(el, 'Display style')];
-            expect(buttons.map((b) => b.disabled)).toEqual([false, true, true]);
-            // a spec that says table still shows (and draws) Stacked
-            expect(buttons[0].getAttribute('aria-pressed')).toBe('true');
+            expect(buttons.map((b) => b.disabled)).toEqual([
+                false,
+                false,
+                true
+            ]);
+            expect(buttons[1].getAttribute('aria-pressed')).toBe('true');
+            const hints = [...el.shadowRoot.querySelectorAll('.pp-hint')].map(
+                (p) => p.textContent.trim()
+            );
+            expect(hints).toContain('Tiles is coming soon.');
+            expect(hints).toContain("Shows as cards where there isn't room.");
+        });
+
+        it('Read only and Link to record write the repeat block; read-only hides the entry settings', async () => {
+            const el = group();
+            await flush();
+            const reps = [];
+            el.addEventListener('repeatchange', (e) => reps.push(e.detail));
+            const toggle = (prop, checked) => {
+                const box = el.shadowRoot.querySelector(
+                    `[data-prop="${prop}"]`
+                );
+                box.checked = checked;
+                box.dispatchEvent(new CustomEvent('change'));
+            };
             expect(
-                [...el.shadowRoot.querySelectorAll('.pp-hint')].some(
-                    (p) => p.textContent === 'Table and Tiles are coming soon.'
-                )
+                el.shadowRoot.querySelector('[data-prop="link"]').checked
             ).toBe(true);
+            toggle('readonly', true);
+            toggle('link', false);
+            toggle('link', true);
+            expect(reps).toEqual([
+                { patch: { readOnly: true } },
+                { patch: { link: false } },
+                { patch: { link: null } }
+            ]);
+            const ro = group({ readOnly: true });
+            await flush();
+            expect(
+                ro.shadowRoot.querySelector('[data-prop="addlabel"]')
+            ).toBeNull();
+            expect(ro.shadowRoot.querySelector('[data-prop="min"]')).toBeNull();
+        });
+
+        it('Show conditions keep only the filter, and clear when emptied', async () => {
+            const el = group();
+            await flush();
+            const reps = [];
+            el.addEventListener('repeatchange', (e) => reps.push(e.detail));
+            const editor = el.shadowRoot.querySelector('c-final-lookup-filter');
+            expect(editor.conditionsOnly).toBe(true);
+            expect(editor.targetObject).toBe('Contact');
+            const filter = {
+                logic: 'all',
+                rows: [{ fieldPath: 'Status', operator: 'eq', value: 'Closed' }]
+            };
+            editor.dispatchEvent(
+                new CustomEvent('lookupconfigchange', {
+                    detail: { value: { filter, displayFields: ['x'] } }
+                })
+            );
+            editor.dispatchEvent(
+                new CustomEvent('lookupconfigchange', {
+                    detail: { value: { filter: { logic: 'all', rows: [] } } }
+                })
+            );
+            expect(reps).toEqual([
+                { patch: { show: { filter } } },
+                { patch: { show: null } }
+            ]);
         });
 
         it('Entry title and Remove button label write the repeat block', async () => {

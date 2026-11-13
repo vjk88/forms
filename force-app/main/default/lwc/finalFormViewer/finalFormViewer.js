@@ -7,6 +7,7 @@ import IS_GUEST from '@salesforce/user/isGuest';
 import USER_OBJECT from '@salesforce/schema/User';
 import getSpecEnvelope from '@salesforce/apex/FinalSpecController.getSpecEnvelope';
 import submitForm from '@salesforce/apex/FinalSubmitController.submitForm';
+import loadRelatedLists from '@salesforce/apex/FinalRelatedListService.load';
 import getCustomTheme from '@salesforce/apex/FinalThemeController.getCustomTheme';
 import getRecordContext from '@salesforce/apex/FinalSurveyObjectController.getRecordContext';
 import getLinkContext from '@salesforce/apex/FinalAutofillController.getLinkContext';
@@ -609,6 +610,13 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     /** sectionId -> the key order as it was sent, to turn the server's
      *  zero-based entryIndex back into an entry key. */
     _submitEntryKeys = {};
+
+    /** Related lists on a record page (IMPL_PLAN_RELATED_RECORDS Part 2,
+     *  slice 1): sectionId -> { state: 'loading' | 'ready' | 'failed',
+     *  rows, total, error, childLabel, childLabelPlural, childObject }.
+     *  null when the form is not editing a record. */
+    _relatedLists = null;
+    _listsGeneration = 0;
 
     /** Autofill state machine and active lookup queries (IMPL_PLAN_AUTOFILL_RULES §6). */
     _autofillSession = null;
@@ -1708,6 +1716,8 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             this._editConfigurationError = null;
             this._editState = 'inactive';
             this._editRecordId = null;
+            this._relatedLists = null;
+            this._listsGeneration += 1;
             this._editContextKey = null;
             this._editReaders = [];
             if (wasEditing && !force) {
@@ -1765,8 +1775,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         // Revision baseline belongs to the record session, not each retry.
         this._editStartedRevisions = {};
 
-        // Same walk the server does: only elements the SPEC binds, and repeat
-        // sections skipped (an edit form may not contain one — owner D2).
+        // Same walk the server does: only elements the SPEC binds. Repeat
+        // sections are skipped here: on a record page they are related
+        // lists, loaded on their own (_loadRelatedLists).
         const pairs = [];
         const fields = new Set();
         for (const page of spec.pages || []) {
@@ -1791,10 +1802,11 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         );
         const pageObject =
             this.objectApiName || this._pageRef?.attributes?.objectApiName;
-        if (hasRepeats) {
-            this._editConfigurationError =
-                'Editing an existing record is not supported for forms with repeating sections.';
-        } else if (
+        // Each repeating group becomes a related list of this record's
+        // existing children, read-only in slice 1 (owner D2's refusal is
+        // lifted: nothing is saved for them, so nothing can be duplicated).
+        this._relatedLists = null;
+        if (
             this._isPageRecordExpression(this._existingInput) &&
             pageObject &&
             form.targetObject &&
@@ -1805,6 +1817,80 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         if (this._editConfigurationError) this._editState = 'error';
         else if (rid && form.targetObject) this._beginEditRead();
         else if (rid) this._editState = 'error';
+        // guests never see existing records (owner 2026-11-13), and the
+        // server refuses them anyway: don't even ask
+        if (hasRepeats && rid && !this._editConfigurationError && !IS_GUEST) {
+            this._loadRelatedLists();
+        }
+    }
+
+    /** Loads the lists of the record being edited: all of them at first,
+     *  then (Try again) only the ones that failed, so a list that loaded
+     *  never flashes back to "Loading". */
+    async _loadRelatedLists() {
+        const generation = ++this._listsGeneration;
+        const rid = this._editRecordId;
+        const before = this._relatedLists || {};
+        const loading = {};
+        for (const page of (this._editSpec && this._editSpec.pages) || []) {
+            for (const section of page.sections || []) {
+                if (section.repeat) {
+                    loading[section.id] =
+                        before[section.id] &&
+                        before[section.id].state === 'ready'
+                            ? before[section.id]
+                            : { state: 'loading', rows: [] };
+                }
+            }
+        }
+        this._relatedLists = loading;
+        let lists;
+        try {
+            lists = await loadRelatedLists({
+                versionId: this.effectiveVersionId,
+                parentRecordId: rid
+            });
+        } catch {
+            lists = null;
+        }
+        if (generation !== this._listsGeneration || !this.isConnected) {
+            return;
+        }
+        const next = {};
+        Object.keys(loading).forEach((id) => {
+            next[id] =
+                loading[id].state === 'ready'
+                    ? loading[id]
+                    : { state: 'failed', rows: [] };
+        });
+        for (const l of lists || []) {
+            if (next[l.sectionId] && next[l.sectionId].state === 'ready') {
+                continue; // already on screen: keep it as it is
+            }
+            next[l.sectionId] = {
+                state: l.error ? 'failed' : 'ready',
+                error: l.error || '',
+                rows: l.rows || [],
+                total: l.total || 0,
+                childObject: l.childObject,
+                childLabel: l.childLabel,
+                childLabelPlural: l.childLabelPlural
+            };
+        }
+        this._relatedLists = next;
+    }
+
+    /** A list's Retry (finalSectionRenderer `relatedlistretry`). */
+    handleRelatedListRetry(event) {
+        event.stopPropagation();
+        if (this._relatedLists) {
+            this._loadRelatedLists();
+        }
+    }
+
+    /** On a record page the groups are related lists, not new entries. */
+    get _onRecordPage() {
+        return this._relatedLists !== null;
     }
 
     _beginEditRead() {
@@ -2217,6 +2303,16 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                             !this._hasRules ||
                             evaluateVisibility(s.visibility, ctx)
                     )
+                    // a read-only list has nothing to show on a form that
+                    // creates a record (Part 2 P2.1); the Studio preview
+                    // still draws it, with its note
+                    .filter(
+                        (s) =>
+                            !(s.repeat && s.repeat.readOnly) ||
+                            this._onRecordPage ||
+                            this.preservePreview ||
+                            this.authoring
+                    )
                     .map((s) =>
                         this._decorateGroup(
                             {
@@ -2493,6 +2589,18 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         if (!section.repeat) {
             return section;
         }
+        if (this._onRecordPage) {
+            return this._decorateList(section, ctx);
+        }
+        const preview = this.preservePreview || this.authoring;
+        if (preview && section.repeat.readOnly) {
+            return {
+                ...section,
+                entries: [],
+                repeatLimits: { min: 0, max: 0 },
+                listNote: this._previewListNote()
+            };
+        }
         const g = this._groupEntries(
             section,
             ctx,
@@ -2515,6 +2623,105 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                     ? { focus: { n: mine.n, elementId: mine.elementId } }
                     : {})
             }))
+        };
+    }
+
+    /** The Studio preview's line for a read-only list. Plain on purpose: a
+     *  group title is singular or plural ("Case", "Open cases"), so it isn't
+     *  built into the sentence. */
+    _previewListNote() {
+        return 'Existing records appear here on a record page.';
+    }
+
+    /**
+     * A group on a record page: the record's existing children, read-only
+     * (slice 1). Each row's cells follow the group's questions; a question a
+     * rule hides for that row leaves its cell empty (rules read the row's
+     * stored values, like an entry's answers).
+     */
+    _decorateList(section, ctx) {
+        const loaded = (this._relatedLists || {})[section.id] || {
+            state: 'loading',
+            rows: []
+        };
+        const cfg = section.repeat || {};
+        const questions = (section.elements || []).filter(
+            (el) => isAnswerable(el) && el.binding && el.binding.field
+        );
+        const ids = new Set((section.elements || []).map((el) => el.id));
+        const childObject = loaded.childObject || cfg.childObject;
+        const one = loaded.childLabel || childObject || 'record';
+        const many = loaded.childLabelPlural || `${one}s`;
+        const showLink = cfg.link !== false;
+        const rows = (loaded.rows || []).map((row) => {
+            const values = row.values || {};
+            const ectx = this._entryCtx(ctx, ids, values);
+            // hidden (a rule) and blank (no value) are different things:
+            // cards leave a hidden question out, the table leaves its cell
+            // empty; a blank shows as "—" / "No value" in both
+            const cells = questions.map((el) => {
+                const hidden = !(
+                    !this._hasRules || evaluateVisibility(el.visibility, ectx)
+                );
+                const text = hidden ? null : (row.cells || {})[el.id];
+                return {
+                    key: el.id,
+                    label: el.label || '',
+                    value: text === null || text === undefined ? '' : text,
+                    hidden,
+                    empty:
+                        !hidden &&
+                        (text === null || text === undefined || text === '')
+                };
+            });
+            return {
+                id: row.id,
+                name: row.name || one,
+                href: showLink
+                    ? `/lightning/r/${childObject}/${row.id}/view`
+                    : null,
+                openLabel: `Open ${one} ${row.name || ''}`.trim(),
+                // after "Open Case", for screen readers: which one, and
+                // that it opens a new tab
+                openSr: ` ${row.name || ''} (opens in a new tab)`.replace(
+                    /\s+/g,
+                    ' '
+                ),
+                cells,
+                cardCells: cells.filter((c) => !c.hidden)
+            };
+        });
+        const total = loaded.total || 0;
+        const relName = cfg.relationshipName;
+        return {
+            ...section,
+            entries: [],
+            repeatLimits: { min: 0, max: 0 },
+            list: {
+                state: loaded.state,
+                loading: loaded.state === 'loading',
+                failed: loaded.state === 'failed',
+                ready: loaded.state === 'ready',
+                errorText: loaded.error || `These ${many} couldn’t be loaded.`,
+                loadingText: `Loading ${many}…`,
+                emptyText: `No ${many} yet.`,
+                empty: loaded.state === 'ready' && rows.length === 0,
+                rows,
+                columns: questions.map((el) => ({
+                    key: el.id,
+                    label: el.label || ''
+                })),
+                nameLabel: one,
+                openText: `Open ${one}`,
+                moreText:
+                    total > rows.length
+                        ? `Showing ${rows.length} of ${total}.`
+                        : '',
+                viewAllHref:
+                    total > rows.length && relName
+                        ? `/lightning/r/${this._editObject}/${this._editRecordId}/related/${relName}/view`
+                        : null
+            }
         };
     }
 
@@ -2679,6 +2886,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         // enough entries are started (§4, §5); untouched entries never fail.
         return this.visiblePages.map((page) =>
             (page.sections || []).every((s) => {
+                if (s.repeat && (this._onRecordPage || s.repeat.readOnly)) {
+                    return true; // read-only: nothing to check
+                }
                 if (s.repeat) {
                     const g = this._groupEntries(s, ctx, true);
                     return (
@@ -3329,7 +3539,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 continue;
             }
             if (key.indexOf('repeat:') === 0) {
-                repeats[key.slice(7)] = this._groupPayload(key.slice(7));
+                if (!this._onRecordPage) {
+                    repeats[key.slice(7)] = this._groupPayload(key.slice(7));
+                }
             } else if (this._ruleTypeIndex.get(key) === 'file') {
                 for (const f of this.answers[key] || []) {
                     if (f && f.base64) {

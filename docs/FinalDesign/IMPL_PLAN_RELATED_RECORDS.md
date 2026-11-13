@@ -423,7 +423,24 @@ sheet, on the Studio preview and the Lightning tab.
 # Part 2: related lists on an existing record
 
 Status: DIRECTION AGREED 2026-11-12, open questions SETTLED 2026-11-13 (see "Settled 2026-11-13").
-**Ready to build** after Part 1 (shipped, PR 441), slice by slice (P2.5).
+**Slice 1 "See" BUILT 2026-11-13** (branch `feat/related-lists-see`); slices 2 and 3 not built.
+
+Slice 1 as built, where it is narrower than the text below (my calls):
+- **Show** conditions compare a child field with a fixed value or the current user, like a lookup filter
+  in the inspector today. Comparing with the main record's answers (`$field.`) needs the answer matching
+  the mapping screen has; it comes with slice 2.
+- The Studio preview's line "Existing records appear here on a record page." is drawn for **read-only**
+  lists only (they would otherwise be empty); an editable group keeps Part 1's add experience there.
+- `canEdit` / `canDelete` per row are not loaded yet (nothing can be changed in slice 1); slice 2 adds them.
+- Server: `FinalRelatedListService.load(versionId, parentRecordId)`; rows carry `cells` (display text:
+  picklist labels, lookup names, formatted numbers and dates) and `values` (stored values, for rules).
+  Publish refuses a Show condition that doesn't compile. Submit on an edit form accepts no group entries
+  ("Related records can’t be changed from a record page yet."), and a read-only group never takes entries.
+- UI review (2026-11-13), left for later: the shared conditions dialog still says "Search records where" in
+  a list context (its wording lives in `finalRuleEditor` / `finalConditionsSummary`, shared by every
+  screen); skeleton rows while a list loads (today one "Loading Cases…" line); a count beside the list
+  title (in the mock).
+
 
 Owner, in chat, 2026-11-12:
 
