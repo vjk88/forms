@@ -6,7 +6,8 @@ The display styles pass (a real Table and Tiles) stays deferred.
 **Two parts.** **Part 1** (§1 to §12) fixes what is broken today and is ready to build. **Part 2** (at the
 end) is the owner's 2026-11-12 ask: on an existing record, show the related records that already exist, let
 people change them, add to them and delete them. Part 2's direction and look are agreed in chat; some
-behaviour and two save-time contracts are not settled, so it is **not ready to build**. Part 1 goes first
+behaviour and the two save-time contracts were settled on 2026-11-13 (see "Settled 2026-11-13"), so it is
+**ready to build, slice by slice**; the Fill-on-new-records inspector rows get a quick mock first. Part 1 goes first
 because Part 2 stands on it.
 
 Revised the same day for review round 1 (six findings, each checked against the code before the change):
@@ -421,7 +422,8 @@ sheet, on the Studio preview and the Lightning tab.
 
 # Part 2: related lists on an existing record
 
-Status: DIRECTION AGREED 2026-11-12, **not ready to build** (see "Not settled yet"). Builds after Part 1.
+Status: DIRECTION AGREED 2026-11-12, open questions SETTLED 2026-11-13 (see "Settled 2026-11-13").
+**Ready to build** after Part 1 (shipped, PR 441), slice by slice (P2.5).
 
 Owner, in chat, 2026-11-12:
 
@@ -441,6 +443,10 @@ Owner, in chat, 2026-11-12:
 - **Guests, 2026-11-13: "public users cant view already created related records, they can only create
   new ones."** On a public form a group stays add-only (Part 1 behaviour); existing records are never
   loaded or shown to a guest, whatever the list's settings.
+- **Auto-filled fields on new records, 2026-11-13 (buttons in chat):** "Yes, autofill", **"Quietly"**, and
+  values from **"Fixed + main record"**. See P2.6.
+- **Read only, 2026-11-13:** first "No, keep Add", then straight away **"wait remove Add"**. A read-only
+  list is look-only: no change, no delete, **no Add**.
 - **The look: Cards and Table, both.** Shown the mock
   ([mocks/related-lists-mock.html](./mocks/related-lists-mock.html)), the owner said it "looks good", then:
   "why just one view, why cant A and B?" and **"Yes, both"**. The builder picks per list. Look C (rows
@@ -470,6 +476,7 @@ All in the group's inspector, as settings rows (5.4). Exact layout comes from th
 | **Read only** | Rows show their values as plain text. Nothing can be changed, added or deleted. | Off |
 | **Allow delete** | Each row gets a delete control. Not offered while Read only is on. | Off |
 | **Link to record** | Each existing row gets "Open {Case}". | On |
+| **Fill on new records** | Fields set quietly on every new row: a fixed value, or a field of the main record (P2.6). | None |
 | **Display style** (exists today) | **Stacked** = Cards (look A), **Table** (look B). Tiles stays greyed out. | Stacked |
 
 Two lists of the same object are simply two groups, each with its own conditions (this already works in the
@@ -577,26 +584,64 @@ Each slice is its own PR, deployed and checked on a Contact record page and the 
    from this slice; until slice 2 a Table list that has to be editable (an add-only group on a new-record
    form) draws as Cards, through the same fall-back.
 2. **Change and add**: editable rows **in both looks** (the Table's editable cells and inline Add), so
-   add-only groups get a real Table too; only-what-changed, one Save, reload after Save, per-row checks.
+   add-only groups get a real Table too; only-what-changed, one Save, reload after Save, per-row checks,
+   the counts above, and **Fill on new records** (P2.6, after its quick mock).
 3. **Delete**: Allow delete, the warning, "will be deleted" + Undo, delete at Save.
 
-## Not settled yet (owner questions and review decisions; not decided here)
+## P2.6 Fill on new records (owner rulings 2026-11-13)
 
-- **Auto-filled fields on a new row.** The owner wants "some fields autofilling in the backend or frontend".
-  Which values, who sets them and whether the person sees them is not described yet.
-- **Read only means no Add button.** My guess; the owner has not confirmed it.
-- **Counts with sparse updates and truncated lists.** Part 1 counts submitted entries; Part 2 sends only
-  changed rows, so payload length cannot enforce Min or Max. Before the Change and add slice, define the
-  server-authoritative count from stored list membership plus additions minus deletions, and whether
-  edits that move records into/out of a filter change that count in the same Save. Distinguish the 50-row
-  display/request cap from total membership: a list with 312 existing records must not make an unrelated
-  parent edit fail simply because it already exceeds 50. Specify how authored Max, Min, unseen rows and
-  read-only lists participate. Required cases: no child changes with a positive Min; a deletion crossing
-  Min; an addition crossing Max; a filter-changing edit; and a truncated list whose parent alone changes.
-- **One record updated and deleted through overlapping lists.** Before the Delete slice, decide whether
-  an update in one list plus a delete in another is rejected or whether one action takes precedence, and
-  specify how the result is explained on both rows. Repeated deletes of the same record must be deduplicated
-  into one DML delete, after authorization is checked for every originating list; a permitted list must
-  not authorize a delete submitted through a read-only or delete-disabled list. Required cases: update
-  plus delete in either list order; the same delete through two lists; a forbidden origin; and Undo leaving
-  an update in the other list. Keep the one-Save atomicity promise for all cases.
+What the owner asked for: "some fields autofilling in the backend or frontend". Settled as **quietly, on the
+server**, from **fixed values or the main record**.
+
+- **The builder sets it per list**, in the group's inspector, as a list of rows: *child field* ← *value*, where
+  the value is either **a fixed value** ("Status = New", "Origin = Web") or **a field of the main record**
+  (the Contact's Account → the Case's Account). Settings rows (5.4); exact look from a quick mock first.
+- **Quiet.** The respondent never sees these fields and cannot change them. They are applied by
+  `FinalSubmitService` at Save to **every new row** of that list, after the person's own answers, so the
+  builder's value wins. A field that is already a question in the same group cannot also be filled quietly
+  (the inspector refuses it, and Publish refuses a spec that does it).
+- **Main-record values** are read on the server **after** the main record is written in the same savepoint,
+  as the signed-in user (`WITH USER_MODE`), so a field they cannot read gives nothing. **Guests:** only
+  fixed values, plus main-record fields the form itself just wrote in this submission (a guest has no read
+  access to look anything else up).
+- **Works for every group**, including Part 1's add-only group on a form that creates a new record, not only
+  for lists on an existing record. It never touches existing rows (that would be an update nobody asked for).
+- **Publish checks** (`FinalPublishWarnings`, same gate as §5): the child field exists, can be created and is
+  not the link field; a fixed value fits the field's type (and is one of its picklist values); a main-record
+  source field exists on the form's object and has a compatible type (a lookup copies only to a lookup on
+  the same object). Writes still go through `stripInaccessible(CREATABLE)` for signed-in people.
+- **Spec:** `repeat.fill: [{ field: 'Status', value: 'New' } | { field: 'AccountId', from: 'AccountId' }]`.
+
+## Settled 2026-11-13 (save-time contracts; engineering calls, mine)
+
+### Counts with sparse updates and truncated lists
+
+- **The server counts a list itself**, never from the payload length: *members* = existing child records
+  that match the list's own stored clause (one `COUNT()` query, as the user, before any write), then
+  *after* = members − that list's valid deletes + that list's started new rows.
+- **Min and Max judge only what this Save changes.** A Save is refused when it **deletes** rows and *after*
+  falls below Min, or **adds** rows and *after* rises above the effective Max (blank/0 = 50). A list is never
+  refused for the state it was already in: no child changes with a positive Min passes; a list with 312
+  existing records passes an unrelated parent edit.
+- **An edit that moves a record into or out of a filter does not change that Save's counts**: membership is
+  judged on the stored records before the edit (the same rule as the save-time membership check, P2.4).
+  After Save every list reloads, so the next Save counts the new state.
+- **The 50 cap is per request, not per membership**: at most 50 items (changed rows + new rows) per list in
+  one payload. The display cap of 50 loaded rows (P2.4) and "Showing 50 of 312" are separate; a list whose
+  members already exceed the effective Max hides Add.
+- **Read-only lists** still have members but take no changes, deletes or adds, so they never fail a count.
+  Unseen rows (beyond the 50 shown) count as members and are never changed.
+- Messages: "Fill in at least 2 Cases in Open cases." / "Open cases can have at most 5 Cases." on the
+  list's line, as in Part 1.
+
+### One record changed and deleted through overlapping lists
+
+- **Refused, never resolved silently.** If one Save both changes a record (in one list) and deletes it (in
+  another), nothing is saved and **both rows** say: "This Case is changed in Open cases and deleted in Closed
+  cases. Undo one of them." The browser spots it before Save (same record id in two lists), and the server
+  checks again.
+- **The same delete through two lists** is one delete: deduplicated into a single DML row, but only after
+  **every** list it came through is checked (not read-only, Allow delete on, record is a member). One
+  forbidden origin refuses the whole Save; a permitted list never vouches for a forbidden one.
+- **Undo** of the delete in one list leaves the change in the other list, which then saves normally.
+- All of this happens before the first write, inside the one savepoint: one Save stays all-or-nothing.
