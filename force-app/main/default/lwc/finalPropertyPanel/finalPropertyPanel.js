@@ -14,6 +14,7 @@ import {
     drawsSchemaOptions,
     toSchemaOptions
 } from 'c/finalChoiceLook';
+import { limitProblems, MAX_ENTRIES_PER_GROUP } from 'c/finalRepeatGroups';
 
 /**
  * finalPropertyPanel — the selected node's editor, a direct port of the
@@ -123,10 +124,13 @@ const SPACER_SIZES = [
     { label: 'Large', value: 'large' }
 ];
 
+// Table and Tiles are not built yet: shown, greyed out, with a help line
+// saying so (owner 2026-11-12 "Show them as 'Coming soon'", DESIGN_SYSTEM
+// 5.7). Never a choice that silently does nothing.
 const REPEAT_STYLES = [
     { label: 'Stacked', value: 'stacked' },
-    { label: 'Table', value: 'table' },
-    { label: 'Tiles', value: 'tileModal' }
+    { label: 'Table', value: 'table', disabled: true },
+    { label: 'Tiles', value: 'tileModal', disabled: true }
 ];
 
 /** Field types whose look is picked with the Appearance tiles
@@ -1646,8 +1650,41 @@ export default class FinalPropertyPanel extends LightningElement {
         return this.n.repeat || {};
     }
 
+    /** Only Stacked can be drawn today, so a spec that says table/tiles
+     *  still shows (and renders) Stacked. */
     get repeatStyleSeg() {
-        return this._seg(REPEAT_STYLES, this.repeat.style || 'stacked');
+        return this._seg(REPEAT_STYLES, 'stacked');
+    }
+
+    // `{index}` can't be written in the template: it reads as a binding.
+    get entryTitlePlaceholder() {
+        return 'Entry {index}';
+    }
+
+    get entryTitleHelp() {
+        return '{index} becomes the entry number, like Case 1, Case 2.';
+    }
+
+    /** Older or imported limits that a respondent could never meet: shown
+     *  here, refused at Publish (IMPL_PLAN_RELATED_RECORDS §5). */
+    get repeatLimitError() {
+        const p = limitProblems(this.repeat.min, this.repeat.max);
+        if (p.min || p.max) {
+            return p.min || p.max;
+        }
+        return this._limitsCross(this.repeat.min, this.repeat.max)
+            ? 'Min rows can’t exceed Max rows.'
+            : '';
+    }
+
+    /** Min above the effective maximum (blank/0 Max = 50). */
+    _limitsCross(min, max) {
+        const m = min === null || min === undefined || min === '' ? 1 : +min;
+        const x =
+            max === null || max === undefined || max === '' || +max === 0
+                ? MAX_ENTRIES_PER_GROUP
+                : +max;
+        return m > x;
     }
 
     get childHeading() {
@@ -1661,17 +1698,22 @@ export default class FinalPropertyPanel extends LightningElement {
                 .map((el) => el.binding && el.binding.field)
                 .filter(Boolean)
         );
-        return (this.childFields || []).map((f) => {
-            const added = used.has(f.apiName);
-            return {
-                ...f,
-                added,
-                cls: added ? 'pp-childfield added' : 'pp-childfield',
-                title: added
-                    ? `${f.label} is already in this group`
-                    : `Add ${f.label} to the group`
-            };
-        });
+        // The link field (Contact ID under a Case group) is set by the save
+        // itself; as a question the respondent could overwrite it (§7).
+        const link = this.repeat.relationshipField;
+        return (this.childFields || [])
+            .filter((f) => f.apiName !== link)
+            .map((f) => {
+                const added = used.has(f.apiName);
+                return {
+                    ...f,
+                    added,
+                    cls: added ? 'pp-childfield added' : 'pp-childfield',
+                    title: added
+                        ? `${f.label} is already in this group`
+                        : `Add ${f.label} to the group`
+                };
+            });
     }
 
     get childLoading() {
@@ -1961,15 +2003,91 @@ export default class FinalPropertyPanel extends LightningElement {
         this._repeatPatch('addLabel', event.target.value);
     }
 
-    handleMin(event) {
-        const v = event.target.value;
-        this._repeatPatch('min', v === '' ? null : Math.max(0, Number(v)));
+    handleEntryLabel(event) {
+        this._repeatPatch('entryLabel', event.target.value);
     }
 
-    /** Legacy contract: 0 = unlimited. */
+    handleRemoveLabel(event) {
+        this._repeatPatch('removeLabel', event.target.value);
+    }
+
+    /** Says what's wrong under the box and saves nothing (5.19); a good
+     *  value clears it. */
+    /** Which limit box holds a refused value right now: { min, max }. */
+    _refusedLimits = {};
+
+    _limitInput(input, message) {
+        this._refusedLimits = {
+            ...this._refusedLimits,
+            [input.dataset.prop]: Boolean(message)
+        };
+        if (typeof input.setCustomValidity === 'function') {
+            input.setCustomValidity(message || '');
+            input.reportValidity();
+        }
+        return !message;
+    }
+
+    /** Min rows: a whole number 0–50, never above the effective maximum.
+     *  Blank = the default of 1. */
+    handleMin(event) {
+        const input = event.target;
+        const v = input.value;
+        const problem =
+            limitProblems(v, null).min ||
+            (this._limitsCross(v, this.repeat.max)
+                ? 'Min rows can’t exceed Max rows.'
+                : '');
+        if (this._limitInput(input, problem)) {
+            this._repeatPatch('min', v === '' ? null : Number(v));
+            this._recheckLimit('max', null, v);
+        }
+    }
+
+    /** Max rows: blank or 0 = up to 50, else a whole number 1–50 that is
+     *  not below Min. */
     handleMax(event) {
-        const v = Number(event.target.value);
-        this._repeatPatch('max', !v || v <= 0 ? null : v);
+        const input = event.target;
+        const v = input.value;
+        const problem =
+            limitProblems(null, v).max ||
+            (this._limitsCross(this.repeat.min, v)
+                ? 'Max rows can’t be less than Min rows.'
+                : '');
+        if (this._limitInput(input, problem)) {
+            this._repeatPatch('max', v === '' || +v === 0 ? null : Number(v));
+            this._recheckLimit('min', v, null);
+        }
+    }
+
+    /**
+     * After one box saves, the other box may hold a value that was refused
+     * only because of it (Min 5 against Max 3, then Max raised to 10). Its
+     * message must not outlive the reason: check it again, and save it now
+     * that it fits.
+     */
+    _recheckLimit(prop, newMax, newMin) {
+        const input = this.template.querySelector(`[data-prop="${prop}"]`);
+        if (!input || !this._refusedLimits[prop]) {
+            return; // nothing was refused there
+        }
+        const v = input.value;
+        const problem =
+            prop === 'min'
+                ? limitProblems(v, null).min ||
+                  (this._limitsCross(v, newMax)
+                      ? 'Min rows can’t exceed Max rows.'
+                      : '')
+                : limitProblems(null, v).max ||
+                  (this._limitsCross(newMin, v)
+                      ? 'Max rows can’t be less than Min rows.'
+                      : '');
+        if (this._limitInput(input, problem)) {
+            this._repeatPatch(
+                prop,
+                v === '' || (prop === 'max' && +v === 0) ? null : Number(v)
+            );
+        }
     }
 
     handleAddChildField(event) {

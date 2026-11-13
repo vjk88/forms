@@ -66,7 +66,9 @@ const SPEC = {
                     repeat: {
                         childObject: 'Case',
                         relationshipField: 'ContactId',
-                        min: 1
+                        // Min 0: forms that never touch the group still
+                        // submit (a Min of 1 is a check of its own now)
+                        min: 0
                     },
                     elements: [
                         {
@@ -187,6 +189,9 @@ describe('c-final-form-viewer — rule-hidden answers never reach the server', (
     it('a hidden repeat section drops its consolidated entry', async () => {
         const el = await mount();
         typeInto(el, 'Driver', 'Yes');
+        await flush();
+        // Min 0 starts empty: add the entry first
+        deepQuery(el.shadowRoot, '.rep-add').click();
         await flush();
         const entry = deepQuery(el.shadowRoot, '.rep-entry')
             .querySelector('c-final-element-renderer')

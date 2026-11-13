@@ -1503,6 +1503,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         const t = this.selectedTarget;
         const hostRepeat =
             t && t.section && t.section.repeat ? t.section.id : null;
+        const selfId = t && t.kind === 'element' && t.node ? t.node.id : null;
         const out = [];
         for (const page of (this.spec && this.spec.pages) || []) {
             for (const section of page.sections || []) {
@@ -1511,7 +1512,8 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                     continue;
                 }
                 for (const el of section.elements || []) {
-                    if (el.type === 'field') {
+                    // a rule never reads the question it sits on
+                    if (el.type === 'field' && el.id !== selfId) {
                         out.push({ id: el.id, label: el.label || el.id });
                     }
                 }

@@ -541,6 +541,142 @@ describe('c-final-property-panel (the FormStudio port)', () => {
         expect(adds[0].field.apiName).toBe('Email');
     });
 
+    describe('repeating group settings (IMPL_PLAN_RELATED_RECORDS §5–§7)', () => {
+        const group = (repeat = {}) =>
+            mount({
+                kind: 'section',
+                node: {
+                    id: 'sec_r',
+                    title: 'Team',
+                    elements: [],
+                    repeat: {
+                        childObject: 'Contact',
+                        relationshipField: 'AccountId',
+                        style: 'stacked',
+                        min: 1,
+                        max: null,
+                        ...repeat
+                    }
+                }
+            });
+        const edit = (el, prop, value) => {
+            const box = el.shadowRoot.querySelector(`[data-prop="${prop}"]`);
+            box.value = value;
+            box.dispatchEvent(new CustomEvent('change'));
+        };
+
+        it('Table and Tiles are greyed out with a line saying they are coming', async () => {
+            const el = group({ style: 'table' });
+            await flush();
+            const buttons = [...seg(el, 'Display style')];
+            expect(buttons.map((b) => b.disabled)).toEqual([false, true, true]);
+            // a spec that says table still shows (and draws) Stacked
+            expect(buttons[0].getAttribute('aria-pressed')).toBe('true');
+            expect(
+                [...el.shadowRoot.querySelectorAll('.pp-hint')].some(
+                    (p) => p.textContent === 'Table and Tiles are coming soon.'
+                )
+            ).toBe(true);
+        });
+
+        it('Entry title and Remove button label write the repeat block', async () => {
+            const el = group();
+            await flush();
+            const reps = [];
+            el.addEventListener('repeatchange', (e) => reps.push(e.detail));
+            edit(el, 'entrylabel', 'Ticket {index}');
+            edit(el, 'removelabel', 'Drop');
+            expect(reps).toEqual([
+                { patch: { entryLabel: 'Ticket {index}' } },
+                { patch: { removeLabel: 'Drop' } }
+            ]);
+        });
+
+        it('Min and Max take 0–50 whole numbers and never leave Min above Max', async () => {
+            const el = group({ min: 2, max: 5 });
+            await flush();
+            const reps = [];
+            el.addEventListener('repeatchange', (e) => reps.push(e.detail));
+            edit(el, 'min', '50');
+            edit(el, 'min', '51');
+            edit(el, 'min', '1.5');
+            edit(el, 'min', '-1');
+            edit(el, 'max', '51');
+            edit(el, 'max', 'x');
+            edit(el, 'max', '1');
+            // only nothing-crossing, in-range edits save
+            expect(reps).toEqual([]);
+
+            edit(el, 'min', '3');
+            edit(el, 'max', '50');
+            edit(el, 'max', '');
+            edit(el, 'max', '0');
+            expect(reps).toEqual([
+                { patch: { min: 3 } },
+                { patch: { max: 50 } },
+                { patch: { max: null } },
+                { patch: { max: null } }
+            ]);
+        });
+
+        it('fixing one box saves the other box it was blocking', async () => {
+            const el = group({ min: 1, max: 3 });
+            await flush();
+            const reps = [];
+            el.addEventListener('repeatchange', (e) => reps.push(e.detail));
+            edit(el, 'min', '5'); // refused: above Max 3
+            expect(reps).toEqual([]);
+            edit(el, 'max', '10'); // now Min 5 fits, and is saved too
+            expect(reps).toEqual([
+                { patch: { max: 10 } },
+                { patch: { min: 5 } }
+            ]);
+        });
+
+        it('Max blank accepts Min 50; Min 0 is allowed', async () => {
+            const el = group({ min: 1, max: null });
+            await flush();
+            const reps = [];
+            el.addEventListener('repeatchange', (e) => reps.push(e.detail));
+            edit(el, 'min', '50');
+            edit(el, 'min', '0');
+            expect(reps).toEqual([
+                { patch: { min: 50 } },
+                { patch: { min: 0 } }
+            ]);
+        });
+
+        it('stored limits a respondent could never meet are named', async () => {
+            const el = group({ min: 6, max: 5 });
+            await flush();
+            expect(el.shadowRoot.querySelector('.pp-error').textContent).toBe(
+                'Min rows can’t exceed Max rows.'
+            );
+        });
+
+        it('the link field is not offered as a question', async () => {
+            const el = group();
+            describeFields.emit([
+                ...FIELDS,
+                {
+                    apiName: 'AccountId',
+                    label: 'Account ID',
+                    inputType: 'reference',
+                    required: false
+                }
+            ]);
+            await flush();
+            expect(
+                el.shadowRoot.querySelector(
+                    '.pp-childfield[data-api="AccountId"]'
+                )
+            ).toBeNull();
+            expect(
+                el.shadowRoot.querySelectorAll('.pp-childfield')
+            ).toHaveLength(2);
+        });
+    });
+
     it('visibility group renders on every inspector (conditions summary present)', async () => {
         const el = mount({
             kind: 'page',

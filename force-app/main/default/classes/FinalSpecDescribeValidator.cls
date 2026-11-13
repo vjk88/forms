@@ -57,11 +57,23 @@ public with sharing class FinalSpecDescribeValidator {
      * @param parentObject Canonical connected parent object.
      * @return Canonical child object API name.
      * @throws DescribeException when the relationship is invalid.
+     * @throws LimitException when Min/Max are out of bounds.
      */
     public static String validateRepeat(
         Map<String, Object> repeat,
         String parentObject
     ) {
+        // The entry limits first, through the one check Publish uses too
+        // (IMPL_PLAN_RELATED_RECORDS §5). Its own exception type: a limit
+        // problem is the author's to fix, never a reason to quietly drop
+        // the group the way an unreachable object is dropped.
+        String limitProblem = FinalPublishWarnings.repeatLimitProblem(
+            repeat,
+            null
+        );
+        if (limitProblem != null) {
+            throw new LimitException(limitProblem);
+        }
         if (String.isBlank(parentObject)) {
             throw new DescribeException(
                 'A repeatable section requires a connected parent object.'
@@ -220,5 +232,10 @@ public with sharing class FinalSpecDescribeValidator {
 
     /** Describe validation error consumed by the transfer validator. */
     public class DescribeException extends Exception {
+    }
+
+    /** A repeating group's Min/Max can't be met. Never caught as a describe
+     *  problem: the import is refused, not quietly simplified. */
+    public class LimitException extends Exception {
     }
 }

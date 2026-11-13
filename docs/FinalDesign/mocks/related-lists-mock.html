@@ -1,0 +1,1307 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Related lists mock</title>
+        <style>
+            /* Quick desktop sketch for the owner's pick (IMPL_PLAN_RELATED_RECORDS Part 2).
+               Studio side reads the Formwork tokens; the form side imitates Nordic Minimalist. */
+            :root {
+                --c-studio-surface: #ffffff;
+                --c-studio-surface-subtle: #f8fafc;
+                --c-studio-workspace: #f1f5f9;
+                --c-studio-text: #1f2937;
+                --c-studio-text-weak: #526071;
+                --c-studio-border-strong: #7c8999;
+                --c-studio-border: #dce2e9;
+                --c-studio-border-subtle: #e8edf2;
+                --c-studio-accent: #0f766e;
+                --c-studio-accent-text: #115e59;
+                --c-studio-accent-surface: #e8f5f2;
+                --c-studio-warning-text: #73510d;
+                --c-studio-warning-surface: #fff5df;
+                --c-studio-warning-border: #caa24c;
+                --c-studio-font:
+                    system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+                --f-sheet: #ffffff;
+                --f-section: #f4f6f5;
+                --f-border: #dfe4e2;
+                --f-text: #1c2430;
+                --f-weak: #5b6675;
+                --f-accent: #1f2f7a;
+                --f-accent-soft: #eceffa;
+                --f-input-border: #c4ccd6;
+                --f-error: #b42318;
+                --f-error-soft: #fef1ee;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                background: var(--c-studio-workspace);
+                color: var(--c-studio-text);
+                font: 400 13px/1.45 var(--c-studio-font);
+            }
+            button {
+                font: inherit;
+                cursor: pointer;
+            }
+            .top {
+                background: var(--c-studio-surface);
+                border-bottom: 1px solid var(--c-studio-border);
+                padding: 16px 24px;
+                display: flex;
+                align-items: center;
+                gap: 24px;
+                flex-wrap: wrap;
+            }
+            .top h1 {
+                font-size: 16px;
+                font-weight: 600;
+                margin: 0;
+            }
+            .top p {
+                margin: 2px 0 0;
+                color: var(--c-studio-text-weak);
+            }
+            .seg {
+                display: inline-flex;
+                border: 1px solid var(--c-studio-border-strong);
+                border-radius: 8px;
+                overflow: hidden;
+            }
+            .seg button {
+                height: 32px;
+                padding: 0 16px;
+                border: 0;
+                background: var(--c-studio-surface);
+                color: var(--c-studio-text);
+                font-weight: 600;
+                border-left: 1px solid var(--c-studio-border);
+            }
+            .seg button:first-child {
+                border-left: 0;
+            }
+            .seg button[aria-pressed='true'] {
+                background: var(--c-studio-accent);
+                color: #fff;
+            }
+            .seg button:focus-visible {
+                outline: 2px solid var(--c-studio-accent);
+                outline-offset: -4px;
+            }
+
+            .stage {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) 300px;
+                gap: 24px;
+                padding: 24px;
+                align-items: start;
+            }
+            .why {
+                background: var(--c-studio-surface-subtle);
+                border: 1px solid var(--c-studio-border-subtle);
+                border-radius: 8px;
+                padding: 12px 16px;
+                margin: 0 0 16px;
+                color: var(--c-studio-text);
+            }
+            .why b {
+                font-weight: 600;
+            }
+
+            /* ---- the record page ---- */
+            .record {
+                background: #eef1f6;
+                border: 1px solid var(--c-studio-border);
+                border-radius: 12px;
+                overflow: hidden;
+            }
+            .rec-head {
+                background: #fff;
+                border-bottom: 1px solid var(--c-studio-border);
+                padding: 12px 20px;
+                display: flex;
+                gap: 12px;
+                align-items: center;
+            }
+            .rec-icon {
+                width: 32px;
+                height: 32px;
+                border-radius: 6px;
+                background: #7f6fd6;
+            }
+            .rec-head small {
+                display: block;
+                color: var(--c-studio-text-weak);
+            }
+            .rec-head strong {
+                font-size: 16px;
+            }
+            .sheet {
+                background: var(--f-sheet);
+                color: var(--f-text);
+                margin: 20px;
+                border-radius: 12px;
+                padding: 24px;
+                box-shadow: 0 1px 3px rgb(15 23 42 / 10%);
+            }
+            .sheet h2 {
+                font-size: 20px;
+                margin: 0 0 16px;
+            }
+            .sec {
+                background: var(--f-section);
+                border: 1px solid var(--f-border);
+                border-radius: 10px;
+                padding: 16px;
+                margin-bottom: 16px;
+            }
+            .sec-head {
+                display: flex;
+                align-items: baseline;
+                gap: 8px;
+                margin-bottom: 12px;
+            }
+            .sec-head h3 {
+                font-size: 15px;
+                margin: 0;
+            }
+            .sec-head .count {
+                color: var(--f-weak);
+            }
+            .sec-head .tag {
+                margin-left: auto;
+                font-size: 11px;
+                color: var(--f-weak);
+                border: 1px solid var(--f-border);
+                border-radius: 4px;
+                padding: 2px 8px;
+                background: #fff;
+            }
+            .grid {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 12px;
+            }
+            .fld label {
+                display: block;
+                font-weight: 600;
+                font-size: 12px;
+                margin-bottom: 4px;
+            }
+            .in,
+            .sel {
+                width: 100%;
+                height: 34px;
+                border: 1px solid var(--f-input-border);
+                border-radius: 8px;
+                background: #fff;
+                padding: 0 10px;
+                font: inherit;
+                color: var(--f-text);
+            }
+            .val {
+                min-height: 20px;
+            }
+            .ro label {
+                color: var(--f-weak);
+                font-weight: 400;
+            }
+
+            .link {
+                color: var(--f-accent);
+                text-decoration: none;
+                font-weight: 600;
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                white-space: nowrap;
+            }
+            .link:hover {
+                text-decoration: underline;
+            }
+            .icon-btn {
+                width: 30px;
+                height: 30px;
+                border: 0;
+                background: transparent;
+                border-radius: 6px;
+                color: var(--f-weak);
+                display: inline-grid;
+                place-items: center;
+            }
+            .icon-btn:hover {
+                background: #e7ebea;
+                color: var(--f-error);
+            }
+            svg {
+                width: 16px;
+                height: 16px;
+                flex: none;
+            }
+            .add {
+                margin-top: 12px;
+                height: 34px;
+                padding: 0 14px;
+                border: 1px dashed var(--f-input-border);
+                border-radius: 8px;
+                background: #fff;
+                color: var(--f-accent);
+                font-weight: 600;
+            }
+            .save-bar {
+                display: flex;
+                justify-content: flex-end;
+            }
+            .save {
+                height: 38px;
+                padding: 0 22px;
+                border: 0;
+                border-radius: 8px;
+                background: var(--f-accent);
+                color: #fff;
+                font-weight: 600;
+            }
+            .gone-note {
+                background: var(--f-error-soft);
+                color: var(--f-error);
+                border-radius: 6px;
+                padding: 4px 10px;
+                display: inline-flex;
+                gap: 10px;
+                align-items: center;
+                font-weight: 600;
+            }
+            .gone-note button {
+                border: 0;
+                background: none;
+                color: var(--f-accent);
+                font-weight: 600;
+                text-decoration: underline;
+                padding: 0;
+            }
+            .struck {
+                text-decoration: line-through;
+                color: var(--f-weak);
+            }
+
+            /* look A: cards */
+            .card {
+                background: #fff;
+                border: 1px solid var(--f-border);
+                border-radius: 10px;
+                padding: 12px 14px;
+                margin-bottom: 10px;
+            }
+            .card-head {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 10px;
+            }
+            .card-head .no {
+                color: var(--f-weak);
+                font-weight: 600;
+            }
+            .card-head .sp {
+                margin-left: auto;
+            }
+            .card.gone {
+                background: #fbfbfb;
+            }
+            .card.gone .grid {
+                opacity: 0.75;
+            }
+            .card.gone .in,
+            .card.gone .sel {
+                background: #f1f3f2;
+                color: var(--f-text);
+            }
+
+            /* look B: table */
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                background: #fff;
+                border: 1px solid var(--f-border);
+                border-radius: 10px;
+                overflow: hidden;
+            }
+            th {
+                text-align: left;
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--f-weak);
+                background: #fafbfb;
+                padding: 8px 10px;
+                border-bottom: 1px solid var(--f-border);
+            }
+            td {
+                padding: 6px 10px;
+                border-bottom: 1px solid #edf0ef;
+                vertical-align: middle;
+            }
+            tr:last-child td {
+                border-bottom: 0;
+            }
+            td.act {
+                white-space: nowrap;
+                text-align: right;
+                width: 1%;
+            }
+            td.no {
+                white-space: nowrap;
+                width: 1%;
+            }
+            table.ro td {
+                padding: 10px;
+            }
+
+            /* look C: rows that open */
+            .row {
+                background: #fff;
+                border: 1px solid var(--f-border);
+                border-radius: 10px;
+                margin-bottom: 8px;
+            }
+            .row-sum {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 8px 12px;
+            }
+            .row-sum .chev {
+                color: var(--f-weak);
+                display: inline-grid;
+            }
+            .row-sum .ttl {
+                font-weight: 600;
+            }
+            .row-sum .no {
+                color: var(--f-weak);
+            }
+            .chip {
+                font-size: 11px;
+                border-radius: 4px;
+                padding: 2px 8px;
+                background: var(--f-accent-soft);
+                color: var(--f-accent);
+                font-weight: 600;
+            }
+            .chip.plain {
+                background: #eef1f0;
+                color: var(--f-weak);
+            }
+            .row-sum .sp {
+                margin-left: auto;
+            }
+            .row-body {
+                border-top: 1px solid #edf0ef;
+                padding: 12px 14px;
+            }
+
+            /* ---- builder side ---- */
+            .panel {
+                background: var(--c-studio-surface);
+                border: 1px solid var(--c-studio-border);
+                border-radius: 12px;
+                padding: 16px;
+                position: sticky;
+                top: 16px;
+            }
+            .panel h4 {
+                margin: 0 0 2px;
+                font-size: 13px;
+                font-weight: 600;
+            }
+            .panel .sub {
+                color: var(--c-studio-text-weak);
+                margin: 0 0 16px;
+                font-size: 12px;
+            }
+            .grp {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-weight: 600;
+                margin: 20px 0 12px;
+            }
+            .grp::after {
+                content: '';
+                flex: 1;
+                height: 1px;
+                background: var(--c-studio-border);
+            }
+            .set {
+                margin-bottom: 16px;
+            }
+            .set > span {
+                display: block;
+                margin-bottom: 4px;
+            }
+            .set .help {
+                color: var(--c-studio-text-weak);
+                font-size: 12px;
+                margin-top: 4px;
+            }
+            .box {
+                border: 1px solid var(--c-studio-border-strong);
+                border-radius: 8px;
+                height: 32px;
+                padding: 0 12px;
+                display: flex;
+                align-items: center;
+            }
+            .sumbox {
+                background: var(--c-studio-surface-subtle);
+                border: 1px solid var(--c-studio-border-subtle);
+                border-radius: 8px;
+                padding: 8px 12px;
+            }
+            .quiet {
+                border: 0;
+                background: none;
+                color: var(--c-studio-accent-text);
+                font-weight: 600;
+                padding: 4px 0 0;
+            }
+            .tog {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 12px;
+            }
+            .sw {
+                width: 32px;
+                height: 18px;
+                border-radius: 999px;
+                background: #c5ccd6;
+                position: relative;
+                flex: none;
+            }
+            .sw::after {
+                content: '';
+                position: absolute;
+                top: 2px;
+                left: 2px;
+                width: 14px;
+                height: 14px;
+                border-radius: 50%;
+                background: #fff;
+            }
+            .sw.on {
+                background: var(--c-studio-accent);
+            }
+            .sw.on::after {
+                left: 16px;
+            }
+            .new {
+                font-size: 11px;
+                background: var(--c-studio-accent-surface);
+                color: var(--c-studio-accent-text);
+                border-radius: 4px;
+                padding: 0 8px;
+                height: 20px;
+                display: inline-flex;
+                align-items: center;
+                font-weight: 400;
+            }
+            .mini-seg {
+                display: flex;
+                border: 1px solid var(--c-studio-border-strong);
+                border-radius: 8px;
+                overflow: hidden;
+            }
+            .mini-seg span {
+                flex: 1;
+                text-align: center;
+                height: 30px;
+                line-height: 30px;
+                font-weight: 600;
+                border-left: 1px solid var(--c-studio-border);
+            }
+            .mini-seg span:first-child {
+                border-left: 0;
+                background: var(--c-studio-accent);
+                color: #fff;
+            }
+            .mini-seg span.off {
+                color: var(--c-studio-text-weak);
+                background: var(--c-studio-workspace);
+                font-weight: 400;
+            }
+            [hidden] {
+                display: none !important;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="top">
+            <div>
+                <h1>Related lists on a record page: pick a look</h1>
+                <p>
+                    Same Contact, same Cases, three ways to draw them. "Open
+                    cases" can be edited and deleted from. "Closed cases" is
+                    read only.
+                </p>
+            </div>
+            <div class="seg" role="group" aria-label="Look">
+                <button type="button" data-look="a" aria-pressed="true">
+                    A · Cards
+                </button>
+                <button type="button" data-look="b" aria-pressed="false">
+                    B · Table
+                </button>
+                <button type="button" data-look="c" aria-pressed="false">
+                    C · Rows that open
+                </button>
+            </div>
+        </div>
+
+        <div class="stage">
+            <main>
+                <p class="why" data-for="a">
+                    <b>A · Cards.</b> What groups look like today, one card per
+                    Case. Roomy and works with any number of fields. Gets long
+                    fast: 10 Cases is a lot of scrolling.
+                </p>
+                <p class="why" data-for="b" hidden>
+                    <b>B · Table.</b> Looks like a Salesforce related list: one
+                    line per Case. Most compact and easiest to scan. Comfortable
+                    up to about 5 fields; more than that gets cramped. Needs the
+                    real Table built (today it says "coming soon").
+                </p>
+                <p class="why" data-for="c" hidden>
+                    <b>C · Rows that open.</b> One line per Case; click a line
+                    to open its fields. Compact and still fits any number of
+                    fields. Costs one extra click to edit, and you only see one
+                    Case's fields at a time.
+                </p>
+
+                <div class="record">
+                    <div class="rec-head">
+                        <span class="rec-icon"></span>
+                        <div>
+                            <small>Contact</small><strong>Avery Stone</strong>
+                        </div>
+                    </div>
+                    <div class="sheet">
+                        <h2>Contact update</h2>
+
+                        <div class="sec">
+                            <div class="sec-head"><h3>Contact details</h3></div>
+                            <div class="grid">
+                                <div class="fld">
+                                    <label>Last name</label
+                                    ><input class="in" value="Stone" />
+                                </div>
+                                <div class="fld">
+                                    <label>First name</label
+                                    ><input class="in" value="Avery" />
+                                </div>
+                                <div class="fld">
+                                    <label>Phone</label
+                                    ><input class="in" value="555-0142" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ================= LOOK A: CARDS ================= -->
+                        <div data-for="a">
+                            <div class="sec">
+                                <div class="sec-head">
+                                    <h3>Open cases</h3>
+                                    <span class="count">3</span>
+                                </div>
+                                <div class="card">
+                                    <div class="card-head">
+                                        <span class="no">Case 00001026</span
+                                        ><span class="sp"></span>
+                                        <a class="link" href="#"
+                                            >Open Case
+                                            <svg
+                                                viewBox="0 0 16 16"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="1.6"
+                                            >
+                                                <path
+                                                    d="M6 3H3v10h10v-3M9 3h4v4M13 3 7.5 8.5"
+                                                /></svg
+                                        ></a>
+                                        <button
+                                            class="icon-btn"
+                                            title="Delete Case 00001026"
+                                        >
+                                            <svg
+                                                viewBox="0 0 16 16"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="1.5"
+                                            >
+                                                <path
+                                                    d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5"
+                                                />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div class="grid">
+                                        <div class="fld">
+                                            <label>Subject</label
+                                            ><input
+                                                class="in"
+                                                value="Printer won't connect"
+                                            />
+                                        </div>
+                                        <div class="fld">
+                                            <label>Priority</label
+                                            ><select class="sel">
+                                                <option>High</option>
+                                            </select>
+                                        </div>
+                                        <div class="fld">
+                                            <label>Status</label
+                                            ><select class="sel">
+                                                <option>New</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card">
+                                    <div class="card-head">
+                                        <span class="no">Case 00001031</span
+                                        ><span class="sp"></span>
+                                        <a class="link" href="#"
+                                            >Open Case
+                                            <svg
+                                                viewBox="0 0 16 16"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="1.6"
+                                            >
+                                                <path
+                                                    d="M6 3H3v10h10v-3M9 3h4v4M13 3 7.5 8.5"
+                                                /></svg
+                                        ></a>
+                                        <button
+                                            class="icon-btn"
+                                            title="Delete Case 00001031"
+                                        >
+                                            <svg
+                                                viewBox="0 0 16 16"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="1.5"
+                                            >
+                                                <path
+                                                    d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5"
+                                                />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div class="grid">
+                                        <div class="fld">
+                                            <label>Subject</label
+                                            ><input
+                                                class="in"
+                                                value="Invoice shows wrong address"
+                                            />
+                                        </div>
+                                        <div class="fld">
+                                            <label>Priority</label
+                                            ><select class="sel">
+                                                <option>Medium</option>
+                                            </select>
+                                        </div>
+                                        <div class="fld">
+                                            <label>Status</label
+                                            ><select class="sel">
+                                                <option>Working</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card gone">
+                                    <div class="card-head">
+                                        <span class="no struck"
+                                            >Case 00001019</span
+                                        >
+                                        <span class="gone-note"
+                                            >Will be deleted when you save
+                                            <button type="button">
+                                                Undo
+                                            </button></span
+                                        >
+                                    </div>
+                                    <div class="grid">
+                                        <div class="fld">
+                                            <label>Subject</label
+                                            ><input
+                                                class="in"
+                                                value="Duplicate login email"
+                                                disabled
+                                            />
+                                        </div>
+                                        <div class="fld">
+                                            <label>Priority</label
+                                            ><select class="sel" disabled>
+                                                <option>Low</option>
+                                            </select>
+                                        </div>
+                                        <div class="fld">
+                                            <label>Status</label
+                                            ><select class="sel" disabled>
+                                                <option>Escalated</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button class="add" type="button">
+                                    + Add case
+                                </button>
+                            </div>
+
+                            <div class="sec">
+                                <div class="sec-head">
+                                    <h3>Closed cases</h3>
+                                    <span class="count">2</span
+                                    ><span class="tag">Read only</span>
+                                </div>
+                                <div class="card ro">
+                                    <div class="card-head">
+                                        <span class="no">Case 00000987</span
+                                        ><span class="sp"></span
+                                        ><a class="link" href="#"
+                                            >Open Case
+                                            <svg
+                                                viewBox="0 0 16 16"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="1.6"
+                                            >
+                                                <path
+                                                    d="M6 3H3v10h10v-3M9 3h4v4M13 3 7.5 8.5"
+                                                /></svg
+                                        ></a>
+                                    </div>
+                                    <div class="grid">
+                                        <div class="fld">
+                                            <label>Subject</label>
+                                            <div class="val">
+                                                Password reset
+                                            </div>
+                                        </div>
+                                        <div class="fld">
+                                            <label>Priority</label>
+                                            <div class="val">Medium</div>
+                                        </div>
+                                        <div class="fld">
+                                            <label>Status</label>
+                                            <div class="val">Closed</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card ro">
+                                    <div class="card-head">
+                                        <span class="no">Case 00000954</span
+                                        ><span class="sp"></span
+                                        ><a class="link" href="#"
+                                            >Open Case
+                                            <svg
+                                                viewBox="0 0 16 16"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="1.6"
+                                            >
+                                                <path
+                                                    d="M6 3H3v10h10v-3M9 3h4v4M13 3 7.5 8.5"
+                                                /></svg
+                                        ></a>
+                                    </div>
+                                    <div class="grid">
+                                        <div class="fld">
+                                            <label>Subject</label>
+                                            <div class="val">
+                                                Refund for March order
+                                            </div>
+                                        </div>
+                                        <div class="fld">
+                                            <label>Priority</label>
+                                            <div class="val">High</div>
+                                        </div>
+                                        <div class="fld">
+                                            <label>Status</label>
+                                            <div class="val">Closed</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ================= LOOK B: TABLE ================= -->
+                        <div data-for="b" hidden>
+                            <div class="sec">
+                                <div class="sec-head">
+                                    <h3>Open cases</h3>
+                                    <span class="count">3</span>
+                                </div>
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Case</th>
+                                            <th>Subject</th>
+                                            <th>Priority</th>
+                                            <th>Status</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="no">
+                                                <a class="link" href="#"
+                                                    >00001026</a
+                                                >
+                                            </td>
+                                            <td>
+                                                <input
+                                                    class="in"
+                                                    value="Printer won't connect"
+                                                />
+                                            </td>
+                                            <td>
+                                                <select class="sel">
+                                                    <option>High</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <select class="sel">
+                                                    <option>New</option>
+                                                </select>
+                                            </td>
+                                            <td class="act">
+                                                <button
+                                                    class="icon-btn"
+                                                    title="Delete Case 00001026"
+                                                >
+                                                    <svg
+                                                        viewBox="0 0 16 16"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        stroke-width="1.5"
+                                                    >
+                                                        <path
+                                                            d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5"
+                                                        />
+                                                    </svg>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="no">
+                                                <a class="link" href="#"
+                                                    >00001031</a
+                                                >
+                                            </td>
+                                            <td>
+                                                <input
+                                                    class="in"
+                                                    value="Invoice shows wrong address"
+                                                />
+                                            </td>
+                                            <td>
+                                                <select class="sel">
+                                                    <option>Medium</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <select class="sel">
+                                                    <option>Working</option>
+                                                </select>
+                                            </td>
+                                            <td class="act">
+                                                <button
+                                                    class="icon-btn"
+                                                    title="Delete Case 00001031"
+                                                >
+                                                    <svg
+                                                        viewBox="0 0 16 16"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        stroke-width="1.5"
+                                                    >
+                                                        <path
+                                                            d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5"
+                                                        />
+                                                    </svg>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="no struck">00001019</td>
+                                            <td class="struck">
+                                                Duplicate login email
+                                            </td>
+                                            <td colspan="3">
+                                                <span class="gone-note"
+                                                    >Will be deleted when you
+                                                    save
+                                                    <button type="button">
+                                                        Undo
+                                                    </button></span
+                                                >
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <button class="add" type="button">
+                                    + Add case
+                                </button>
+                            </div>
+
+                            <div class="sec">
+                                <div class="sec-head">
+                                    <h3>Closed cases</h3>
+                                    <span class="count">2</span
+                                    ><span class="tag">Read only</span>
+                                </div>
+                                <table class="ro">
+                                    <thead>
+                                        <tr>
+                                            <th>Case</th>
+                                            <th>Subject</th>
+                                            <th>Priority</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="no">
+                                                <a class="link" href="#"
+                                                    >00000987</a
+                                                >
+                                            </td>
+                                            <td>Password reset</td>
+                                            <td>Medium</td>
+                                            <td>Closed</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="no">
+                                                <a class="link" href="#"
+                                                    >00000954</a
+                                                >
+                                            </td>
+                                            <td>Refund for March order</td>
+                                            <td>High</td>
+                                            <td>Closed</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- ================= LOOK C: ROWS THAT OPEN ================= -->
+                        <div data-for="c" hidden>
+                            <div class="sec">
+                                <div class="sec-head">
+                                    <h3>Open cases</h3>
+                                    <span class="count">3</span>
+                                </div>
+                                <div class="row">
+                                    <div class="row-sum">
+                                        <span class="chev"
+                                            ><svg
+                                                viewBox="0 0 16 16"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="1.8"
+                                            >
+                                                <path d="m4 6 4 4 4-4" /></svg
+                                        ></span>
+                                        <span class="ttl"
+                                            >Printer won't connect</span
+                                        ><span class="no">00001026</span>
+                                        <span class="chip">High</span
+                                        ><span class="chip plain">New</span>
+                                        <span class="sp"></span>
+                                        <a class="link" href="#"
+                                            >Open Case
+                                            <svg
+                                                viewBox="0 0 16 16"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="1.6"
+                                            >
+                                                <path
+                                                    d="M6 3H3v10h10v-3M9 3h4v4M13 3 7.5 8.5"
+                                                /></svg
+                                        ></a>
+                                        <button
+                                            class="icon-btn"
+                                            title="Delete Case 00001026"
+                                        >
+                                            <svg
+                                                viewBox="0 0 16 16"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="1.5"
+                                            >
+                                                <path
+                                                    d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5"
+                                                />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div class="row-body">
+                                        <div class="grid">
+                                            <div class="fld">
+                                                <label>Subject</label
+                                                ><input
+                                                    class="in"
+                                                    value="Printer won't connect"
+                                                />
+                                            </div>
+                                            <div class="fld">
+                                                <label>Priority</label
+                                                ><select class="sel">
+                                                    <option>High</option>
+                                                </select>
+                                            </div>
+                                            <div class="fld">
+                                                <label>Status</label
+                                                ><select class="sel">
+                                                    <option>New</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="row-sum">
+                                        <span class="chev"
+                                            ><svg
+                                                viewBox="0 0 16 16"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="1.8"
+                                            >
+                                                <path d="m6 4 4 4-4 4" /></svg
+                                        ></span>
+                                        <span class="ttl"
+                                            >Invoice shows wrong address</span
+                                        ><span class="no">00001031</span>
+                                        <span class="chip">Medium</span
+                                        ><span class="chip plain">Working</span>
+                                        <span class="sp"></span>
+                                        <a class="link" href="#"
+                                            >Open Case
+                                            <svg
+                                                viewBox="0 0 16 16"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="1.6"
+                                            >
+                                                <path
+                                                    d="M6 3H3v10h10v-3M9 3h4v4M13 3 7.5 8.5"
+                                                /></svg
+                                        ></a>
+                                        <button
+                                            class="icon-btn"
+                                            title="Delete Case 00001031"
+                                        >
+                                            <svg
+                                                viewBox="0 0 16 16"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="1.5"
+                                            >
+                                                <path
+                                                    d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5"
+                                                />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="row-sum">
+                                        <span class="chev"
+                                            ><svg
+                                                viewBox="0 0 16 16"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="1.8"
+                                            >
+                                                <path d="m6 4 4 4-4 4" /></svg
+                                        ></span>
+                                        <span class="ttl struck"
+                                            >Duplicate login email</span
+                                        ><span class="no struck">00001019</span>
+                                        <span class="sp"></span>
+                                        <span class="gone-note"
+                                            >Will be deleted when you save
+                                            <button type="button">
+                                                Undo
+                                            </button></span
+                                        >
+                                    </div>
+                                </div>
+                                <button class="add" type="button">
+                                    + Add case
+                                </button>
+                            </div>
+
+                            <div class="sec">
+                                <div class="sec-head">
+                                    <h3>Closed cases</h3>
+                                    <span class="count">2</span
+                                    ><span class="tag">Read only</span>
+                                </div>
+                                <div class="row">
+                                    <div class="row-sum">
+                                        <span class="chev"
+                                            ><svg
+                                                viewBox="0 0 16 16"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="1.8"
+                                            >
+                                                <path d="m6 4 4 4-4 4" /></svg
+                                        ></span>
+                                        <span class="ttl">Password reset</span
+                                        ><span class="no">00000987</span>
+                                        <span class="chip">Medium</span
+                                        ><span class="chip plain">Closed</span>
+                                        <span class="sp"></span>
+                                        <a class="link" href="#"
+                                            >Open Case
+                                            <svg
+                                                viewBox="0 0 16 16"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="1.6"
+                                            >
+                                                <path
+                                                    d="M6 3H3v10h10v-3M9 3h4v4M13 3 7.5 8.5"
+                                                /></svg
+                                        ></a>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="row-sum">
+                                        <span class="chev"
+                                            ><svg
+                                                viewBox="0 0 16 16"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="1.8"
+                                            >
+                                                <path d="m6 4 4 4-4 4" /></svg
+                                        ></span>
+                                        <span class="ttl"
+                                            >Refund for March order</span
+                                        ><span class="no">00000954</span>
+                                        <span class="chip">High</span
+                                        ><span class="chip plain">Closed</span>
+                                        <span class="sp"></span>
+                                        <a class="link" href="#"
+                                            >Open Case
+                                            <svg
+                                                viewBox="0 0 16 16"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="1.6"
+                                            >
+                                                <path
+                                                    d="M6 3H3v10h10v-3M9 3h4v4M13 3 7.5 8.5"
+                                                /></svg
+                                        ></a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="save-bar">
+                            <button class="save" type="button">Save</button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <aside class="panel">
+                <h4>What the builder sets</h4>
+                <p class="sub">
+                    Studio, group inspector, for the "Open cases" list. Same for
+                    all three looks.
+                </p>
+
+                <div class="set">
+                    <span>Group title</span>
+                    <div class="box">Open cases</div>
+                </div>
+                <div class="set">
+                    <span>Child records</span>
+                    <div>
+                        Case
+                        <span style="color: var(--c-studio-text-weak)"
+                            >via Contact ID</span
+                        >
+                    </div>
+                </div>
+
+                <div class="grp">
+                    Existing records <span class="new">New</span>
+                </div>
+                <div class="set">
+                    <span>Show</span>
+                    <div class="sumbox">
+                        Cases where <b>Status</b> is not <b>Closed</b>
+                    </div>
+                    <button class="quiet" type="button">Edit conditions</button>
+                    <div class="help">
+                        Blank shows every Case of this Contact.
+                    </div>
+                </div>
+                <div class="tog">
+                    <span>Read only</span><span class="sw"></span>
+                </div>
+                <div class="tog">
+                    <span>Allow delete</span><span class="sw on"></span>
+                </div>
+                <div class="tog">
+                    <span>Link to record</span><span class="sw on"></span>
+                </div>
+
+                <div class="grp">Entries</div>
+                <div class="set">
+                    <span>Display style</span>
+                    <div class="mini-seg">
+                        <span>Stacked</span><span class="off">Table</span
+                        ><span class="off">Tiles</span>
+                    </div>
+                    <div class="help">Table and Tiles are coming soon.</div>
+                </div>
+                <div class="set">
+                    <span>Add-button label</span>
+                    <div class="box">Add case</div>
+                </div>
+            </aside>
+        </div>
+
+        <script>
+            const buttons = document.querySelectorAll('.seg button');
+            buttons.forEach((b) =>
+                b.addEventListener('click', () => {
+                    buttons.forEach((x) =>
+                        x.setAttribute('aria-pressed', String(x === b))
+                    );
+                    document.querySelectorAll('[data-for]').forEach((el) => {
+                        el.hidden = el.dataset.for !== b.dataset.look;
+                    });
+                })
+            );
+        </script>
+    </body>
+</html>

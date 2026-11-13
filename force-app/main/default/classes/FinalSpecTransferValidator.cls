@@ -310,6 +310,8 @@ public with sharing class FinalSpecTransferValidator {
             );
         } catch (FinalSpecDescribeValidator.DescribeException e) {
             throw new ValidationException(e.getMessage());
+        } catch (FinalSpecDescribeValidator.LimitException e) {
+            throw new ValidationException(e.getMessage());
         }
     }
 

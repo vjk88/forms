@@ -29,6 +29,12 @@ import { ensureFontRefs } from 'c/finalFontBundle';
 import { evaluateVisibility, validateElement } from 'c/finalExpressionEngine';
 import { reconcileAnswers, pageAnchor, restorePage } from './previewSession';
 import { repeatsPageName } from 'c/finalPageName';
+import {
+    repeatLimits,
+    isAnswerable,
+    isBlankAnswer,
+    minimumMessage
+} from 'c/finalRepeatGroups';
 import { headerFade, paneFadeEligible } from './headerFade';
 import {
     // The engine's two-argument reconcile, as the call below always meant:
@@ -288,6 +294,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         return {
             spec: this._previewSpec,
             answers: { ...this.answers },
+            repeatKeys: JSON.parse(JSON.stringify(this._repeatKeys || {})),
             anchor: pageAnchor(this.visiblePages[this.pageIndex]),
             pageIndex: this.pageIndex,
             startedAt: this._startedAt
@@ -588,6 +595,20 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     /** elementId -> [message] from the SERVER's rejection of the last submit.
      *  Separate from client validation so the two can coexist on one field. */
     _serverFieldErrors = {};
+
+    /** Repeating groups (IMPL_PLAN_RELATED_RECORDS §3): per group, the entry
+     *  keys in order and the next key number — `{ keys: ['en_0'], seq: 1 }`.
+     *  Parallel to the answer list `repeat:{sectionId}`; never sent. Mutated
+     *  in place when it is only being made consistent with the answers
+     *  (no render needed), replaced wholesale when a group changes. */
+    _repeatKeys = {};
+    /** sectionId -> entry key -> elementId -> [message]: the server's
+     *  refusal of one related record, kept by KEY so removing an earlier
+     *  entry can't slide it onto a neighbour (§4). */
+    _serverEntryErrors = {};
+    /** sectionId -> the key order as it was sent, to turn the server's
+     *  zero-based entryIndex back into an entry key. */
+    _submitEntryKeys = {};
 
     /** Autofill state machine and active lookup queries (IMPL_PLAN_AUTOFILL_RULES §6). */
     _autofillSession = null;
@@ -915,6 +936,20 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         const effectivePages = onePerScreen
             ? splitOnePerScreen(spec.pages || [])
             : spec.pages || [];
+        // A published group whose entry limits can't be met (Min 51, Min
+        // above Max, a fractional Max) does not open: the visitor can do
+        // nothing about it, so no Retry (§5). The Studio keeps showing the
+        // draft; its inspector and Publish name the problem.
+        if (!this.authoring && !this.preservePreview) {
+            const bad = this._badRepeatGroup(spec);
+            if (bad) {
+                this.error = `The entry limits for ${
+                    bad.title || 'a repeating group'
+                } need to be corrected by the form owner.`;
+                this.model = null;
+                return;
+            }
+        }
         // Same layout + page count (a live-preview retint/retitle) keeps the
         // visitor's place; anything structural restarts at page 1.
         const keepNav =
@@ -1018,6 +1053,13 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         this._answers = preview
             ? reconcileAnswers(preview.answers, preview.spec, spec)
             : {};
+        // The key counter lives as long as the answers do: a fresh form
+        // session starts at en_0, the Studio preview keeps its counter.
+        this._repeatKeys = preview?.repeatKeys
+            ? JSON.parse(JSON.stringify(preview.repeatKeys))
+            : {};
+        this._serverEntryErrors = {};
+        this._submitEntryKeys = {};
         // R6 — preservation mode must still CREATE a session when there is not
         // one yet. Studio sets preserve-session, so on the first mount this took
         // the reconcile branch with a null session, reconcile returned null
@@ -1077,6 +1119,11 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             for (const section of page.sections || []) {
                 if (section.visibility) {
                     this._hasRules = true;
+                }
+                // A group's minimum is a check in its own right: a form
+                // whose only rule is "Min 2" must still block (§5).
+                if (section.repeat && repeatLimits(section.repeat).min > 0) {
+                    this._hasValidation = true;
                 }
                 for (const el of section.elements || []) {
                     if (el.visibility) {
@@ -2170,140 +2217,347 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                             !this._hasRules ||
                             evaluateVisibility(s.visibility, ctx)
                     )
-                    .map((s) => ({
-                        ...s,
-                        ...(titleRepeats
-                            ? { titleRepeatsPage: namesPages }
-                            : {}),
-                        ...(focus && focus.sectionIds.includes(s.id)
-                            ? { unfoldRequest: focus.n }
-                            : {}),
-                        ...(this.preservePreview
-                            ? {
-                                  previewEntries:
-                                      this.answers[`repeat:${s.id}`] || [],
-                                  previewRevision: this._previewRevision
-                              }
-                            : {}),
-                        elements: (s.elements || [])
-                            .filter(
-                                (el) =>
-                                    !this._hasRules ||
-                                    evaluateVisibility(el.visibility, ctx)
-                            )
-                            .map((el) => {
-                                // hydrate the element with its live answer —
-                                // stateful widgets (S2 scale family) repaint
-                                // their selection from el.value after any
-                                // model rebuild; native inputs ignore it
-                                const answered = this.answers[el.id];
-                                let base =
-                                    answered !== undefined && !s.repeat
-                                        ? { ...el, value: answered }
-                                        : el;
-                                // R4 — on the guest host the projection strips
-                                // bindings, so a lookup element arrives with no
-                                // target object and the picker cannot render.
-                                // The server-validated plan supplies it.
-                                const planObject = this._lookupObjects[el.id];
-                                if (planObject && !base.config?.referenceTo) {
-                                    base = {
-                                        ...base,
-                                        config: {
-                                            ...(base.config || {}),
-                                            referenceTo: planObject
+                    .map((s) =>
+                        this._decorateGroup(
+                            {
+                                ...s,
+                                ...(titleRepeats
+                                    ? { titleRepeatsPage: namesPages }
+                                    : {}),
+                                ...(focus && focus.sectionIds.includes(s.id)
+                                    ? { unfoldRequest: focus.n }
+                                    : {}),
+                                ...(this.preservePreview
+                                    ? { previewRevision: this._previewRevision }
+                                    : {}),
+                                // a group's questions are hidden ENTRY BY ENTRY
+                                // (_decorateGroup), never with the form-wide answers
+                                elements: (s.elements || [])
+                                    .filter(
+                                        (el) =>
+                                            s.repeat ||
+                                            !this._hasRules ||
+                                            evaluateVisibility(
+                                                el.visibility,
+                                                ctx
+                                            )
+                                    )
+                                    .map((el) => {
+                                        // hydrate the element with its live answer —
+                                        // stateful widgets (S2 scale family) repaint
+                                        // their selection from el.value after any
+                                        // model rebuild; native inputs ignore it
+                                        const answered = this.answers[el.id];
+                                        let base =
+                                            answered !== undefined && !s.repeat
+                                                ? { ...el, value: answered }
+                                                : el;
+                                        // R4 — on the guest host the projection strips
+                                        // bindings, so a lookup element arrives with no
+                                        // target object and the picker cannot render.
+                                        // The server-validated plan supplies it.
+                                        const planObject =
+                                            this._lookupObjects[el.id];
+                                        if (
+                                            planObject &&
+                                            !base.config?.referenceTo
+                                        ) {
+                                            base = {
+                                                ...base,
+                                                config: {
+                                                    ...(base.config || {}),
+                                                    referenceTo: planObject
+                                                }
+                                            };
                                         }
-                                    };
-                                }
-                                // Form-level "Display as" default for this
-                                // field type. The element's own choice still
-                                // wins; this only fills the gap.
-                                const typeDefault =
-                                    fieldDefaults[
-                                        (base.config &&
-                                            base.config.inputType) ||
-                                            ''
-                                    ];
-                                if (typeDefault && !base.config?.renderAs) {
-                                    base = {
-                                        ...base,
-                                        renderDefault: typeDefault
-                                    };
-                                }
-                                // Our lookup needs a little runtime context.
-                                // Stamping it on the element beats threading
-                                // four more props through every layout layer.
-                                if (base.lookupConfig) {
-                                    base = {
-                                        ...base,
-                                        lookup: {
-                                            formId:
-                                                this.effectiveFormId || null,
-                                            versionId:
-                                                this.effectiveVersionId || null,
-                                            // the Studio preview searches
-                                            // the draft, not a published copy
-                                            previewConfig:
-                                                this.preservePreview ||
-                                                this.authoring
-                                                    ? base.lookupConfig
-                                                    : null,
-                                            answers: this.answers,
-                                            filterKey: lookupFilterKey(
+                                        // Form-level "Display as" default for this
+                                        // field type. The element's own choice still
+                                        // wins; this only fills the gap.
+                                        const typeDefault =
+                                            fieldDefaults[
+                                                (base.config &&
+                                                    base.config.inputType) ||
+                                                    ''
+                                            ];
+                                        if (
+                                            typeDefault &&
+                                            !base.config?.renderAs
+                                        ) {
+                                            base = {
+                                                ...base,
+                                                renderDefault: typeDefault
+                                            };
+                                        }
+                                        // Our lookup needs a little runtime context.
+                                        // Stamping it on the element beats threading
+                                        // four more props through every layout layer.
+                                        if (base.lookupConfig) {
+                                            base = {
+                                                ...base,
+                                                lookup: {
+                                                    formId:
+                                                        this.effectiveFormId ||
+                                                        null,
+                                                    versionId:
+                                                        this
+                                                            .effectiveVersionId ||
+                                                        null,
+                                                    // the Studio preview searches
+                                                    // the draft, not a published copy
+                                                    previewConfig:
+                                                        this.preservePreview ||
+                                                        this.authoring
+                                                            ? base.lookupConfig
+                                                            : null,
+                                                    answers: this.answers,
+                                                    filterKey: lookupFilterKey(
+                                                        base,
+                                                        this.answers
+                                                    ),
+                                                    displayLabel:
+                                                        this._lookupLabels[
+                                                            el.id
+                                                        ] || '',
+                                                    error:
+                                                        this._lookupStale[
+                                                            el.id
+                                                        ] || ''
+                                                }
+                                            };
+                                        }
+                                        if (this.preservePreview) {
+                                            base = {
+                                                ...base,
+                                                value: s.repeat
+                                                    ? undefined
+                                                    : answered,
+                                                previewRevision:
+                                                    this._previewRevision
+                                            };
+                                        }
+                                        // A group's question is a template: its value,
+                                        // errors and focus are stamped per entry by
+                                        // _decorateGroup and the section renderer.
+                                        if (s.repeat) {
+                                            return base;
+                                        }
+                                        // Server rejections bypass the reveal gate:
+                                        // the respondent has already submitted, so
+                                        // there is nothing left to "reveal", and a
+                                        // form with no client validation at all must
+                                        // still be able to show what the save refused.
+                                        if (
+                                            focus &&
+                                            !focus.groupId &&
+                                            el.id === focus.elementId
+                                        ) {
+                                            base = {
+                                                ...base,
+                                                focusRequest: focus.n
+                                            };
+                                        }
+                                        const fromServer =
+                                            this._serverFieldErrors[el.id] ||
+                                            [];
+                                        if (!reveal) {
+                                            return fromServer.length
+                                                ? {
+                                                      ...base,
+                                                      errors: fromServer
+                                                  }
+                                                : base;
+                                        }
+                                        const errors = [
+                                            ...validateElement(
                                                 base,
-                                                this.answers
+                                                this.answers[el.id],
+                                                ctx
                                             ),
-                                            displayLabel:
-                                                this._lookupLabels[el.id] || '',
-                                            error:
-                                                this._lookupStale[el.id] || ''
-                                        }
-                                    };
-                                }
-                                if (this.preservePreview) {
-                                    base = {
-                                        ...base,
-                                        value: s.repeat ? undefined : answered,
-                                        previewRevision: this._previewRevision
-                                    };
-                                }
-                                // repeat entries answer as ONE consolidated
-                                // value — per-entry failure display is
-                                // DEFERRED, so never annotate inside
-                                // Server rejections bypass the reveal gate:
-                                // the respondent has already submitted, so
-                                // there is nothing left to "reveal", and a
-                                // form with no client validation at all must
-                                // still be able to show what the save refused.
-                                if (
-                                    focus &&
-                                    el.id === focus.elementId &&
-                                    !s.repeat
-                                ) {
-                                    base = { ...base, focusRequest: focus.n };
-                                }
-                                const fromServer =
-                                    this._serverFieldErrors[el.id] || [];
-                                if (!reveal || s.repeat) {
-                                    return fromServer.length
-                                        ? { ...base, errors: fromServer }
-                                        : base;
-                                }
-                                const errors = [
-                                    ...validateElement(
-                                        base,
-                                        this.answers[el.id],
-                                        ctx
-                                    ),
-                                    ...fromServer
-                                ];
-                                return errors.length
-                                    ? { ...base, errors }
-                                    : base;
-                            })
-                    }))
+                                            ...fromServer
+                                        ];
+                                        return errors.length
+                                            ? { ...base, errors }
+                                            : base;
+                                    })
+                            },
+                            ctx,
+                            reveal,
+                            focus
+                        )
+                    )
             };
         });
+    }
+
+    // ---- repeating groups (IMPL_PLAN_RELATED_RECORDS §3–§5) ----
+
+    /** The first group whose published entry limits can't be met, or null. */
+    _badRepeatGroup(spec) {
+        for (const page of (spec && spec.pages) || []) {
+            for (const section of page.sections || []) {
+                if (section.repeat && !repeatLimits(section.repeat).ok) {
+                    return section;
+                }
+            }
+        }
+        return null;
+    }
+
+    /** A group's entries as the form holds them: the stored answer list,
+     *  or `min` untouched entries before anything is stored, with keys kept
+     *  consistent (a list restored without keys gets fresh ones). */
+    _groupStore(sec) {
+        const limits = repeatLimits(sec.repeat);
+        const stored = this.answers[`repeat:${sec.id}`];
+        const values = Array.isArray(stored)
+            ? stored
+            : Array.from({ length: limits.min }, () => ({}));
+        let rk = this._repeatKeys[sec.id];
+        if (!rk || rk.keys.length !== values.length) {
+            let seq = rk ? rk.seq : 0;
+            const keys = values.map((v, i) => {
+                return rk && i < rk.keys.length ? rk.keys[i] : `en_${seq++}`;
+            });
+            rk = { keys, seq: Math.max(seq, keys.length) };
+            // consistency only — the same answers always give the same keys
+            this._repeatKeys[sec.id] = rk;
+        }
+        return { limits, keys: rk.keys, seq: rk.seq, values };
+    }
+
+    /** One entry's rule context: its own answers for this group's
+     *  questions, everything else as the rest of the form sees it. */
+    _entryCtx(ctx, ids, values) {
+        return {
+            ...ctx,
+            getValue: (id) => {
+                return ids.has(id) ? (values || {})[id] : ctx.getValue(id);
+            }
+        };
+    }
+
+    /**
+     * Each entry with its hidden questions, whether it is started, and its
+     * failures (`withChecks`: checked whether or not the page is revealed,
+     * for pageValidity). Untouched entries are never checked (§4).
+     */
+    _groupEntries(sec, ctx, withChecks) {
+        const store = this._groupStore(sec);
+        const els = sec.elements || [];
+        const ids = new Set(els.map((el) => el.id));
+        const serverErrors = this._serverEntryErrors[sec.id] || {};
+        const entries = store.keys.map((key, i) => {
+            const values = store.values[i] || {};
+            const ectx = this._entryCtx(ctx, ids, values);
+            const hidden = this._hasRules
+                ? els
+                      .filter((el) => !evaluateVisibility(el.visibility, ectx))
+                      .map((el) => el.id)
+                : [];
+            const hiddenSet = new Set(hidden);
+            const shown = els.filter((el) => !hiddenSet.has(el.id));
+            const started = shown.some(
+                (el) => isAnswerable(el) && !isBlankAnswer(values[el.id])
+            );
+            const errors = {};
+            for (const el of shown) {
+                const list = [];
+                if (withChecks && started) {
+                    list.push(
+                        ...validateElement(
+                            { ...el, value: values[el.id] },
+                            values[el.id],
+                            ectx
+                        )
+                    );
+                }
+                list.push(...((serverErrors[key] || {})[el.id] || []));
+                if (list.length) {
+                    errors[el.id] = list;
+                }
+            }
+            return { key, values, hidden, errors, started, shown };
+        });
+        const startedCount = entries.filter((e) => e.started).length;
+        return {
+            ...store,
+            entries,
+            minUnmet: startedCount < store.limits.min
+        };
+    }
+
+    /** Stamps a group section with what its renderer draws: `entries`
+     *  ({ key, values, hidden, errors, focus }), `nextEntrySeq`,
+     *  `repeatLimits`, `minMessage` and an Add-button focus request. */
+    _decorateGroup(section, ctx, reveal, focus) {
+        if (!section.repeat) {
+            return section;
+        }
+        const g = this._groupEntries(
+            section,
+            ctx,
+            reveal && this._hasValidation
+        );
+        const mine = focus && focus.groupId === section.id ? focus : null;
+        return {
+            ...section,
+            repeatLimits: { min: g.limits.min, max: g.limits.max },
+            nextEntrySeq: g.seq,
+            minMessage:
+                reveal && g.minUnmet ? minimumMessage(g.limits.min) : '',
+            ...(mine && mine.add ? { focusAdd: mine.n } : {}),
+            entries: g.entries.map((e) => ({
+                key: e.key,
+                values: e.values,
+                hidden: e.hidden,
+                errors: e.errors,
+                ...(mine && mine.key === e.key
+                    ? { focus: { n: mine.n, elementId: mine.elementId } }
+                    : {})
+            }))
+        };
+    }
+
+    /** Red questions in a decorated group, counted once each. */
+    _groupRedCount(sec) {
+        let count = sec.minMessage ? 1 : 0;
+        for (const e of sec.entries || []) {
+            count += Object.keys(e.errors || {}).length;
+        }
+        return count;
+    }
+
+    /** Where a blocked click lands inside a decorated group (§4): a red
+     *  question in a started entry; else, for an unmet minimum, the first
+     *  question of the first untouched entry; else its Add button. */
+    _groupFocusTarget(sec) {
+        for (const e of sec.entries || []) {
+            const order = (sec.elements || []).map((el) => el.id);
+            const red = order.find((id) => (e.errors || {})[id]);
+            if (red) {
+                return { key: e.key, elementId: red };
+            }
+        }
+        if (!sec.minMessage) {
+            return null;
+        }
+        const hiddenOf = (e) => new Set(e.hidden || []);
+        for (const e of sec.entries || []) {
+            const hidden = hiddenOf(e);
+            const shown = (sec.elements || []).filter(
+                (el) => !hidden.has(el.id)
+            );
+            const started = shown.some(
+                (el) =>
+                    isAnswerable(el) && !isBlankAnswer((e.values || {})[el.id])
+            );
+            if (started) {
+                continue;
+            }
+            const first = shown.find((el) => isAnswerable(el));
+            return first ? { key: e.key, elementId: first.id } : { add: true };
+        }
+        return { add: true };
     }
 
     handleElementClick(event) {
@@ -2341,6 +2595,14 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         const current = this.visiblePages[this.pageIndex];
         const key = current ? current.revealKey : undefined;
         this._answers = { ...this.answers, [elementId]: value };
+        // A group's keys move WITH its answers, never before them: in
+        // between, the store would see four keys for three answers.
+        if (
+            typeof elementId === 'string' &&
+            elementId.indexOf('repeat:') === 0
+        ) {
+            this._groupChanged(elementId.slice(7), event.detail);
+        }
         const pages = this.visiblePages;
         const at =
             key !== undefined
@@ -2352,6 +2614,47 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             this.pageIndex = Math.max(pages.length - 1, 0);
         }
         this._handleSourceLookupChange(elementId, value);
+    }
+
+    /** A group reported a change: keep its key order and counter (the
+     *  counter never goes down), and drop only the server messages the
+     *  change answers (IMPL_PLAN_RELATED_RECORDS §3, §4). */
+    _groupChanged(sectionId, detail) {
+        if (Array.isArray(detail.keys)) {
+            const prev = this._repeatKeys[sectionId];
+            const emitted = Number(detail.nextEntrySeq);
+            const seq = Math.max(
+                prev ? prev.seq : 0,
+                Number.isInteger(emitted) ? emitted : detail.keys.length
+            );
+            this._repeatKeys = {
+                ...this._repeatKeys,
+                [sectionId]: { keys: [...detail.keys], seq }
+            };
+        }
+        const change = detail.change;
+        const group = this._serverEntryErrors[sectionId];
+        if (!change || !group || !group[change.key]) {
+            return;
+        }
+        const entry = { ...group[change.key] };
+        if (change.kind === 'remove') {
+            Object.keys(entry).forEach((id) => delete entry[id]);
+        } else if (change.kind === 'answer') {
+            delete entry[change.elementId];
+        } else {
+            return;
+        }
+        const nextGroup = { ...group };
+        if (Object.keys(entry).length) {
+            nextGroup[change.key] = entry;
+        } else {
+            delete nextGroup[change.key];
+        }
+        this._serverEntryErrors = {
+            ...this._serverEntryErrors,
+            [sectionId]: nextGroup
+        };
     }
 
     get lastPageIndex() {
@@ -2372,18 +2675,25 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             return this.visiblePages.map(() => true);
         }
         const ctx = this._ruleCtx();
-        // repeat sections validate server/entry-side (DEFERRED per-entry
-        // gating) — their child elements never read the flat answers store
+        // A group is valid when every STARTED entry passes its checks and
+        // enough entries are started (§4, §5); untouched entries never fail.
         return this.visiblePages.map((page) =>
-            (page.sections || [])
-                .filter((s) => !s.repeat)
-                .every((s) =>
-                    (s.elements || []).every(
-                        (el) =>
-                            validateElement(el, this.answers[el.id], ctx)
-                                .length === 0
-                    )
-                )
+            (page.sections || []).every((s) => {
+                if (s.repeat) {
+                    const g = this._groupEntries(s, ctx, true);
+                    return (
+                        !g.minUnmet &&
+                        g.entries.every(
+                            (e) => Object.keys(e.errors).length === 0
+                        )
+                    );
+                }
+                return (s.elements || []).every(
+                    (el) =>
+                        validateElement(el, this.answers[el.id], ctx).length ===
+                        0
+                );
+            })
         );
     }
 
@@ -2469,25 +2779,31 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         if (!this.model || this.model.ownsAdvance) {
             return;
         }
-        let elementId;
+        let target = null;
         const sectionIds = [];
         this._pagesInView(this.visiblePages).forEach((page) => {
             (page.sections || []).forEach((sec) => {
                 if (sec.repeat) {
+                    // inside a group the target names its entry too (§4)
+                    const t = this._groupFocusTarget(sec);
+                    if (t) {
+                        target = target || { ...t, groupId: sec.id };
+                        sectionIds.push(sec.id);
+                    }
                     return;
                 }
                 const red = (sec.elements || []).filter((el) =>
                     this._isRed(el)
                 );
                 if (red.length) {
-                    elementId = elementId || red[0].id;
+                    target = target || { elementId: red[0].id };
                     sectionIds.push(sec.id);
                 }
             });
         });
         focusSeq += 1;
-        this._focusTarget = elementId
-            ? { n: focusSeq, elementId, sectionIds }
+        this._focusTarget = target
+            ? { n: focusSeq, ...target, sectionIds }
             : null;
     }
 
@@ -2511,6 +2827,10 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         let count = 0;
         this._pagesInView(this.visiblePages).forEach((page) => {
             (page.sections || []).forEach((sec) => {
+                if (sec.repeat) {
+                    count += this._groupRedCount(sec);
+                    return;
+                }
                 (sec.elements || []).forEach((el) => {
                     if (this._isRed(el)) {
                         count += 1;
@@ -2597,8 +2917,41 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 byField.get(key).push(id);
             }
         };
+        // A group's questions are indexed per group: an error that names a
+        // group reaches only that group, one that names none reaches only
+        // questions outside groups (IMPL_PLAN_RELATED_RECORDS §4).
+        const groupFields = {};
+        const groupIndex = (sectionId, key, id) => {
+            if (!key) {
+                return;
+            }
+            const map = (groupFields[sectionId] = groupFields[sectionId] || {});
+            map[key] = map[key] || [];
+            if (!map[key].includes(id)) {
+                map[key].push(id);
+            }
+        };
         for (const page of (this._editSpec && this._editSpec.pages) || []) {
             for (const section of page.sections || []) {
+                if (section.repeat) {
+                    for (const el of section.elements || []) {
+                        const f = el && el.binding && el.binding.field;
+                        if (!el || !el.id || !f) {
+                            continue;
+                        }
+                        groupIndex(
+                            section.id,
+                            this._normalizeFieldKey(f),
+                            el.id
+                        );
+                        groupIndex(
+                            section.id,
+                            this._normalizeFieldKey(el.label),
+                            el.id
+                        );
+                    }
+                    continue;
+                }
                 for (const el of section.elements || []) {
                     if (!el || !el.id) {
                         continue;
@@ -2626,8 +2979,36 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
 
         const mapped = {};
         const unmapped = [];
+        const entryMapped = {};
         for (const err of errors) {
             const message = (err && err.message) || 'This answer was rejected.';
+            if (err && err.sectionId) {
+                // entryIndex is zero-based, counted in the list AS SENT
+                const key = (this._submitEntryKeys[err.sectionId] || [])[
+                    err.entryIndex
+                ];
+                const byKey = groupFields[err.sectionId] || {};
+                const ids = [];
+                for (const field of err.fields || []) {
+                    for (const id of byKey[this._normalizeFieldKey(field)] ||
+                        []) {
+                        if (!ids.includes(id)) {
+                            ids.push(id);
+                        }
+                    }
+                }
+                if (!key || !ids.length) {
+                    unmapped.push(message);
+                    continue;
+                }
+                const group = (entryMapped[err.sectionId] =
+                    entryMapped[err.sectionId] || {});
+                const entry = (group[key] = group[key] || {});
+                ids.forEach((id) => {
+                    entry[id] = [...(entry[id] || []), message];
+                });
+                continue;
+            }
             const targets = [];
             for (const field of (err && err.fields) || []) {
                 for (const id of byField.get(this._normalizeFieldKey(field)) ||
@@ -2648,7 +3029,10 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         }
 
         this._serverFieldErrors = mapped;
-        const anyField = Object.keys(mapped).length > 0;
+        this._serverEntryErrors = entryMapped;
+        const anyField =
+            Object.keys(mapped).length > 0 ||
+            Object.keys(entryMapped).length > 0;
         // Something ALWAYS shows next to Save, even when every message also
         // landed on a field — the respondent pressed a button there and needs
         // an answer there.
@@ -2662,11 +3046,15 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         // on a page they cannot see is no message at all.
         const pages = this.visiblePages;
         const bad = pages.findIndex((page) =>
-            (page.sections || []).some((section) =>
-                (section.elements || []).some(
-                    (el) => el.errors && el.errors.length
-                )
-            )
+            (page.sections || []).some((section) => {
+                return section.repeat
+                    ? (section.entries || []).some(
+                          (e) => Object.keys(e.errors || {}).length > 0
+                      )
+                    : (section.elements || []).some(
+                          (el) => el.errors && el.errors.length
+                      );
+            })
         );
         if (bad >= 0) {
             this.pageIndex = bad;
@@ -2762,9 +3150,11 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         this._submitError = undefined;
         this._autofillError = undefined;
         this._serverFieldErrors = {};
+        this._serverEntryErrors = {};
         const submitGeneration = ++this._submitGeneration;
         try {
             const payload = this._payload();
+            this._submitEntryKeys = this._entryKeySnapshot();
             if (this._urlLinkToken) {
                 payload.meta.rt = this._urlLinkToken;
             }
@@ -2898,6 +3288,37 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         return this._submissionKeyValue;
     }
 
+    /** Each group's key order as it is being sent (§4). */
+    _entryKeySnapshot() {
+        const out = {};
+        for (const key of Object.keys(this.answers)) {
+            if (key.indexOf('repeat:') === 0) {
+                const rk = this._repeatKeys[key.slice(7)];
+                out[key.slice(7)] = rk ? [...rk.keys] : [];
+            }
+        }
+        return out;
+    }
+
+    /** A group's entries on the way out: a question a rule hides in THAT
+     *  entry sends nothing for it (#269, per entry). Memory keeps it. */
+    _groupPayload(sectionId) {
+        const list = this.answers[`repeat:${sectionId}`];
+        let sec = null;
+        for (const page of (this.model && this.model.pages) || []) {
+            sec = (page.sections || []).find((x) => x.id === sectionId) || sec;
+        }
+        if (!Array.isArray(list) || !sec || !this._hasRules) {
+            return list;
+        }
+        const g = this._groupEntries(sec, this._ruleCtx(), false);
+        return g.entries.map((e) => {
+            const out = { ...e.values };
+            e.hidden.forEach((id) => delete out[id]);
+            return out;
+        });
+    }
+
     _payload() {
         const answers = {};
         const repeats = {};
@@ -2908,7 +3329,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 continue;
             }
             if (key.indexOf('repeat:') === 0) {
-                repeats[key.slice(7)] = this.answers[key];
+                repeats[key.slice(7)] = this._groupPayload(key.slice(7));
             } else if (this._ruleTypeIndex.get(key) === 'file') {
                 for (const f of this.answers[key] || []) {
                     if (f && f.base64) {

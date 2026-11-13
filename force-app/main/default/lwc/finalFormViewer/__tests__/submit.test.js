@@ -52,7 +52,9 @@ const SPEC = {
                     repeat: {
                         childObject: 'Case',
                         relationshipField: 'ContactId',
-                        min: 1
+                        // Min 0: forms that never touch the group still
+                        // submit (a Min of 1 is a check of its own now)
+                        min: 0
                     },
                     elements: [
                         {
@@ -117,6 +119,9 @@ describe('c-final-form-viewer submit engine (P3 gate)', () => {
         input.value = 'Riley';
         input.type = 'text';
         input.dispatchEvent(new CustomEvent('change'));
+        // Min 0 starts empty: add the entry first
+        deepQuery(el.shadowRoot, '.rep-add').click();
+        await flush();
         const entryInput = deepQuery(el.shadowRoot, '.rep-entry')
             .querySelector('c-final-element-renderer')
             .shadowRoot.querySelector('lightning-input');

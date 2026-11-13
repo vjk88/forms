@@ -216,7 +216,9 @@
     --slds-c-icon-color-foreground-default: var(--c-text);
 }
 
-.sec-fold:focus-visible {
+.sec-fold:focus-visible,
+.rep-add:focus-visible,
+.rep-remove:focus-visible {
     /* Focus contract (IMPL_PLAN_FOCUS_CONTRAST v5 §3): the new engine sets
        --c-focus-outline (transparent, kept for High Contrast) and
        --c-focus-shadow (the two-colour ring); an old published snapshot
@@ -308,6 +310,21 @@
     cursor: pointer;
 }
 
+/* A finger-sized target around the same small × (DESIGN_SYSTEM §9). */
+.rep-remove {
+    display: inline-grid;
+    place-items: center;
+    min-width: 32px;
+    min-height: 32px;
+}
+
+@media (pointer: coarse) {
+    .rep-remove {
+        min-width: 44px;
+        min-height: 44px;
+    }
+}
+
 .rep-remove:hover {
     color: var(--c-field-error, #b42318);
 }
@@ -327,4 +344,13 @@
 
 .rep-add:hover {
     border-color: var(--c-accent);
+}
+
+/* "Fill in at least 2 entries." — the group's minimum, in the theme's
+   field-error style (IMPL_PLAN_RELATED_RECORDS §5). */
+.rep-min {
+    margin: 0;
+    color: var(--c-field-error, #b42318);
+    font-size: var(--c-fs-error);
+    line-height: 1.45;
 }

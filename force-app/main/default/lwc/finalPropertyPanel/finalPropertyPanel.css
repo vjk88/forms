@@ -70,6 +70,9 @@
 
 .pp-minmax {
     display: flex;
+    /* a label that wraps ("Max rows (0 = up to 50)") must not push its box
+       below its neighbour's */
+    align-items: flex-end;
     gap: var(--c-studio-space-3);
 }
 
