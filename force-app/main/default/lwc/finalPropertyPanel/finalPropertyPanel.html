@@ -1085,60 +1085,121 @@
                         value={repeatStyleSeg.value}
                         onchange={handleRepeatStyle}
                     ></c-final-button-group>
-                    <p class="pp-hint">Table and Tiles are coming soon.</p>
+                    <template lwc:if={repeatIsTable}>
+                        <p class="pp-hint">
+                            Shows as cards where there isn't room.
+                        </p>
+                    </template>
+                    <p class="pp-hint">Tiles is coming soon.</p>
                 </div>
-                <lightning-input
-                    label="Add-button label"
-                    data-prop="addlabel"
-                    value={repeat.addLabel}
-                    onchange={handleAddLabel}
-                ></lightning-input>
+                <h4 class="pp-grouptitle">On a record page</h4>
                 <div class="pp-fld">
-                    <lightning-input
-                        label="Entry title"
-                        data-prop="entrylabel"
-                        value={repeat.entryLabel}
-                        placeholder={entryTitlePlaceholder}
-                        onchange={handleEntryLabel}
-                    ></lightning-input>
-                    <p class="pp-hint">{entryTitleHelp}</p>
-                </div>
-                <div class="pp-fld">
-                    <lightning-input
-                        label="Remove button label"
-                        data-prop="removelabel"
-                        value={repeat.removeLabel}
-                        placeholder="Remove"
-                        onchange={handleRemoveLabel}
-                    ></lightning-input>
+                    <c-final-lookup-filter
+                        target-object={repeat.childObject}
+                        value={repeatShowValue}
+                        conditions-only
+                        dialog-label={repeatShowLabel}
+                        dialog-help="Only related records that meet these conditions are listed. With none, all of them are."
+                        onlookupconfigchange={handleRepeatShow}
+                    ></c-final-lookup-filter>
                     <p class="pp-hint">
-                        Read out by screen readers and shown on hover.
+                        A form that edits a record lists the related records it
+                        already has here.
                     </p>
                 </div>
-                <div class="pp-minmax">
+                <div class="pp-rule">
+                    <span class="pp-rule-text">
+                        <span class="pp-rule-name" aria-hidden="true"
+                            >Read only</span
+                        >
+                        <span class="pp-rule-hint">{repeatReadOnlyHint}</span>
+                    </span>
                     <lightning-input
-                        type="number"
-                        label="Min rows"
-                        data-prop="min"
-                        value={repeat.min}
-                        min="0"
-                        max="50"
-                        step="1"
-                        onchange={handleMin}
-                    ></lightning-input>
-                    <lightning-input
-                        type="number"
-                        label="Max rows (0 = up to 50)"
-                        data-prop="max"
-                        value={repeat.max}
-                        min="0"
-                        max="50"
-                        step="1"
-                        onchange={handleMax}
+                        type="toggle"
+                        variant="label-hidden"
+                        label="Read only"
+                        data-prop="readonly"
+                        checked={repeatReadOnly}
+                        message-toggle-active=""
+                        message-toggle-inactive=""
+                        onchange={handleRepeatReadOnly}
                     ></lightning-input>
                 </div>
-                <template lwc:if={repeatLimitError}>
-                    <p class="pp-error" role="alert">{repeatLimitError}</p>
+                <div class="pp-rule">
+                    <span class="pp-rule-text">
+                        <span class="pp-rule-name" aria-hidden="true"
+                            >Link to record</span
+                        >
+                        <span class="pp-rule-hint"
+                            >Each record gets an "Open" link to Salesforce, in a
+                            new tab.</span
+                        >
+                    </span>
+                    <lightning-input
+                        type="toggle"
+                        variant="label-hidden"
+                        label="Link to record"
+                        data-prop="link"
+                        checked={repeatLink}
+                        message-toggle-active=""
+                        message-toggle-inactive=""
+                        onchange={handleRepeatLink}
+                    ></lightning-input>
+                </div>
+                <template lwc:if={repeatEditable}>
+                    <lightning-input
+                        label="Add-button label"
+                        data-prop="addlabel"
+                        value={repeat.addLabel}
+                        onchange={handleAddLabel}
+                    ></lightning-input>
+                    <div class="pp-fld">
+                        <lightning-input
+                            label="Entry title"
+                            data-prop="entrylabel"
+                            value={repeat.entryLabel}
+                            placeholder={entryTitlePlaceholder}
+                            onchange={handleEntryLabel}
+                        ></lightning-input>
+                        <p class="pp-hint">{entryTitleHelp}</p>
+                    </div>
+                    <div class="pp-fld">
+                        <lightning-input
+                            label="Remove button label"
+                            data-prop="removelabel"
+                            value={repeat.removeLabel}
+                            placeholder="Remove"
+                            onchange={handleRemoveLabel}
+                        ></lightning-input>
+                        <p class="pp-hint">
+                            Read out by screen readers and shown on hover.
+                        </p>
+                    </div>
+                    <div class="pp-minmax">
+                        <lightning-input
+                            type="number"
+                            label="Min rows"
+                            data-prop="min"
+                            value={repeat.min}
+                            min="0"
+                            max="50"
+                            step="1"
+                            onchange={handleMin}
+                        ></lightning-input>
+                        <lightning-input
+                            type="number"
+                            label="Max rows (0 = up to 50)"
+                            data-prop="max"
+                            value={repeat.max}
+                            min="0"
+                            max="50"
+                            step="1"
+                            onchange={handleMax}
+                        ></lightning-input>
+                    </div>
+                    <template lwc:if={repeatLimitError}>
+                        <p class="pp-error" role="alert">{repeatLimitError}</p>
+                    </template>
                 </template>
             </div>
 

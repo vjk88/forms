@@ -712,41 +712,67 @@ private class FinalSubmitControllerTest {
     }
 
     @IsTest
-    static void updateModeRefusesARepeatingSection() {
-        // Owner ruling D2 (2026-09-08): repeat sections are blocked on edit
-        // forms. Matching typed rows back to existing children is unbuilt, and
-        // inserting duplicates would be worse than refusing.
+    static void updateModeSavesTheRecordAndLeavesItsListsAlone() {
+        // On a record page a group is a related list (IMPL_PLAN_RELATED_RECORDS
+        // Part 2). Slice 1 only shows it: the edit saves the record, sends
+        // nothing for the list, and an edit that DOES send entries is refused
+        // before anything is written (no duplicates next to existing Cases).
         Contact c = new Contact(LastName = 'Repeater', Title = 'Before');
         insert c;
         String pages =
             '[{"id":"pg_1","sections":[' +
             '{"id":"sec_1","elements":[{"id":"el_title","type":"field","binding":{"object":"Contact","field":"Title"}}]},' +
-            '{"id":"sec_rep","repeat":{"childObject":"Task","relationshipField":"WhoId"},"elements":[]}' +
+            '{"id":"sec_rep","repeat":{"childObject":"Case","relationshipField":"ContactId","min":2},' +
+            '"elements":[{"id":"el_subj","type":"field","binding":{"object":"Case","field":"Subject"}}]}' +
             ']}]';
         Id versionId = makeActiveUpdateVersion('Contact', pages);
 
-        Boolean threw = false;
         Test.startTest();
+        FinalSubmitController.SubmitResult res = FinalSubmitController.submitForm(
+            null,
+            versionId,
+            editPayload(c.Id, 'After')
+        );
+        Assert.areEqual(c.Id, res.recordId, 'the record itself is saved');
+        Assert.areEqual(
+            'After',
+            [SELECT Title FROM Contact WHERE Id = :c.Id].Title,
+            'and the list minimum does not block it'
+        );
+
+        Map<String, Object> body = (Map<String, Object>) JSON.deserializeUntyped(
+            editPayload(c.Id, 'Again')
+        );
+        body.put(
+            'repeats',
+            new Map<String, Object>{
+                'sec_rep' => new List<Object>{
+                    new Map<String, Object>{ 'el_subj' => 'Dup' }
+                }
+            }
+        );
+        String refused;
         try {
             FinalSubmitController.submitForm(
                 null,
                 versionId,
-                editPayload(c.Id, 'After')
+                JSON.serialize(body)
             );
-        } catch (Exception e) {
-            threw = true;
+        } catch (AuraHandledException e) {
+            refused = e.getMessage();
         }
         Test.stopTest();
 
-        Assert.isTrue(
-            threw,
-            'a repeat section on an edit form must be refused'
+        Assert.areEqual(
+            'Related records can’t be changed from a record page yet.',
+            refused
         );
         Assert.areEqual(
-            'Before',
+            'After',
             [SELECT Title FROM Contact WHERE Id = :c.Id].Title,
-            'and the refusal must happen BEFORE anything is written'
+            'the refusal happens BEFORE anything is written'
         );
+        Assert.areEqual(0, [SELECT COUNT() FROM Case WHERE ContactId = :c.Id]);
     }
 
     // ===== SERVER FIELD ERRORS =====================================

@@ -316,6 +316,11 @@ a first-class **Repeating Group** item, catalog §5).
   out of the payload on purpose).
 - **Row budget.** At most 2,000 rows from groups per submission: related records on a Form; answer
   rows **plus their topic links** on a Survey (counted before insert, rolled back with the response).
+- **On a record page** (a form that edits a record) a group is a **related list** of that record's
+  existing children (IMPL_PLAN_RELATED_RECORDS Part 2): `repeat.show` = `{ filter }` (the lookup filter
+  shape, compiled by `FinalLookupService`), `repeat.readOnly` (look-only; never shown on a form that
+  creates a record), `repeat.link` (`false` turns off "Open {Case}"), `repeat.style` `table` draws a table
+  that falls back to cards when too narrow. Slice 1 is read-only everywhere on a record page.
 - **Refused related records** come back as `FieldError` with `sectionId` and a zero-based
   `entryIndex` counted in the list **as sent**, blanks included. Guests still get one flat refusal.
 

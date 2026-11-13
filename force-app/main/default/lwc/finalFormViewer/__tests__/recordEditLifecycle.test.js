@@ -81,6 +81,12 @@ const editSource = (el) =>
 
 import getSpecEnvelope from '@salesforce/apex/FinalSpecController.getSpecEnvelope';
 import submitForm from '@salesforce/apex/FinalSubmitController.submitForm';
+import loadRelatedLists from '@salesforce/apex/FinalRelatedListService.load';
+jest.mock(
+    '@salesforce/apex/FinalRelatedListService.load',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
 jest.mock(
     '@salesforce/apex/FinalSpecController.getSpecEnvelope',
     () => ({ default: jest.fn() }),
@@ -755,21 +761,217 @@ describe('explicit record configuration', () => {
         expect(submitForm).not.toHaveBeenCalled();
     });
 
-    it('blocks editing repeats before reading or submitting', async () => {
+    // Part 2, slice 1 (IMPL_PLAN_RELATED_RECORDS): on a record page each
+    // repeating group is a related list of the record's existing children,
+    // read-only. The September refusal (owner D2) is lifted.
+    function listSpec(extra = {}) {
         const spec = JSON.parse(JSON.stringify(EDIT_SPEC));
-        spec.pages[0].sections[0].repeat = {
+        spec.pages[0].sections.push({
+            id: 'sec_cases',
+            title: 'Open cases',
+            columns: 1,
+            repeat: {
+                childObject: 'Case',
+                relationshipField: 'ContactId',
+                relationshipName: 'Cases',
+                min: 2,
+                ...extra
+            },
+            elements: [
+                {
+                    id: 'el_subj',
+                    type: 'field',
+                    label: 'Subject',
+                    binding: { object: 'Case', field: 'Subject' },
+                    render: { inputType: 'text' }
+                },
+                {
+                    id: 'el_prio',
+                    type: 'field',
+                    label: 'Priority',
+                    binding: { object: 'Case', field: 'Priority' },
+                    render: { inputType: 'text' },
+                    visibility: {
+                        action: 'show',
+                        logic: 'all',
+                        rules: [
+                            {
+                                source: 'el_subj',
+                                operator: 'equals',
+                                value: 'Printer'
+                            }
+                        ]
+                    }
+                }
+            ]
+        });
+        return spec;
+    }
+
+    const casesOf = (el) =>
+        nav(el)
+            .pages.flatMap((p) => p.sections)
+            .find((sec) => sec.id === 'sec_cases');
+
+    it('loads a group as a read-only related list of the record', async () => {
+        loadRelatedLists.mockResolvedValue([
+            {
+                sectionId: 'sec_cases',
+                childObject: 'Case',
+                childLabel: 'Case',
+                childLabelPlural: 'Cases',
+                total: 312,
+                rows: [
+                    {
+                        id: '500000000000001AAA',
+                        name: '00001026',
+                        cells: { el_subj: 'Printer', el_prio: 'High' },
+                        values: { el_subj: 'Printer', el_prio: 'High' }
+                    },
+                    {
+                        id: '500000000000002AAA',
+                        name: '00001027',
+                        cells: { el_subj: 'Login', el_prio: 'Low' },
+                        values: { el_subj: 'Login', el_prio: 'Low' }
+                    }
+                ]
+            }
+        ]);
+        const el = mount(listSpec());
+        await flush();
+        await flush();
+        expect(el.shadowRoot.querySelector('[role="alert"]')).toBeNull(); // no more "not supported"
+        expect(loadRelatedLists).toHaveBeenCalledTimes(1);
+        expect(loadRelatedLists.mock.calls[0][0].parentRecordId).toBe(RECORD);
+        const list = casesOf(el).list;
+        expect(list.ready).toBe(true);
+        expect(list.rows.map((r) => r.name)).toEqual(['00001026', '00001027']);
+        expect(list.rows[0].href).toBe(
+            '/lightning/r/Case/500000000000001AAA/view'
+        );
+        // a rule hides Priority on the row whose Subject isn't Printer
+        expect(list.rows[0].cells[1]).toMatchObject({ value: 'High' });
+        expect(list.rows[1].cells[1]).toMatchObject({
+            value: '',
+            hidden: true,
+            empty: false
+        });
+        expect(list.rows[1].cardCells.map((c) => c.key)).toEqual(['el_subj']);
+        expect(list.moreText).toBe('Showing 2 of 312.');
+        expect(list.viewAllHref).toBe(
+            `/lightning/r/Contact/${RECORD}/related/Cases/view`
+        );
+        // read-only: no entries, no Add, and Min 2 never blocks
+        expect(casesOf(el).entries).toEqual([]);
+        expect(casesOf(el).repeatLimits.max).toBe(0);
+    });
+
+    it('a list says when it is loading, empty or failed, and can try again', async () => {
+        const ready = (id, total) => ({
+            sectionId: id,
             childObject: 'Case',
-            relationshipField: 'ContactId'
-        };
-        const el = mount(spec);
+            childLabel: 'Case',
+            childLabelPlural: 'Cases',
+            total,
+            rows: []
+        });
+        let resolve;
+        loadRelatedLists.mockReturnValueOnce(
+            new Promise((r) => {
+                resolve = r;
+            })
+        );
+        const el = mount(listSpec());
+        await flush();
+        expect(casesOf(el).list.loadingText).toBe('Loading Cases…');
+        expect(casesOf(el).list.loading).toBe(true);
+        // the call fails as a whole: the list says so
+        resolve(null);
+        await flush();
+        expect(casesOf(el).list.failed).toBe(true);
+        expect(casesOf(el).list.errorText).toBe(
+            'These Cases couldn’t be loaded.'
+        );
+
+        // Try again: this time it loads, and is empty
+        loadRelatedLists.mockResolvedValueOnce([ready('sec_cases', 0)]);
+        el.shadowRoot
+            .querySelector('c-final-page-frame')
+            .dispatchEvent(
+                new CustomEvent('relatedlistretry', { bubbles: true })
+            );
         await flush();
         await flush();
-        expect(editSource(el)).toBeNull();
-        expect(
-            el.shadowRoot.querySelector('[role="alert"]').textContent
-        ).toContain('repeating sections');
+        expect(casesOf(el).list.empty).toBe(true);
+        expect(casesOf(el).list.emptyText).toBe('No Cases yet.');
+
+        // a list already on screen is kept as it is by a later retry
+        loadRelatedLists.mockRejectedValueOnce(new Error('boom'));
+        el.shadowRoot
+            .querySelector('c-final-page-frame')
+            .dispatchEvent(
+                new CustomEvent('relatedlistretry', { bubbles: true })
+            );
+        await flush();
+        await flush();
+        expect(casesOf(el).list.empty).toBe(true);
+        expect(loadRelatedLists).toHaveBeenCalledTimes(3);
+    });
+
+    it('Link to record off leaves rows without a link', async () => {
+        loadRelatedLists.mockResolvedValue([
+            {
+                sectionId: 'sec_cases',
+                childObject: 'Case',
+                childLabel: 'Case',
+                childLabelPlural: 'Cases',
+                total: 1,
+                rows: [{ id: '500000000000001AAA', name: '1', cells: {} }]
+            }
+        ]);
+        const el = mount(listSpec({ link: false }));
+        await flush();
+        await flush();
+        expect(casesOf(el).list.rows[0].href).toBeNull();
+    });
+
+    it('a record page sends nothing for its lists and is never blocked by their minimum', async () => {
+        loadRelatedLists.mockResolvedValue([]);
+        getSpecEnvelope.mockResolvedValue({
+            versionId: 'a0Vserved',
+            spec: JSON.stringify(listSpec())
+        });
+        submitForm.mockResolvedValue({ recordId: RECORD });
+        const el = createElement('c-final-form-viewer', {
+            is: FinalFormViewer
+        });
+        el.existingRecordId = RECORD;
+        el.objectApiName = 'Contact';
+        el.versionId = 'a0Vtest';
+        document.body.appendChild(el);
+        await flush();
+        await flush();
+        loadRecord(el, { Title: 'CEO', Department: 'Sales' });
+        await flush();
         nav(el).dispatchEvent(new CustomEvent('submit'));
         await flush();
-        expect(submitForm).not.toHaveBeenCalled();
+        await flush();
+        expect(submitForm).toHaveBeenCalledTimes(1);
+        const payload = JSON.parse(submitForm.mock.calls[0][0].payloadJson);
+        expect(payload.repeats).toEqual({});
+        expect(payload.meta.existingRecordId).toBe(RECORD);
+    });
+
+    it('a read-only list is not shown on a form that creates a record', async () => {
+        const spec = listSpec({ readOnly: true });
+        const el = createElement('c-final-form-viewer', {
+            is: FinalFormViewer
+        });
+        el.spec = spec;
+        document.body.appendChild(el);
+        await flush();
+        await flush();
+        expect(casesOf(el)).toBeUndefined();
+        expect(loadRelatedLists).not.toHaveBeenCalled();
     });
 });

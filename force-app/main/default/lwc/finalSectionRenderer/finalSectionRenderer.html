@@ -34,8 +34,160 @@
             </header>
         </template>
         <template lwc:if={showBody}>
-            <template lwc:if={isRepeat}>
+            <template lwc:if={list}>
+                <!-- A related list on a record page (Part 2, slice 1):
+                     the record's existing children, read-only. -->
+                <div class="rl" tabindex="-1">
+                    <template lwc:if={list.loading}>
+                        <p class="rl-status" role="status">
+                            {list.loadingText}
+                        </p>
+                    </template>
+                    <template lwc:elseif={list.failed}>
+                        <div class="rl-failed" role="status">
+                            <p class="rl-status">{list.errorText}</p>
+                            <button
+                                type="button"
+                                class="rl-retry"
+                                onclick={handleListRetry}
+                            >
+                                Try again
+                            </button>
+                        </div>
+                    </template>
+                    <template lwc:elseif={list.empty}>
+                        <p class="rl-status">{list.emptyText}</p>
+                    </template>
+                    <template lwc:elseif={showTable}>
+                        <div class="rl-table-wrap">
+                            <table class="rl-table" aria-label={sec.title}>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">{list.nameLabel}</th>
+                                        <template
+                                            for:each={list.columns}
+                                            for:item="col"
+                                        >
+                                            <th key={col.key} scope="col">
+                                                {col.label}
+                                            </th>
+                                        </template>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template
+                                        for:each={list.rows}
+                                        for:item="row"
+                                    >
+                                        <tr key={row.id}>
+                                            <th scope="row" class="rl-name">
+                                                <template lwc:if={row.href}>
+                                                    <a
+                                                        href={row.href}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        >{row.name}<span
+                                                            class="rl-sr"
+                                                            >{newTabText}</span
+                                                        ></a
+                                                    >
+                                                </template>
+                                                <template lwc:else>
+                                                    {row.name}
+                                                </template>
+                                            </th>
+                                            <template
+                                                for:each={row.cells}
+                                                for:item="cell"
+                                            >
+                                                <td key={cell.key}>
+                                                    {cell.value}
+                                                </td>
+                                            </template>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </template>
+                    <template lwc:else>
+                        <div class="rep-entries">
+                            <template for:each={list.rows} for:item="row">
+                                <div
+                                    key={row.id}
+                                    class="rep-entry rl-card"
+                                    role="group"
+                                    aria-label={row.name}
+                                >
+                                    <div class="rep-entry-head">
+                                        <span
+                                            class="rep-entry-label rl-card-name"
+                                            >{row.name}</span
+                                        >
+                                        <template lwc:if={row.href}>
+                                            <a
+                                                class="rl-open"
+                                                href={row.href}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                >{list.openText}<span
+                                                    class="rl-sr"
+                                                    >{row.openSr}</span
+                                                ></a
+                                            >
+                                        </template>
+                                    </div>
+                                    <dl class="rl-cells">
+                                        <template
+                                            for:each={row.cardCells}
+                                            for:item="cell"
+                                        >
+                                            <div key={cell.key} class="rl-cell">
+                                                <dt>{cell.label}</dt>
+                                                <dd>
+                                                    <template
+                                                        lwc:if={cell.empty}
+                                                    >
+                                                        <span aria-hidden="true"
+                                                            >—</span
+                                                        >
+                                                        <span class="rl-sr"
+                                                            >No value</span
+                                                        >
+                                                    </template>
+                                                    <template lwc:else>
+                                                        {cell.value}
+                                                    </template>
+                                                </dd>
+                                            </div>
+                                        </template>
+                                    </dl>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                    <template lwc:if={list.moreText}>
+                        <p class="rl-more">
+                            {list.moreText}
+                            <template lwc:if={list.viewAllHref}>
+                                <a
+                                    href={list.viewAllHref}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    >View all in Salesforce<span class="rl-sr"
+                                        >{newTabText}</span
+                                    ></a
+                                >
+                            </template>
+                        </p>
+                    </template>
+                </div>
+            </template>
+            <template lwc:elseif={isRepeat}>
                 <div class="rep-entries">
+                    <template lwc:if={listNote}>
+                        <p class="rl-status">{listNote}</p>
+                    </template>
                     <template lwc:if={minMessage}>
                         <!-- polite: the "Fix N fields" line by the button is
                              the one alert of a blocked click -->

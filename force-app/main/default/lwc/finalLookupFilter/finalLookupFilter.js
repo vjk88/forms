@@ -87,12 +87,22 @@ export default class FinalLookupFilter extends LightningElement {
     /** What the SOQL box needs: { spec, actionId, questions }. */
     @api typedContext;
 
+    /**
+     * Conditions only, edited in the dialog (a summary on the page). A
+     * related list's "Show" conditions (IMPL_PLAN_RELATED_RECORDS Part 2):
+     * the inspector is cramped like a lookup's, but there are no results to
+     * display, no searched fields and no guest search.
+     */
+    @api conditionsOnly = false;
+
     get showLookupControls() {
-        return !this.filterOnly;
+        return !this.filterOnly && !this.conditionsOnly;
     }
 
     /** The conditions dialog's title. */
     @api dialogLabel;
+    /** Its one-line explanation; a lookup's is the default. */
+    @api dialogHelp;
 
     /** Current user only for signed-in searches: a guest would be the site guest. */
     get allowCurrentUserCompare() {
@@ -100,7 +110,10 @@ export default class FinalLookupFilter extends LightningElement {
     }
 
     get dialogDescription() {
-        return 'Only records that meet these conditions can be picked.';
+        return (
+            this.dialogHelp ||
+            'Only records that meet these conditions can be picked.'
+        );
     }
 
     @track fields = [];
