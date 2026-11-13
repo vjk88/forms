@@ -165,4 +165,23 @@ describe('Split phone strip', () => {
         const none = mount({ paneTitle: 'T', progressStyle: 'none' });
         expect(none.shadowRoot.querySelector('.pane-progress')).toBeNull();
     });
+
+    // 2026-11-13: at 390px the stacked pane kept sticking, so its title drew
+    // over the questions while scrolling. The desktop rule `.sticky-pane .pane`
+    // (two classes) beat the phone rule's plain `.pane { position: static }`
+    // (one class). The phone rule must switch sticky off at the same strength.
+    it('the stacked phone pane scrolls away (sticky off at full strength)', () => {
+        expect(css).toMatch(
+            /\.sticky-pane \.pane\s*\{[^}]*position:\s*var\(--c-nav-sticky, sticky\)/
+        );
+        expect(phoneRule()).toMatch(
+            /\.sticky-pane \.pane\s*\{[^}]*position:\s*static;/
+        );
+        const sticky = mount({ paneTitle: 'T', fullBleed: false });
+        expect(
+            sticky.shadowRoot
+                .querySelector('.layout')
+                .classList.contains('sticky-pane')
+        ).toBe(true);
+    });
 });

@@ -463,6 +463,13 @@ slot[name='actions'] {
         position: static;
     }
 
+    /* Stacked, the pane must scroll away with the page: left sticky, its
+       title drew over the questions below it (2026-11-13). Needs the desktop
+       rule's own two-class strength; plain .pane above loses to it. */
+    .sticky-pane .pane {
+        position: static;
+    }
+
     .pane.pane--bare {
         display: none;
     }
