@@ -1,4 +1,4 @@
-# Implementation Plan — File Upload (PENDING_WORK §3.1)
+# Implementation Plan — File Upload (DEFERRED #53 for the guest half)
 
 **Slice 2 design added 2026-09-08:** [Guest uploads and larger attachments](./IMPL_PLAN_GUEST_FILE_UPLOAD.md)
 defines native Salesforce transport, staged receipts, atomic final association, quotas, cleanup,
@@ -104,7 +104,7 @@ ones.
 
 **`.js`** — `handleFilePick` / `handleFileDrop` / `handleFileDragOver` / `handleFileDragLeave` /
 `handleFileRemove`; `FileReader.readAsDataURL` → base64; client-side size and type checks (**UX
-only — never the enforcement point**, cf. PENDING_WORK §2.1); dispatch `valuechange` with
+only — never the enforcement point**, cf. DEFERRED #24); dispatch `valuechange` with
 `{ elementId, value: files }` so answers land in the viewer's store like every other element.
 Honour `accept` and `multiple` from element config, defaulting closed.
 

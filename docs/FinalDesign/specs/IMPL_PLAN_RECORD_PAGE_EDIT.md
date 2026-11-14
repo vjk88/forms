@@ -10,7 +10,7 @@ edit-mode form must currently have `saveMode:"update"` written into its spec by 
 _"forms should work internally as well … that's the whole reason for forms."_
 **Mode chosen by owner:** **EDIT the record it sits on** (not prefill-only, not related-child).
 
-Companions: [PENDING_WORK.md](../PENDING_WORK.md) §1 P4 · [DEFERRED.md](../DEFERRED.md) #14
+Companions: [DEFERRED.md](../DEFERRED.md) #14
 (hosting adapters — this plan is a deliberate _slice_ of it, not its replacement) ·
 [FORM_SPEC_SCHEMA.md](../FORM_SPEC_SCHEMA.md) · [HOSTING_ADAPTERS_SPEC.md](./HOSTING_ADAPTERS_SPEC.md)
 
@@ -207,7 +207,7 @@ repeat-section refused). 16/16 in `FinalSubmitControllerTest`.
 - **Apex**: update branch writes only spec-bound fields; `stripForUpdate` drops a non-updateable
   field; wrong-object `meta.recordId` refused; GUEST posture on an update spec throws;
   stale-`LastModifiedDate` refused (if D1 accepted).
-- **Browser (the one that actually matters — see PENDING_WORK §8 trap 1):** place the form on a real
+- **Browser (the one that actually matters — see the old PENDING_WORK §8 trap 1, in git history):** place the form on a real
   Account record page, confirm current values load, change one, submit, and **re-query the record**
   to prove it changed. A jest-green edit path is not evidence.
 
@@ -216,7 +216,7 @@ repeat-section refused). 16/16 in `FinalSubmitControllerTest`.
 ## 6 · Out of scope / orphan ledger
 
 - **Related-child creation** (form on Account creates a linked Case) — a separate mode; not built here.
-- **Polymorphic and dependent lookups** — still absent (PENDING_WORK §3.2).
+- **Polymorphic and dependent lookups** — still absent (old PENDING_WORK §3.2, in git history).
 - **Guest edit** — stays refused, permanently, by design.
 - **`Allowed_Adapters__c`** — still unread. This plan does NOT close DEFERRED #14; it delivers the
   one surface the owner needs and leaves the declaration model parked.

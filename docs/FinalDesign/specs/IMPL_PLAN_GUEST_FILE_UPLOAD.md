@@ -437,4 +437,4 @@ The implementation handoff must provide a **mechanically generated actual change
 
 A guest can upload a realistic attachment on the published LWR form, correct answers, remove/retry files, and submit exactly once; files attach only to that submission. Larger authenticated uploads work on supported hosts. Invalid admissions, quota overruns, stale sessions, wrong receipts, failed finalization, and abandoned uploads have tested outcomes. Existing internal inline uploads still work. Studio simulation and real upload testing are clearly distinguished.
 
-No implementation item in [PENDING_WORK.md](../PENDING_WORK.md) is closed merely by creating this plan.
+No implementation item in [DEFERRED.md](../DEFERRED.md) (#53) is closed merely by creating this plan.

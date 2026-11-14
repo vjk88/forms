@@ -46,7 +46,7 @@ const OPERATOR_LABELS = new Map(
 );
 
 /**
- * Which operators make sense per source subtype (PENDING_WORK §9.3).
+ * Which operators make sense per source subtype (2026-09-05 Studio review, archive/FINALFORMSTUDIO_UX_REVIEW_2026-09-05.md).
  *
  * `contains` is KEPT wherever a source can hold multiple values (owner ruling
  * 2026-09-06): multipicklist and multi-select choice answers arrive as arrays

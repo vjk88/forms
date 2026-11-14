@@ -404,7 +404,7 @@ Legacy `autofillEditor`, `formAutofill` and `zAutofillEditor` aren't part of the
 - Two-hop paths.
 - A second link rule, or a second link object, per form.
 - The invitations redesign (F2.5).
-- The app-wide typography pass (PENDING_WORK §4.0).
+- The app-wide typography pass (DEFERRED #58).
 
 ## 11. Reviews: what changed
 
