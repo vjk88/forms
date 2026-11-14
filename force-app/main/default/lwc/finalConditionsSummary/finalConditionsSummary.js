@@ -80,6 +80,8 @@ export function describeCondition(
             : 'the answer to a removed question';
     } else if (typeof raw === 'string' && raw.startsWith('$User.')) {
         shown = labels.get(raw) || `Current user › ${raw.slice(6)}`;
+    } else if (typeof raw === 'string' && raw.startsWith('$record.')) {
+        shown = labels.get(raw) || `This record › ${raw.slice(8)}`;
     } else if (LIST_OPERATORS.has(rule.operator)) {
         const items = Array.isArray(raw)
             ? raw
@@ -111,6 +113,8 @@ export default class FinalConditionsSummary extends LightningElement {
     @api isPublic = false;
     /** Lookup filters: may compare with the signed-in person (D55). */
     @api allowCurrentUser = false;
+    /** A related list: rows may compare with this record's fields. */
+    @api compareRecordObject;
     /** Mapping screen: the questions a row may compare with (Task 7). */
     @api answerChoices = [];
     @api recordObject;
@@ -214,12 +218,18 @@ export default class FinalConditionsSummary extends LightningElement {
                 r.source || '',
                 typeof r.value === 'string' && r.value.startsWith('$User.')
                     ? `user:${r.value.slice(6)}`
+                    : '',
+                typeof r.value === 'string' &&
+                r.value.startsWith('$record.') &&
+                this.compareRecordObject
+                    ? r.value
                     : ''
             ])
             .filter(
                 (s) =>
                     s.includes('.') ||
                     s.startsWith('user:') ||
+                    s.startsWith('$record.') ||
                     // a Form's linked record has no pre-loaded field list
                     (s.startsWith('record:') &&
                         !(this.recordSources || []).some((r) => r.id === s))
@@ -240,6 +250,13 @@ export default class FinalConditionsSummary extends LightningElement {
                     return named.then((label) => [
                         source,
                         `Current user › ${label}`
+                    ]);
+                }
+                if (source.startsWith('$record.')) {
+                    const obj = this.compareRecordObject;
+                    return labelForPath(obj, source.slice(8)).then((label) => [
+                        source,
+                        `This ${obj} › ${label}`
                     ]);
                 }
                 const isRecord = source.startsWith('record:');
@@ -371,6 +388,7 @@ export default class FinalConditionsSummary extends LightningElement {
                 fieldObject: this.fieldObject,
                 isPublic: this.isPublic,
                 allowCurrentUser: this.allowCurrentUser,
+                compareRecordObject: this.compareRecordObject,
                 answerChoices: this.answerChoices,
                 recordObject: this.recordObject,
                 startWithRow: !this.hasRules

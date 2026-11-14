@@ -44,6 +44,23 @@ afterEach(() => {
     jest.clearAllMocks();
 });
 
+describe('a related list compares with the main record', () => {
+    it('reads a $record. value without its token', () => {
+        expect(
+            describeCondition(
+                {
+                    source: 'Subject',
+                    operator: 'equals',
+                    value: '$record.Title'
+                },
+                new Map([['Subject', 'Subject']]),
+                new Map(),
+                false
+            )
+        ).toBe('Subject equals This record › Title');
+    });
+});
+
 describe('describeCondition', () => {
     it('names the answer a mapping row compares with, or says it is gone', () => {
         const labels = new Map([['$field.el_n', 'Your surname']]);

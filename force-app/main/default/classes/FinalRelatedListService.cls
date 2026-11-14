@@ -149,7 +149,12 @@ public with sharing class FinalRelatedListService {
         Map<String, Object> show = asMap(repeat.get('show'));
         FinalLookupService.Compiled c = show == null
             ? new FinalLookupService.Compiled()
-            : FinalLookupService.compile(show, null, childObject);
+            : FinalLookupService.compile(
+                  show,
+                  // "the Contact's Account": read as this person
+                  FinalLookupService.recordValues(show, target, parentRecordId),
+                  childObject
+              );
         if (c.blocked) {
             rl.error = c.blockedReason;
             return rl;

@@ -799,7 +799,16 @@ public inherited sharing class FinalSubmitService {
             Schema.DescribeSObjectResult child = childType.getDescribe();
             FinalLookupService.Compiled c = plan.show == null
                 ? new FinalLookupService.Compiled()
-                : FinalLookupService.compile(plan.show, null, child.getName());
+                : FinalLookupService.compile(
+                      plan.show,
+                      // the main record as stored, before this Save writes it
+                      FinalLookupService.recordValues(
+                          plan.show,
+                          parentId.getSObjectType().getDescribe().getName(),
+                          parentId
+                      ),
+                      child.getName()
+                  );
             if (c.blocked) {
                 throw FinalMappingRules.refusal(
                     title + ' can’t be saved: ' + c.blockedReason

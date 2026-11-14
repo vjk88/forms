@@ -773,6 +773,74 @@ describe('Compare with → Current user on lookup filters (D55)', () => {
     });
 });
 
+describe('Compare with → This Contact on a related list (P2.4)', () => {
+    it('is offered only when the list says which record it belongs to', async () => {
+        const off = mount({
+            columns: 'lookup',
+            allowCurrentUser: true,
+            value: config([rule('el_1', 'equals', 'x')])
+        });
+        await flush();
+        expect(control(off, 0, 'compare').options.map((o) => o.value)).toEqual([
+            'fixed',
+            'user'
+        ]);
+
+        const on = mount({
+            columns: 'lookup',
+            allowCurrentUser: true,
+            compareRecordObject: 'Contact',
+            value: config([rule('el_1', 'equals', 'x')])
+        });
+        await flush();
+        expect(control(on, 0, 'compare').options).toEqual([
+            { value: 'fixed', label: 'A fixed value' },
+            { value: 'user', label: 'Current user' },
+            { value: 'record', label: 'This Contact' }
+        ]);
+    });
+
+    it('choosing it empties the value and offers the Contact’s fields', async () => {
+        const el = mount({
+            columns: 'lookup',
+            compareRecordObject: 'Contact',
+            value: config([rule('el_1', 'equals', 'x')])
+        });
+        await flush();
+        const changes = listen(el);
+        change(control(el, 0, 'compare'), 'record');
+        expect(changes[0].rules[0].value).toBe('');
+        el.value = changes[0];
+        await flush();
+        const picker = control(el, 0, 'value');
+        expect(picker.tagName).toBe('C-FINAL-FIELD-PICKER');
+        expect(picker.objectApi).toBe('Contact');
+        expect(picker.prefix).toBe('$record.');
+        expect(el.problems[0].message).toBe('Choose a Contact field.');
+    });
+
+    it('a saved $record. value reopens as This Contact', async () => {
+        const el = mount({
+            columns: 'lookup',
+            compareRecordObject: 'Contact',
+            value: config([rule('el_1', 'equals', '$record.AccountId')])
+        });
+        await flush();
+        expect(control(el, 0, 'compare').value).toBe('record');
+        expect(control(el, 0, 'value').value).toBe('$record.AccountId');
+        expect(el.problems).toEqual([]);
+    });
+
+    it('a $record. value with no record to read is flagged', async () => {
+        const el = mount({
+            columns: 'lookup',
+            value: config([rule('el_1', 'equals', '$record.AccountId')])
+        });
+        await flush();
+        expect(el.problems[0].message).toContain('isn’t available here');
+    });
+});
+
 describe('Compare with An answer (mapping screen, Task 7)', () => {
     const FIELDS = [
         { id: 'LastName', label: 'Last Name', type: 'string' },

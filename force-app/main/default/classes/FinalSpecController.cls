@@ -316,6 +316,15 @@ public with sharing class FinalSpecController {
                             name + ' can’t be published: ' + c.blockedReason
                         );
                     }
+                    String recordProblem = FinalLookupService.recordPathProblem(
+                        (Map<String, Object>) showObj,
+                        target
+                    );
+                    if (recordProblem != null) {
+                        throw FinalMappingRules.refusal(
+                            name + ' can’t be published: ' + recordProblem
+                        );
+                    }
                 }
             }
         }
