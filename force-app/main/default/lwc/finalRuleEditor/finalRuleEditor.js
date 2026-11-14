@@ -153,6 +153,8 @@ const ANSWER_OPERATORS = new Set([
 /** Field types Contains works on (matches FinalMappingRules.isTextLike). */
 const TEXT_LIKE = new Set(['string', 'textarea', 'email', 'phone', 'url']);
 const ANSWER_PREFIX = '$field.';
+/** A related list's compare-with value: a field of the record being edited. */
+const RECORD_PREFIX = '$record.';
 
 /** Why a saved answer can't be used, in the picker and beside it (decision 22). */
 const ANSWER_REASONS = {
@@ -289,6 +291,14 @@ export default class FinalRuleEditor extends LightningElement {
      * user" would be the site guest. The server reads the value itself.
      */
     @api allowCurrentUser = false;
+
+    /**
+     * A related list's "Show" conditions (IMPL_PLAN_RELATED_RECORDS P2.4):
+     * the form's own object (Contact). Set, a lookup row may compare with
+     * one of its fields, saved as `$record.<path>` and read on the server
+     * from the record the form edits.
+     */
+    @api compareRecordObject;
 
     /**
      * Mapping screen: the form's questions a row may compare with —
@@ -433,11 +443,25 @@ export default class FinalRuleEditor extends LightningElement {
         return USER_VALUE_EXTRAS;
     }
 
+    get recordValueHint() {
+        return `If this ${this.compareRecordObject}’s field is empty, the condition matches no records.`;
+    }
+
+    get recordValuePlaceholder() {
+        return `Search ${this.compareRecordObject} fields`;
+    }
+
     /** What a record screen's value can be compared with. */
     get compareOptions() {
         const out = [{ value: 'fixed', label: 'A fixed value' }];
         if (this.columns === 'lookup' && this.allowCurrentUser) {
             out.push({ value: 'user', label: 'Current user' });
+        }
+        if (this.columns === 'lookup' && this.compareRecordObject) {
+            out.push({
+                value: 'record',
+                label: `This ${this.compareRecordObject}`
+            });
         }
         return out;
     }
@@ -474,6 +498,12 @@ export default class FinalRuleEditor extends LightningElement {
     _compareOf(rule, i) {
         if (typeof rule.value === 'string' && rule.value.startsWith('$User.')) {
             return 'user';
+        }
+        if (
+            typeof rule.value === 'string' &&
+            rule.value.startsWith(RECORD_PREFIX)
+        ) {
+            return 'record';
         }
         if (this._answerKey(rule)) {
             return 'answer';
@@ -778,7 +808,9 @@ export default class FinalRuleEditor extends LightningElement {
                               ? 'Choose True or False.'
                               : this._compareOf(rule, i) === 'user'
                                 ? 'Choose a user field.'
-                                : 'Enter a value, or use “Is blank”.'
+                                : this._compareOf(rule, i) === 'record'
+                                  ? `Choose a ${this.compareRecordObject} field.`
+                                  : 'Enter a value, or use “Is blank”.'
                 });
             } else if (
                 !NO_VALUE.has(rule.operator) &&
@@ -801,6 +833,18 @@ export default class FinalRuleEditor extends LightningElement {
                     message:
                         'Current user can’t be used while people who aren’t ' +
                         'signed in can search this lookup.'
+                });
+            } else if (
+                !this.compareRecordObject &&
+                this._compareOf(rule, i) === 'record'
+            ) {
+                // a related list's value, somewhere with no record to read
+                out.push({
+                    rowIndex: i,
+                    control: 'value',
+                    message:
+                        'This condition compares with the record the form ' +
+                        'edits, which isn’t available here. Choose another value.'
                 });
             }
         });
@@ -997,6 +1041,7 @@ export default class FinalRuleEditor extends LightningElement {
                 answerNote: this._answerNote(rule),
                 compareLabel: `Condition ${i + 1}: compare with`,
                 valueIsUser: this._compareOf(rule, i) === 'user',
+                valueIsRecord: this._compareOf(rule, i) === 'record',
                 key: `rule_${i}`,
                 index: i,
                 number: i + 1,

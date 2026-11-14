@@ -425,7 +425,12 @@ sheet, on the Studio preview and the Lightning tab.
 Status: DIRECTION AGREED 2026-11-12, open questions SETTLED 2026-11-13 (see "Settled 2026-11-13").
 **Slice 1 "See" BUILT 2026-11-13** (PR 445). **Slice 2a "Change and add" BUILT 2026-11-13** (branch
 `feat/related-lists-edit`). **Slice 2b part 1, quiet fill (P2.6), BUILT 2026-11-13** (branch
-`feat/related-fill`); 2b part 2 (Show conditions on the main record) and slice 3 (delete) not built. Owner pick for the fill rows, from [mocks/quiet-fill-mock.html](./mocks/quiet-fill-mock.html):
+`feat/related-fill`). **2b part 2, Show conditions on the main record, BUILT 2026-11-13** (branch
+`feat/related-show-main-record`): "Compare with" gains "This {Contact}", saved as `$record.<path>`, read
+by `FinalLookupService.recordValues` as the signed-in person (one query) on load and, at Save, from the
+record as stored before the Save writes it; a blank value makes that condition match nothing (`Id = NULL`)
+instead of breaking the list; Publish refuses a path that isn't a field of the form's object. A field of
+the record, not a question's answer: it covers fields that aren't on the form. Slice 3 (delete) not built. Owner pick for the fill rows, from [mocks/quiet-fill-mock.html](./mocks/quiet-fill-mock.html):
 **"B, list + dialog"** (one line per fill in the inspector, edited in a small dialog).
 
 Slice 2a as built (my calls):

@@ -172,6 +172,22 @@
                                         onfieldchange={handleRuleField}
                                     ></c-final-field-picker>
                                 </template>
+                                <template lwc:elseif={r.valueIsRecord}>
+                                    <c-final-field-picker
+                                        label={r.valueLabel}
+                                        variant="label-hidden"
+                                        placeholder={recordValuePlaceholder}
+                                        object-api={compareRecordObject}
+                                        prefix="$record."
+                                        value={r.value}
+                                        data-index={r.index}
+                                        data-control="value"
+                                        onfieldchange={handleRuleField}
+                                    ></c-final-field-picker>
+                                    <p class="re-record-hint">
+                                        {recordValueHint}
+                                    </p>
+                                </template>
                                 <template lwc:elseif={r.isBool}>
                                     <lightning-combobox
                                         label={r.valueLabel}

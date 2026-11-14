@@ -274,6 +274,13 @@ public inherited sharing class FinalLookupService {
             }
 
             Object resolved = resolveValue(row, answers);
+            if (resolved == null && recordPathOf(row.get('value')) != null) {
+                // a related list's "the Contact's Account" when the Contact
+                // has none: that condition matches nothing (IMPL_PLAN_
+                // RELATED_RECORDS P2.4), it doesn't break the list
+                pieces.add('Id = NULL');
+                continue;
+            }
             if (resolved == null) {
                 out.blocked = true;
                 out.blockedReason = 'A condition has no value yet.';
@@ -463,7 +470,127 @@ public inherited sharing class FinalLookupService {
         if (s.startsWith('$User.')) {
             return userValue(s.substring(6));
         }
+        if (s.startsWith(RECORD_PREFIX)) {
+            // the main record's field, read by recordValues() and handed in
+            // under its own token; nothing handed in = no value
+            Object v = answers == null ? null : answers.get(s);
+            return isAbsent(v) ? null : v;
+        }
         return s;
+    }
+
+    /** A related list's compare-with value: a field of the main record. */
+    public static final String RECORD_PREFIX = '$record.';
+
+    private static String recordPathOf(Object raw) {
+        return raw instanceof String && ((String) raw).startsWith(RECORD_PREFIX)
+            ? ((String) raw).substring(RECORD_PREFIX.length())
+            : null;
+    }
+
+    /** Every `$record.` path a filter compares with, as written. */
+    public static Set<String> recordPaths(Map<String, Object> cfg) {
+        Set<String> out = new Set<String>();
+        Map<String, Object> filter = cfg == null
+            ? null
+            : asMap(cfg.get('filter'));
+        List<Object> rows = filter == null ? null : asList(filter.get('rows'));
+        for (Object rowObj : rows == null ? new List<Object>() : rows) {
+            Map<String, Object> r = asMap(rowObj);
+            String p = r == null ? null : recordPathOf(r.get('value'));
+            if (p != null) {
+                out.add(p);
+            }
+        }
+        return out;
+    }
+
+    /**
+     * The main record's values a related list's "Show" conditions compare
+     * with (IMPL_PLAN_RELATED_RECORDS P2.4), keyed by their `$record.` token
+     * for `compile`. Read in ONE query as the running user: a path that
+     * isn't a readable field gives nothing, so its condition matches
+     * nothing. A guest reads nothing.
+     */
+    public static Map<String, Object> recordValues(
+        Map<String, Object> cfg,
+        String objectName,
+        Id recordId
+    ) {
+        Map<String, Object> out = new Map<String, Object>();
+        Set<String> paths = recordPaths(cfg);
+        if (
+            paths.isEmpty() ||
+            recordId == null ||
+            UserInfo.getUserType() == 'Guest'
+        ) {
+            return out;
+        }
+        Map<String, String> canonicalByPath = new Map<String, String>();
+        for (String p : paths) {
+            String canonical = resolvePath(objectName, p);
+            Schema.DescribeFieldResult d = canonical == null
+                ? null
+                : fieldAt(objectName, canonical);
+            if (d != null && d.isAccessible()) {
+                canonicalByPath.put(p, canonical);
+            }
+        }
+        if (canonicalByPath.isEmpty()) {
+            return out;
+        }
+        List<SObject> rows;
+        try {
+            rows = Database.queryWithBinds(
+                'SELECT ' +
+                    String.join(
+                        new List<String>(
+                            new Set<String>(canonicalByPath.values())
+                        ),
+                        ', '
+                    ) +
+                    ' FROM ' +
+                    objectName +
+                    ' WHERE Id = :rid LIMIT 1',
+                new Map<String, Object>{ 'rid' => recordId },
+                AccessLevel.USER_MODE
+            );
+        } catch (QueryException e) {
+            return out; // a hop this person can't read: nothing to compare
+        }
+        if (rows.isEmpty()) {
+            return out;
+        }
+        for (String p : canonicalByPath.keySet()) {
+            String canonical = canonicalByPath.get(p);
+            List<String> parts = canonical.split('\\.');
+            SObject holder = rows[0];
+            for (Integer i = 0; holder != null && i < parts.size() - 1; i++) {
+                holder = holder.getSObject(parts[i]);
+            }
+            out.put(
+                RECORD_PREFIX + p,
+                holder == null ? null : holder.get(parts[parts.size() - 1])
+            );
+        }
+        return out;
+    }
+
+    /** Why a related list's `$record.` path can't be used, or null. */
+    public static String recordPathProblem(
+        Map<String, Object> cfg,
+        String objectName
+    ) {
+        for (String p : recordPaths(cfg)) {
+            if (resolvePath(objectName, p) == null) {
+                return 'a condition compares with "' +
+                    p +
+                    '", which isn’t a field of ' +
+                    objectName +
+                    '.';
+            }
+        }
+        return null;
     }
 
     /** Read once per transaction: path ('Title', 'Profile.Name') → value. */

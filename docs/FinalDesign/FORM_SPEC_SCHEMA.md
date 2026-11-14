@@ -318,7 +318,8 @@ a first-class **Repeating Group** item, catalog §5).
   rows **plus their topic links** on a Survey (counted before insert, rolled back with the response).
 - **On a record page** (a form that edits a record) a group is a **related list** of that record's
   existing children (IMPL_PLAN_RELATED_RECORDS Part 2): `repeat.show` = `{ filter }` (the lookup filter
-  shape, compiled by `FinalLookupService`), `repeat.readOnly` (look-only; never shown on a form that
+  shape, compiled by `FinalLookupService`; a row's `value` may be `$record.<path>`, a field of the record
+  the form edits, and a blank one matches nothing), `repeat.readOnly` (look-only; never shown on a form that
   creates a record), `repeat.link` (`false` turns off "Open {Case}"), `repeat.style` `table` draws a table
   that falls back to cards when too narrow. Slice 1 is read-only everywhere on a record page.
 - **Fill on new records** (P2.6): `repeat.fill` = `[{ "field": "Origin", "value": "Web" } |
