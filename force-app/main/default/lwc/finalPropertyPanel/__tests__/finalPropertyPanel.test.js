@@ -488,7 +488,55 @@ describe('c-final-property-panel (the FormStudio port)', () => {
         });
     });
 
-    it('repeater inspector stays DEDICATED: legacy labels, max 0 = unlimited, child dedupe', async () => {
+    it('a related list has the section look settings; a Table drops Columns', async () => {
+        const node = {
+            id: 'sec_r',
+            title: 'Team',
+            elements: [],
+            repeat: {
+                childObject: 'Contact',
+                relationshipField: 'AccountId',
+                style: 'stacked',
+                min: 0,
+                max: null
+            }
+        };
+        const el = mount({ kind: 'section', node });
+        describeFields.emit(FIELDS);
+        await flush();
+        const props = [];
+        el.addEventListener('propchange', (e) => props.push(e.detail.patch));
+        seg(el, 'Columns')[1].click();
+        const desc = el.shadowRoot.querySelector('[data-prop="description"]');
+        desc.value = 'Who is on the team';
+        desc.dispatchEvent(new CustomEvent('change'));
+        const labels = [...el.shadowRoot.querySelectorAll('.pp-switch')].map(
+            (t) => t.label
+        );
+        expect(labels).toEqual(
+            expect.arrayContaining(['Header', 'Collapsible'])
+        );
+        expect(
+            el.shadowRoot.querySelector('[data-prop="entrylabel"]')
+        ).not.toBeNull();
+        expect(props).toEqual([
+            { columns: 2 },
+            { description: 'Who is on the team' }
+        ]);
+
+        el.node = { ...node, repeat: { ...node.repeat, style: 'table' } };
+        await flush();
+        expect(seg(el, 'Columns')).toBeNull();
+        expect(
+            el.shadowRoot.querySelector('[data-prop="entrylabel"]')
+        ).not.toBeNull(); // a Table falls back to cards on a phone
+        expect(
+            el.shadowRoot.querySelector('lightning-input[data-prop="title"]')
+                .label
+        ).toBe('Group title');
+    });
+
+    it('repeater inspector keeps its own settings: legacy labels, max 0 = unlimited, child dedupe', async () => {
         const el = mount({
             kind: 'section',
             node: {
@@ -515,9 +563,9 @@ describe('c-final-property-panel (the FormStudio port)', () => {
         describeFields.emit(FIELDS);
         await flush();
 
-        // dedicated: repeat controls, never the section surface
+        // its own controls, plus a section's look (owner 2026-11-14)
         expect(seg(el, 'Display style')).toHaveLength(3);
-        expect(seg(el, 'Columns')).toBeNull();
+        expect(seg(el, 'Columns')).toHaveLength(4);
         expect(el.shadowRoot.querySelector('.pp-ro').textContent).toBe(
             'Contact'
         );
@@ -576,10 +624,12 @@ describe('c-final-property-panel (the FormStudio port)', () => {
             ]);
             expect(buttons[1].getAttribute('aria-pressed')).toBe('true');
             const hints = [...el.shadowRoot.querySelectorAll('.pp-hint')].map(
-                (p) => p.textContent.trim()
+                (p) => p.textContent.replace(/\s+/g, ' ').trim()
             );
             expect(hints).toContain('Tiles is coming soon.');
-            expect(hints).toContain("Shows as cards where there isn't room.");
+            expect(hints).toContain(
+                "Each question gets its own column. Shows as cards where there isn't room."
+            );
         });
 
         it('Read only and Link to record write the repeat block; read-only hides the entry settings', async () => {

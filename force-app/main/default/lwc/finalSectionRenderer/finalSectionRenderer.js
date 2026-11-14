@@ -33,6 +33,10 @@ let repFocusSeq = 0;
  *  (name) column plus a usable width per question. */
 const TABLE_NAME_WIDTH = 140;
 const TABLE_COLUMN_WIDTH = 140;
+/** An editable Table's # column: the number alone (3.5rem), or the number
+ *  with a saved record's name (11rem); matches .rl-numcol in the CSS. */
+const TABLE_NUM_WIDTH = 56;
+const TABLE_NAMED_NUM_WIDTH = 176;
 /** A cell that holds a control (an editable row) needs more room than text:
  *  a dropdown squeezed under 200px wraps its own value. */
 const TABLE_EDIT_COLUMN_WIDTH = 200;
@@ -300,15 +304,25 @@ export default class FinalSectionRenderer extends LightningElement {
                     return e;
                 });
             const cellsByEl = new Map(elements.map((e) => [e.id, e]));
+            // a Table numbers its rows (owner 2026-11-14): a saved record keeps
+            // its name beside the number, a new row is "Contact 3" to a
+            // screen reader
+            const rowName = ex ? ex.name : this._newRowName(i);
+            const asTable = this.showEntryTable;
             return {
                 key,
                 label,
+                num: i + 1,
+                tableName: ex ? ex.name : '',
+                newTag: !ex && this._hasLoadedRows,
                 // a loaded record isn't removed with × (delete is slice 3)
                 canRemove: ex ? false : canRemove,
-                removeLabel: this._removeName(ex ? i : thisNew, label),
+                removeLabel: asTable
+                    ? `${this.removeTitle} ${rowName}`
+                    : this._removeName(ex ? i : thisNew, label),
                 viewOnly: Boolean(ex && !editable),
                 viewOnlySr: ex
-                    ? `You can see this ${this.entriesNameLabel} but not change it.`
+                    ? `. You can see this ${this.entriesNameLabel} but not change it.`
                     : '',
                 rowErrors,
                 hasRowErrors: rowErrors.length > 0,
@@ -321,8 +335,12 @@ export default class FinalSectionRenderer extends LightningElement {
                 deleted: Boolean(ex && ex.deleted),
                 noun: ex ? ex.noun : '',
                 recordName: ex ? ex.name : '',
-                rowClass:
-                    ex && ex.deleted ? 'rep-entry rl-row-gone' : 'rep-entry',
+                rowClass: `rep-entry${ex && ex.deleted ? ' rl-row-gone' : ''}${
+                    rowErrors.length ? ' rl-has-err' : ''
+                }`,
+                errKey: `${key}::err`,
+                // the error line is tied to its row for screen readers
+                errPrefix: `${rowName}: `,
                 href: ex ? ex.href : null,
                 openSr: ex ? ex.openSr : '',
                 isNew: !ex,
@@ -338,7 +356,7 @@ export default class FinalSectionRenderer extends LightningElement {
                             ? {
                                   ...el,
                                   id: `${el.id}::${key}`,
-                                  label: `${el.label || ''}, ${label}`,
+                                  label: `${el.label || ''}, ${rowName}`,
                                   labelPosition: 'hidden'
                               }
                             : null
@@ -377,7 +395,37 @@ export default class FinalSectionRenderer extends LightningElement {
     }
 
     get entriesNameLabel() {
-        return this.repeatCfg.childObject || '';
+        return this.sec.listNoun || this.repeatCfg.childObject || '';
+    }
+
+    /** A new Table row's name for screen readers ("Contact 3"): the object's
+     *  label on a record page; else the Studio's "Contact {index}" title;
+     *  never an API name like Job_Application__c. */
+    _newRowName(i) {
+        if (this.sec.listNoun) {
+            return `${this.sec.listNoun} ${i + 1}`;
+        }
+        if ((this.repeatCfg.entryLabel || '').includes('{index}')) {
+            return this._entryTitle(i);
+        }
+        return `Row ${i + 1}`;
+    }
+
+    /** The Table's first column: just the row number, or wider when saved
+     *  records show their names beside it. */
+    get numColClass() {
+        return this._hasLoadedRows ? 'rl-numcol rl-numcol-named' : 'rl-numcol';
+    }
+
+    /** Spoken between the row number and what follows ("1, 00001026"), so
+     *  a screen reader never reads "100001026"; a template drops the space. */
+    get rowSep() {
+        return ', ';
+    }
+
+    /** Every column, for a row-wide error line under its row. */
+    get tableColCount() {
+        return this.tableQuestions.length + 2;
     }
 
     get listMore() {
@@ -443,7 +491,7 @@ export default class FinalSectionRenderer extends LightningElement {
         const width = this.template.host.getBoundingClientRect().width;
         const needed = this.list
             ? TABLE_NAME_WIDTH + TABLE_COLUMN_WIDTH * this.list.columns.length
-            : TABLE_NAME_WIDTH +
+            : (this._hasLoadedRows ? TABLE_NAMED_NUM_WIDTH : TABLE_NUM_WIDTH) +
               TABLE_EDIT_COLUMN_WIDTH * this.tableQuestions.length +
               (this._anyDeletable ? TABLE_DELETE_WIDTH : TABLE_ACTION_WIDTH);
         const fits = width >= needed;
