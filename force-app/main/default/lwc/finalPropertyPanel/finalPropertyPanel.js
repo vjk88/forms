@@ -193,6 +193,9 @@ export default class FinalPropertyPanel extends LightningElement {
     }
     /** The object a FIELD element binds against (read-only display). */
     @api bindingObjectApi;
+    /** The form's own object (Contact): where a group's quiet fills copy
+     *  from (P2.6). */
+    @api formObjectApi;
     /** The hosting section's column count (Width control scope). */
     @api sectionColumns = 1;
     /** The form's "Display as" default per field type
@@ -1750,6 +1753,36 @@ export default class FinalPropertyPanel extends LightningElement {
         return `Fields — ${this.repeat.childObject}`;
     }
 
+    // ---- Fill on new records (P2.6) ----
+
+    get repeatFills() {
+        return Array.isArray(this.repeat.fill) ? this.repeat.fill : [];
+    }
+
+    /** What a fill can't set: the group's questions and the link field. */
+    get fillTakenFields() {
+        const taken = (this.n.elements || [])
+            .map((el) => el.binding && el.binding.field)
+            .filter(Boolean);
+        if (this.repeat.relationshipField) {
+            taken.push(this.repeat.relationshipField);
+        }
+        return taken;
+    }
+
+    get fillChildFields() {
+        return this.childFields || [];
+    }
+
+    handleRepeatFill(event) {
+        const fills = event.detail.fills || [];
+        this._repeatPatch('fill', fills.length ? fills : null);
+    }
+
+    get _filledFields() {
+        return new Set(this.repeatFills.map((f) => f.field));
+    }
+
     /** Child list dedupes against fields already in THIS section (§4.4). */
     get childRows() {
         const used = new Set(
@@ -1757,20 +1790,28 @@ export default class FinalPropertyPanel extends LightningElement {
                 .map((el) => el.binding && el.binding.field)
                 .filter(Boolean)
         );
+        // a field filled quietly on new records can't also be a question
+        const filled = this._filledFields;
         // The link field (Contact ID under a Case group) is set by the save
         // itself; as a question the respondent could overwrite it (§7).
         const link = this.repeat.relationshipField;
         return (this.childFields || [])
             .filter((f) => f.apiName !== link)
             .map((f) => {
-                const added = used.has(f.apiName);
+                const isFilled = filled.has(f.apiName);
+                const added = used.has(f.apiName) || isFilled;
+                let title = `Add ${f.label} to the group`;
+                if (isFilled) {
+                    title = `${f.label} is filled on new records`;
+                } else if (added) {
+                    title = `${f.label} is already in this group`;
+                }
                 return {
                     ...f,
                     added,
+                    addedText: isFilled ? 'Filled' : 'Added',
                     cls: added ? 'pp-childfield added' : 'pp-childfield',
-                    title: added
-                        ? `${f.label} is already in this group`
-                        : `Add ${f.label} to the group`
+                    title
                 };
             });
     }
@@ -2160,7 +2201,7 @@ export default class FinalPropertyPanel extends LightningElement {
         const used = (this.n.elements || []).some(
             (el) => el.binding && el.binding.field === apiName
         );
-        if (used) {
+        if (used || this._filledFields.has(apiName)) {
             return;
         }
         this._emit('addchildfield', { field: { ...field } });

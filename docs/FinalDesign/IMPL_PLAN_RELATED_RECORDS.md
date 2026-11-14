@@ -424,8 +424,8 @@ sheet, on the Studio preview and the Lightning tab.
 
 Status: DIRECTION AGREED 2026-11-12, open questions SETTLED 2026-11-13 (see "Settled 2026-11-13").
 **Slice 1 "See" BUILT 2026-11-13** (PR 445). **Slice 2a "Change and add" BUILT 2026-11-13** (branch
-`feat/related-lists-edit`); slice 2b (quiet fill P2.6 + Show conditions on the main record) and slice 3
-(delete) not built. Owner pick for the fill rows, from [mocks/quiet-fill-mock.html](./mocks/quiet-fill-mock.html):
+`feat/related-lists-edit`). **Slice 2b part 1, quiet fill (P2.6), BUILT 2026-11-13** (branch
+`feat/related-fill`); 2b part 2 (Show conditions on the main record) and slice 3 (delete) not built. Owner pick for the fill rows, from [mocks/quiet-fill-mock.html](./mocks/quiet-fill-mock.html):
 **"B, list + dialog"** (one line per fill in the inspector, edited in a small dialog).
 
 Slice 2a as built (my calls):
@@ -645,6 +645,20 @@ server**, from **fixed values or the main record**.
   source field exists on the form's object and has a compatible type (a lookup copies only to a lookup on
   the same object). Writes still go through `stripInaccessible(CREATABLE)` for signed-in people.
 - **Spec:** `repeat.fill: [{ field: 'Status', value: 'New' } | { field: 'AccountId', from: 'AccountId' }]`.
+
+As built 2026-11-13 (my calls):
+- One rule home, `FinalRepeatFill.cls`: what may be filled (createable plain values and single-object
+  lookups; polymorphic lookups like Owner are left out), what may copy into what (text into text, numbers
+  into numbers, a lookup only into a lookup to the same object, otherwise the same type), and the Publish
+  check. The Studio asks the same class (`FinalStudioController.describeFillSources`).
+- **A lookup can only be filled from the main record**: a fixed record id would break in another org.
+- A fill alone never makes a record: a blank new row is still skipped. A fill that no longer fits at
+  runtime (field deleted, value gone) is skipped, never a crash.
+- Builder: `c/finalRepeatFill` (the list, Autofill-rules line look) and `c/finalRepeatFillModal`
+  (LightningModal, like the Show conditions dialog in the same inspector). The settings under it get an
+  "Adding" heading, as in the mock. A filled field shows "Filled" in the group's field list and can't be
+  added as a question. Hidden for a read-only list (it takes no new rows).
+- `fromLabel` rides in the spec for the inspector line only; the server ignores it.
 
 ## Settled 2026-11-13 (save-time contracts; engineering calls, mine)
 

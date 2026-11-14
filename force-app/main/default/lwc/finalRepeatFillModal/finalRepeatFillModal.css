@@ -1,0 +1,37 @@
+/* The fill dialog (P2.6): base components on the modal's own surface. The
+   modal draws outside the Studio, so each token carries a fallback. */
+.rfm-description {
+    margin: var(--c-studio-space-1, 4px) 0 0;
+    color: var(--c-studio-text-weak, #5c5c5c);
+    font-size: var(--c-studio-fs-small, 12px);
+}
+
+.rfm-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--c-studio-space-4, 16px);
+}
+
+.rfm-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--c-studio-space-1, 4px);
+}
+
+.rfm-label {
+    color: var(--c-studio-text-weak, #5c5c5c);
+    font-size: var(--c-studio-fs-small, 12px);
+}
+
+.rfm-hint {
+    margin: 0;
+    color: var(--c-studio-text-weak, #5c5c5c);
+    font-size: var(--c-studio-fs-small, 12px);
+    line-height: 1.45;
+}
+
+.rfm-problem {
+    margin: 0;
+    color: var(--c-studio-error-text, #b42318);
+    font-size: var(--c-studio-fs-small, 12px);
+}

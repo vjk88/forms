@@ -132,6 +132,7 @@ describe('focus stays visible in Windows High Contrast', () => {
         'finalPictureChoice',
         'finalPreviewStage',
         'finalPropertyPanel',
+        'finalRepeatFill',
         'finalStudioRail',
         'finalStudioStyles',
         'finalSubmissionReader',

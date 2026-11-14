@@ -1147,6 +1147,17 @@
                     ></lightning-input>
                 </div>
                 <template lwc:if={repeatEditable}>
+                    <h4 class="pp-grouptitle">Fill on new records</h4>
+                    <c-final-repeat-fill
+                        fills={repeatFills}
+                        child-object={repeat.childObject}
+                        parent-object={formObjectApi}
+                        child-fields={fillChildFields}
+                        taken-fields={fillTakenFields}
+                        loading={childLoading}
+                        onfillchange={handleRepeatFill}
+                    ></c-final-repeat-fill>
+                    <h4 class="pp-grouptitle">Adding</h4>
                     <lightning-input
                         label="Add-button label"
                         data-prop="addlabel"
@@ -1237,7 +1248,7 @@
                                 </span>
                                 <span class="pp-childtype">{f.inputType}</span>
                                 <template lwc:if={f.added}>
-                                    <span class="pp-added">Added</span>
+                                    <span class="pp-added">{f.addedText}</span>
                                 </template>
                             </button>
                         </li>

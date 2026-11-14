@@ -1,0 +1,130 @@
+<template>
+    <lightning-modal-header label={label}>
+        <template lwc:if={description}>
+            <p class="rfm-description">{description}</p>
+        </template>
+    </lightning-modal-header>
+
+    <lightning-modal-body>
+        <div class="rfm-body">
+            <lightning-combobox
+                class="rfm-field"
+                label={fieldLabel}
+                placeholder="Choose a field"
+                options={fieldOptions}
+                value={field}
+                onchange={handleField}
+            ></lightning-combobox>
+
+            <template lwc:if={hasField}>
+                <div class="rfm-group">
+                    <span class="rfm-label">Value</span>
+                    <c-final-button-group
+                        stretch
+                        label="Value"
+                        options={modeOptions}
+                        value={mode}
+                        onchange={handleMode}
+                    ></c-final-button-group>
+                    <template lwc:if={lookupOnly}>
+                        <p class="rfm-hint">
+                            A lookup can only be filled from the {parentObject}.
+                        </p>
+                    </template>
+                </div>
+
+                <template lwc:if={isFixed}>
+                    <template lwc:if={isChoice}>
+                        <lightning-combobox
+                            class="rfm-value"
+                            label={current.label}
+                            placeholder="Choose a value"
+                            options={choiceOptions}
+                            value={value}
+                            onchange={handleValue}
+                        ></lightning-combobox>
+                    </template>
+                    <template lwc:elseif={isMulti}>
+                        <lightning-checkbox-group
+                            class="rfm-value"
+                            label={current.label}
+                            options={choiceOptions}
+                            value={multiValue}
+                            onchange={handleMultiValue}
+                        ></lightning-checkbox-group>
+                    </template>
+                    <template lwc:elseif={isCheckbox}>
+                        <lightning-input
+                            class="rfm-value"
+                            type="checkbox"
+                            label={current.label}
+                            checked={checked}
+                            onchange={handleChecked}
+                        ></lightning-input>
+                    </template>
+                    <template lwc:elseif={isLongText}>
+                        <lightning-textarea
+                            class="rfm-value"
+                            label={current.label}
+                            value={value}
+                            onchange={handleValue}
+                        ></lightning-textarea>
+                    </template>
+                    <template lwc:elseif={isPlain}>
+                        <lightning-input
+                            class="rfm-value"
+                            type={inputType}
+                            step={step}
+                            label={current.label}
+                            value={value}
+                            onchange={handleValue}
+                        ></lightning-input>
+                    </template>
+                </template>
+
+                <template lwc:if={isFrom}>
+                    <template lwc:if={sourcesLoading}>
+                        <p class="rfm-hint" role="status">
+                            Loading {parentObject} fields…
+                        </p>
+                    </template>
+                    <template lwc:if={hasSources}>
+                        <div class="rfm-group">
+                            <lightning-combobox
+                                class="rfm-source"
+                                label={sourceLabel}
+                                placeholder="Choose a field"
+                                options={sourceOptions}
+                                value={from}
+                                onchange={handleSource}
+                            ></lightning-combobox>
+                            <p class="rfm-hint">{sourceHint}</p>
+                        </div>
+                    </template>
+                    <template lwc:if={noSources}>
+                        <p class="rfm-hint" role="status">{noSourcesText}</p>
+                    </template>
+                </template>
+            </template>
+
+            <div class="rfm-problem-region" role="alert">
+                <template lwc:if={problem}>
+                    <p class="rfm-problem">{problem}</p>
+                </template>
+            </div>
+        </div>
+    </lightning-modal-body>
+
+    <lightning-modal-footer>
+        <lightning-button
+            label="Cancel"
+            onclick={handleCancel}
+        ></lightning-button>
+        <lightning-button
+            class="rfm-apply"
+            label="Apply"
+            variant="brand"
+            onclick={handleApply}
+        ></lightning-button>
+    </lightning-modal-footer>
+</template>

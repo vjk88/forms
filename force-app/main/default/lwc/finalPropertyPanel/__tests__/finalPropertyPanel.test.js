@@ -716,6 +716,52 @@ describe('c-final-property-panel (the FormStudio port)', () => {
             );
         });
 
+        it('Fill on new records: the list gets the group, a fill writes repeat.fill, and a filled field is no question', async () => {
+            const el = mount({
+                kind: 'section',
+                formObjectApi: 'Account',
+                node: {
+                    id: 'sec_r',
+                    title: 'Team',
+                    elements: [
+                        {
+                            id: 'el_x',
+                            type: 'field',
+                            binding: { object: 'Contact', field: 'LastName' }
+                        }
+                    ],
+                    repeat: {
+                        childObject: 'Contact',
+                        relationshipField: 'AccountId',
+                        fill: [{ field: 'Email', value: 'a@b.c' }]
+                    }
+                }
+            });
+            describeFields.emit(FIELDS);
+            await flush();
+            const fill = el.shadowRoot.querySelector('c-final-repeat-fill');
+            expect(fill.childObject).toBe('Contact');
+            expect(fill.parentObject).toBe('Account');
+            expect(fill.fills).toEqual([{ field: 'Email', value: 'a@b.c' }]);
+            expect(fill.takenFields).toEqual(['LastName', 'AccountId']);
+            const reps = [];
+            el.addEventListener('repeatchange', (e) => reps.push(e.detail));
+            fill.dispatchEvent(
+                new CustomEvent('fillchange', { detail: { fills: [] } })
+            );
+            expect(reps).toEqual([{ patch: { fill: null } }]);
+            const email = el.shadowRoot.querySelector(
+                '.pp-childfield[data-api="Email"]'
+            );
+            expect(email.textContent).toContain('Filled');
+            expect(email.title).toBe('Email is filled on new records');
+            const ro = group({ readOnly: true });
+            await flush();
+            expect(
+                ro.shadowRoot.querySelector('c-final-repeat-fill')
+            ).toBeNull();
+        });
+
         it('the link field is not offered as a question', async () => {
             const el = group();
             describeFields.emit([
