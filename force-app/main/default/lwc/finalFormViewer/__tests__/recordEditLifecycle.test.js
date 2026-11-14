@@ -1023,6 +1023,180 @@ describe('explicit record configuration', () => {
         ]);
     });
 
+    const CASE_A = '500000000000001AAA';
+    const CASE_B = '500000000000002AAA';
+    const caseRows = () => [
+        {
+            id: CASE_A,
+            name: '00001026',
+            canEdit: true,
+            canDelete: true,
+            cells: { el_subj: 'Printer', el_prio: 'High' },
+            values: { el_subj: 'Printer', el_prio: 'High' }
+        },
+        {
+            id: CASE_B,
+            name: '00001027',
+            canEdit: true,
+            canDelete: false,
+            cells: { el_subj: 'Login', el_prio: 'Low' },
+            values: { el_subj: 'Login', el_prio: 'Low' }
+        }
+    ];
+    const listResult = (sectionId) => ({
+        sectionId,
+        childObject: 'Case',
+        childLabel: 'Case',
+        childLabelPlural: 'Cases',
+        total: 2,
+        lockedQuestions: [],
+        rows: caseRows()
+    });
+    async function mountEditable(spec) {
+        getSpecEnvelope.mockResolvedValue({
+            versionId: 'a0Vserved',
+            spec: JSON.stringify(spec)
+        });
+        submitForm.mockResolvedValue({ recordId: RECORD });
+        const el = createElement('c-final-form-viewer', {
+            is: FinalFormViewer
+        });
+        el.existingRecordId = RECORD;
+        el.objectApiName = 'Contact';
+        el.versionId = 'a0Vtest';
+        document.body.appendChild(el);
+        await flush();
+        await flush();
+        loadRecord(el, { Title: 'CEO', Department: 'Sales' });
+        await flush();
+        return el;
+    }
+    const markDelete = (el, sectionId, key, deleted = true) =>
+        nav(el).dispatchEvent(
+            new CustomEvent('relatedrowdelete', {
+                bubbles: true,
+                detail: { sectionId, key, deleted }
+            })
+        );
+
+    it('delete: offered where allowed, marks a row, and sends it to delete at Save, not as a change', async () => {
+        loadRelatedLists.mockResolvedValue([listResult('sec_cases')]);
+        const el = await mountEditable(
+            listSpec({ min: 0, max: 2, allowDelete: true })
+        );
+        let sec = casesOf(el);
+        expect(sec.entries[0].existing).toMatchObject({
+            canDelete: true,
+            deleted: false,
+            noun: 'Case'
+        });
+        // Salesforce says no for the second one
+        expect(sec.entries[1].existing.canDelete).toBe(false);
+        // Max 2 and 2 there: no room until one is marked
+        expect(sec.repeatLimits.max).toBe(2);
+
+        // change the first, then mark it: the change is not sent
+        nav(el).dispatchEvent(
+            new CustomEvent('valuechange', {
+                detail: {
+                    elementId: 'repeat:sec_cases',
+                    value: [
+                        { el_subj: 'Printer, again', el_prio: 'High' },
+                        { el_subj: 'Login', el_prio: 'Low' }
+                    ],
+                    keys: [CASE_A, CASE_B],
+                    nextEntrySeq: 0
+                }
+            })
+        );
+        markDelete(el, 'sec_cases', CASE_A);
+        await flush();
+        sec = casesOf(el);
+        expect(sec.entries[0].existing.deleted).toBe(true);
+        expect(sec.repeatLimits.max).toBe(3); // the marked row makes room
+
+        nav(el).dispatchEvent(new CustomEvent('submit'));
+        await flush();
+        await flush();
+        const payload = JSON.parse(submitForm.mock.calls[0][0].payloadJson);
+        expect(payload.repeatDeletes).toEqual({ sec_cases: [CASE_A] });
+        expect(payload.repeats.sec_cases).toBeUndefined();
+    });
+
+    it('Undo takes a mark back: nothing is deleted', async () => {
+        loadRelatedLists.mockResolvedValue([listResult('sec_cases')]);
+        const el = await mountEditable(listSpec({ min: 0, allowDelete: true }));
+        markDelete(el, 'sec_cases', CASE_A);
+        await flush();
+        markDelete(el, 'sec_cases', CASE_A, false);
+        await flush();
+        expect(casesOf(el).entries[0].existing.deleted).toBe(false);
+        nav(el).dispatchEvent(new CustomEvent('submit'));
+        await flush();
+        await flush();
+        const payload = JSON.parse(submitForm.mock.calls[0][0].payloadJson);
+        expect(payload.repeatDeletes).toBeUndefined();
+    });
+
+    it('a list without Allow delete offers no delete', async () => {
+        loadRelatedLists.mockResolvedValue([listResult('sec_cases')]);
+        const el = await mountEditable(listSpec({ min: 0 }));
+        expect(casesOf(el).entries[0].existing.canDelete).toBe(false);
+    });
+
+    it('changed in one list and deleted in another: both rows say so and Save waits', async () => {
+        const spec = listSpec({ min: 0, allowDelete: true });
+        const second = JSON.parse(
+            JSON.stringify(
+                spec.pages[0].sections.find((x) => x.id === 'sec_cases')
+            )
+        );
+        second.id = 'sec_closed';
+        second.title = 'Closed cases';
+        second.elements = second.elements.map((e) => ({
+            ...e,
+            id: `${e.id}_2`,
+            visibility: undefined
+        }));
+        spec.pages[0].sections.push(second);
+        const closed = listResult('sec_closed');
+        closed.rows = closed.rows.map((r) => ({
+            ...r,
+            cells: { el_subj_2: r.cells.el_subj },
+            values: { el_subj_2: r.values.el_subj, el_prio_2: r.values.el_prio }
+        }));
+        loadRelatedLists.mockResolvedValue([listResult('sec_cases'), closed]);
+        const el = await mountEditable(spec);
+
+        nav(el).dispatchEvent(
+            new CustomEvent('valuechange', {
+                detail: {
+                    elementId: 'repeat:sec_cases',
+                    value: [
+                        { el_subj: 'Printer, again', el_prio: 'High' },
+                        { el_subj: 'Login', el_prio: 'Low' }
+                    ],
+                    keys: [CASE_A, CASE_B],
+                    nextEntrySeq: 0
+                }
+            })
+        );
+        markDelete(el, 'sec_closed', CASE_A);
+        await flush();
+        const msg =
+            'This Case is changed in Open cases and deleted in Closed cases. Undo the delete, or change it back in Open cases.';
+        const sections = nav(el).pages.flatMap((p) => p.sections);
+        const open = sections.find((x) => x.id === 'sec_cases');
+        const gone = sections.find((x) => x.id === 'sec_closed');
+        expect(open.entries[0].errors.__row).toEqual([msg]);
+        expect(gone.entries[0].errors.__row).toEqual([msg]);
+
+        nav(el).dispatchEvent(new CustomEvent('submit'));
+        await flush();
+        await flush();
+        expect(submitForm).not.toHaveBeenCalled();
+    });
+
     it('a record page sends nothing for its lists and is never blocked by their minimum', async () => {
         loadRelatedLists.mockResolvedValue([]);
         getSpecEnvelope.mockResolvedValue({

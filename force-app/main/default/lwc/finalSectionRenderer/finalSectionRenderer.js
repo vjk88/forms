@@ -38,6 +38,9 @@ const TABLE_COLUMN_WIDTH = 140;
 const TABLE_EDIT_COLUMN_WIDTH = 200;
 /** The × column: a 44px touch target plus its cell padding. */
 const TABLE_ACTION_WIDTH = 68;
+/** The last column when rows can be deleted: room for Cancel + Delete and
+ *  "Will be deleted when you save" + Undo, wrapped (slice 3). */
+const TABLE_DELETE_WIDTH = 200;
 const repFocusDone = new Set();
 
 /** Elements that always span the full grid regardless of width. */
@@ -272,7 +275,7 @@ export default class FinalSectionRenderer extends LightningElement {
                     let e = { ...el, value: values[el.id] };
                     // what this person may not change shows, but can't be
                     // typed into (sharing, field access, the link)
-                    if (ex && (!editable || locked.has(el.id))) {
+                    if (ex && (!editable || locked.has(el.id) || ex.deleted)) {
                         e = { ...e, readOnly: true };
                     }
                     if (ex && e.lookup) {
@@ -310,8 +313,16 @@ export default class FinalSectionRenderer extends LightningElement {
                 rowErrors,
                 hasRowErrors: rowErrors.length > 0,
                 nameClass: ex
-                    ? 'rep-entry-label rl-card-name'
+                    ? `rep-entry-label rl-card-name${ex.deleted ? ' rl-gone' : ''}`
                     : 'rep-entry-label',
+                // delete (slice 3): offered where the list allows it and
+                // Salesforce lets this person delete the record
+                canDelete: Boolean(ex && ex.canDelete),
+                deleted: Boolean(ex && ex.deleted),
+                noun: ex ? ex.noun : '',
+                recordName: ex ? ex.name : '',
+                rowClass:
+                    ex && ex.deleted ? 'rep-entry rl-row-gone' : 'rep-entry',
                 href: ex ? ex.href : null,
                 openSr: ex ? ex.openSr : '',
                 isNew: !ex,
@@ -434,7 +445,7 @@ export default class FinalSectionRenderer extends LightningElement {
             ? TABLE_NAME_WIDTH + TABLE_COLUMN_WIDTH * this.list.columns.length
             : TABLE_NAME_WIDTH +
               TABLE_EDIT_COLUMN_WIDTH * this.tableQuestions.length +
-              TABLE_ACTION_WIDTH;
+              (this._anyDeletable ? TABLE_DELETE_WIDTH : TABLE_ACTION_WIDTH);
         const fits = width >= needed;
         if (fits !== this.tableFits) {
             this.tableFits = fits;
@@ -446,6 +457,34 @@ export default class FinalSectionRenderer extends LightningElement {
             this._resize.disconnect();
             this._resize = null;
         }
+    }
+
+    /** Rows here may offer delete: the table's last column needs room for
+     *  the warning and Undo (slice 3). */
+    get _anyDeletable() {
+        return (this.sec.entries || []).some(
+            (e) => e.existing && e.existing.canDelete
+        );
+    }
+
+    get actCellClass() {
+        return this._anyDeletable ? 'rl-act rl-act-wide' : 'rl-act';
+    }
+
+    /** A row's delete was confirmed or undone (c-final-row-delete). */
+    handleRowDelete(event) {
+        event.stopPropagation();
+        this.dispatchEvent(
+            new CustomEvent('relatedrowdelete', {
+                bubbles: true,
+                composed: true,
+                detail: {
+                    sectionId: this.sec.id,
+                    key: event.detail.key,
+                    deleted: event.detail.deleted
+                }
+            })
+        );
     }
 
     handleListRetry() {

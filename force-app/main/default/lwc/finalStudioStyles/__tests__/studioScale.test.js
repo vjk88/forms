@@ -33,6 +33,7 @@ const RESPONDENT = new Set([
     'finalFormHeader',
     'finalSubmitBar',
     'finalLayoutZones',
+    'finalRowDelete',
     'finalSectionRenderer',
     'finalElementRenderer',
     'finalAfterSubmit',

@@ -555,3 +555,20 @@
 .sec-related .rep-entries > :not(.rep-entry) + .rep-entry {
     margin-top: var(--c-space-3);
 }
+
+/* a row marked for delete (slice 3): its name struck through and its answers
+   read-only (never dimmed: they must stay readable); "Will be deleted when
+   you save" + Undo sit beside the name */
+.rl-gone {
+    text-decoration: line-through;
+}
+
+.rep-entry-head {
+    flex-wrap: wrap;
+}
+
+/* a table with delete: the last column holds the bin, the warning and Undo */
+.rl-table .rl-act.rl-act-wide {
+    width: auto;
+    min-width: calc(44px + 2 * var(--c-space-1));
+}

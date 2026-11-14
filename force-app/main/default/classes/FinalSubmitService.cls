@@ -111,6 +111,10 @@ public inherited sharing class FinalSubmitService {
          *  entries included. Null for the main record. */
         @AuraEnabled
         public Integer entryIndex;
+        /** The existing related record a refusal is about, when it has no
+         *  entry in the list as sent (a row marked for delete). */
+        @AuraEnabled
+        public Id recordId;
     }
 
     // ------------------------------------------------- lookup enforcement
@@ -282,6 +286,8 @@ public inherited sharing class FinalSubmitService {
         }
         Map<String, Object> answers = asMap(payload.get('answers'));
         Map<String, Object> repeats = asMap(payload.get('repeats'));
+        // rows marked for delete on a record page (slice 3): sectionId → ids
+        Map<String, Object> repeatDeletes = asMap(payload.get('repeatDeletes'));
 
         Map<String, Object> form = asMap(spec.get('form'));
         String targetObject = form == null
@@ -311,6 +317,7 @@ public inherited sharing class FinalSubmitService {
                     RepeatPlan plan = repeatPlan(asMap(pageObj), sec);
                     plan.show = asMap(repeatCfg.get('show'));
                     plan.fills = FinalRepeatFill.parse(repeatCfg);
+                    plan.allowDelete = repeatCfg.get('allowDelete') == true;
                     plan.childObject = (String) repeatCfg.get('childObject');
                     plan.relationshipField = (String) repeatCfg.get(
                         'relationshipField'
@@ -380,7 +387,12 @@ public inherited sharing class FinalSubmitService {
             // existing children (IMPL_PLAN_RELATED_RECORDS Part 2, slice 2):
             // an entry with `$id` changes that child, one without adds a new
             // one. Everything is checked here, before the first write.
-            listSave = prepareListSave(repeatPlans, repeats, existingId);
+            listSave = prepareListSave(
+                repeatPlans,
+                repeats,
+                repeatDeletes,
+                existingId
+            );
             if (!listSave.errors.isEmpty()) {
                 SubmitOutcome refused = new SubmitOutcome();
                 refused.errors = listSave.errors;
@@ -393,6 +405,11 @@ public inherited sharing class FinalSubmitService {
         // An edit sends no group answers (above), so there is nothing to
         // count: a record page is never refused for its lists' minimum.
         if (!isUpdate) {
+            if (repeatDeletes != null && !repeatDeletes.isEmpty()) {
+                throw FinalMappingRules.refusal(
+                    'Existing records can only be deleted on a record page.'
+                );
+            }
             checkGroups(repeatPlans, repeats);
         }
         Integer groupRows = 0;
@@ -521,6 +538,8 @@ public inherited sharing class FinalSubmitService {
         Boolean readOnly = false;
         /** The list's "Show" conditions (lookup filter shape), or null. */
         Map<String, Object> show;
+        /** Rows may be deleted from this list (slice 3). */
+        Boolean allowDelete = false;
         /** Fields set quietly on every new row (P2.6). */
         List<FinalRepeatFill.Fill> fills = new List<FinalRepeatFill.Fill>();
     }
@@ -733,6 +752,25 @@ public inherited sharing class FinalSubmitService {
     private class ListSave {
         List<FieldError> errors = new List<FieldError>();
         Map<Id, ChildUpdate> updates = new Map<Id, ChildUpdate>();
+        /** Deduplicated: one record deleted through two lists is one row,
+         *  kept only once EVERY list it came through allowed it. */
+        Map<Id, String> deletes = new Map<Id, String>();
+        /** The list title each delete came through, for conflict messages. */
+        Map<Id, String> deletedIn = new Map<Id, String>();
+        Map<Id, String> changedIn = new Map<Id, String>();
+    }
+
+    private static FieldError recordError(
+        String message,
+        String sectionId,
+        Id recordId
+    ) {
+        FieldError fe = new FieldError();
+        fe.message = message;
+        fe.fields = new List<String>();
+        fe.sectionId = sectionId;
+        fe.recordId = recordId;
+        return fe;
     }
 
     private static FieldError entryError(
@@ -765,12 +803,16 @@ public inherited sharing class FinalSubmitService {
     private static ListSave prepareListSave(
         List<RepeatPlan> plans,
         Map<String, Object> repeats,
+        Map<String, Object> repeatDeletes,
         Id parentId
     ) {
         ListSave out = new ListSave();
         for (RepeatPlan plan : plans) {
             List<Object> entries = sentEntries(plan, repeats);
-            if (entries.isEmpty()) {
+            List<Object> rawDeletes = repeatDeletes == null
+                ? new List<Object>()
+                : asList(repeatDeletes.get(plan.sectionId));
+            if (entries.isEmpty() && rawDeletes.isEmpty()) {
                 continue;
             }
             String title = String.isBlank(plan.title)
@@ -784,9 +826,19 @@ public inherited sharing class FinalSubmitService {
                     title + ' is read-only, so nothing in it can be changed.'
                 );
             }
-            if (entries.size() > FinalPublishWarnings.MAX_ENTRIES_PER_GROUP) {
+            if (
+                entries.size() + rawDeletes.size() >
+                FinalPublishWarnings.MAX_ENTRIES_PER_GROUP
+            ) {
                 throw FinalMappingRules.refusal(
                     'Too many entries in ' + title + '.'
+                );
+            }
+            if (!rawDeletes.isEmpty() && !plan.allowDelete) {
+                // one forbidden origin refuses the whole Save; a permitted
+                // list never vouches for a forbidden one
+                throw FinalMappingRules.refusal(
+                    'Records can’t be deleted from ' + title + '.'
                 );
             }
             Schema.SObjectType childType = Schema.getGlobalDescribe()
@@ -848,12 +900,95 @@ public inherited sharing class FinalSubmitService {
                 }
                 indexById.put(recordId, i);
             }
+            // rows this list deletes: the record's own type, once each
+            Set<Id> deleteIds = new Set<Id>();
+            for (Object raw : rawDeletes) {
+                Id recordId = idOrNull(raw);
+                if (
+                    recordId == null ||
+                    recordId.getSObjectType() != childType
+                ) {
+                    throw FinalMappingRules.refusal(
+                        'A ' + child.getLabel() + ' can’t be deleted here.'
+                    );
+                }
+                deleteIds.add(recordId);
+            }
 
             Map<String, Object> binds = new Map<String, Object>(c.binds);
             binds.put('parentId', parentId);
             String listWhere = plan.relationshipField + ' = :parentId';
             if (String.isNotBlank(c.whereClause)) {
                 listWhere += ' AND (' + c.whereClause + ')';
+            }
+
+            // deletes: members of THIS list as stored now, as the user
+            if (!deleteIds.isEmpty()) {
+                Map<String, Object> delBinds = new Map<String, Object>(binds);
+                delBinds.put('ids', deleteIds);
+                Set<Id> found = new Set<Id>();
+                for (
+                    SObject rec : Database.queryWithBinds(
+                        'SELECT Id FROM ' +
+                            child.getName() +
+                            ' WHERE Id IN :ids AND ' +
+                            listWhere,
+                        delBinds,
+                        AccessLevel.USER_MODE
+                    )
+                ) {
+                    found.add(rec.Id);
+                }
+                for (Id recordId : deleteIds) {
+                    if (!found.contains(recordId)) {
+                        out.errors.add(
+                            recordError(
+                                'This ' +
+                                    child.getLabel() +
+                                    ' no longer exists, or is no longer in ' +
+                                    title +
+                                    '.',
+                                plan.sectionId,
+                                recordId
+                            )
+                        );
+                        continue;
+                    }
+                    out.deletes.put(recordId, plan.sectionId);
+                    out.deletedIn.put(recordId, title);
+                }
+                // Min judges what this Save deletes: members − deletes + adds
+                Integer adding = 0;
+                for (Object e : entries) {
+                    Map<String, Object> m = asMap(e);
+                    if (
+                        m != null &&
+                        !m.containsKey(ID_KEY) &&
+                        isStarted(plan, m)
+                    ) {
+                        adding++;
+                    }
+                }
+                Integer members = Database.countQueryWithBinds(
+                    'SELECT COUNT() FROM ' +
+                        child.getName() +
+                        ' WHERE ' +
+                        listWhere,
+                    binds,
+                    AccessLevel.USER_MODE
+                );
+                if (members - deleteIds.size() + adding < plan.min) {
+                    throw FinalMappingRules.refusal(
+                        title +
+                            ' needs at least ' +
+                            plan.min +
+                            ' ' +
+                            (plan.min == 1
+                                ? child.getLabel()
+                                : child.getLabelPlural()) +
+                            '. Undo a delete, or add one.'
+                    );
+                }
             }
 
             // membership, as stored now, as the user
@@ -909,6 +1044,7 @@ public inherited sharing class FinalSubmitService {
                             coerce(f.getDescribe().getType(), entry.get(elId))
                         );
                     }
+                    out.changedIn.put(recordId, title);
                     ChildUpdate prior = out.updates.get(recordId);
                     if (prior == null) {
                         ChildUpdate u = new ChildUpdate();
@@ -956,7 +1092,8 @@ public inherited sharing class FinalSubmitService {
                     binds,
                     AccessLevel.USER_MODE
                 );
-                if (members + adds > plan.max) {
+                // deletes in the same Save make room
+                if (members - deleteIds.size() + adds > plan.max) {
                     throw FinalMappingRules.refusal(
                         title +
                             ' can have at most ' +
@@ -969,6 +1106,29 @@ public inherited sharing class FinalSubmitService {
                     );
                 }
             }
+        }
+        // one record changed in one list and deleted in another: refused,
+        // never resolved silently; both rows say so
+        for (Id recordId : out.deletes.keySet()) {
+            ChildUpdate u = out.updates.get(recordId);
+            if (u == null) {
+                continue;
+            }
+            String noun = recordId.getSObjectType().getDescribe().getLabel();
+            String msg =
+                'This ' +
+                noun +
+                ' is changed in ' +
+                out.changedIn.get(recordId) +
+                ' and deleted in ' +
+                out.deletedIn.get(recordId) +
+                '. Undo the delete, or change it back in ' +
+                out.changedIn.get(recordId) +
+                '.';
+            out.errors.add(entryError(msg, u.sectionId, u.entryIndex));
+            out.errors.add(
+                recordError(msg, out.deletes.get(recordId), recordId)
+            );
         }
         return out;
     }
@@ -996,8 +1156,9 @@ public inherited sharing class FinalSubmitService {
      * only, `update as user`. A refusal names its list and entry.
      */
     private static Integer applyListUpdates(ListSave listSave, Posture mode) {
+        Integer deleted = applyListDeletes(listSave, mode);
         if (listSave.updates.isEmpty()) {
-            return 0;
+            return deleted;
         }
         List<ChildUpdate> order = listSave.updates.values();
         List<SObject> records = new List<SObject>();
@@ -1022,7 +1183,50 @@ public inherited sharing class FinalSubmitService {
             }
             throw failed;
         }
-        return stripped.size();
+        return stripped.size() + deleted;
+    }
+
+    /**
+     * Rows marked for delete, checked above: `delete as user`, so sharing
+     * and object access still decide. A refusal names its row by record.
+     */
+    private static Integer applyListDeletes(ListSave listSave, Posture mode) {
+        if (listSave.deletes.isEmpty()) {
+            return 0;
+        }
+        if (mode == Posture.GUEST) {
+            throw new AuraHandledException('This form is not available.');
+        }
+        List<Id> ids = new List<Id>(listSave.deletes.keySet());
+        List<SObject> records = new List<SObject>();
+        for (Id recordId : ids) {
+            records.add(recordId.getSObjectType().newSObject(recordId));
+        }
+        try {
+            delete as user records;
+        } catch (DmlException e) {
+            EntryDmlException failed = new EntryDmlException(e.getMessage());
+            failed.errors = new List<FieldError>();
+            for (Integer i = 0; i < e.getNumDml(); i++) {
+                Integer row = e.getDmlIndex(i);
+                Id recordId = row != null &&
+                    row >= 0 &&
+                    row < ids.size()
+                    ? ids[row]
+                    : null;
+                failed.errors.add(
+                    recordError(
+                        e.getDmlMessage(i),
+                        recordId == null
+                            ? null
+                            : listSave.deletes.get(recordId),
+                        recordId
+                    )
+                );
+            }
+            throw failed;
+        }
+        return records.size();
     }
 
     private static void checkBudget(Integer rows) {

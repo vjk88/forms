@@ -624,6 +624,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     /** sectionId -> recordId -> the row's values as loaded: what "changed"
      *  is measured against, so only changed fields are sent (slice 2). */
     _listBaseline = {};
+    /** sectionId -> record ids marked "Will be deleted when you save"
+     *  (slice 3); deleted at Save, never before. */
+    _listDeletes = {};
     /** sectionId -> the entry keys in the order they were last sent. */
     _sentKeys = {};
 
@@ -1957,6 +1960,88 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         return out;
     }
 
+    /** A row's delete confirmed or undone (finalSectionRenderer
+     *  `relatedrowdelete`). Only marks it: the one Save deletes. */
+    handleRelatedRowDelete(event) {
+        event.stopPropagation();
+        const { sectionId, key, deleted } = event.detail || {};
+        if (!sectionId || !key) {
+            return;
+        }
+        const now = new Set(this._listDeletes[sectionId] || []);
+        if (deleted) {
+            now.add(key);
+        } else {
+            now.delete(key);
+        }
+        this._listDeletes = { ...this._listDeletes, [sectionId]: [...now] };
+        // a message about the row (from a refused Save) no longer applies
+        const errs = this._serverEntryErrors[sectionId];
+        if (errs && errs[key]) {
+            const rest = { ...errs };
+            delete rest[key];
+            this._serverEntryErrors = {
+                ...this._serverEntryErrors,
+                [sectionId]: rest
+            };
+        }
+    }
+
+    _isMarked(sectionId, key) {
+        return (this._listDeletes[sectionId] || []).includes(key);
+    }
+
+    /**
+     * One record changed in one list and deleted in another: refused,
+     * never resolved silently, and both rows say so before Save (the server
+     * checks again). id -> message.
+     */
+    _deleteConflicts() {
+        const changedIn = {};
+        const deletedIn = {};
+        const nounOf = {};
+        for (const page of (this._editSpec && this._editSpec.pages) || []) {
+            for (const section of page.sections || []) {
+                const base = this._listBaseline[section.id];
+                if (!section.repeat || !base) {
+                    continue;
+                }
+                const loaded = (this._relatedLists || {})[section.id] || {};
+                const title =
+                    section.title || loaded.childLabelPlural || 'a list';
+                const store = this._groupStore(section);
+                store.keys.forEach((key, i) => {
+                    if (!base[key]) {
+                        return;
+                    }
+                    nounOf[key] = loaded.childLabel || 'record';
+                    if (this._isMarked(section.id, key)) {
+                        deletedIn[key] = deletedIn[key] || title;
+                        return;
+                    }
+                    const changed = this._changedFields(
+                        section.id,
+                        key,
+                        store.values[i] || {}
+                    );
+                    if (changed && Object.keys(changed).length) {
+                        changedIn[key] = changedIn[key] || title;
+                    }
+                });
+            }
+        }
+        const out = {};
+        Object.keys(deletedIn).forEach((id) => {
+            if (changedIn[id]) {
+                out[id] =
+                    `This ${nounOf[id]} is changed in ${changedIn[id]} and ` +
+                    `deleted in ${deletedIn[id]}. Undo the delete, or ` +
+                    `change it back in ${changedIn[id]}.`;
+            }
+        });
+        return out;
+    }
+
     /** A list's Retry (finalSectionRenderer `relatedlistretry`). */
     handleRelatedListRetry(event) {
         event.stopPropagation();
@@ -2619,6 +2704,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         const els = sec.elements || [];
         const ids = new Set(els.map((el) => el.id));
         const serverErrors = this._serverEntryErrors[sec.id] || {};
+        const conflicts = this._onRecordPage ? this._deleteConflicts() : {};
         const entries = store.keys.map((key, i) => {
             const values = store.values[i] || {};
             const ectx = this._entryCtx(ctx, ids, values);
@@ -2633,13 +2719,20 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             // person changed it: an old Case with a gap never blocks someone
             // who came to fix something else (P2.4).
             const changed = this._changedFields(sec.id, key, values);
-            const started = changed
-                ? shown.some((el) =>
-                      Object.prototype.hasOwnProperty.call(changed, el.id)
-                  )
-                : shown.some(
-                      (el) => isAnswerable(el) && !isBlankAnswer(values[el.id])
-                  );
+            // a row marked for delete is checked by nobody: it's going
+            const marked = this._isMarked(sec.id, key);
+            let started;
+            if (marked) {
+                started = false;
+            } else if (changed) {
+                started = shown.some((el) =>
+                    Object.prototype.hasOwnProperty.call(changed, el.id)
+                );
+            } else {
+                started = shown.some(
+                    (el) => isAnswerable(el) && !isBlankAnswer(values[el.id])
+                );
+            }
             const errors = {};
             for (const el of shown) {
                 const list = [];
@@ -2657,7 +2750,10 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                     errors[el.id] = list;
                 }
             }
-            const rowErrors = (serverErrors[key] || {})[ROW_ERROR] || [];
+            const rowErrors = [...((serverErrors[key] || {})[ROW_ERROR] || [])];
+            if (conflicts[key] && !rowErrors.includes(conflicts[key])) {
+                rowErrors.push(conflicts[key]);
+            }
             if (rowErrors.length) {
                 errors[ROW_ERROR] = rowErrors;
             }
@@ -2770,14 +2866,20 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 ),
                 canEdit: row.canEdit !== false,
                 locked: Array.from(locked),
-                labels: row.cells || {}
+                labels: row.cells || {},
+                // slice 3: the builder allows it AND Salesforce does
+                canDelete: cfg.allowDelete === true && row.canDelete === true,
+                deleted: this._isMarked(section.id, row.id),
+                noun: one
             };
         }
         const total = loaded.total || 0;
         const shown = (loaded.rows || []).length;
         const max = repeatLimits(cfg).max;
         const truncated = total > shown;
-        const room = truncated ? 0 : Math.max(0, max - total);
+        // rows marked for delete make room (the server counts the same way)
+        const marked = (this._listDeletes[section.id] || []).length;
+        const room = truncated ? 0 : Math.max(0, max - total + marked);
         let moreText = '';
         if (truncated) {
             moreText = `Showing ${shown} of ${total}. Add new ${many} in Salesforce.`;
@@ -3060,7 +3162,12 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         if (!this.model) {
             return [];
         }
-        if (!this._hasValidation) {
+        // a row changed in one list and deleted in another always waits
+        // (slice 3), even on a form with no checks of its own
+        const conflicts =
+            this._onRecordPage &&
+            Object.keys(this._deleteConflicts()).length > 0;
+        if (!this._hasValidation && !conflicts) {
             return this.visiblePages.map(() => true);
         }
         const ctx = this._ruleCtx();
@@ -3378,10 +3485,13 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         for (const err of errors) {
             const message = (err && err.message) || 'This answer was rejected.';
             if (err && err.sectionId) {
-                // entryIndex is zero-based, counted in the list AS SENT
-                const key = (this._submitEntryKeys[err.sectionId] || [])[
-                    err.entryIndex
-                ];
+                // entryIndex is zero-based, counted in the list AS SENT; a
+                // row marked for delete isn't sent, so it's named by record
+                const key = err.recordId
+                    ? err.recordId
+                    : (this._submitEntryKeys[err.sectionId] || [])[
+                          err.entryIndex
+                      ];
                 const byKey = groupFields[err.sectionId] || {};
                 const ids = [];
                 for (const field of err.fields || []) {
@@ -3710,6 +3820,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         const sent = [];
         const keys = [];
         g.entries.forEach((e) => {
+            if (this._isMarked(sectionId, e.key)) {
+                return; // deleted at Save, not changed (repeatDeletes)
+            }
             const hidden = this._hasRules ? e.hidden : [];
             const changed = this._changedFields(sectionId, e.key, e.values);
             let out;
@@ -3780,6 +3893,17 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             meta.existingRecordId = this._editRecordId;
         }
         const payload = { answers, repeats, meta };
+        if (this._onRecordPage) {
+            const repeatDeletes = {};
+            Object.keys(this._listDeletes).forEach((id) => {
+                if ((this._listDeletes[id] || []).length) {
+                    repeatDeletes[id] = [...this._listDeletes[id]];
+                }
+            });
+            if (Object.keys(repeatDeletes).length) {
+                payload.repeatDeletes = repeatDeletes;
+            }
+        }
         if (files.length) {
             payload.files = files;
         }

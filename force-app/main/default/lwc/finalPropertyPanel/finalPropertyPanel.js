@@ -1700,6 +1700,15 @@ export default class FinalPropertyPanel extends LightningElement {
             : 'On a record page, rows can’t be changed or added yet.';
     }
 
+    /** Delete on a record page (slice 3): off unless the builder says so. */
+    get repeatAllowDelete() {
+        return this.repeat.allowDelete === true;
+    }
+
+    handleRepeatAllowDelete(event) {
+        this._repeatPatch('allowDelete', event.target.checked ? true : null);
+    }
+
     handleRepeatReadOnly(event) {
         this._repeatPatch('readOnly', event.target.checked ? true : null);
     }

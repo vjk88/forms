@@ -279,6 +279,47 @@ describe('c-final-section-renderer editable related lists (slice 2)', () => {
             (r) => r.element
         );
 
+    it('delete: the bin shows where allowed; a marked row is struck and locked', async () => {
+        const sec = EDITABLE();
+        sec.entries[0].existing = {
+            ...sec.entries[0].existing,
+            canDelete: true,
+            deleted: true,
+            noun: 'Case'
+        };
+        sec.entries[1].existing = {
+            ...sec.entries[1].existing,
+            canDelete: false,
+            noun: 'Case'
+        };
+        const el = await mount(sec);
+        const bins = [...el.shadowRoot.querySelectorAll('c-final-row-delete')];
+        expect(bins).toHaveLength(1);
+        expect(bins[0].name).toBe('00001026');
+        expect(bins[0].noun).toBe('Case');
+        expect(bins[0].marked).toBe(true);
+        const first = el.shadowRoot.querySelectorAll('.rep-entry')[0];
+        expect(first.classList.contains('rl-row-gone')).toBe(true);
+        expect(
+            first
+                .querySelector('.rep-entry-label')
+                .classList.contains('rl-gone')
+        ).toBe(true);
+        expect(els(el)[0].readOnly).toBe(true);
+
+        // asking to mark or undo goes up to the viewer, named by list
+        const asked = [];
+        el.addEventListener('relatedrowdelete', (e) => asked.push(e.detail));
+        bins[0].dispatchEvent(
+            new CustomEvent('rowdelete', {
+                detail: { key: '500A', deleted: false }
+            })
+        );
+        expect(asked).toEqual([
+            { sectionId: sec.id, key: '500A', deleted: false }
+        ]);
+    });
+
     it('Cards: loaded rows carry their name and link, no ×; locked fields are read-only', async () => {
         const el = await mount(EDITABLE());
         const labels = [

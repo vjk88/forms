@@ -217,8 +217,8 @@
                                                 </template>
                                             </th>
                                         </template>
-                                        <th scope="col" class="rl-act">
-                                            <span class="rl-sr">Remove</span>
+                                        <th scope="col" class={actCellClass}>
+                                            <span class="rl-sr">Actions</span>
                                         </th>
                                     </tr>
                                 </thead>
@@ -227,10 +227,14 @@
                                         for:each={repeatEntries}
                                         for:item="entry"
                                     >
-                                        <tr key={entry.key}>
+                                        <tr
+                                            key={entry.key}
+                                            class={entry.rowClass}
+                                        >
                                             <th scope="row" class="rl-name">
                                                 <template lwc:if={entry.href}>
                                                     <a
+                                                        class={entry.nameClass}
                                                         href={entry.href}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
@@ -241,8 +245,12 @@
                                                     >
                                                 </template>
                                                 <template lwc:else>
-                                                    {entry.label}
+                                                    <span
+                                                        class={entry.nameClass}
+                                                        >{entry.label}</span
+                                                    >
                                                 </template>
+
                                                 <template
                                                     lwc:if={entry.viewOnly}
                                                 >
@@ -279,7 +287,18 @@
                                                     </template>
                                                 </td>
                                             </template>
-                                            <td class="rl-act">
+                                            <td class={actCellClass}>
+                                                <template
+                                                    lwc:if={entry.canDelete}
+                                                >
+                                                    <c-final-row-delete
+                                                        name={entry.recordName}
+                                                        noun={entry.noun}
+                                                        row-key={entry.key}
+                                                        marked={entry.deleted}
+                                                        onrowdelete={handleRowDelete}
+                                                    ></c-final-row-delete>
+                                                </template>
                                                 <template
                                                     lwc:if={entry.canRemove}
                                                 >
@@ -305,7 +324,7 @@
                         <template for:each={repeatEntries} for:item="entry">
                             <div
                                 key={entry.key}
-                                class="rep-entry"
+                                class={entry.rowClass}
                                 role="group"
                                 aria-label={entry.label}
                             >
@@ -330,6 +349,15 @@
                                                 >{entry.openSr}</span
                                             ></a
                                         >
+                                    </template>
+                                    <template lwc:if={entry.canDelete}>
+                                        <c-final-row-delete
+                                            name={entry.recordName}
+                                            noun={entry.noun}
+                                            row-key={entry.key}
+                                            marked={entry.deleted}
+                                            onrowdelete={handleRowDelete}
+                                        ></c-final-row-delete>
                                     </template>
                                     <template lwc:if={entry.canRemove}>
                                         <button

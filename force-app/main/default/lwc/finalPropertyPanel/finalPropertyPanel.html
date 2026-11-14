@@ -1126,6 +1126,30 @@
                         onchange={handleRepeatReadOnly}
                     ></lightning-input>
                 </div>
+                <template lwc:if={repeatEditable}>
+                    <div class="pp-rule">
+                        <span class="pp-rule-text">
+                            <span class="pp-rule-name" aria-hidden="true"
+                                >Allow delete</span
+                            >
+                            <span class="pp-rule-hint"
+                                >Records the person may delete get a delete
+                                button. They're asked first, and nothing is
+                                deleted until they save.</span
+                            >
+                        </span>
+                        <lightning-input
+                            type="toggle"
+                            variant="label-hidden"
+                            label="Allow delete"
+                            data-prop="allowdelete"
+                            checked={repeatAllowDelete}
+                            message-toggle-active=""
+                            message-toggle-inactive=""
+                            onchange={handleRepeatAllowDelete}
+                        ></lightning-input>
+                    </div>
+                </template>
                 <div class="pp-rule">
                     <span class="pp-rule-text">
                         <span class="pp-rule-name" aria-hidden="true"
