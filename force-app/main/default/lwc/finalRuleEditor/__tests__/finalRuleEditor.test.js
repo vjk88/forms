@@ -819,6 +819,26 @@ describe('Compare with → This Contact on a related list (P2.4)', () => {
         expect(el.problems[0].message).toBe('Choose a Contact field.');
     });
 
+    it('a related list says what it shows, not "Search records where"', async () => {
+        const plain = mount({
+            columns: 'lookup',
+            value: config([rule('el_1', 'equals', 'x')])
+        });
+        await flush();
+        expect(plain.shadowRoot.querySelector('.re-logic').label).toBe(
+            'Search records where'
+        );
+        const list = mount({
+            columns: 'lookup',
+            logicHeading: 'Show Case records where',
+            value: config([rule('el_1', 'equals', 'x')])
+        });
+        await flush();
+        expect(list.shadowRoot.querySelector('.re-logic').label).toBe(
+            'Show Case records where'
+        );
+    });
+
     it('a saved $record. value reopens as This Contact', async () => {
         const el = mount({
             columns: 'lookup',

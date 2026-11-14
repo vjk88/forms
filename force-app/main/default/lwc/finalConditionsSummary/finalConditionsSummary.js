@@ -115,6 +115,8 @@ export default class FinalConditionsSummary extends LightningElement {
     @api allowCurrentUser = false;
     /** A related list: rows may compare with this record's fields. */
     @api compareRecordObject;
+    /** The dialog's line above the conditions, when not the default. */
+    @api logicHeading;
     /** Mapping screen: the questions a row may compare with (Task 7). */
     @api answerChoices = [];
     @api recordObject;
@@ -389,6 +391,7 @@ export default class FinalConditionsSummary extends LightningElement {
                 isPublic: this.isPublic,
                 allowCurrentUser: this.allowCurrentUser,
                 compareRecordObject: this.compareRecordObject,
+                logicHeading: this.logicHeading,
                 answerChoices: this.answerChoices,
                 recordObject: this.recordObject,
                 startWithRow: !this.hasRules

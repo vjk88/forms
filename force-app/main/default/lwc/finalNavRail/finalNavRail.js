@@ -127,7 +127,7 @@ export default class FinalNavRail extends LightningElement {
         const reachable = this.firstBlocked;
         return (this.pages || []).map((page, index) => ({
             key: page.id || `pg_${index}`,
-            label: page.name || `Page ${index + 1}`,
+            label: page.name || `Step ${index + 1}`,
             number: index + 1,
             index,
             cls: index === current ? 'rail-link active' : 'rail-link',

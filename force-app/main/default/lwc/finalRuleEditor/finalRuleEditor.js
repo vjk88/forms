@@ -573,7 +573,14 @@ export default class FinalRuleEditor extends LightningElement {
         return (this.value && this.value.logic) || 'all';
     }
 
+    /** The line above the conditions, when the screen has its own words
+     *  (a related list: "Show Case records where"). */
+    @api logicHeading;
+
     get logicLabel() {
+        if (this.logicHeading) {
+            return this.logicHeading;
+        }
         if (!this.isVisibility) {
             return 'Search records where';
         }

@@ -34,6 +34,7 @@ export default class FinalConditionsModal extends LightningModal {
     @api isPublic = false;
     @api allowCurrentUser = false;
     @api compareRecordObject;
+    @api logicHeading;
     @api answerChoices = [];
     @api recordObject;
 
