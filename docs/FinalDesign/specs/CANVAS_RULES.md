@@ -56,8 +56,8 @@ may live in the gaps between sections.
 - The inspector is **per-type**: Field / Image / Callout / Consent / Divider / Display text /
   File upload / Spacer / Section / Related list (repeater) each expose only their own properties
   (formStudio.js:1145-1170). No universal property grid.
-- A repeater section's inspector is owned by the repeater flow (§4) — it never shows plain
-  field-section props (formStudio.js:1151).
+- A repeater section's inspector is owned by the repeater flow (§4): a section's look settings
+  plus its own (owner 2026-11-14; the old builder showed no section props, formStudio.js:1151).
 - **Section inner padding is a GLOBAL design setting, not per-section** (formStudio.js:1234) — the
   rebuild keeps padding on the density/theme cascade, with per-section padding only via the
   section `surface` override (schema §4).
