@@ -13,8 +13,7 @@ The source of truth for the rebuild. Three places:
 | [ARCHITECTURE_LAYOUTS_THEMES.md](./ARCHITECTURE_LAYOUTS_THEMES.md) | How layouts and themes work                               |
 | [COMPONENT_CATALOG.md](./COMPONENT_CATALOG.md)                     | Every component and what it does                          |
 | [BUILD_PHASES.md](./BUILD_PHASES.md)                               | The phase plan (P0–P7)                                    |
-| [PENDING_WORK.md](./PENDING_WORK.md)                               | Everything still to do before ship, in order              |
-| [DEFERRED.md](./DEFERRED.md)                                       | Parked items and why                                      |
+| [DEFERRED.md](./DEFERRED.md)                                       | The one list: everything not done, with a status each     |
 | [PLAN_DOCUMENTS_AND_PAYMENTS.md](./PLAN_DOCUMENTS_AND_PAYMENTS.md) | Proposed roadmap: submission PDFs, payments, and DocGen    |
 | [GUEST_SITE_SETUP.md](./GUEST_SITE_SETUP.md)                       | How to set up the public site                             |
 

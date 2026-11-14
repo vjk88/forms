@@ -362,7 +362,7 @@ describe('problems beside their controls', () => {
     });
 });
 
-// ---- typed operators + value controls (PENDING_WORK §9.3, 2026-09-06) ----
+// ---- typed operators + value controls (2026-09-05 Studio review, built 2026-09-06) ----
 
 const TYPED = [
     { id: 'f_text', label: 'First name' },

@@ -22,7 +22,7 @@ reach items and Enter to select. Alt + ↑ / ↓ moves an item up or down."
 
 > **Known consequence, accepted deliberately.** Move to… was the only keyboard route for moving an
 > item **between** sections or pages; Alt+Arrow only reorders among siblings. Cross-container moves
-> are now **drag-only**. Customer-ready criterion #1 (§7.1 of PENDING_WORK) lists "move between
+> are now **drag-only**. Customer-ready criterion #1 (DEFERRED.md, "Two gates to shipping") lists "move between
 > sections/pages", so that clause is knowingly unmet by keyboard. If it needs closing later, the
 > cheapest honest option is a destination picker reached from somewhere other than a per-item menu —
 > not a revival of either rejected design above.

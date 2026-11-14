@@ -2,7 +2,7 @@
 
 **Status:** APPROVED by the owner on 2026-10-03 ("lets update the code using this one"). Built on branch `feat/respondent-type-scale` (PR 370, not merged yet), deployed to the dev org (`revclouddev`), and the guest site was published on 2026-10-03 (the owner said site publishes no longer need asking). The public site was then checked as a signed-out visitor. File-by-file trace: `docs/FinalDesign/IMPL_PLAN_RESPONDENT_TYPE_SCALE.md`. No form data, spec or Apex changed.
 
-**Scope:** the text a respondent sees on a published form (header, questions, answers, help text, buttons, navigation, thank-you screen) and the Studio preview of it. Studio's own screens are out of scope; they stay in the separate app-wide typography pass (`PENDING_WORK.md` section 4.0).
+**Scope:** the text a respondent sees on a published form (header, questions, answers, help text, buttons, navigation, thank-you screen) and the Studio preview of it. Studio's own screens are out of scope; they stay in the separate app-wide typography pass (DEFERRED #58).
 
 **Where the facts come from:** real forms measured in the dev org on 2026-09-29 and 2026-10-02 (public site, the Salesforce viewer tab, and the Studio preview). Sources are in section 13.
 

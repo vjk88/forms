@@ -61,7 +61,7 @@ and `mocks/STUDIO_FORMWORK_DIRECTION.md` (the proposal this adopts).
 | Guard test | `finalPageFrame/__tests__/typeScale.test.js` | `finalStudioStyles/__tests__/studioScale.test.js` (§10) |
 | Components | `finalPageFrame`, `finalFormViewer`, `finalFormHeader`, `finalSubmitBar`, `finalLayoutZones`, `finalSectionRenderer`, `finalElementRenderer`, `finalAfterSubmit`, `finalGuestHost`, `finalLookup`, `finalFormHighlight`, `finalNav*` | Everything else under `final*` |
 
-**How the wall holds** (verified in-org 2026-09-06, PENDING_WORK §9.5): the name sets don't overlap,
+**How the wall holds** (verified in-org 2026-09-06, archive/STUDIO_COLOR_CONSISTENCY.md): the name sets don't overlap,
 and `finalPageFrame`'s wrapper resets `color` and `font-family` to theme tokens.
 
 - A respondent component never imports `c/finalStudioStyles` or reads `--c-studio-*`.

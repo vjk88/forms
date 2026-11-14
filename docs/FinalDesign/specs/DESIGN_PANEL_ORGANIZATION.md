@@ -84,7 +84,7 @@ screen rendered both on the real buttons, which closes the open question about w
 - **The Arrangement hint is now wrong on conversational layouts.** It reads "How Back / **Next** /
   Submit line up" (static, unconditional) but those layouts have no Next — the control directly
   above it says "Continue button label". This reorganization's Next/Continue split is what made the
-  hint inaccurate. Logged in [PENDING_WORK.md](../PENDING_WORK.md) §9.1.
+  hint inaccurate. Logged in the old PENDING_WORK §9.1 (in git history; the list is now [DEFERRED.md](../DEFERRED.md)).
 - **Brand & header opens onto three stacked rich-text editors** (Title, Description, Brand name),
   each with a permanent toolbar, pushing Colors / Typography / Header appearance below the fold. It
   is the default-open section, so it is the first thing seen in Advanced. Same fix as the existing

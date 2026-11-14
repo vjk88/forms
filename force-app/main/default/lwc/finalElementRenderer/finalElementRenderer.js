@@ -575,7 +575,7 @@ export default class FinalElementRenderer extends LightningElement {
     //
     // Everything here is UX. The submit Apex re-checks size, type and the
     // element allow-list, because the client is not an enforcement point
-    // (PENDING_WORK §2.1). Answers ride the normal `valuechange` channel as
+    // (DEFERRED #24). Answers ride the normal `valuechange` channel as
     // [{name, base64}]; the viewer lifts them into the payload's `files`.
 
     /** Local edits win over the viewer's hydrated answer, matching the
