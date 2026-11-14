@@ -350,6 +350,7 @@ the missing one here first.
 
 ## Change log
 
+- **2026-11-13 v2.17.** Respondent side: a related section (repeating group or related list) draws flat (owner 2026-11-13). It has no section box (no fill, border, shadow or padding), and its entries are rows split by a thin line instead of one bordered box each. A per-section surface still wins (`finalSectionRenderer` `.sec-related`).
 - **2026-11-13 v2.16.** The repeating group's Display style enables Table (related lists, Part 2 slice 1); only Tiles stays "coming soon". The group inspector gains "On a record page" Show conditions (the lookup filter's summary and dialog, conditions only), a Read only toggle and a Link to record toggle (5.8).
 - **2026-11-13 v2.15.** 5.7: an option that isn't built yet is a disabled segment plus a help line naming it (the repeating group's Display style: "Table and Tiles are coming soon."). The relationship picker gets a "Search objects" box with its empty state (5.20) and Escape order (5.16).
 - **2026-11-12 v2.14.** The last two `lightning/confirm` calls are gone: Reset all (Design) and turning on Public guest access (settings drawer) ask inline (5.17): `role=alertdialog` under the trigger, focus on Cancel, Escape or Cancel returns focus. No Studio screen uses `lightning/confirm` now. The access row's toggle no longer gets cut off at the drawer edge.
