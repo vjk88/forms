@@ -310,6 +310,7 @@ public inherited sharing class FinalSubmitService {
                 if (repeatCfg != null) {
                     RepeatPlan plan = repeatPlan(asMap(pageObj), sec);
                     plan.show = asMap(repeatCfg.get('show'));
+                    plan.fills = FinalRepeatFill.parse(repeatCfg);
                     plan.childObject = (String) repeatCfg.get('childObject');
                     plan.relationshipField = (String) repeatCfg.get(
                         'relationshipField'
@@ -410,6 +411,7 @@ public inherited sharing class FinalSubmitService {
         Savepoint sp = Database.setSavepoint();
         try {
             SObject parent = buildRecord(parentType, parentBindings);
+            SObject written = parent;
             Id parentId;
             if (isUpdate) {
                 parent.put('Id', existingId);
@@ -426,14 +428,38 @@ public inherited sharing class FinalSubmitService {
                 );
                 doInsert(parentList, mode);
                 parentId = parentList[0].Id;
+                written = parentList[0];
             }
 
             Integer childCount = 0;
             if (listSave != null) {
                 childCount += applyListUpdates(listSave, mode);
             }
+            // the main record's values that new rows copy (P2.6): read
+            // once, after it is written
+            Set<String> fromFields = new Set<String>();
             for (RepeatPlan plan : repeatPlans) {
-                childCount += insertEntries(plan, repeats, parentId, mode);
+                for (FinalRepeatFill.Fill f : plan.fills) {
+                    if (f.source != null) {
+                        fromFields.add(f.source);
+                    }
+                }
+            }
+            Map<String, Object> parentValues = FinalRepeatFill.parentValues(
+                parentType,
+                parentId,
+                written,
+                fromFields,
+                mode == Posture.GUEST
+            );
+            for (RepeatPlan plan : repeatPlans) {
+                childCount += insertEntries(
+                    plan,
+                    repeats,
+                    parentId,
+                    mode,
+                    parentValues
+                );
             }
 
             // Inside the savepoint: a rejected file rolls the record back too.
@@ -495,6 +521,8 @@ public inherited sharing class FinalSubmitService {
         Boolean readOnly = false;
         /** The list's "Show" conditions (lookup filter shape), or null. */
         Map<String, Object> show;
+        /** Fields set quietly on every new row (P2.6). */
+        List<FinalRepeatFill.Fill> fills = new List<FinalRepeatFill.Fill>();
     }
 
     // ------------------------------------------ repeating groups (§4, §5)
@@ -2280,7 +2308,8 @@ public inherited sharing class FinalSubmitService {
         RepeatPlan plan,
         Map<String, Object> repeats,
         Id parentId,
-        Posture mode
+        Posture mode,
+        Map<String, Object> parentValues
     ) {
         List<Object> entries = repeats == null
             ? null
@@ -2330,7 +2359,9 @@ public inherited sharing class FinalSubmitService {
             if (!hasValue) {
                 continue; // an untouched blank entry inserts nothing
             }
-            children.add(buildRecord(childType, bindings));
+            SObject child = buildRecord(childType, bindings);
+            applyFills(child, childType, plan.fills, parentValues);
+            children.add(child);
             sentIndex.add(i);
         }
         if (children.isEmpty()) {
@@ -2367,6 +2398,49 @@ public inherited sharing class FinalSubmitService {
             throw failed;
         }
         return stripped.size();
+    }
+
+    /**
+     * Fill on new records (P2.6): after the person's answers, so the
+     * builder's value wins. A fixed value is coerced like an answer; a main-
+     * record value is copied as read (nothing when it was blank or
+     * unreadable). A fill that no longer fits (spec drift) is skipped,
+     * never a crash; FLS still strips it below for signed-in people.
+     */
+    private static void applyFills(
+        SObject child,
+        Schema.SObjectType childType,
+        List<FinalRepeatFill.Fill> fills,
+        Map<String, Object> parentValues
+    ) {
+        if (fills == null || fills.isEmpty()) {
+            return;
+        }
+        Map<String, Schema.SObjectField> fields = childType.getDescribe()
+            .fields.getMap();
+        for (FinalRepeatFill.Fill f : fills) {
+            Schema.SObjectField tok = fields.get(f.field);
+            if (tok == null) {
+                continue;
+            }
+            Object v;
+            if (f.source != null) {
+                v = parentValues == null ? null : parentValues.get(f.source);
+            } else {
+                try {
+                    v = coerce(tok.getDescribe().getType(), f.value);
+                } catch (Exception e) {
+                    v = null;
+                }
+            }
+            if (v != null) {
+                try {
+                    child.put(tok, v);
+                } catch (SObjectException e) {
+                    continue; // the field's type changed since Publish
+                }
+            }
+        }
     }
 
     /** Posture-appropriate FLS strip: INTERNAL removes fields the running user

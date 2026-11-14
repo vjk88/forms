@@ -718,6 +718,41 @@ public with sharing class FinalStudioController {
     }
 
     /**
+     * Fill on new records (P2.6): the main record's fields whose value may
+     * fill `childField` on every new related record. Same rule as Publish
+     * (`FinalRepeatFill.compatible`).
+     */
+    @AuraEnabled(cacheable=true)
+    public static List<Map<String, Object>> describeFillSources(
+        String parentObject,
+        String childObject,
+        String childField
+    ) {
+        if (
+            String.isBlank(parentObject) ||
+            String.isBlank(childObject) ||
+            String.isBlank(childField)
+        ) {
+            throw new AuraHandledException(
+                'An object and a field are required.'
+            );
+        }
+        Schema.SObjectType p = Schema.getGlobalDescribe().get(parentObject);
+        Schema.SObjectType c = Schema.getGlobalDescribe().get(childObject);
+        if (
+            p == null ||
+            c == null ||
+            !p.getDescribe().isAccessible() ||
+            !c.getDescribe().isCreateable()
+        ) {
+            throw new AuraHandledException(
+                'You do not have access to ' + childObject + '.'
+            );
+        }
+        return FinalRepeatFill.sources(parentObject, childObject, childField);
+    }
+
+    /**
      * Repeater flow (CANVAS_RULES §4): the primary object's child
      * relationships — the candidates the relationship picker offers. Each
      * carries the child object + label and the child's lookup field back to

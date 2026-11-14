@@ -321,6 +321,14 @@ a first-class **Repeating Group** item, catalog §5).
   shape, compiled by `FinalLookupService`), `repeat.readOnly` (look-only; never shown on a form that
   creates a record), `repeat.link` (`false` turns off "Open {Case}"), `repeat.style` `table` draws a table
   that falls back to cards when too narrow. Slice 1 is read-only everywhere on a record page.
+- **Fill on new records** (P2.6): `repeat.fill` = `[{ "field": "Origin", "value": "Web" } |
+  { "field": "SuppliedEmail", "from": "Email", "fromLabel": "Email" }]`. Set by the save on **every new
+  row** of the group (never on existing rows), after the person's answers, on any form that creates
+  related records. `value` is a fixed value of the field's type; `from` is a field of the form's object,
+  read after the main record is written (as the signed-in person; a guest gets only fields this
+  submission wrote). `fromLabel` is display-only. Publish refuses an unknown field, the link field, a
+  field that is also a question in the group, a field filled twice, a fixed lookup, a value that doesn't
+  fit, or a `from` field of another kind (`FinalRepeatFill`).
 - **Refused related records** come back as `FieldError` with `sectionId` and a zero-based
   `entryIndex` counted in the list **as sent**, blanks included. Guests still get one flat refusal.
 

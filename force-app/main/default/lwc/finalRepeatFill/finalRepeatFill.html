@@ -1,0 +1,50 @@
+<template>
+    <div class="rf">
+        <p class="rf-help">{helpText}</p>
+        <template lwc:if={loading}>
+            <p class="rf-help" role="status">{loadingText}</p>
+        </template>
+        <template lwc:if={showList}>
+            <ul class="rf-list">
+                <template for:each={lines} for:item="line">
+                    <li key={line.key} class="rf-item">
+                        <button
+                            type="button"
+                            class="rf-line"
+                            data-index={line.index}
+                            title={line.editText}
+                            onclick={handleEdit}
+                        >
+                            <span class="rf-what"
+                                ><span class="rf-field">{line.label}</span
+                                >{line.rest}</span
+                            >
+                            <span class="rf-how">{line.how}</span>
+                        </button>
+                        <button
+                            type="button"
+                            class="rf-remove"
+                            data-index={line.index}
+                            title={line.removeText}
+                            aria-label={line.removeText}
+                            onclick={handleRemove}
+                        >
+                            ×
+                        </button>
+                    </li>
+                </template>
+            </ul>
+        </template>
+        <button
+            type="button"
+            class="rf-add"
+            disabled={addDisabled}
+            onclick={handleAdd}
+        >
+            + Add a field to fill
+        </button>
+        <template lwc:if={noChoicesText}>
+            <p class="rf-help">{noChoicesText}</p>
+        </template>
+    </div>
+</template>

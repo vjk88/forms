@@ -104,3 +104,65 @@ export function isAnswerable(el) {
 export function minimumMessage(min) {
     return `Fill in at least ${min} ${min === 1 ? 'entry' : 'entries'}.`;
 }
+
+// ---- Fill on new records (IMPL_PLAN_RELATED_RECORDS P2.6): which child
+// fields the builder may fill, and how a fill reads in the inspector. The
+// server asks the same questions (FinalRepeatFill.cls); this only shapes
+// the picker.
+
+/** Describe types a fill can carry (FinalRepeatFill.FILLABLE_TYPES). */
+const FILLABLE_TYPES = new Set([
+    'STRING',
+    'TEXTAREA',
+    'EMAIL',
+    'PHONE',
+    'URL',
+    'PICKLIST',
+    'COMBOBOX',
+    'MULTIPICKLIST',
+    'DOUBLE',
+    'CURRENCY',
+    'PERCENT',
+    'INTEGER',
+    'LONG',
+    'DATE',
+    'DATETIME',
+    'BOOLEAN',
+    'REFERENCE'
+]);
+
+/** A child field a fill may set: a plain value, one lookup target. */
+export function isFillable(field) {
+    return Boolean(
+        field &&
+        FILLABLE_TYPES.has(String(field.displayType || '').toUpperCase()) &&
+        !field.polymorphic
+    );
+}
+
+/** A lookup takes its value from the main record only. */
+export function isLookup(field) {
+    return (
+        String((field && field.displayType) || '').toUpperCase() === 'REFERENCE'
+    );
+}
+
+/** The fixed value as people read it: a choice's label, Checked, the text. */
+export function valueText(field, value) {
+    const type = String((field && field.displayType) || '').toUpperCase();
+    if (type === 'BOOLEAN') {
+        return value === true || value === 'true' ? 'Checked' : 'Not checked';
+    }
+    if (value === null || value === undefined || value === '') {
+        return '';
+    }
+    const options = (field && field.options) || [];
+    if (type === 'MULTIPICKLIST') {
+        return String(value)
+            .split(';')
+            .map((v) => (options.find((o) => o.value === v) || {}).label || v)
+            .join(', ');
+    }
+    const hit = options.find((o) => o.value === value);
+    return hit ? hit.label : String(value);
+}

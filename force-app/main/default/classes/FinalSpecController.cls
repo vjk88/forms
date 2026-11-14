@@ -287,6 +287,21 @@ public with sharing class FinalSpecController {
                         name + ' can’t be published: ' + e.getMessage()
                     );
                 }
+                // Fill on new records (P2.6): every field exists, can be
+                // created, isn't a question or the link, and its value fits
+                String fillProblem = FinalRepeatFill.problem(
+                    repeat,
+                    sec.get('elements') instanceof List<Object>
+                        ? (List<Object>) sec.get('elements')
+                        : null,
+                    target,
+                    childObject
+                );
+                if (fillProblem != null) {
+                    throw FinalMappingRules.refusal(
+                        name + ' can’t be published: ' + fillProblem
+                    );
+                }
                 // Its "Show" conditions must compile: the related list on a
                 // record page loads through them, with the same compiler.
                 Object showObj = repeat.get('show');

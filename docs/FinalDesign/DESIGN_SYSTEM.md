@@ -350,6 +350,7 @@ the missing one here first.
 
 ## Change log
 
+- **2026-11-13 v2.18.** A repeating group's inspector gains "Fill on new records" (P2.6): one line per fill in the Autofill-rules line look ("**Case Origin** = Web" over "Fixed value"), × to remove, a dashed "+ Add a field to fill" (off when nothing is left to fill), and a small LightningModal to set one (field, Fixed value / From {object} segments, a value box that follows the field's type). The add settings below it get an "Adding" heading.
 - **2026-11-13 v2.17.** Respondent side: a related section (repeating group or related list) draws flat (owner 2026-11-13). It has no section box (no fill, border, shadow or padding), and its entries are rows split by a thin line instead of one bordered box each. A per-section surface still wins (`finalSectionRenderer` `.sec-related`).
 - **2026-11-13 v2.16.** The repeating group's Display style enables Table (related lists, Part 2 slice 1); only Tiles stays "coming soon". The group inspector gains "On a record page" Show conditions (the lookup filter's summary and dialog, conditions only), a Read only toggle and a Link to record toggle (5.8).
 - **2026-11-13 v2.15.** 5.7: an option that isn't built yet is a disabled segment plus a help line naming it (the repeating group's Display style: "Table and Tiles are coming soon."). The relationship picker gets a "Search objects" box with its empty state (5.20) and Escape order (5.16).

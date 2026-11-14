@@ -1,0 +1,113 @@
+/* Fill on new records (P2.6): the Autofill rules list's line look
+   (DESIGN_SYSTEM 5.4 settings rows), Studio tokens only. */
+.rf {
+    display: flex;
+    flex-direction: column;
+    gap: var(--c-studio-space-2);
+}
+
+.rf-help {
+    margin: 0;
+    color: var(--c-studio-text-weak);
+    font-size: var(--c-studio-fs-small);
+    line-height: var(--c-studio-lh-body);
+}
+
+.rf-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--c-studio-space-2);
+}
+
+.rf-item {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    border: 1px solid var(--c-studio-border);
+    border-radius: var(--c-studio-radius-md);
+    background: var(--c-studio-surface);
+    transition: border-color var(--c-studio-duration) var(--c-studio-ease);
+}
+
+.rf-item:hover {
+    border-color: var(--c-studio-border-strong);
+}
+
+.rf-line {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--c-studio-space-2) var(--c-studio-space-3);
+    border: 0;
+    border-radius: var(--c-studio-radius-md);
+    background: none;
+    color: var(--c-studio-text);
+    font: inherit;
+    font-size: var(--c-studio-fs-body);
+    text-align: start;
+    cursor: pointer;
+}
+
+.rf-what {
+    overflow-wrap: anywhere;
+}
+
+.rf-field {
+    font-weight: var(--c-studio-fw-strong);
+}
+
+.rf-how {
+    color: var(--c-studio-text-weak);
+    font-size: var(--c-studio-fs-small);
+}
+
+.rf-remove {
+    flex: none;
+    display: inline-grid;
+    place-items: center;
+    min-width: 32px;
+    margin: var(--c-studio-space-1);
+    border: 0;
+    border-radius: var(--c-studio-radius-sm);
+    background: none;
+    color: var(--c-studio-error-text);
+    font: inherit;
+    font-size: var(--c-studio-fs-subhead);
+    line-height: 1;
+    cursor: pointer;
+}
+
+.rf-remove:hover {
+    background: var(--c-studio-error-surface);
+}
+
+.rf-add {
+    padding: var(--c-studio-space-2) var(--c-studio-space-3);
+    border: 1.5px dashed var(--c-studio-accent);
+    border-radius: var(--c-studio-radius-md);
+    background: none;
+    color: var(--c-studio-accent-text);
+    font: inherit;
+    font-size: var(--c-studio-fs-body);
+    font-weight: var(--c-studio-fw-strong);
+    cursor: pointer;
+}
+
+.rf-add:disabled {
+    border-color: var(--c-studio-border);
+    color: var(--c-studio-text-weak);
+    cursor: not-allowed;
+}
+
+.rf-line:focus-visible,
+.rf-remove:focus-visible,
+.rf-add:focus-visible {
+    outline: 2px solid var(--c-studio-focus);
+    outline-offset: 1px;
+    box-shadow: var(--c-studio-focus-halo, none);
+}
