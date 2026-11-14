@@ -350,6 +350,7 @@ the missing one here first.
 
 ## Change log
 
+- **2026-11-13 v2.20.** Respondent side: a related list's row delete (`c/finalRowDelete`): a bin, then an inline alertdialog in the row ("Delete this Case? This can't be undone after you save." with Delete outlined in the error colour and Cancel focused), then "Will be deleted when you save" + Undo with the name struck through. Studio: the group inspector's "Allow delete" switch row.
 - **2026-11-13 v2.19.** The conditions editor's "Compare with" column offers "This {object}" (a related list's Show conditions only), with a field picker "Search {object} fields", beside "A fixed value" and "Current user".
 - **2026-11-13 v2.18.** A repeating group's inspector gains "Fill on new records" (P2.6): one line per fill in the Autofill-rules line look ("**Case Origin** = Web" over "Fixed value"), × to remove, a dashed "+ Add a field to fill" (off when nothing is left to fill), and a small LightningModal to set one (field, Fixed value / From {object} segments, a value box that follows the field's type). The add settings below it get an "Adding" heading.
 - **2026-11-13 v2.17.** Respondent side: a related section (repeating group or related list) draws flat (owner 2026-11-13). It has no section box (no fill, border, shadow or padding), and its entries are rows split by a thin line instead of one bordered box each. A per-section surface still wins (`finalSectionRenderer` `.sec-related`).

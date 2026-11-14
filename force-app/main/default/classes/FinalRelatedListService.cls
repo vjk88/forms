@@ -65,6 +65,10 @@ public with sharing class FinalRelatedListService {
         /** Salesforce sharing lets this person edit the record. */
         @AuraEnabled
         public Boolean canEdit = false;
+        /** Salesforce sharing and object access let this person delete it
+         *  (slice 3; the list's Allow delete decides whether it's offered). */
+        @AuraEnabled
+        public Boolean canDelete = false;
     }
 
     /**
@@ -280,7 +284,7 @@ public with sharing class FinalRelatedListService {
             }
             if (!byId.isEmpty()) {
                 for (UserRecordAccess a : [
-                    SELECT RecordId, HasEditAccess
+                    SELECT RecordId, HasEditAccess, HasDeleteAccess
                     FROM UserRecordAccess
                     WHERE
                         UserId = :UserInfo.getUserId()
@@ -289,6 +293,7 @@ public with sharing class FinalRelatedListService {
                     Row r = byId.get(a.RecordId);
                     if (r != null) {
                         r.canEdit = a.HasEditAccess;
+                        r.canDelete = a.HasDeleteAccess && child.isDeletable();
                     }
                 }
             }

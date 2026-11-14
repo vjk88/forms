@@ -1,0 +1,51 @@
+<template>
+    <span class="rd">
+        <template lwc:if={marked}>
+            <span id="rd-status" class="rd-gone"
+                >Will be deleted when you save</span
+            >
+            <button
+                type="button"
+                class="rd-undo"
+                aria-label={undoLabel}
+                aria-describedby="rd-status"
+                onclick={handleUndo}
+            >
+                Undo
+            </button>
+        </template>
+        <template lwc:elseif={showAsk}>
+            <span
+                class="rd-ask"
+                role="alertdialog"
+                aria-labelledby="rd-question"
+                onkeydown={handleAskKeydown}
+            >
+                <span id="rd-question" class="rd-question">{askText}</span>
+                <span class="rd-answers">
+                    <button type="button" class="rd-no" onclick={handleCancel}>
+                        Cancel
+                    </button>
+                    <button type="button" class="rd-yes" onclick={handleDelete}>
+                        Delete
+                    </button>
+                </span>
+            </span>
+        </template>
+        <template lwc:else>
+            <button
+                type="button"
+                class="rd-bin"
+                title={binLabel}
+                aria-label={binLabel}
+                onclick={handleBin}
+            >
+                <lightning-icon
+                    icon-name="utility:delete"
+                    size="x-small"
+                    class="rd-icon"
+                ></lightning-icon>
+            </button>
+        </template>
+    </span>
+</template>

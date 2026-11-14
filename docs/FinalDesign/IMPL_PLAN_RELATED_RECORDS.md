@@ -430,7 +430,21 @@ Status: DIRECTION AGREED 2026-11-12, open questions SETTLED 2026-11-13 (see "Set
 by `FinalLookupService.recordValues` as the signed-in person (one query) on load and, at Save, from the
 record as stored before the Save writes it; a blank value makes that condition match nothing (`Id = NULL`)
 instead of breaking the list; Publish refuses a path that isn't a field of the form's object. A field of
-the record, not a question's answer: it covers fields that aren't on the form. Slice 3 (delete) not built. Owner pick for the fill rows, from [mocks/quiet-fill-mock.html](./mocks/quiet-fill-mock.html):
+the record, not a question's answer: it covers fields that aren't on the form. **Slice 3 "Delete" BUILT
+2026-11-13** (branch `feat/related-delete`), so Part 2 is complete. As built (my calls):
+- `repeat.allowDelete` ("Allow delete", off, hidden while Read only). A row offers delete only when the list
+  allows it AND `UserRecordAccess.HasDeleteAccess` and the object is deletable (`Row.canDelete`).
+- `c/finalRowDelete` in the row (cards: after Open; table: under the name, not a last column, because the
+  warning needs the room): bin → inline alertdialog "Delete this Case? This can't be undone after you save."
+  (focus on Cancel; Escape cancels) → "Will be deleted when you save" + Undo; the name is struck through and
+  the answers are read-only and dimmed. Delete is outlined in the theme's error colour, never white on it.
+- A marked row is never checked and never sent as a change; it travels as `repeatDeletes`. Marked rows make
+  room for Add (members − deletes + adds).
+- Server, before any write: deletes refused on a list without Allow delete (one forbidden list refuses the
+  whole Save); each id re-queried with the list's clause as the user; Min judged as members − deletes + adds;
+  a record changed in one list and deleted in another refused on both rows; the same delete through two
+  lists is one row. `delete as user` after the updates, inside the one savepoint. A create form refuses any
+  delete. A refusal about a marked row names it by `FieldError.recordId` (it has no entry as sent). Owner pick for the fill rows, from [mocks/quiet-fill-mock.html](./mocks/quiet-fill-mock.html):
 **"B, list + dialog"** (one line per fill in the inspector, edited in a small dialog).
 
 Slice 2a as built (my calls):

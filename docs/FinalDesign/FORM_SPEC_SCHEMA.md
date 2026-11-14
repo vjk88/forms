@@ -322,6 +322,9 @@ a first-class **Repeating Group** item, catalog §5).
   the form edits, and a blank one matches nothing), `repeat.readOnly` (look-only; never shown on a form that
   creates a record), `repeat.link` (`false` turns off "Open {Case}"), `repeat.style` `table` draws a table
   that falls back to cards when too narrow. Slice 1 is read-only everywhere on a record page.
+- **Delete on a record page** (slice 3): `repeat.allowDelete: true` offers delete on rows the person may
+  delete; marked rows travel as `repeatDeletes: { sectionId: [recordId] }` and are deleted by the Save. A
+  refusal about one carries `FieldError.recordId`.
 - **Fill on new records** (P2.6): `repeat.fill` = `[{ "field": "Origin", "value": "Web" } |
   { "field": "SuppliedEmail", "from": "Email", "fromLabel": "Email" }]`. Set by the save on **every new
   row** of the group (never on existing rows), after the person's answers, on any form that creates

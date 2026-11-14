@@ -108,6 +108,7 @@ describe('focus stays visible in Windows High Contrast', () => {
         'finalNavStepper',
         'finalNavTabs',
         'finalPageFrame',
+        'finalRowDelete',
         'finalSectionRenderer',
         'finalSubmitBar'
     ];

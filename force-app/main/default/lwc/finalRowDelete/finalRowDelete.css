@@ -1,0 +1,111 @@
+/* Delete for a related list's row (slice 3): respondent theme tokens only. */
+:host {
+    display: inline-flex;
+    min-width: 0;
+}
+
+.rd {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--c-space-2);
+    font-size: var(--c-fs-secondary);
+}
+
+.rd-bin {
+    display: inline-grid;
+    place-items: center;
+    min-width: 32px;
+    min-height: 32px;
+    border: 0;
+    border-radius: var(--c-radius);
+    background: none;
+    cursor: pointer;
+    --slds-c-icon-color-foreground-default: var(--c-text-weak);
+}
+
+@media (pointer: coarse) {
+    .rd-bin,
+    .rd-yes,
+    .rd-no,
+    .rd-undo {
+        min-width: 44px;
+        min-height: 44px;
+    }
+}
+
+/* Cancel and Delete wrap as a pair, never one alone */
+.rd-answers {
+    display: inline-flex;
+    gap: var(--c-space-2);
+    white-space: nowrap;
+}
+
+.rd-bin:hover {
+    --slds-c-icon-color-foreground-default: var(--c-field-error, #b42318);
+}
+
+.rd-ask {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--c-space-2);
+    padding: var(--c-space-1) var(--c-space-2);
+    border-radius: var(--c-radius);
+    background: color-mix(
+        in srgb,
+        var(--c-field-error, #b42318) 8%,
+        transparent
+    );
+}
+
+.rd-question {
+    color: var(--c-text);
+}
+
+.rd-yes,
+.rd-no,
+.rd-undo {
+    min-height: 32px;
+    padding: 0 var(--c-space-3);
+    border-radius: var(--c-radius);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* outlined in the theme's error colour: that colour is checked readable on
+   the form's surface, white on it is not (dark themes have a pale one) */
+.rd-yes {
+    border: 1px solid var(--c-field-error, #b42318);
+    background: none;
+    color: var(--c-field-error, #b42318);
+}
+
+.rd-no {
+    border: 1px solid color-mix(in srgb, var(--c-text) 35%, transparent);
+    background: none;
+    color: var(--c-text);
+}
+
+.rd-gone {
+    color: var(--c-field-error, #b42318);
+}
+
+.rd-undo {
+    border: 0;
+    background: none;
+    color: var(--c-accent-text, var(--c-accent, var(--c-text)));
+    text-decoration: underline;
+    padding-inline: var(--c-space-1);
+}
+
+.rd-bin:focus-visible,
+.rd-yes:focus-visible,
+.rd-no:focus-visible,
+.rd-undo:focus-visible {
+    outline: 2px solid
+        var(--c-focus-outline, var(--c-field-focus, var(--c-accent)));
+    outline-offset: 1px;
+    box-shadow: var(--c-focus-shadow, none);
+}
