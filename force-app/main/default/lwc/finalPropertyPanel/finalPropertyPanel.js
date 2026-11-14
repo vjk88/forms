@@ -1193,6 +1193,21 @@ export default class FinalPropertyPanel extends LightningElement {
         return this.kind === 'section' && !this.n.repeat;
     }
 
+    /** A section or a related list: both get the section look settings. */
+    get isAnySection() {
+        return this.kind === 'section';
+    }
+
+    get sectionTitleLabel() {
+        return this.isRepeater ? 'Group title' : 'Title';
+    }
+
+    /** A Table already gives each question its own column, so Columns is
+     *  for a section and for a list drawn as cards. */
+    get showColumnsSetting() {
+        return this.isSection || !this.repeatIsTable;
+    }
+
     get isPage() {
         return this.kind === 'page';
     }
@@ -1736,8 +1751,12 @@ export default class FinalPropertyPanel extends LightningElement {
         return 'Entry {index}';
     }
 
+    /** A Table numbers its rows; the title still heads each card when the
+     *  table doesn't fit (a phone). */
     get entryTitleHelp() {
-        return '{index} becomes the entry number, like Case 1, Case 2.';
+        return this.repeatIsTable
+            ? 'Heads each card when the table doesn’t fit. {index} becomes the number, like Case 1, Case 2.'
+            : '{index} becomes the entry number, like Case 1, Case 2.';
     }
 
     /** Older or imported limits that a respondent could never meet: shown

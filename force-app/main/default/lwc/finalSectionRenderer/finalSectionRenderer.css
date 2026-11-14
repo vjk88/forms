@@ -487,7 +487,8 @@
     padding: 0 var(--c-space-2);
     border-radius: var(--c-radius);
     background: color-mix(in srgb, var(--c-text) 8%, transparent);
-    color: var(--c-text-weak);
+    /* full-strength text: weak text on this tint was ~4.1:1 */
+    color: var(--c-text);
     font-size: var(--c-fs-secondary);
     font-weight: 400;
 }
@@ -565,6 +566,44 @@
 
 .rep-entry-head {
     flex-wrap: wrap;
+}
+
+/* an editable Table's first column numbers its rows (owner 2026-11-14): just
+   the number, or wider when saved records show their names beside it. The
+   widths match TABLE_NUM_WIDTH / TABLE_NAMED_NUM_WIDTH in the JS. */
+.rl-table .rl-numcol {
+    width: 3.5rem;
+}
+
+.rl-table .rl-numcol.rl-numcol-named {
+    width: 11rem;
+}
+
+.rl-rowhead {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--c-space-1) var(--c-space-2);
+}
+
+.rl-num {
+    color: var(--c-text-weak);
+    font-weight: 400;
+    font-variant-numeric: tabular-nums;
+}
+
+.rl-rowhead .rl-tag {
+    margin-inline-start: 0;
+}
+
+/* a row's errors sit on their own full-width line under it */
+.rl-table .rl-has-err > th,
+.rl-table .rl-has-err > td {
+    border-bottom: 0;
+}
+
+.rl-table .rl-errrow td {
+    padding-top: 0;
 }
 
 /* a table with delete: the last column holds the bin, the warning and Undo */

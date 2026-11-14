@@ -352,7 +352,7 @@ describe('c-final-section-renderer editable related lists (slice 2)', () => {
         expect(cell.element.id).toBe('el_subj::500A');
         expect(rows[0].querySelector('.rep-remove')).toBeNull();
         expect(rows[2].querySelector('.rep-remove')).not.toBeNull();
-        // an editable cell needs 200px: 140 + 2 × 200 = 540 > 440 → cards
+        // an editable cell needs 200px: 176 + 2 × 200 + 68 = 644 > 440 → cards
         const mid = await mount(EDITABLE('table'), 440);
         expect(mid.shadowRoot.querySelector('.rl-table')).toBeNull();
         // too narrow: the same rows as cards
@@ -361,5 +361,51 @@ describe('c-final-section-renderer editable related lists (slice 2)', () => {
         expect(narrow.shadowRoot.querySelectorAll('.rep-entry')).toHaveLength(
             3
         );
+    });
+
+    it('Table: the first column numbers the rows; a saved record keeps its name beside it', async () => {
+        const el = await mount(EDITABLE('table'), 1000);
+        const table = el.shadowRoot.querySelector('.rl-table');
+        const head = table.querySelector('thead th');
+        expect(head.className).toBe('rl-numcol rl-numcol-named');
+        expect(head.textContent.trim()).toBe('#Row');
+        const rowHeads = [...table.querySelectorAll('tbody th')].map((th) =>
+            th.textContent.replace(/\s+/g, ' ').trim()
+        );
+        expect(rowHeads).toEqual([
+            '1, 00001026 (opens in a new tab)',
+            '2, 00001027, View only. You can see this Case but not change it.',
+            '3, New'
+        ]);
+        // a new row's inputs and × are named "Case 3", not the Entry title
+        const rows = table.querySelectorAll('tbody tr');
+        expect(
+            rows[2].querySelector('td c-final-element-renderer').element.label
+        ).toBe('Subject, Case 3');
+        expect(
+            rows[2].querySelector('.rep-remove').getAttribute('aria-label')
+        ).toBe('Remove Case 3');
+    });
+
+    it('Table of new rows only: a narrow number column, never the Entry title', async () => {
+        const sec = EDITABLE('table');
+        sec.repeat.entryLabel = '4';
+        sec.entries = [
+            { key: 'en_0', values: {} },
+            { key: 'en_1', values: {} }
+        ];
+        sec.entries[1].errors = { __row: ['Salesforce said no.'] };
+        const el = await mount(sec, 1000);
+        const table = el.shadowRoot.querySelector('.rl-table');
+        expect(table.querySelector('thead th').className).toBe('rl-numcol');
+        expect(
+            [...table.querySelectorAll('tbody th')].map((th) =>
+                th.textContent.trim()
+            )
+        ).toEqual(['1,', '2,']);
+        // a row's errors get their own full-width line under it
+        const err = table.querySelector('.rl-errrow td');
+        expect(err.getAttribute('colspan')).toBe('4');
+        expect(err.textContent.trim()).toBe('Row 2: Salesforce said no.');
     });
 });

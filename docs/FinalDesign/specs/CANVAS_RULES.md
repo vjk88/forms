@@ -45,8 +45,9 @@ may live in the gaps between sections.
    relationships listed as "{Child Object Label} · via {linking field}" (formStudio.js:1687-1749).
 3. Picking one mints the repeatable section **at the drop position**, titled by the child object
    label, selected, with its child-field list loading.
-4. Its inspector is DEDICATED (never the generic section inspector): display style
-   (Stacked / Table / Tiles+modal), add-button label, min/max entries, columns, and the
+4. Its inspector has a section's look settings (Columns for Stacked, Header, Header icon,
+   Description, Collapsible; owner 2026-11-14) plus its own: display style
+   (Stacked / Table / Tiles+modal), add-button label, min/max entries, and the
    **child-object field list** for adding fields (deduped against fields already in the section).
 5. Requires a primary context object — without one, click-add informs and aborts.
 

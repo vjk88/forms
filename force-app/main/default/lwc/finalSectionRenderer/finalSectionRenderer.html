@@ -198,7 +198,10 @@
                             <table class="rl-table" aria-label={sec.title}>
                                 <thead>
                                     <tr>
-                                        <th scope="col">{entriesNameLabel}</th>
+                                        <th scope="col" class={numColClass}>
+                                            <span aria-hidden="true">#</span
+                                            ><span class="rl-sr">Row</span>
+                                        </th>
                                         <template
                                             for:each={tableQuestions}
                                             for:item="q"
@@ -232,47 +235,55 @@
                                             class={entry.rowClass}
                                         >
                                             <th scope="row" class="rl-name">
-                                                <template lwc:if={entry.href}>
-                                                    <a
-                                                        class={entry.nameClass}
-                                                        href={entry.href}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        >{entry.label}<span
+                                                <div class="rl-rowhead">
+                                                    <span class="rl-num"
+                                                        >{entry.num}<span
                                                             class="rl-sr"
-                                                            >{newTabText}</span
-                                                        ></a
-                                                    >
-                                                </template>
-                                                <template lwc:else>
-                                                    <span
-                                                        class={entry.nameClass}
-                                                        >{entry.label}</span
-                                                    >
-                                                </template>
-
-                                                <template
-                                                    lwc:if={entry.viewOnly}
-                                                >
-                                                    <span class="rl-tag"
-                                                        >View only<span
-                                                            class="rl-sr"
-                                                            >{entry.viewOnlySr}</span
+                                                            >{rowSep}</span
                                                         ></span
                                                     >
-                                                </template>
-                                                <template
-                                                    for:each={entry.rowErrors}
-                                                    for:item="msg"
-                                                >
-                                                    <p
-                                                        key={msg}
-                                                        class="rep-min"
-                                                        role="status"
+                                                    <template
+                                                        lwc:if={entry.href}
                                                     >
-                                                        {msg}
-                                                    </p>
-                                                </template>
+                                                        <a
+                                                            class={entry.nameClass}
+                                                            href={entry.href}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            >{entry.tableName}<span
+                                                                class="rl-sr"
+                                                                >{newTabText}</span
+                                                            ></a
+                                                        >
+                                                    </template>
+                                                    <template
+                                                        lwc:elseif={entry.tableName}
+                                                    >
+                                                        <span
+                                                            class={entry.nameClass}
+                                                            >{entry.tableName}</span
+                                                        >
+                                                    </template>
+                                                    <template
+                                                        lwc:elseif={entry.newTag}
+                                                    >
+                                                        <span class="rl-tag"
+                                                            >New</span
+                                                        >
+                                                    </template>
+                                                    <template
+                                                        lwc:if={entry.viewOnly}
+                                                    >
+                                                        <span class="rl-tag"
+                                                            ><span class="rl-sr"
+                                                                >{rowSep}</span
+                                                            >View only<span
+                                                                class="rl-sr"
+                                                                >{entry.viewOnlySr}</span
+                                                            ></span
+                                                        >
+                                                    </template>
+                                                </div>
                                             </th>
                                             <template
                                                 for:each={entry.tableCells}
@@ -315,6 +326,29 @@
                                                 </template>
                                             </td>
                                         </tr>
+                                        <template lwc:if={entry.hasRowErrors}>
+                                            <tr
+                                                key={entry.errKey}
+                                                class="rl-errrow"
+                                            >
+                                                <td colspan={tableColCount}>
+                                                    <template
+                                                        for:each={entry.rowErrors}
+                                                        for:item="msg"
+                                                    >
+                                                        <p
+                                                            key={msg}
+                                                            class="rep-min"
+                                                            role="status"
+                                                        >
+                                                            <span class="rl-sr"
+                                                                >{entry.errPrefix}</span
+                                                            >{msg}
+                                                        </p>
+                                                    </template>
+                                                </td>
+                                            </tr>
+                                        </template>
                                     </template>
                                 </tbody>
                             </table>

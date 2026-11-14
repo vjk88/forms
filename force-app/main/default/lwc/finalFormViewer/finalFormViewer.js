@@ -2836,7 +2836,8 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             listRevision: listExtra.revision,
             listNote: g.keys.length ? '' : listExtra.emptyText,
             listMore: listExtra.moreText,
-            listMoreHref: listExtra.viewAllHref
+            listMoreHref: listExtra.viewAllHref,
+            listNoun: listExtra.noun
         };
     }
 
@@ -2888,6 +2889,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         }
         return {
             existing,
+            noun: loaded.childLabel || '',
             revision: loaded.generation,
             room,
             emptyText: `No ${many} yet.`,

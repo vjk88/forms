@@ -1063,246 +1063,53 @@
             </template>
         </template>
 
-        <!-- REPEATING GROUP (§4: DEDICATED — never plain section props) -->
-        <template lwc:elseif={isRepeater}>
+        <!-- SECTION, or a related list (a section that repeats per child
+             record, CANVAS_RULES §4): the same look settings for both, then
+             the list's own settings -->
+        <template lwc:elseif={isAnySection}>
             <div class="pp-group">
                 <lightning-input
-                    label="Group title"
+                    label={sectionTitleLabel}
                     data-prop="title"
                     value={n.title}
                     onchange={handleTitle}
                 ></lightning-input>
-                <div class="pp-fld">
-                    <span class="pp-label">Child records</span>
-                    <span class="pp-ro">{repeat.childObject}</span>
-                </div>
-                <div class="pp-fld">
-                    <span class="pp-label">Display style</span>
-                    <c-final-button-group
-                        stretch
-                        label="Display style"
-                        options={repeatStyleSeg.options}
-                        value={repeatStyleSeg.value}
-                        onchange={handleRepeatStyle}
-                    ></c-final-button-group>
-                    <template lwc:if={repeatIsTable}>
-                        <p class="pp-hint">
-                            Shows as cards where there isn't room.
-                        </p>
-                    </template>
-                    <p class="pp-hint">Tiles is coming soon.</p>
-                </div>
-                <h4 class="pp-grouptitle">On a record page</h4>
-                <div class="pp-fld">
-                    <c-final-lookup-filter
-                        target-object={repeat.childObject}
-                        value={repeatShowValue}
-                        conditions-only
-                        compare-record-object={formObjectApi}
-                        logic-heading={repeatShowHeading}
-                        dialog-label={repeatShowLabel}
-                        dialog-help="Only related records that meet these conditions are listed. With none, all of them are."
-                        onlookupconfigchange={handleRepeatShow}
-                    ></c-final-lookup-filter>
-                    <p class="pp-hint">
-                        A form that edits a record lists the related records it
-                        already has here.
-                    </p>
-                </div>
-                <div class="pp-rule">
-                    <span class="pp-rule-text">
-                        <span class="pp-rule-name" aria-hidden="true"
-                            >Read only</span
-                        >
-                        <span class="pp-rule-hint">{repeatReadOnlyHint}</span>
-                    </span>
-                    <lightning-input
-                        type="toggle"
-                        variant="label-hidden"
-                        label="Read only"
-                        data-prop="readonly"
-                        checked={repeatReadOnly}
-                        message-toggle-active=""
-                        message-toggle-inactive=""
-                        onchange={handleRepeatReadOnly}
-                    ></lightning-input>
-                </div>
-                <template lwc:if={repeatEditable}>
-                    <div class="pp-rule">
-                        <span class="pp-rule-text">
-                            <span class="pp-rule-name" aria-hidden="true"
-                                >Allow delete</span
-                            >
-                            <span class="pp-rule-hint"
-                                >Records the person may delete get a delete
-                                button. They're asked first, and nothing is
-                                deleted until they save.</span
-                            >
-                        </span>
-                        <lightning-input
-                            type="toggle"
-                            variant="label-hidden"
-                            label="Allow delete"
-                            data-prop="allowdelete"
-                            checked={repeatAllowDelete}
-                            message-toggle-active=""
-                            message-toggle-inactive=""
-                            onchange={handleRepeatAllowDelete}
-                        ></lightning-input>
-                    </div>
-                </template>
-                <div class="pp-rule">
-                    <span class="pp-rule-text">
-                        <span class="pp-rule-name" aria-hidden="true"
-                            >Link to record</span
-                        >
-                        <span class="pp-rule-hint"
-                            >Each record gets an "Open" link to Salesforce, in a
-                            new tab.</span
-                        >
-                    </span>
-                    <lightning-input
-                        type="toggle"
-                        variant="label-hidden"
-                        label="Link to record"
-                        data-prop="link"
-                        checked={repeatLink}
-                        message-toggle-active=""
-                        message-toggle-inactive=""
-                        onchange={handleRepeatLink}
-                    ></lightning-input>
-                </div>
-                <template lwc:if={repeatEditable}>
-                    <h4 class="pp-grouptitle">Fill on new records</h4>
-                    <c-final-repeat-fill
-                        fills={repeatFills}
-                        child-object={repeat.childObject}
-                        parent-object={formObjectApi}
-                        child-fields={fillChildFields}
-                        taken-fields={fillTakenFields}
-                        loading={childLoading}
-                        onfillchange={handleRepeatFill}
-                    ></c-final-repeat-fill>
-                    <h4 class="pp-grouptitle">Adding</h4>
-                    <lightning-input
-                        label="Add-button label"
-                        data-prop="addlabel"
-                        value={repeat.addLabel}
-                        onchange={handleAddLabel}
-                    ></lightning-input>
+                <template lwc:if={isRepeater}>
                     <div class="pp-fld">
-                        <lightning-input
-                            label="Entry title"
-                            data-prop="entrylabel"
-                            value={repeat.entryLabel}
-                            placeholder={entryTitlePlaceholder}
-                            onchange={handleEntryLabel}
-                        ></lightning-input>
-                        <p class="pp-hint">{entryTitleHelp}</p>
+                        <span class="pp-label">Child records</span>
+                        <span class="pp-ro">{repeat.childObject}</span>
                     </div>
                     <div class="pp-fld">
-                        <lightning-input
-                            label="Remove button label"
-                            data-prop="removelabel"
-                            value={repeat.removeLabel}
-                            placeholder="Remove"
-                            onchange={handleRemoveLabel}
-                        ></lightning-input>
-                        <p class="pp-hint">
-                            Read out by screen readers and shown on hover.
-                        </p>
+                        <span class="pp-label">Display style</span>
+                        <c-final-button-group
+                            stretch
+                            label="Display style"
+                            options={repeatStyleSeg.options}
+                            value={repeatStyleSeg.value}
+                            onchange={handleRepeatStyle}
+                        ></c-final-button-group>
+                        <template lwc:if={repeatIsTable}>
+                            <p class="pp-hint">
+                                Each question gets its own column. Shows as
+                                cards where there isn't room.
+                            </p>
+                        </template>
+                        <p class="pp-hint">Tiles is coming soon.</p>
                     </div>
-                    <div class="pp-minmax">
-                        <lightning-input
-                            type="number"
-                            label="Min rows"
-                            data-prop="min"
-                            value={repeat.min}
-                            min="0"
-                            max="50"
-                            step="1"
-                            onchange={handleMin}
-                        ></lightning-input>
-                        <lightning-input
-                            type="number"
-                            label="Max rows (0 = up to 50)"
-                            data-prop="max"
-                            value={repeat.max}
-                            min="0"
-                            max="50"
-                            step="1"
-                            onchange={handleMax}
-                        ></lightning-input>
+                </template>
+
+                <template lwc:if={showColumnsSetting}>
+                    <div class="pp-fld">
+                        <span class="pp-label">Columns</span>
+                        <c-final-button-group
+                            stretch
+                            label="Columns"
+                            options={columnsSeg.options}
+                            value={columnsSeg.value}
+                            onchange={handleColumns}
+                        ></c-final-button-group>
                     </div>
-                    <template lwc:if={repeatLimitError}>
-                        <p class="pp-error" role="alert">{repeatLimitError}</p>
-                    </template>
                 </template>
-            </div>
-
-            <div class="pp-group">
-                <h4 class="pp-grouptitle">{childHeading}</h4>
-                <p class="pp-hint">
-                    Click a field to add it to every entry of this group.
-                </p>
-                <template lwc:if={childError}>
-                    <p class="pp-error" role="alert">{childError}</p>
-                </template>
-                <template lwc:elseif={childLoading}>
-                    <lightning-spinner
-                        alternative-text="Loading child fields"
-                        size="small"
-                    ></lightning-spinner>
-                </template>
-                <ul class="pp-childlist">
-                    <template for:each={childRows} for:item="f">
-                        <li key={f.apiName}>
-                            <button
-                                type="button"
-                                class={f.cls}
-                                title={f.title}
-                                data-api={f.apiName}
-                                onclick={handleAddChildField}
-                            >
-                                <span class="pp-childlabel">
-                                    <template lwc:if={f.required}>
-                                        <abbr class="pp-req" title="required"
-                                            >*</abbr
-                                        >
-                                    </template>
-                                    {f.label}
-                                </span>
-                                <span class="pp-childtype">{f.inputType}</span>
-                                <template lwc:if={f.added}>
-                                    <span class="pp-added">{f.addedText}</span>
-                                </template>
-                            </button>
-                        </li>
-                    </template>
-                </ul>
-            </div>
-        </template>
-
-        <!-- SECTION (BUILDER_SURFACES §3 — the legacy surface) -->
-        <template lwc:elseif={isSection}>
-            <div class="pp-group">
-                <lightning-input
-                    label="Title"
-                    data-prop="title"
-                    value={n.title}
-                    onchange={handleTitle}
-                ></lightning-input>
-
-                <div class="pp-fld">
-                    <span class="pp-label">Columns</span>
-                    <c-final-button-group
-                        stretch
-                        label="Columns"
-                        options={columnsSeg.options}
-                        value={columnsSeg.value}
-                        onchange={handleColumns}
-                    ></c-final-button-group>
-                </div>
 
                 <div class="pp-fld">
                     <span class="pp-label">Header</span>
@@ -1372,15 +1179,17 @@
                     onchange={handleDescription}
                 ></lightning-textarea>
 
-                <lightning-input
-                    type="toggle"
-                    label="Keep on one screen"
-                    field-level-help="When the survey shows one question per page, this section's fields stay together on a single screen (like the artifact's multi-input step)."
-                    checked={n.keepTogether}
-                    message-toggle-active=""
-                    message-toggle-inactive=""
-                    onchange={handleKeepTogether}
-                ></lightning-input>
+                <template lwc:if={isSection}>
+                    <lightning-input
+                        type="toggle"
+                        label="Keep on one screen"
+                        field-level-help="When the survey shows one question per page, this section's fields stay together on a single screen (like the artifact's multi-input step)."
+                        checked={n.keepTogether}
+                        message-toggle-active=""
+                        message-toggle-inactive=""
+                        onchange={handleKeepTogether}
+                    ></lightning-input>
+                </template>
 
                 <div class="pp-fld">
                     <span class="pp-label">Collapsible</span>
@@ -1411,6 +1220,209 @@
                     </div>
                 </template>
             </div>
+
+            <template lwc:if={isRepeater}>
+                <div class="pp-group">
+                    <h4 class="pp-grouptitle">On a record page</h4>
+                    <div class="pp-fld">
+                        <c-final-lookup-filter
+                            target-object={repeat.childObject}
+                            value={repeatShowValue}
+                            conditions-only
+                            compare-record-object={formObjectApi}
+                            logic-heading={repeatShowHeading}
+                            dialog-label={repeatShowLabel}
+                            dialog-help="Only related records that meet these conditions are listed. With none, all of them are."
+                            onlookupconfigchange={handleRepeatShow}
+                        ></c-final-lookup-filter>
+                        <p class="pp-hint">
+                            A form that edits a record lists the related records
+                            it already has here.
+                        </p>
+                    </div>
+                    <div class="pp-rule">
+                        <span class="pp-rule-text">
+                            <span class="pp-rule-name" aria-hidden="true"
+                                >Read only</span
+                            >
+                            <span class="pp-rule-hint"
+                                >{repeatReadOnlyHint}</span
+                            >
+                        </span>
+                        <lightning-input
+                            type="toggle"
+                            variant="label-hidden"
+                            label="Read only"
+                            data-prop="readonly"
+                            checked={repeatReadOnly}
+                            message-toggle-active=""
+                            message-toggle-inactive=""
+                            onchange={handleRepeatReadOnly}
+                        ></lightning-input>
+                    </div>
+                    <template lwc:if={repeatEditable}>
+                        <div class="pp-rule">
+                            <span class="pp-rule-text">
+                                <span class="pp-rule-name" aria-hidden="true"
+                                    >Allow delete</span
+                                >
+                                <span class="pp-rule-hint"
+                                    >Records the person may delete get a delete
+                                    button. They're asked first, and nothing is
+                                    deleted until they save.</span
+                                >
+                            </span>
+                            <lightning-input
+                                type="toggle"
+                                variant="label-hidden"
+                                label="Allow delete"
+                                data-prop="allowdelete"
+                                checked={repeatAllowDelete}
+                                message-toggle-active=""
+                                message-toggle-inactive=""
+                                onchange={handleRepeatAllowDelete}
+                            ></lightning-input>
+                        </div>
+                    </template>
+                    <div class="pp-rule">
+                        <span class="pp-rule-text">
+                            <span class="pp-rule-name" aria-hidden="true"
+                                >Link to record</span
+                            >
+                            <span class="pp-rule-hint"
+                                >Each record gets an "Open" link to Salesforce,
+                                in a new tab.</span
+                            >
+                        </span>
+                        <lightning-input
+                            type="toggle"
+                            variant="label-hidden"
+                            label="Link to record"
+                            data-prop="link"
+                            checked={repeatLink}
+                            message-toggle-active=""
+                            message-toggle-inactive=""
+                            onchange={handleRepeatLink}
+                        ></lightning-input>
+                    </div>
+                    <template lwc:if={repeatEditable}>
+                        <h4 class="pp-grouptitle">Fill on new records</h4>
+                        <c-final-repeat-fill
+                            fills={repeatFills}
+                            child-object={repeat.childObject}
+                            parent-object={formObjectApi}
+                            child-fields={fillChildFields}
+                            taken-fields={fillTakenFields}
+                            loading={childLoading}
+                            onfillchange={handleRepeatFill}
+                        ></c-final-repeat-fill>
+                        <h4 class="pp-grouptitle">Adding</h4>
+                        <lightning-input
+                            label="Add-button label"
+                            data-prop="addlabel"
+                            value={repeat.addLabel}
+                            onchange={handleAddLabel}
+                        ></lightning-input>
+                        <div class="pp-fld">
+                            <lightning-input
+                                label="Entry title"
+                                data-prop="entrylabel"
+                                value={repeat.entryLabel}
+                                placeholder={entryTitlePlaceholder}
+                                onchange={handleEntryLabel}
+                            ></lightning-input>
+                            <p class="pp-hint">{entryTitleHelp}</p>
+                        </div>
+                        <div class="pp-fld">
+                            <lightning-input
+                                label="Remove button label"
+                                data-prop="removelabel"
+                                value={repeat.removeLabel}
+                                placeholder="Remove"
+                                onchange={handleRemoveLabel}
+                            ></lightning-input>
+                            <p class="pp-hint">
+                                Read out by screen readers and shown on hover.
+                            </p>
+                        </div>
+                        <div class="pp-minmax">
+                            <lightning-input
+                                type="number"
+                                label="Min rows"
+                                data-prop="min"
+                                value={repeat.min}
+                                min="0"
+                                max="50"
+                                step="1"
+                                onchange={handleMin}
+                            ></lightning-input>
+                            <lightning-input
+                                type="number"
+                                label="Max rows (0 = up to 50)"
+                                data-prop="max"
+                                value={repeat.max}
+                                min="0"
+                                max="50"
+                                step="1"
+                                onchange={handleMax}
+                            ></lightning-input>
+                        </div>
+                        <template lwc:if={repeatLimitError}>
+                            <p class="pp-error" role="alert">
+                                {repeatLimitError}
+                            </p>
+                        </template>
+                    </template>
+                </div>
+
+                <div class="pp-group">
+                    <h4 class="pp-grouptitle">{childHeading}</h4>
+                    <p class="pp-hint">
+                        Click a field to add it to every entry of this group.
+                    </p>
+                    <template lwc:if={childError}>
+                        <p class="pp-error" role="alert">{childError}</p>
+                    </template>
+                    <template lwc:elseif={childLoading}>
+                        <lightning-spinner
+                            alternative-text="Loading child fields"
+                            size="small"
+                        ></lightning-spinner>
+                    </template>
+                    <ul class="pp-childlist">
+                        <template for:each={childRows} for:item="f">
+                            <li key={f.apiName}>
+                                <button
+                                    type="button"
+                                    class={f.cls}
+                                    title={f.title}
+                                    data-api={f.apiName}
+                                    onclick={handleAddChildField}
+                                >
+                                    <span class="pp-childlabel">
+                                        <template lwc:if={f.required}>
+                                            <abbr
+                                                class="pp-req"
+                                                title="required"
+                                                >*</abbr
+                                            >
+                                        </template>
+                                        {f.label}
+                                    </span>
+                                    <span class="pp-childtype"
+                                        >{f.inputType}</span
+                                    >
+                                    <template lwc:if={f.added}>
+                                        <span class="pp-added"
+                                            >{f.addedText}</span
+                                        >
+                                    </template>
+                                </button>
+                            </li>
+                        </template>
+                    </ul>
+                </div>
+            </template>
         </template>
 
         <!-- PAGE -->
