@@ -513,3 +513,45 @@
     outline-offset: 1px;
     box-shadow: var(--c-focus-shadow, none);
 }
+
+/* ---- related sections draw flat (owner 2026-11-13): no section box around
+   them and no box per entry. Entries are rows split by a thin line, like a
+   Lightning related list; the old nesting (form card > section box > entry
+   box) spent ~26px of width and ~30px of height per entry on frames. A
+   per-section surface (inline style) still wins. Text colours are worked out
+   against the form card, so dropping the section tint can't hurt contrast. */
+.section.sec-related {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    padding: 0;
+}
+
+.sec-related .sec-head {
+    margin-bottom: var(--c-space-2);
+}
+
+.sec-related .rep-entries {
+    gap: 0;
+}
+
+.sec-related .rep-entry {
+    border: 0;
+    border-top: 1px solid color-mix(in srgb, var(--c-text) 14%, transparent);
+    border-radius: 0;
+    padding: var(--c-space-3) 0;
+}
+
+.sec-related .rep-entry:last-of-type {
+    border-bottom: 1px solid color-mix(in srgb, var(--c-text) 14%, transparent);
+}
+
+.sec-related .rep-entry-head {
+    margin-bottom: var(--c-space-1);
+}
+
+/* the Add button, notes and messages keep their breathing room */
+.sec-related .rep-entries > :not(.rep-entry):not(:first-child),
+.sec-related .rep-entries > :not(.rep-entry) + .rep-entry {
+    margin-top: var(--c-space-3);
+}

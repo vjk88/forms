@@ -117,8 +117,11 @@ export default class FinalSectionRenderer extends LightningElement {
     get sectionClass() {
         const style = (this.sec.style || 'card').toLowerCase();
         const base = `section style-${KNOWN_STYLES.includes(style) ? style : 'card'}`;
+        // a related section (repeat group / related list) draws without the
+        // section box: its rows are the structure (owner 2026-11-13)
+        const related = this.isRepeat ? `${base} sec-related` : base;
         // conversational scale — stamped by the viewer's one-per-screen split
-        return this.sec.convo ? `${base} sec-convo` : base;
+        return this.sec.convo ? `${related} sec-convo` : related;
     }
 
     get surfaceStyle() {
