@@ -72,4 +72,19 @@ describe('Tabbed pages: the panel is tied to its tab', () => {
         const [title] = sectionHeadings(el.shadowRoot);
         expect(title.tagName).toBe('H3');
     });
+    it('a page with no name is a Step, as in the stepper', async () => {
+        const el = mount('c-final-nav-tabs', FinalNavTabs, {
+            pages: [
+                { ...PAGES[0], name: '' },
+                { ...PAGES[1], name: undefined }
+            ],
+            currentPageIndex: 0
+        });
+        await flush();
+        const tabs = [...el.shadowRoot.querySelectorAll('[role="tab"]')];
+        expect(tabs.map((t) => t.textContent.trim())).toEqual([
+            'Step 1',
+            'Step 2'
+        ]);
+    });
 });

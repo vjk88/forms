@@ -1689,6 +1689,10 @@ export default class FinalPropertyPanel extends LightningElement {
         };
     }
 
+    get repeatShowHeading() {
+        return `Show ${this.repeat.childObject || 'related'} records where`;
+    }
+
     get repeatShowLabel() {
         return `Which ${this.repeat.childObject || 'related'} records to show`;
     }

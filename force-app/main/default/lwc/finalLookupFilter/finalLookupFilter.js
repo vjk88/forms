@@ -98,6 +98,8 @@ export default class FinalLookupFilter extends LightningElement {
     /** A related list: conditions may compare with this object's fields
      *  (the record the form edits), e.g. "the Contact's Account". */
     @api compareRecordObject;
+    /** The dialog's line above the conditions (a related list's own). */
+    @api logicHeading;
 
     get showLookupControls() {
         return !this.filterOnly && !this.conditionsOnly;

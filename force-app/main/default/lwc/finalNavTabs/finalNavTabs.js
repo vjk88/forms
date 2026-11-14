@@ -84,7 +84,7 @@ export default class FinalNavTabs extends LightningElement {
             return {
                 key: page.id || `pg_${index}`,
                 tabId: tabIdFor(page, index),
-                label: page.name || `Page ${index + 1}`,
+                label: page.name || `Step ${index + 1}`,
                 index,
                 cls: active ? 'tab active' : 'tab',
                 selected: active ? 'true' : 'false',

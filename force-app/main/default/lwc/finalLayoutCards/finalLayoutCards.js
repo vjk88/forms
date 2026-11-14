@@ -21,7 +21,7 @@ export const LAYOUT_GROUPS = [
     },
     {
         id: 'paginated',
-        title: 'Paginated / Nav-driven',
+        title: 'Stepped / Guided',
         hint: 'Steps, side panels, one section at a time',
         cards: [
             { layout: 'stepper', themeKey: 'dracula', name: 'Stepper' },
