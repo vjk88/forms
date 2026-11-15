@@ -1255,19 +1255,29 @@ export default class FinalElementRenderer extends LightningElement {
     /** rows × points, each cell pre-classed — the template stays dumb. */
     get matrixRows() {
         const picks = this.matrixPicksMap;
-        return (this.cfg.rows || []).map((r) => ({
-            key: r.value,
-            label: r.label || '(untitled)',
-            cells: this.matrixPoints.map((pt) => ({
-                key: `${r.value}:${pt.value}`,
-                row: r.value,
-                value: pt.value,
-                pointLabel: pt.label,
-                aria: `${r.label || r.value} — ${pt.label}`,
-                cls: picks[r.value] === pt.value ? 'mx-dot selected' : 'mx-dot',
-                ariaChecked: picks[r.value] === pt.value ? 'true' : 'false'
-            }))
-        }));
+        const points = this.matrixPoints;
+        return (this.cfg.rows || []).map((r) => {
+            // roving tabindex per row: the row's answer (or the first point
+            // when unanswered) is that row's one tab stop; arrows move within
+            const picked = picks[r.value];
+            const hasPick = points.some((p) => p.value === picked);
+            return {
+                key: r.value,
+                label: r.label || '(untitled)',
+                cells: points.map((pt, i) => ({
+                    key: `${r.value}:${pt.value}`,
+                    row: r.value,
+                    value: pt.value,
+                    pointLabel: pt.label,
+                    aria: `${r.label || r.value} — ${pt.label}`,
+                    cls: picked === pt.value ? 'mx-dot selected' : 'mx-dot',
+                    ariaChecked: picked === pt.value ? 'true' : 'false',
+                    tabIndex: (hasPick ? picked === pt.value : i === 0)
+                        ? '0'
+                        : '-1'
+                }))
+            };
+        });
     }
 
     get hasMatrixRows() {
@@ -1277,9 +1287,56 @@ export default class FinalElementRenderer extends LightningElement {
     handleMatrixPick(event) {
         const row = event.currentTarget.dataset.row;
         const value = Number(event.currentTarget.dataset.value);
+        this.commitMatrixPick(row, value);
+    }
+
+    /** One save path for a row's answer (click and arrow keys both use it). */
+    commitMatrixPick(row, value) {
         // REASSIGN (never mutate) — declared-field repaint law
         this._matrixPicks = { ...this.matrixPicksMap, [row]: value };
         this.dispatchValue(this._matrixPicks);
+    }
+
+    /** Arrow/Home/End inside ONE matrix row (each row is its own radiogroup).
+     *  Mirrors handleScaleKey: arrows select AND move focus. */
+    handleMatrixKey(event) {
+        const keys = [
+            'ArrowLeft',
+            'ArrowRight',
+            'ArrowUp',
+            'ArrowDown',
+            'Home',
+            'End'
+        ];
+        if (!keys.includes(event.key)) {
+            return;
+        }
+        event.preventDefault();
+        const rowEl = event.currentTarget;
+        const row = rowEl.dataset.row;
+        const points = this.matrixPoints;
+        const cur = points.findIndex(
+            (p) => p.value === this.matrixPicksMap[row]
+        );
+        let idx;
+        if (event.key === 'Home') {
+            idx = 0;
+        } else if (event.key === 'End') {
+            idx = points.length - 1;
+        } else if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') {
+            idx = cur < 0 ? 0 : Math.max(0, cur - 1);
+        } else {
+            idx = cur < 0 ? 0 : Math.min(points.length - 1, cur + 1);
+        }
+        const next = points[idx].value;
+        this.commitMatrixPick(row, next);
+        // move focus with the selection, inside this row only
+        Promise.resolve().then(() => {
+            const btn = rowEl.querySelector(`button[data-value="${next}"]`);
+            if (btn) {
+                btn.focus();
+            }
+        });
     }
 
     // ---- choice family (S3: yesNo · imageChoice · chips/cards optionStyle) ----
@@ -1631,6 +1688,11 @@ export default class FinalElementRenderer extends LightningElement {
             cls += ' field-readonly';
         }
         return cls;
+    }
+
+    /** aria-required for custom radiogroups; null drops the attribute. */
+    get ariaRequired() {
+        return this.el.required ? 'true' : null;
     }
 
     /** labelStyle: default | uppercase | muted (catalog §1). */

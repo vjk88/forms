@@ -444,6 +444,7 @@
                 class="choice-row likert-row"
                 role="radiogroup"
                 aria-label={el.label}
+                aria-required={ariaRequired}
                 onkeydown={handleScaleKey}
             >
                 <template for:each={likertItems} for:item="item">
@@ -582,6 +583,9 @@
                             class="mx-row"
                             role="radiogroup"
                             aria-label={r.label}
+                            aria-required={ariaRequired}
+                            data-row={r.key}
+                            onkeydown={handleMatrixKey}
                         >
                             <span class="mx-statement">{r.label}</span>
                             <template for:each={r.cells} for:item="c">
@@ -594,6 +598,7 @@
                                     aria-label={c.aria}
                                     data-row={c.row}
                                     data-value={c.value}
+                                    tabindex={c.tabIndex}
                                     onclick={handleMatrixPick}
                                 >
                                     <span
@@ -649,6 +654,7 @@
                 class="scale-row yn-row"
                 role="radiogroup"
                 aria-label={el.label}
+                aria-required={ariaRequired}
             >
                 <template for:each={yesNoItems} for:item="item">
                     <button
@@ -758,6 +764,7 @@
                     class="scale-row"
                     role="radiogroup"
                     aria-label={scaleGroupAriaLabel}
+                    aria-required={ariaRequired}
                     onkeydown={handleScaleKey}
                 >
                     <template for:each={scaleItems} for:item="item">
