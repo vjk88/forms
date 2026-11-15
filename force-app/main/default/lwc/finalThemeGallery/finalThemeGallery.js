@@ -69,6 +69,15 @@ export default class FinalThemeGallery extends LightningElement {
      * (the creation gallery): previews draw a new form's start.
      */
     @api formLayout = null;
+    /**
+     * Hide the "Preview in" row: the creation flow picks the layout with its
+     * own tiles above the gallery and passes it in as `layout`.
+     */
+    @api hideLayoutSwitch = false;
+
+    get showLayoutSwitch() {
+        return !this.hideLayoutSwitch;
+    }
 
     @track _previewKey = '';
     /** Local pick (an @api prop must not be reassigned); wins over the prop. */

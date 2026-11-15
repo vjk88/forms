@@ -79,92 +79,6 @@
             </div>
         </template>
 
-        <!-- ============================ GALLERY (Form path) ============================ -->
-        <template lwc:elseif={isLayoutStep}>
-            <header class="g-head">
-                <div>
-                    <lightning-button
-                        class="d-back"
-                        variant="base"
-                        icon-name="utility:back"
-                        label="Back"
-                        onclick={handleBackFromLayout}
-                    ></lightning-button>
-                    <h1 class="g-title">Create a form</h1>
-                    <p class="g-sub">
-                        Pick a layout and make it your own. Form templates
-                        arrive next.
-                    </p>
-                </div>
-                <lightning-button-icon
-                    class="g-close"
-                    icon-name="utility:close"
-                    variant="bare"
-                    size="large"
-                    alternative-text="Close"
-                    title="Close"
-                    onclick={handleClose}
-                ></lightning-button-icon>
-            </header>
-
-            <!-- Entry mode toggle. A freeform reached this screen from
-                 its OWN template shelf, so offering 'Form templates' here
-                 would send it back into the form path. -->
-            <c-final-button-group
-                lwc:if={showEntryToggle}
-                class="entry-bar"
-                label="How to start"
-                options={entryOptions}
-                value={entryValue}
-                onchange={handleEntry}
-            ></c-final-button-group>
-
-            <!-- Mode A: form templates (placeholder — surveys moved to their
-                 own path behind the type chooser, owner 2026-07-31) -->
-            <div lwc:if={isTemplateMode} class="tpl-shelf">
-                <section class="lg-group">
-                    <div class="lg-head">
-                        <h2 class="lg-title">Form templates</h2>
-                        <span class="lg-hint"
-                            >coming next; for now, start from a layout</span
-                        >
-                    </div>
-                    <p class="lg-hint">
-                        Looking for surveys? Go back and pick
-                        <b>Survey</b> — templates and themes live there.
-                    </p>
-                </section>
-            </div>
-
-            <!-- Mode B: layouts, grouped -->
-            <div lwc:else class="scratch">
-                <template for:each={layoutGroups} for:item="grp">
-                    <section key={grp.id} class="lg-group">
-                        <div class="lg-head">
-                            <h2 class="lg-title">{grp.title}</h2>
-                            <span class="lg-hint">{grp.hint}</span>
-                        </div>
-                        <div class="card-grid">
-                            <template for:each={grp.cards} for:item="l">
-                                <c-final-layout-card
-                                    key={l.key}
-                                    layout={l.layout}
-                                    pane-flow={l.paneFlow}
-                                    theme-key={l.themeKey}
-                                    label={l.name}
-                                    description={l.description}
-                                    full-bleed={l.fullBleed}
-                                    max-width={l.maxWidth}
-                                    selected={l.selected}
-                                    onselect={handleLayoutSelect}
-                                ></c-final-layout-card>
-                            </template>
-                        </div>
-                    </section>
-                </template>
-            </div>
-        </template>
-
         <!-- ============ SURVEY TEMPLATES (Survey path, screen 1) ============ -->
         <template lwc:elseif={isTemplatesStep}>
             <header class="d-head">
@@ -216,14 +130,14 @@
             </section>
         </template>
 
-        <!-- ======================= THEME STEP ======================= -->
+        <!-- ============== LOOK: layout + theme on one page ============== -->
         <template lwc:elseif={isThemeStep}>
             <header class="d-head">
                 <lightning-button
                     class="d-back"
                     variant="base"
                     icon-name="utility:back"
-                    label="Back"
+                    label={lookBackLabel}
                     onclick={handleBackFromTheme}
                 ></lightning-button>
                 <lightning-button-icon
@@ -238,15 +152,40 @@
             </header>
 
             <div class="thm-head">
-                <h1 class="thm-title">Pick a theme</h1>
-                <p class="thm-sub">{themeSub}</p>
+                <h1 class="thm-title">Pick a layout and theme</h1>
+                <p class="thm-sub">{lookSub}</p>
             </div>
 
+            <section class="look-layouts">
+                <div class="look-label">
+                    <h2 class="look-title">Layout</h2>
+                    <span class="look-hint"
+                        >Every theme preview below uses this layout.</span
+                    >
+                </div>
+                <div class="look-tiles">
+                    <c-final-picture-choice
+                        label="Layout"
+                        columns="8"
+                        options={layoutTiles}
+                        value={chosenLayoutKey}
+                        onchange={handleLayoutTile}
+                    ></c-final-picture-choice>
+                </div>
+                <p lwc:if={isSurveyType} class="look-note">
+                    <b>Surveys start as One at a time:</b> one question per
+                    screen, the way most people answer surveys. Pick another
+                    layout here, or change it later in Design.
+                </p>
+            </section>
+
+            <h2 class="look-title look-title--theme">Theme</h2>
             <c-final-theme-gallery
-                layout={themeGalleryLayout}
-                pane-flow={themeGalleryPaneFlow}
+                layout={chosenLayout}
+                pane-flow={chosenPaneFlow}
                 form-layout={themeGalleryFormLayout}
                 selected-theme-key={chosenThemeKey}
+                hide-layout-switch
                 onthemeselect={handleThemeSelect}
             ></c-final-theme-gallery>
         </template>
@@ -318,20 +257,34 @@
 
                     <div class="d-section-label">Appearance</div>
 
-                    <lightning-combobox
-                        class="d-input d-select"
-                        label="Layout"
-                        options={layoutComboOptions}
-                        value={layoutValue}
-                        onchange={handleLayoutDropdown}
-                    ></lightning-combobox>
+                    <div class="d-theme-field">
+                        <span class="d-field-label">Layout</span>
+                        <button
+                            class="d-theme-chip d-layout-chip"
+                            type="button"
+                            aria-label={layoutChipAria}
+                            onclick={handleChangeLook}
+                        >
+                            <span class="d-theme-name"
+                                >{chosenLayoutLabel}</span
+                            >
+                            <span class="d-theme-change">
+                                <lightning-icon
+                                    icon-name="utility:layout"
+                                    size="xx-small"
+                                ></lightning-icon>
+                                Change
+                            </span>
+                        </button>
+                    </div>
 
                     <div class="d-theme-field">
                         <span class="d-field-label">Theme</span>
                         <button
                             class="d-theme-chip"
                             type="button"
-                            onclick={handleChangeTheme}
+                            aria-label={themeChipAria}
+                            onclick={handleChangeLook}
                         >
                             <span class="d-theme-name">{chosenThemeLabel}</span>
                             <span class="d-theme-change">
@@ -462,12 +415,36 @@
                         it later in the builder.
                     </p>
 
+                    <div class="d-section-label">Appearance</div>
+
+                    <div class="d-theme-field">
+                        <span class="d-field-label">Layout</span>
+                        <button
+                            class="d-theme-chip d-layout-chip"
+                            type="button"
+                            aria-label={layoutChipAria}
+                            onclick={handleChangeLook}
+                        >
+                            <span class="d-theme-name"
+                                >{chosenLayoutLabel}</span
+                            >
+                            <span class="d-theme-change">
+                                <lightning-icon
+                                    icon-name="utility:layout"
+                                    size="xx-small"
+                                ></lightning-icon>
+                                Change
+                            </span>
+                        </button>
+                    </div>
+
                     <div class="d-theme-field">
                         <span class="d-field-label">Theme</span>
                         <button
                             class="d-theme-chip"
                             type="button"
-                            onclick={handleChangeTheme}
+                            aria-label={themeChipAria}
+                            onclick={handleChangeLook}
                         >
                             <span class="d-theme-name">{chosenThemeLabel}</span>
                             <span class="d-theme-change">
@@ -567,12 +544,36 @@
                         questions.
                     </p>
 
+                    <div class="d-section-label">Appearance</div>
+
+                    <div class="d-theme-field">
+                        <span class="d-field-label">Layout</span>
+                        <button
+                            class="d-theme-chip d-layout-chip"
+                            type="button"
+                            aria-label={layoutChipAria}
+                            onclick={handleChangeLook}
+                        >
+                            <span class="d-theme-name"
+                                >{chosenLayoutLabel}</span
+                            >
+                            <span class="d-theme-change">
+                                <lightning-icon
+                                    icon-name="utility:layout"
+                                    size="xx-small"
+                                ></lightning-icon>
+                                Change
+                            </span>
+                        </button>
+                    </div>
+
                     <div class="d-theme-field">
                         <span class="d-field-label">Theme</span>
                         <button
                             class="d-theme-chip"
                             type="button"
-                            onclick={handleChangeTheme}
+                            aria-label={themeChipAria}
+                            onclick={handleChangeLook}
                         >
                             <span class="d-theme-name">{chosenThemeLabel}</span>
                             <span class="d-theme-change">

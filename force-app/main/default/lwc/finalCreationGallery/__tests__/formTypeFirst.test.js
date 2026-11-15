@@ -61,35 +61,195 @@ describe('type-first creation flow', () => {
         expect(el.shadowRoot.querySelector('.card-grid')).toBeNull();
     });
 
-    it('Form goes to the layout gallery; Survey goes to templates', async () => {
+    it('Form opens the layout + theme page on Scroll, with no templates; Survey goes to templates', async () => {
         const el = await mount();
         [...el.shadowRoot.querySelectorAll('.type-card')]
             .find((c) => c.querySelector('.type-name').textContent === 'Form')
             .click();
         await flush();
-        expect(el.shadowRoot.querySelector('.card-grid')).not.toBeNull();
+        const tiles = el.shadowRoot.querySelector('c-final-picture-choice');
+        expect(tiles.value).toBe('scroll');
+        expect(tiles.options.map((o) => o.value)).toEqual([
+            'scroll',
+            'stepper',
+            'splitHero',
+            'splitHero:oneAtATime',
+            'rail',
+            'oneAtATime',
+            'tabs',
+            'accordion'
+        ]);
+        tiles.options.forEach((o) => expect(o.drawing).toBeTruthy());
+        const gallery = el.shadowRoot.querySelector('c-final-theme-gallery');
+        expect(gallery.layout).toBe('scroll');
+        expect(gallery.hideLayoutSwitch).toBe(true);
+        // Forms have no templates (owner 2026-11-14), and say no survey note
+        expect(el.shadowRoot.textContent).not.toMatch(/Form templates/);
+        expect(el.shadowRoot.querySelector('.look-note')).toBeNull();
 
         const el2 = await mount();
         byText(el2.shadowRoot, '.type-card', 'Survey').click();
         await flush();
         const tpls = el2.shadowRoot.querySelectorAll('.tpl-grid .tpl-card');
         expect(tpls.length).toBe(4);
-        // no layout gallery anywhere on the survey path
-        expect(el2.shadowRoot.querySelector('.card-grid')).toBeNull();
     });
 
-    it('survey: template → theme → details → create carries theme + optional object', async () => {
+    it('a layout tile re-previews every theme in that layout', async () => {
+        const el = await mount();
+        byText(el.shadowRoot, '.type-card', 'Form').click();
+        await flush();
+        el.shadowRoot.querySelector('c-final-picture-choice').dispatchEvent(
+            new CustomEvent('change', {
+                detail: { value: 'splitHero:oneAtATime' }
+            })
+        );
+        await flush();
+        const gallery = el.shadowRoot.querySelector('c-final-theme-gallery');
+        expect(gallery.layout).toBe('splitHero');
+        expect(gallery.paneFlow).toBe('oneAtATime');
+        expect(
+            el.shadowRoot.querySelector('c-final-picture-choice').value
+        ).toBe('splitHero:oneAtATime');
+    });
+
+    it('survey: picks another layout, Details names it, Change comes back', async () => {
+        const el = await mount();
+        byText(el.shadowRoot, '.type-card', 'Survey').click();
+        await flush();
+        el.shadowRoot.querySelector('.tpl-card[data-key="nps"]').click();
+        await flush();
+        el.shadowRoot
+            .querySelector('c-final-picture-choice')
+            .dispatchEvent(
+                new CustomEvent('change', { detail: { value: 'stepper' } })
+            );
+        await flush();
+        const gallery = el.shadowRoot.querySelector('c-final-theme-gallery');
+        expect(gallery.layout).toBe('stepper');
+        // off the default, the previews draw a new form's start
+        expect(gallery.formLayout).toBeNull();
+        gallery.dispatchEvent(
+            new CustomEvent('themeselect', { detail: { themeKey: 'nordic' } })
+        );
+        await flush();
+        const chip = el.shadowRoot.querySelector('.d-layout-chip');
+        expect(chip.textContent).toContain('Stepper');
+        el.shadowRoot.querySelector('.cg-create').click();
+        await flush();
+        expect(createSurveyFromTemplate).toHaveBeenCalledWith(
+            expect.objectContaining({
+                templateKey: 'nps',
+                layoutType: 'stepper',
+                paneFlow: null
+            })
+        );
+    });
+
+    it('Change on the Layout chip returns to the look page, keeping the pick', async () => {
+        const el = await mount();
+        byText(el.shadowRoot, '.type-card', 'Form').click();
+        await flush();
+        el.shadowRoot
+            .querySelector('c-final-picture-choice')
+            .dispatchEvent(
+                new CustomEvent('change', { detail: { value: 'tabs' } })
+            );
+        await flush();
+        el.shadowRoot.querySelector('c-final-theme-gallery').dispatchEvent(
+            new CustomEvent('themeselect', {
+                detail: { themeKey: 'nordic' }
+            })
+        );
+        await flush();
+        expect(
+            el.shadowRoot.querySelector('.d-layout-chip').textContent
+        ).toContain('Tabbed');
+        // the old Layout dropdown is gone
+        expect(el.shadowRoot.querySelector('lightning-combobox')).toBeNull();
+        el.shadowRoot.querySelector('.d-layout-chip').click();
+        await flush();
+        expect(
+            el.shadowRoot.querySelector('c-final-picture-choice').value
+        ).toBe('tabs');
+    });
+
+    it('after Change, Back returns to Details with both picks kept', async () => {
+        const el = await mount();
+        byText(el.shadowRoot, '.type-card', 'Form').click();
+        await flush();
+        el.shadowRoot.querySelector('c-final-theme-gallery').dispatchEvent(
+            new CustomEvent('themeselect', {
+                detail: { themeKey: 'nordic' }
+            })
+        );
+        await flush();
+        const layoutChip = el.shadowRoot.querySelector('.d-layout-chip');
+        // the chip names what it changes for screen readers
+        expect(layoutChip.getAttribute('aria-label')).toBe(
+            'Layout: Scroll. Change'
+        );
+        layoutChip.click();
+        await flush();
+        const back = el.shadowRoot.querySelector('.d-back');
+        expect(back.label).toBe('Back to details');
+        el.shadowRoot
+            .querySelector('c-final-picture-choice')
+            .dispatchEvent(
+                new CustomEvent('change', { detail: { value: 'rail' } })
+            );
+        await flush();
+        back.click();
+        await flush();
+        expect(
+            el.shadowRoot.querySelector('.d-layout-chip').textContent
+        ).toContain('Side Nav');
+        expect(
+            [...el.shadowRoot.querySelectorAll('.d-theme-chip')].map((c) =>
+                c.getAttribute('aria-label')
+            )
+        ).toContain('Theme: Nordic Minimalist. Change');
+    });
+
+    it('choosing a type again resets the layout to that type default', async () => {
         const el = await mount();
         byText(el.shadowRoot, '.type-card', 'Survey').click();
         await flush();
         el.shadowRoot.querySelector('.tpl-card[data-key="csat"]').click();
         await flush();
-        // theme step renders the gallery pinned to the survey flow
+        expect(
+            el.shadowRoot.querySelector('c-final-picture-choice').value
+        ).toBe('oneAtATime');
+        // back to templates, back to types, then Form
+        el.shadowRoot.querySelector('.d-back').click();
+        await flush();
+        el.shadowRoot.querySelector('.d-back').click();
+        await flush();
+        byText(el.shadowRoot, '.type-card', 'Form').click();
+        await flush();
+        expect(
+            el.shadowRoot.querySelector('c-final-picture-choice').value
+        ).toBe('scroll');
+    });
+
+    it('survey: template → look (One at a time, said so) → details → create carries layout, theme + optional object', async () => {
+        const el = await mount();
+        byText(el.shadowRoot, '.type-card', 'Survey').click();
+        await flush();
+        el.shadowRoot.querySelector('.tpl-card[data-key="csat"]').click();
+        await flush();
+        // the look page opens on One at a time and says why
         const themeGallery = el.shadowRoot.querySelector(
             'c-final-theme-gallery'
         );
         expect(themeGallery).not.toBeNull();
         expect(themeGallery.layout).toBe('oneAtATime');
+        expect(themeGallery.formLayout).toEqual({
+            type: 'oneAtATime',
+            options: {}
+        });
+        expect(el.shadowRoot.querySelector('.look-note').textContent).toContain(
+            'Surveys start as One at a time'
+        );
         themeGallery.dispatchEvent(
             new CustomEvent('themeselect', {
                 detail: { themeKey: 'editorialIvory' }
@@ -106,7 +266,9 @@ describe('type-first creation flow', () => {
             templateKey: 'csat',
             surveyName: null,
             themeName: 'editorialIvory',
-            objectApiName: null
+            objectApiName: null,
+            layoutType: 'oneAtATime',
+            paneFlow: null
         });
         // done screen speaks survey
         expect(

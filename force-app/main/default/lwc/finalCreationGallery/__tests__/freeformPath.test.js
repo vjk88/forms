@@ -2,8 +2,8 @@ import { createElement } from 'lwc';
 import FinalCreationGallery from 'c/finalCreationGallery';
 import createFreeformFromTemplate from '@salesforce/apex/FinalFormCreateController.createFreeformFromTemplate';
 
-// The Freeform creation path (FREEFORM_SPEC D5): template -> layout -> theme
-// -> name, and NO object step anywhere. The object step is the thing that
+// The Freeform creation path (FREEFORM_SPEC D5): template -> layout + theme
+// (one page, owner 2026-11-14) -> name, and NO object step anywhere. The object step is the thing that
 // must never appear: a Freeform has no target object, and asking for one
 // would be the first lie the product tells.
 jest.mock(
@@ -48,7 +48,7 @@ function typeCard(el, name) {
     );
 }
 
-/** template -> layout -> theme, leaving the details screen on screen. */
+/** template -> layout tile + theme, leaving the details screen on screen. */
 async function walkToDetails(el, templateKey = 'blank') {
     typeCard(el, 'Freeform').click();
     await flush();
@@ -69,9 +69,9 @@ async function walkToDetails(el, templateKey = 'blank') {
     template.click();
     await flush();
     el.shadowRoot
-        .querySelector('c-final-layout-card')
+        .querySelector('c-final-picture-choice')
         .dispatchEvent(
-            new CustomEvent('select', { detail: { layout: 'stepper' } })
+            new CustomEvent('change', { detail: { value: 'stepper' } })
         );
     await flush();
     el.shadowRoot
@@ -110,16 +110,20 @@ describe('freeform creation path', () => {
         ).not.toContain('CSAT Pulse');
     });
 
-    it('goes template -> layout -> theme, unlike a survey', async () => {
+    it('goes template -> layout + theme page, opening on Scroll', async () => {
         const el = await mount();
         typeCard(el, 'Freeform').click();
         await flush();
         el.shadowRoot.querySelector('.tpl-grid .tpl-card').click();
         await flush();
-        // a survey would be on the theme step by now; a freeform picks a layout
         expect(
-            el.shadowRoot.querySelector('c-final-layout-card')
-        ).not.toBeNull();
+            el.shadowRoot.querySelector('c-final-picture-choice').value
+        ).toBe('scroll');
+        expect(
+            el.shadowRoot.querySelector('c-final-theme-gallery').layout
+        ).toBe('scroll');
+        // the survey-only note stays off a freeform
+        expect(el.shadowRoot.querySelector('.look-note')).toBeNull();
     });
 
     it('never asks for a Salesforce object', async () => {

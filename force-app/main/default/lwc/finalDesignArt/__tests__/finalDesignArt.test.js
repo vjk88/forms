@@ -1,4 +1,10 @@
-import { designArt, PICTURE_KEYS, SWITCH_KEYS } from 'c/finalDesignArt';
+import {
+    designArt,
+    layoutArt,
+    PICTURE_KEYS,
+    SWITCH_KEYS
+} from 'c/finalDesignArt';
+import { LAYOUT_GROUPS } from 'c/finalLayoutCards';
 import { flattenControls } from 'c/finalDesignRegistry';
 import { MESH_SEEDS } from 'c/finalThemeEngine';
 
@@ -57,5 +63,32 @@ describe('c/finalDesignArt', () => {
             expect(control(key).type).toBe('select');
             expect(designArt(key, 'medium')).toBeNull();
         }
+    });
+});
+
+describe('c/finalDesignArt: layoutArt', () => {
+    const KEYS = LAYOUT_GROUPS.flatMap((g) =>
+        g.cards.map((c) => {
+            return c.paneFlow ? `${c.layout}:${c.paneFlow}` : c.layout;
+        })
+    );
+
+    it.each(KEYS)('%s has a drawing in the tile box', (key) => {
+        const art = layoutArt(key);
+        expect(art.viewBox).toBe('0 0 56 36');
+        expect(art.shapes.length).toBeGreaterThan(2);
+        for (const s of art.shapes) {
+            expect(['rect', 'circle', 'path']).toContain(s.t);
+            expect(s.c).toMatch(/^pa-/);
+        }
+    });
+
+    it('every layout draws differently', () => {
+        const drawn = KEYS.map((k) => JSON.stringify(layoutArt(k).shapes));
+        expect(new Set(drawn).size).toBe(KEYS.length);
+    });
+
+    it('an unknown layout has no drawing', () => {
+        expect(layoutArt('nope')).toBeNull();
     });
 });
