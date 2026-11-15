@@ -48,65 +48,60 @@
     color: var(--c-studio-text-weak);
 }
 
-/* ------------------------------------------------------------ entry toggle */
-.entry-bar {
-    margin-bottom: var(--c-studio-space-6);
-}
-
-/* Template mode placeholder */
-.tpl-empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--c-studio-space-3);
-    text-align: center;
-    background: var(--c-studio-surface);
-    border: 1px dashed var(--c-studio-border-strong);
-    border-radius: var(--c-studio-radius-md);
-    padding: var(--c-studio-space-8) var(--c-studio-space-5);
-}
-.tpl-empty-icon {
-    --slds-c-icon-color-foreground-default: var(--c-studio-text-weak);
-}
-.tpl-empty-title {
-    margin: var(--c-studio-space-2) 0 0;
-    font-size: var(--c-studio-fs-title);
-    font-weight: var(--c-studio-fw-strong);
-}
-.tpl-empty-sub {
-    margin: 0;
-    color: var(--c-studio-text-weak);
-}
-
-/* ------------------------------------------------ scratch: grouped layouts */
+/* ------------------------------------------- survey/freeform template shelf */
 .lg-group {
     margin-bottom: var(--c-studio-space-7);
-}
-.lg-head {
-    display: flex;
-    align-items: baseline;
-    gap: var(--c-studio-space-3);
-    margin-bottom: var(--c-studio-space-4);
-}
-.lg-title {
-    margin: 0;
-    font-size: var(--c-studio-fs-subhead);
-    font-weight: var(--c-studio-fw-strong);
-}
-.lg-hint {
-    font-size: var(--c-studio-fs-small);
-    color: var(--c-studio-text-weak);
-}
-
-.card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: var(--c-studio-space-5);
 }
 
 /* -------------------------------------------------------- theme step head */
 .thm-head {
     margin-bottom: var(--c-studio-space-5);
+}
+
+/* ------------------------------- look page: layout tiles over the themes */
+.look-layouts {
+    margin-bottom: var(--c-studio-space-6);
+    padding-bottom: var(--c-studio-space-5);
+    border-bottom: 1px solid var(--c-studio-border-subtle);
+}
+.look-label {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: var(--c-studio-space-3);
+    margin: 0 0 var(--c-studio-space-3);
+}
+.look-title {
+    margin: 0;
+    font-size: var(--c-studio-fs-subhead);
+    font-weight: var(--c-studio-fw-strong);
+    color: var(--c-studio-text);
+}
+.look-title--theme {
+    margin-bottom: var(--c-studio-space-3);
+}
+.look-hint {
+    font-size: var(--c-studio-fs-body);
+    font-weight: var(--c-studio-fw-regular);
+    color: var(--c-studio-text-weak);
+}
+/* the named container finalPictureChoice measures for one row of eight */
+.look-tiles {
+    container: pc-row / inline-size;
+    width: 100%;
+}
+.look-note {
+    margin: var(--c-studio-space-3) 0 0;
+    padding: var(--c-studio-space-3) var(--c-studio-space-4);
+    font-size: var(--c-studio-fs-body);
+    color: var(--c-studio-text-weak);
+    background: var(--c-studio-surface-subtle);
+    border: 1px solid var(--c-studio-border-subtle);
+    border-radius: var(--c-studio-radius-md);
+}
+.look-note b {
+    font-weight: var(--c-studio-fw-strong);
+    color: var(--c-studio-text);
 }
 
 /* ----------------------------------------------------------------- detail */

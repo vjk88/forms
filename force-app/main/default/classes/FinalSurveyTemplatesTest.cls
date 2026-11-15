@@ -8,6 +8,8 @@ private class FinalSurveyTemplatesTest {
             'csat',
             null,
             null,
+            null,
+            null,
             null
         );
         Test.stopTest();
@@ -49,6 +51,8 @@ private class FinalSurveyTemplatesTest {
             'event',
             null,
             null,
+            null,
+            null,
             null
         );
         Test.stopTest();
@@ -77,10 +81,14 @@ private class FinalSurveyTemplatesTest {
             'csat',
             null,
             null,
+            null,
+            null,
             null
         );
         FinalFormCreateController.createSurveyFromTemplate(
             'csat',
+            null,
+            null,
             null,
             null,
             null
@@ -101,6 +109,8 @@ private class FinalSurveyTemplatesTest {
                 'nope',
                 null,
                 null,
+                null,
+                null,
                 null
             );
         } catch (Exception e) {
@@ -115,6 +125,8 @@ private class FinalSurveyTemplatesTest {
         Map<String, Object> res = FinalFormCreateController.createSurveyFromTemplate(
             'nps',
             '  Quarterly Pulse  ',
+            null,
+            null,
             null,
             null
         );
@@ -138,6 +150,8 @@ private class FinalSurveyTemplatesTest {
             'blank',
             null,
             null,
+            null,
+            null,
             null
         );
         Test.stopTest();
@@ -157,7 +171,9 @@ private class FinalSurveyTemplatesTest {
             'csat',
             null,
             'editorialIvory',
-            'Contact'
+            'Contact',
+            null,
+            null
         );
         Test.stopTest();
         Form__c form = [
@@ -197,7 +213,9 @@ private class FinalSurveyTemplatesTest {
                 'csat',
                 null,
                 null,
-                'No_Such_Object__c'
+                'No_Such_Object__c',
+                null,
+                null
             );
         } catch (Exception e) {
             threw = true;
@@ -212,6 +230,8 @@ private class FinalSurveyTemplatesTest {
             'blank',
             '  Lunch Feedback  ',
             null,
+            null,
+            null,
             null
         );
         Test.stopTest();
@@ -222,5 +242,112 @@ private class FinalSurveyTemplatesTest {
         ];
         System.assertEquals('Lunch Feedback', form.Name, 'typed name, trimmed');
         System.assertEquals('Survey', form.Form_Type__c, 'survey typed');
+    }
+
+    private static Map<String, Object> layoutOf(Map<String, Object> res) {
+        Form_Version__c v = [
+            SELECT Spec_JSON__c
+            FROM Form_Version__c
+            WHERE Id = :(Id) res.get('versionId')
+        ];
+        Map<String, Object> spec = (Map<String, Object>) JSON.deserializeUntyped(
+            v.Spec_JSON__c
+        );
+        return (Map<String, Object>) spec.get('layout');
+    }
+
+    @isTest
+    static void defaultLayoutKeepsTheSurveyBlock() {
+        // owner 2026-11-14: surveys still start as One at a time, written
+        // exactly as before (no width or zones), whether the client sends
+        // the default or nothing
+        Map<String, Object> sent = FinalFormCreateController.createSurveyFromTemplate(
+            'csat',
+            null,
+            null,
+            null,
+            'oneAtATime',
+            null
+        );
+        Map<String, Object> blank = FinalFormCreateController.createSurveyFromTemplate(
+            'csat',
+            null,
+            null,
+            null,
+            null,
+            null
+        );
+        for (
+            Map<String, Object> layout : new List<Map<String, Object>>{
+                layoutOf(sent),
+                layoutOf(blank)
+            }
+        ) {
+            System.assertEquals(
+                'oneAtATime',
+                layout.get('type'),
+                'default layout'
+            );
+            System.assert(
+                !layout.containsKey('maxWidth'),
+                'unchanged survey block'
+            );
+        }
+    }
+
+    @isTest
+    static void pickedLayoutGetsTheNewFormBlock() {
+        Map<String, Object> layout = layoutOf(
+            FinalFormCreateController.createSurveyFromTemplate(
+                'nps',
+                null,
+                null,
+                null,
+                'stepper',
+                null
+            )
+        );
+        System.assertEquals('stepper', layout.get('type'), 'picked layout');
+        System.assertEquals('medium', layout.get('maxWidth'), 'new-form width');
+
+        Map<String, Object> split = layoutOf(
+            FinalFormCreateController.createSurveyFromTemplate(
+                'nps',
+                null,
+                null,
+                null,
+                'splitHero',
+                'oneAtATime'
+            )
+        );
+        Map<String, Object> options = (Map<String, Object>) split.get(
+            'options'
+        );
+        System.assertEquals('splitHero', split.get('type'), 'split layout');
+        System.assertEquals(
+            'oneAtATime',
+            options.get('paneFlow'),
+            'conversational pane'
+        );
+        System.assertEquals('wide', split.get('maxWidth'), 'split starts wide');
+    }
+
+    @isTest
+    static void paneFlowOffSplitHeroRejected() {
+        Boolean threw = false;
+        try {
+            FinalFormCreateController.createSurveyFromTemplate(
+                'csat',
+                null,
+                null,
+                null,
+                'stepper',
+                'oneAtATime'
+            );
+        } catch (AuraHandledException e) {
+            threw = true;
+        }
+        System.assert(threw, 'pane flow belongs to splitHero only');
+        System.assertEquals(0, [SELECT COUNT() FROM Form__c], 'nothing saved');
     }
 }

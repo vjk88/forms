@@ -6,32 +6,39 @@ import createFreeformFromTemplate from '@salesforce/apex/FinalFormCreateControll
 import { buildSampleSpec } from 'c/finalSampleSpec';
 import { listBuiltinThemes } from 'c/finalThemeCatalog';
 import { LAYOUT_GROUPS } from 'c/finalLayoutCards';
-import { newLayoutDefaults } from 'c/finalLayoutRegistry';
+import { layoutArt } from 'c/finalDesignArt';
+import { studioUrl } from 'c/finalStudioLink';
 
-// A new survey's layout block, as createSurveyFromTemplate writes it
+// A new survey's One at a time block, exactly as createSurveyFromTemplate
+// writes it when the default is kept (any other layout gets the form block)
 const SURVEY_LAYOUT = Object.freeze({
     type: 'oneAtATime',
     options: Object.freeze({})
 });
-import { studioUrl } from 'c/finalStudioLink';
+
+/** The layout each type opens on (owner 2026-11-14). */
+const DEFAULT_LAYOUT = {
+    form: 'scroll',
+    survey: 'oneAtATime',
+    freeform: 'scroll'
+};
 
 /**
  * finalCreationGallery — the guided creation flow, replicating the OLD
  * formCreationGallery's UI exactly (owner 2026-07-05) with the REBUILD's
  * layout + theme rosters:
  *
- * Screen 1 = entry toggle ("Start from a template" placeholder | "Start from
- * scratch" default) over the GROUPED layout gallery (Continuous flow /
- * Paginated·Nav-driven / Tabbed & Accordion — old-style short card names).
- * Then theme step (finalThemeGallery) → detail screen: config card left
- * (Form name / Primary object / APPEARANCE / Layout dropdown / Theme chip +
- * Change) beside the LIVE PREVIEW card (finalFormViewer on an inline
- * c/finalSampleSpec, icon device toggle at real device widths).
+ * One page picks the layout and the theme (owner 2026-11-14,
+ * IMPL_PLAN_CREATION_LAYOUT_THEME): layout picture tiles over the theme
+ * gallery, whose previews follow the tiles. Clicking a theme opens the detail
+ * screen: config card left (name / object / APPEARANCE: Layout and Theme
+ * chips, each with Change) beside the LIVE PREVIEW card (finalFormViewer on an
+ * inline c/finalSampleSpec, device toggle at real device widths).
  * Emits `formcreated` { formId, versionId } + `close`.
  */
 
-// The 8 step-1 layout cards live in c/finalLayoutCards (shared with the
-// Design panel's layout picker).
+// The 8 layout choices live in c/finalLayoutCards (shared with the Design
+// panel's layout picker).
 
 // Real device widths (old gallery: the frame renders at device width and the
 // form reflows via its own container queries — no scale transform).
@@ -76,8 +83,7 @@ const SURVEY_TEMPLATES = [
     }
 ];
 
-/** The Freeform shelf (FREEFORM_SPEC D5). Unlike surveys, a freeform picks
- *  its layout after selecting a template. */
+/** The Freeform shelf (FREEFORM_SPEC D5). */
 const FREEFORM_TEMPLATES = [
     {
         key: 'blank',
@@ -112,14 +118,16 @@ const FREEFORM_TEMPLATES = [
 ];
 
 export default class FinalCreationGallery extends LightningElement {
-    // type → (form) layout → theme → details → done
-    // type → (survey) templates → theme → surveyDetails → done
-    // (owner 2026-07-31: ask form type FIRST; surveys never pick a
-    // layout — templates and themes only)
+    // type → (form) look → details → done
+    // type → (survey | freeform) templates → look → details → done
+    // "look" = the one page for layout and theme (step key 'theme').
+    // (owner 2026-07-31: ask form type FIRST; 2026-11-14: Forms have no
+    // templates, and every type picks its layout beside its theme)
     @track step = 'type';
     @track formType = ''; // form | survey | freeform
-    @track entryMode = 'scratch'; // template (placeholder) | scratch
     @track chosenLayout = '';
+    /** The look page was opened by a Change on Details. */
+    @track _fromDetails = false;
     @track chosenPaneFlow = '';
     @track chosenThemeKey = '';
     @track formName = '';
@@ -149,9 +157,6 @@ export default class FinalCreationGallery extends LightningElement {
     // ---- step flags ----
     get isTypeStep() {
         return this.step === 'type';
-    }
-    get isLayoutStep() {
-        return this.step === 'layout';
     }
     get isTemplatesStep() {
         return this.step === 'templates';
@@ -183,16 +188,24 @@ export default class FinalCreationGallery extends LightningElement {
     get isTemplateType() {
         return this.isSurveyType || this.isFreeformType;
     }
+    /** Choosing a type resets the layout to that type's default. */
+    _startType(type) {
+        this.formType = type;
+        this._fromDetails = false;
+        const [layout, paneFlow] = DEFAULT_LAYOUT[type].split(':');
+        this.chosenLayout = layout;
+        this.chosenPaneFlow = paneFlow || '';
+    }
     handleTypeForm() {
-        this.formType = 'form';
-        this.step = 'layout';
+        this._startType('form');
+        this.step = 'theme';
     }
     handleTypeSurvey() {
-        this.formType = 'survey';
+        this._startType('survey');
         this.step = 'templates';
     }
     handleTypeFreeform() {
-        this.formType = 'freeform';
+        this._startType('freeform');
         this.step = 'templates';
     }
     handleBackToType() {
@@ -200,51 +213,9 @@ export default class FinalCreationGallery extends LightningElement {
         this.errorMessage = '';
     }
 
-    /** The Form path chooses between its template shelf and a bare
-     *  layout here; the freeform path already chose its template. */
-    get showEntryToggle() {
-        return !this.isFreeformType;
-    }
-
-    // ---- entry toggle (template = placeholder for now) ----
-    get isTemplateMode() {
-        return this.entryMode === 'template';
-    }
-    get templateTabClass() {
-        return this.isTemplateMode ? 'entry-tab is-active' : 'entry-tab';
-    }
-    get scratchTabClass() {
-        return this.isTemplateMode ? 'entry-tab' : 'entry-tab is-active';
-    }
-    get templateSelected() {
-        return this.isTemplateMode ? 'true' : 'false';
-    }
-    get scratchSelected() {
-        return this.isTemplateMode ? 'false' : 'true';
-    }
-    /** How to start: the shared button group (DESIGN_SYSTEM 5.7). */
-    get entryOptions() {
-        return [
-            { label: 'Form templates', value: 'template' },
-            { label: 'Blank form · pick a layout', value: 'scratch' }
-        ];
-    }
-    get entryValue() {
-        return this.isTemplateMode ? 'template' : 'scratch';
-    }
-    handleEntry(event) {
-        this.entryMode = event.detail.value;
-    }
-    handleEntryTemplate() {
-        this.entryMode = 'template';
-    }
-    handleEntryScratch() {
-        this.entryMode = 'scratch';
-    }
-
-    // ---- the survey path: templates → theme → details (owner 2026-07-31:
-    // no layout step; the object is OPTIONAL and picked on the details
-    // screen, where questions can later map to its fields) ----
+    // ---- the survey path: templates → look → details (owner 2026-07-31:
+    // the object is OPTIONAL and picked on the details screen, where
+    // questions can later map to its fields) ----
     @track chosenTemplate = '';
     @track surveyName = '';
 
@@ -269,7 +240,7 @@ export default class FinalCreationGallery extends LightningElement {
     get templatesSub() {
         return this.isFreeformType
             ? 'Answers are kept with the submission. You pick the layout and theme next, and can map answers to Salesforce later.'
-            : 'Complete and ready: answers land in the answer store, one question per screen. You pick the theme next.';
+            : 'Complete and ready: answers land in the answer store. You pick the layout and theme next.';
     }
 
     get chosenTemplateName() {
@@ -287,9 +258,7 @@ export default class FinalCreationGallery extends LightningElement {
     handleTemplatePick(event) {
         this.chosenTemplate = event.currentTarget.dataset.key;
         this.errorMessage = '';
-        // Surveys are locked to one-at-a-time, so they skip straight to
-        // themes; a freeform picks any layout first (D5).
-        this.step = this.isFreeformType ? 'layout' : 'theme';
+        this.step = 'theme';
     }
 
     handleCreateSurvey() {
@@ -302,7 +271,9 @@ export default class FinalCreationGallery extends LightningElement {
             templateKey: this.chosenTemplate,
             surveyName: this.surveyName.trim() || null,
             themeName: this.chosenThemeKey || null,
-            objectApiName: this.chosenObject || null
+            objectApiName: this.chosenObject || null,
+            layoutType: this.chosenLayout || null,
+            paneFlow: this.chosenPaneFlow || null
         })
             .then((res) => {
                 this.isCreating = false;
@@ -325,71 +296,42 @@ export default class FinalCreationGallery extends LightningElement {
             });
     }
 
-    // ---- grouped layout gallery ----
-    get layoutGroups() {
-        return LAYOUT_GROUPS.map((g) => ({
-            id: g.id,
-            title: g.title,
-            hint: g.hint,
-            cards: g.cards.map((c) => {
-                // each preview draws the layout as a new form starts it
-                const start = newLayoutDefaults(c.layout, c.paneFlow || '');
-                return {
-                    key: cardKey(c),
-                    layout: c.layout,
-                    paneFlow: c.paneFlow || '',
-                    themeKey: c.themeKey,
-                    name: `${c.name} layout`,
-                    description:
-                        c.description ||
-                        `Start from the ${c.name} layout with an empty form.`,
-                    fullBleed: start.options.fullBleed,
-                    maxWidth: start.maxWidth,
-                    selected:
-                        c.layout === this.chosenLayout &&
-                        (c.paneFlow || '') === this.chosenPaneFlow
-                };
-            })
-        }));
+    // ---- the look page: layout tiles over the theme gallery ----
+    get chosenLayoutKey() {
+        return cardKey({
+            layout: this.chosenLayout,
+            paneFlow: this.chosenPaneFlow
+        });
     }
-
-    // ---- detail: layout dropdown ("Name · Group", old pattern) ----
-    get layoutOptions() {
-        const current = this.chosenPaneFlow
-            ? `${this.chosenLayout}:${this.chosenPaneFlow}`
-            : this.chosenLayout;
+    /** The 8 layout choices as picture tiles (DESIGN_SYSTEM 5.24). */
+    get layoutTiles() {
         const out = [];
         LAYOUT_GROUPS.forEach((g) => {
             g.cards.forEach((c) => {
-                const key = cardKey(c);
-                out.push({
-                    value: key,
-                    label: c.name.includes('·')
-                        ? c.name
-                        : `${c.name} · ${g.title}`,
-                    selected: key === current
-                });
+                const value = cardKey(c);
+                out.push({ value, label: c.name, drawing: layoutArt(value) });
             });
         });
         return out;
     }
-    /** The details screen's Layout dropdown (lightning-combobox). */
-    get layoutComboOptions() {
-        return this.layoutOptions.map((o) => ({
-            label: o.label,
-            value: o.value
-        }));
-    }
-    get layoutValue() {
-        const hit = this.layoutOptions.find((o) => o.selected);
-        return hit ? hit.value : undefined;
-    }
-
-    handleLayoutDropdown(e) {
-        const v = e.detail ? e.detail.value : e.target.value;
-        const [layout, paneFlow] = v.split(':');
+    handleLayoutTile(e) {
+        const [layout, paneFlow] = String(e.detail.value).split(':');
         this.chosenLayout = layout;
         this.chosenPaneFlow = paneFlow || '';
+    }
+    get chosenLayoutLabel() {
+        const hit = this.layoutTiles.find(
+            (o) => o.value === this.chosenLayoutKey
+        );
+        return hit ? hit.label : 'Pick a layout';
+    }
+    get lookSub() {
+        const what = this.isSurveyType
+            ? 'survey'
+            : this.isFreeformType
+              ? 'freeform'
+              : 'form';
+        return `Choose how your ${what} moves, then click a theme to use it.`;
     }
 
     get chosenThemeLabel() {
@@ -398,29 +340,38 @@ export default class FinalCreationGallery extends LightningElement {
         );
         return t ? t.name : 'Pick a theme';
     }
-    handleChangeTheme() {
+    /** Both Details chips come back to the look page. */
+    handleChangeLook() {
+        this._fromDetails = true;
         this.step = 'theme';
     }
+    /** Details names what each chip changes, not just its value. */
+    get layoutChipAria() {
+        return `Layout: ${this.chosenLayoutLabel}. Change`;
+    }
+    get themeChipAria() {
+        return `Theme: ${this.chosenThemeLabel}. Change`;
+    }
+    get lookBackLabel() {
+        return this._fromDetails ? 'Back to details' : 'Back';
+    }
+    get _detailsStep() {
+        if (this.isSurveyType) {
+            return 'surveyDetails';
+        }
+        return this.isFreeformType ? 'freeformDetails' : 'details';
+    }
 
-    // Theme previews render the layout the creation will actually use —
-    // surveys are always the One-at-a-Time flow (templates ship it).
-    get themeGalleryLayout() {
-        return this.isSurveyType ? 'oneAtATime' : this.chosenLayout;
-    }
-    get themeGalleryPaneFlow() {
-        return this.isSurveyType ? '' : this.chosenPaneFlow;
-    }
     /**
-     * What the theme previews draw: a survey's template writes One at a time
+     * What the theme previews draw: a survey left on One at a time is written
      * with nothing set; any other new form starts as newLayoutDefaults (null).
      */
     get themeGalleryFormLayout() {
-        return this.isSurveyType ? SURVEY_LAYOUT : null;
-    }
-    get themeSub() {
-        return this.isSurveyType
-            ? 'Each preview uses the survey flow: one question at a time.'
-            : 'Each preview uses your chosen layout.';
+        const surveyDefault =
+            this.isSurveyType &&
+            this.chosenLayout === 'oneAtATime' &&
+            !this.chosenPaneFlow;
+        return surveyDefault ? SURVEY_LAYOUT : null;
     }
 
     // ---- live preview ----
@@ -434,8 +385,8 @@ export default class FinalCreationGallery extends LightningElement {
             : this.isFreeformType
               ? this.formName.trim() || this.chosenTemplateName
               : this.formName.trim();
-        const layout = this.isSurveyType ? 'oneAtATime' : this.chosenLayout;
-        const paneFlow = this.isSurveyType ? '' : this.chosenPaneFlow;
+        const layout = this.chosenLayout;
+        const paneFlow = this.chosenPaneFlow;
         const key = `${this.formType}|${layout}|${paneFlow}|${this.chosenThemeKey}|${name}`;
         if (key !== this._specCacheKey) {
             this._specCacheKey = key;
@@ -593,27 +544,19 @@ export default class FinalCreationGallery extends LightningElement {
     }
 
     // ---- navigation ----
-    handleLayoutSelect(e) {
-        this.chosenLayout = e.detail.layout;
-        this.chosenPaneFlow = e.detail.paneFlow || '';
-        this.step = 'theme';
-    }
     handleThemeSelect(e) {
         this.chosenThemeKey = e.detail.themeKey;
-        if (this.isSurveyType) {
-            this.step = 'surveyDetails';
-        } else if (this.isFreeformType) {
-            this.step = 'freeformDetails';
-        } else {
-            this.step = 'details';
-        }
+        this._fromDetails = false;
+        this.step = this._detailsStep;
     }
+    /** After a Change on Details, Back keeps both picks and returns there. */
     handleBackFromTheme() {
-        this.step = this.isSurveyType ? 'templates' : 'layout';
-    }
-    /** A freeform came to the layout screen FROM its template shelf. */
-    handleBackFromLayout() {
-        this.step = this.isFreeformType ? 'templates' : 'type';
+        if (this._fromDetails) {
+            this._fromDetails = false;
+            this.step = this._detailsStep;
+            return;
+        }
+        this.step = this.isTemplateType ? 'templates' : 'type';
         this.errorMessage = '';
     }
     handleBackToTheme() {
@@ -742,8 +685,8 @@ export default class FinalCreationGallery extends LightningElement {
 
     handleStartOver() {
         this.step = 'type';
+        this._fromDetails = false;
         this.formType = '';
-        this.entryMode = 'scratch';
         this.chosenLayout = '';
         this.chosenPaneFlow = '';
         this.chosenThemeKey = '';

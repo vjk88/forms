@@ -61,12 +61,6 @@ async function openDetails() {
     el.shadowRoot.querySelector('.tpl-grid .tpl-card').click();
     await flush();
     el.shadowRoot
-        .querySelector('c-final-layout-card')
-        .dispatchEvent(
-            new CustomEvent('select', { detail: { layout: 'scroll' } })
-        );
-    await flush();
-    el.shadowRoot
         .querySelector('c-final-theme-gallery')
         .dispatchEvent(
             new CustomEvent('themeselect', { detail: { themeKey: 'nordic' } })

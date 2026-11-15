@@ -345,6 +345,83 @@ const DRAW = {
     buttonArrangement
 };
 
+/** A text line, a field and a button: one question on its own. */
+const question = (x, w) => [
+    r(x, 10, w, 3, 'pa-ink', 1.5),
+    r(x, 16, w, 6, 'pa-paper', 1.5),
+    r(x, 25, Math.min(12, w / 2), 4, 'pa-ink', 2)
+];
+const rows = (x, w, ys) => ys.map((y) => text(x, y, w));
+
+/** The 8 layout choices (c/finalLayoutCards keys, `layout` or
+ *  `layout:paneFlow`), drawn for the creation flow's layout tiles. */
+const LAYOUT_DRAW = {
+    scroll: () => [
+        page(),
+        r(8, 6, 24, 3, 'pa-ink', 1.5),
+        ...rows(8, 40, [12, 17, 22]),
+        r(8, 27, 12, 4, 'pa-ink', 2)
+    ],
+    stepper: () => [
+        page(),
+        dot(18, 8, 2.5, 'pa-ink'),
+        dot(28, 8, 2.5, 'pa-fill'),
+        dot(38, 8, 2.5, 'pa-fill'),
+        ...rows(8, 40, [15, 20]),
+        r(36, 26, 12, 4, 'pa-ink', 2)
+    ],
+    splitHero: () => [
+        page(),
+        r(2, 2, 20, 32, 'pa-soft', 3),
+        ...rows(27, 22, [9, 14, 19]),
+        r(37, 25, 12, 4, 'pa-ink', 2)
+    ],
+    'splitHero:oneAtATime': () => [
+        page(),
+        r(2, 2, 20, 32, 'pa-soft', 3),
+        ...question(27, 22)
+    ],
+    rail: () => [
+        page(),
+        r(6, 7, 10, 2.5, 'pa-ink', 1.25),
+        text(6, 12, 10),
+        text(6, 17, 10),
+        r(19, 5, 0.75, 26, 'pa-fill'),
+        ...rows(23, 26, [8, 13, 18, 23])
+    ],
+    oneAtATime: () => [page(), ...question(14, 28)],
+    tabs: () => [
+        page(),
+        r(7, 6, 12, 4, 'pa-ink', 1.5),
+        r(21, 6, 12, 4, 'pa-fill', 1.5),
+        r(35, 6, 12, 4, 'pa-fill', 1.5),
+        r(7, 11, 42, 0.75, 'pa-fill'),
+        ...rows(7, 42, [16, 21, 26])
+    ],
+    accordion: () => [
+        page(),
+        r(6, 5, 44, 5, 'pa-ink', 1.5),
+        ...rows(9, 38, [13, 17]),
+        r(6, 22, 44, 4, 'pa-fill', 1.5),
+        r(6, 28, 44, 4, 'pa-fill', 1.5)
+    ]
+};
+
+/**
+ * A drawing of one layout choice, or null for an unknown key.
+ * @param {string} key a c/finalLayoutCards key: 'scroll', 'splitHero:oneAtATime', …
+ */
+export function layoutArt(key) {
+    const draw = LAYOUT_DRAW[key];
+    if (!draw) {
+        return null;
+    }
+    return {
+        viewBox: BOX,
+        shapes: draw().map((s, i) => ({ ...s, key: `s${i}` }))
+    };
+}
+
 /**
  * @param {string} key   the registry control key
  * @param {string} value one option's stored value

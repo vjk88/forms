@@ -346,26 +346,46 @@ public with sharing class FinalFormCreateController {
 
     /**
      * The survey path's create (kind-first flow, owner 2026-07-31): template
-     * + theme + OPTIONAL object. Questions with analytics + topics (reused
-     * from the vocabulary by name — never duplicated), oneAtATime layout,
-     * anonymous where the template warrants it.
+     * + layout + theme + OPTIONAL object. Questions with analytics + topics
+     * (reused from the vocabulary by name — never duplicated), anonymous
+     * where the template warrants it.
      * @param templateKey   blank|csat|nps|event
      * @param surveyName    optional — templates carry good defaults
      * @param themeName     optional builtin theme catalog key (spec.theme)
      * @param objectApiName optional context object — stamped as
      *        spec.form.targetObject so questions can map to its fields and
      *        prefill from records (survey-object program)
+     * @param layoutType    optional layout key (owner 2026-11-14: picked
+     *        beside the theme). Blank or oneAtATime keeps the survey's own
+     *        One at a time block unchanged; any other layout gets the block
+     *        a new form starts with (layoutBlock).
+     * @param paneFlow      splitHero-only presentation option
      */
     @AuraEnabled
     public static Map<String, Object> createSurveyFromTemplate(
         String templateKey,
         String surveyName,
         String themeName,
-        String objectApiName
+        String objectApiName,
+        String layoutType,
+        String paneFlow
     ) {
         SurveyTemplate tpl = surveyTemplate(templateKey, surveyName);
         if (tpl == null) {
             throw new AuraHandledException('Unknown survey template.');
+        }
+        String layout = String.isBlank(layoutType) ? 'oneAtATime' : layoutType;
+        // Same rule as the other creators: pane flow belongs to splitHero.
+        if (String.isNotBlank(paneFlow)) {
+            if (layout != 'splitHero' || paneFlow != 'oneAtATime') {
+                throw new AuraHandledException('Invalid pane flow option.');
+            }
+        }
+        if (layout != 'oneAtATime') {
+            tpl.spec.put(
+                'layout',
+                layoutBlock(layout, String.isBlank(paneFlow) ? null : paneFlow)
+            );
         }
         // Optional context object: validate exactly like createForm — an
         // unusable object must fail loudly, never persist silently.

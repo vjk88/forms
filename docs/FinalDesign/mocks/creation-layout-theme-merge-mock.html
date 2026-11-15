@@ -1,0 +1,1055 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Layout and theme on one page</title>
+        <style>
+            :root {
+                --c-studio-surface: #ffffff;
+                --c-studio-surface-subtle: #f8fafc;
+                --c-studio-workspace: #f1f5f9;
+                --c-studio-text: #1f2937;
+                --c-studio-text-weak: #526071;
+                --c-studio-border: #dce2e9;
+                --c-studio-border-subtle: #e8edf2;
+                --c-studio-border-strong: #7c8999;
+                --c-studio-accent: #0f766e;
+                --c-studio-accent-surface: #e8f5f2;
+                --c-studio-on-accent: #ffffff;
+                --fs-cap: 11px;
+                --fs-sm: 12px;
+                --fs-body: 13px;
+                --fs-sub: 14px;
+                --fs-title: 16px;
+                --fs-disp: 20px;
+                --s2: 4px;
+                --s3: 8px;
+                --s4: 12px;
+                --s5: 16px;
+                --s6: 24px;
+                --s7: 32px;
+                --r: 8px;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                background: #cfd6de;
+                font:
+                    var(--fs-body)/1.45 system-ui,
+                    -apple-system,
+                    'Segoe UI',
+                    sans-serif;
+                color: var(--c-studio-text);
+                padding: var(--s7) var(--s5);
+            }
+            .caption {
+                max-width: 1120px;
+                margin: 0 auto var(--s3);
+                font-size: var(--fs-sub);
+                font-weight: 600;
+                color: #263241;
+            }
+            .caption small {
+                display: block;
+                font-weight: 400;
+                font-size: var(--fs-body);
+                color: #3b4757;
+            }
+            .frame {
+                max-width: 1120px;
+                margin: 0 auto var(--s7);
+                background: var(--c-studio-surface);
+                border-radius: 12px;
+                box-shadow: 0 10px 30px rgb(15 23 42 / 18%);
+                overflow: hidden;
+            }
+            .head {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                padding: var(--s5) var(--s6) 0;
+            }
+            .back {
+                color: var(--c-studio-accent);
+                font-weight: 600;
+                font-size: var(--fs-body);
+            }
+            .x {
+                font-size: 22px;
+                color: var(--c-studio-text-weak);
+                line-height: 1;
+            }
+            h1 {
+                font-size: var(--fs-disp);
+                margin: var(--s4) 0 var(--s2);
+            }
+            .sub {
+                margin: 0;
+                color: var(--c-studio-text-weak);
+            }
+            .body {
+                padding: var(--s5) var(--s6) var(--s6);
+            }
+
+            /* layout picture tiles (finalPictureChoice, DESIGN_SYSTEM 5.24) */
+            .lbl {
+                font-size: var(--fs-sub);
+                font-weight: 600;
+                margin: 0 0 var(--s3);
+                display: flex;
+                gap: var(--s3);
+                align-items: baseline;
+            }
+            .lbl span {
+                font-weight: 400;
+                font-size: var(--fs-body);
+                color: var(--c-studio-text-weak);
+            }
+            .tiles {
+                display: grid;
+                grid-template-columns: repeat(8, 1fr);
+                gap: var(--s3);
+            }
+            .tile {
+                border: 1px solid var(--c-studio-border);
+                border-radius: var(--r);
+                padding: var(--s3) var(--s3) 6px;
+                text-align: center;
+                background: var(--c-studio-surface);
+                cursor: pointer;
+            }
+            .tile svg {
+                width: 100%;
+                height: 46px;
+                display: block;
+            }
+            .tile .n {
+                font-size: var(--fs-sm);
+                margin-top: 6px;
+                color: var(--c-studio-text);
+            }
+            .tile.on {
+                border: 2px solid var(--c-studio-accent);
+                background: var(--c-studio-accent-surface);
+                padding: 7px 7px 5px;
+            }
+            .tile.on .n {
+                font-weight: 600;
+                color: var(--c-studio-accent);
+            }
+            .tag {
+                display: inline-block;
+                font-size: var(--fs-cap);
+                background: var(--c-studio-accent);
+                color: var(--c-studio-on-accent);
+                border-radius: 999px;
+                padding: 0 6px;
+                margin-left: 4px;
+                vertical-align: 1px;
+            }
+            .note {
+                margin: var(--s3) 0 0;
+                padding: var(--s3) var(--s4);
+                border-radius: var(--r);
+                background: var(--c-studio-surface-subtle);
+                border: 1px solid var(--c-studio-border-subtle);
+                color: var(--c-studio-text-weak);
+            }
+            .note b {
+                color: var(--c-studio-text);
+            }
+            hr {
+                border: 0;
+                border-top: 1px solid var(--c-studio-border-subtle);
+                margin: var(--s6) 0 var(--s5);
+            }
+
+            /* theme cards */
+            .grid {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: var(--s5);
+            }
+            .card {
+                border: 1px solid var(--c-studio-border);
+                border-radius: var(--r);
+                overflow: hidden;
+                cursor: pointer;
+            }
+            .card:hover {
+                border-color: var(--c-studio-border-strong);
+            }
+            .pv {
+                height: 118px;
+                position: relative;
+                display: grid;
+                place-items: center;
+            }
+            .pv .q {
+                width: 70%;
+            }
+            .pv .bar {
+                height: 7px;
+                border-radius: 4px;
+                margin: 6px 0;
+            }
+            .pv .ans {
+                height: 18px;
+                border-radius: 4px;
+                margin-top: 8px;
+            }
+            .pv .btn {
+                width: 34%;
+                height: 14px;
+                border-radius: 4px;
+                margin-top: 10px;
+            }
+            .meta {
+                padding: var(--s3) var(--s4);
+            }
+            .meta .t {
+                font-weight: 600;
+            }
+            .meta .d {
+                font-size: var(--fs-sm);
+                color: var(--c-studio-text-weak);
+            }
+            .dots {
+                display: flex;
+                gap: 5px;
+                margin-top: 6px;
+            }
+            .dots i {
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                border: 1px solid rgb(0 0 0 / 15%);
+            }
+
+            /* details */
+            .dgrid {
+                display: grid;
+                grid-template-columns: 380px 1fr;
+                gap: var(--s6);
+            }
+            .field {
+                margin-bottom: var(--s5);
+            }
+            .field label {
+                display: block;
+                font-size: var(--fs-sm);
+                color: var(--c-studio-text-weak);
+                margin-bottom: 4px;
+            }
+            .input {
+                border: 1px solid var(--c-studio-border-strong);
+                border-radius: 4px;
+                padding: 7px 10px;
+            }
+            .sec {
+                font-size: var(--fs-sub);
+                font-weight: 600;
+                margin: var(--s5) 0 var(--s3);
+            }
+            .chip {
+                display: flex;
+                align-items: center;
+                gap: var(--s4);
+                border: 1px solid var(--c-studio-border);
+                border-radius: var(--r);
+                padding: var(--s3) var(--s4);
+                margin-bottom: var(--s3);
+            }
+            .chip svg {
+                width: 52px;
+                height: 34px;
+                flex: none;
+            }
+            .chip .sw {
+                width: 52px;
+                height: 34px;
+                border-radius: 4px;
+                flex: none;
+                background: linear-gradient(135deg, #f6efe3 0 50%, #b4652e 50%);
+            }
+            .chip .k {
+                font-size: var(--fs-sm);
+                color: var(--c-studio-text-weak);
+            }
+            .chip .v {
+                font-weight: 600;
+            }
+            .chip .ch {
+                margin-left: auto;
+                color: var(--c-studio-accent);
+                font-weight: 600;
+            }
+            .primary {
+                display: inline-block;
+                background: var(--c-studio-accent);
+                color: var(--c-studio-on-accent);
+                border-radius: 4px;
+                padding: 8px 16px;
+                font-weight: 600;
+                margin-top: var(--s4);
+            }
+            .stage {
+                background: var(--c-studio-workspace);
+                border-radius: var(--r);
+                padding: var(--s5);
+            }
+            .stage .bar2 {
+                font-size: var(--fs-sm);
+                color: var(--c-studio-text-weak);
+                margin-bottom: var(--s3);
+            }
+            .live {
+                height: 300px;
+                border-radius: 6px;
+                background: #f6efe3;
+                display: grid;
+                place-items: center;
+            }
+            .live .q {
+                width: 60%;
+            }
+            .ann {
+                max-width: 1120px;
+                margin: calc(-1 * var(--s6)) auto var(--s7);
+                font-size: var(--fs-body);
+                color: #263241;
+            }
+            .ann li {
+                margin: 2px 0;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- reusable wireframe glyphs -->
+        <svg width="0" height="0" style="position: absolute">
+            <defs>
+                <g id="g-scroll">
+                    <rect
+                        x="10"
+                        y="4"
+                        width="60"
+                        height="5"
+                        rx="2"
+                        fill="#94a3b8"
+                    />
+                    <rect
+                        x="10"
+                        y="13"
+                        width="60"
+                        height="5"
+                        rx="2"
+                        fill="#cbd5e1"
+                    />
+                    <rect
+                        x="10"
+                        y="22"
+                        width="60"
+                        height="5"
+                        rx="2"
+                        fill="#cbd5e1"
+                    />
+                    <rect
+                        x="10"
+                        y="31"
+                        width="60"
+                        height="5"
+                        rx="2"
+                        fill="#cbd5e1"
+                    />
+                    <rect
+                        x="10"
+                        y="40"
+                        width="22"
+                        height="4"
+                        rx="2"
+                        fill="#64748b"
+                    />
+                </g>
+                <g id="g-stepper">
+                    <circle cx="22" cy="7" r="3.5" fill="#64748b" />
+                    <circle cx="40" cy="7" r="3.5" fill="#cbd5e1" />
+                    <circle cx="58" cy="7" r="3.5" fill="#cbd5e1" />
+                    <rect
+                        x="10"
+                        y="17"
+                        width="60"
+                        height="5"
+                        rx="2"
+                        fill="#cbd5e1"
+                    />
+                    <rect
+                        x="10"
+                        y="26"
+                        width="60"
+                        height="5"
+                        rx="2"
+                        fill="#cbd5e1"
+                    />
+                    <rect
+                        x="48"
+                        y="38"
+                        width="22"
+                        height="5"
+                        rx="2"
+                        fill="#64748b"
+                    />
+                </g>
+                <g id="g-split">
+                    <rect
+                        x="6"
+                        y="3"
+                        width="30"
+                        height="42"
+                        rx="3"
+                        fill="#94a3b8"
+                    />
+                    <rect
+                        x="42"
+                        y="10"
+                        width="32"
+                        height="5"
+                        rx="2"
+                        fill="#cbd5e1"
+                    />
+                    <rect
+                        x="42"
+                        y="19"
+                        width="32"
+                        height="5"
+                        rx="2"
+                        fill="#cbd5e1"
+                    />
+                    <rect
+                        x="42"
+                        y="28"
+                        width="32"
+                        height="5"
+                        rx="2"
+                        fill="#cbd5e1"
+                    />
+                    <rect
+                        x="58"
+                        y="38"
+                        width="16"
+                        height="4"
+                        rx="2"
+                        fill="#64748b"
+                    />
+                </g>
+                <g id="g-splitone">
+                    <rect
+                        x="6"
+                        y="3"
+                        width="30"
+                        height="42"
+                        rx="3"
+                        fill="#94a3b8"
+                    />
+                    <rect
+                        x="42"
+                        y="14"
+                        width="32"
+                        height="6"
+                        rx="2"
+                        fill="#64748b"
+                    />
+                    <rect
+                        x="42"
+                        y="24"
+                        width="32"
+                        height="8"
+                        rx="2"
+                        fill="#cbd5e1"
+                    />
+                    <rect
+                        x="58"
+                        y="37"
+                        width="16"
+                        height="4"
+                        rx="2"
+                        fill="#64748b"
+                    />
+                </g>
+                <g id="g-rail">
+                    <rect
+                        x="6"
+                        y="5"
+                        width="16"
+                        height="4"
+                        rx="2"
+                        fill="#64748b"
+                    />
+                    <rect
+                        x="6"
+                        y="13"
+                        width="16"
+                        height="4"
+                        rx="2"
+                        fill="#cbd5e1"
+                    />
+                    <rect
+                        x="6"
+                        y="21"
+                        width="16"
+                        height="4"
+                        rx="2"
+                        fill="#cbd5e1"
+                    />
+                    <rect x="28" y="4" width="1.5" height="40" fill="#e2e8f0" />
+                    <rect
+                        x="34"
+                        y="6"
+                        width="40"
+                        height="5"
+                        rx="2"
+                        fill="#cbd5e1"
+                    />
+                    <rect
+                        x="34"
+                        y="15"
+                        width="40"
+                        height="5"
+                        rx="2"
+                        fill="#cbd5e1"
+                    />
+                    <rect
+                        x="34"
+                        y="24"
+                        width="40"
+                        height="5"
+                        rx="2"
+                        fill="#cbd5e1"
+                    />
+                </g>
+                <g id="g-one">
+                    <rect
+                        x="18"
+                        y="12"
+                        width="44"
+                        height="6"
+                        rx="2"
+                        fill="#64748b"
+                    />
+                    <rect
+                        x="18"
+                        y="23"
+                        width="44"
+                        height="9"
+                        rx="2"
+                        fill="#cbd5e1"
+                    />
+                    <rect
+                        x="18"
+                        y="37"
+                        width="16"
+                        height="5"
+                        rx="2"
+                        fill="#64748b"
+                    />
+                </g>
+                <g id="g-tabs">
+                    <rect
+                        x="10"
+                        y="4"
+                        width="18"
+                        height="6"
+                        rx="2"
+                        fill="#64748b"
+                    />
+                    <rect
+                        x="31"
+                        y="4"
+                        width="18"
+                        height="6"
+                        rx="2"
+                        fill="#e2e8f0"
+                    />
+                    <rect
+                        x="52"
+                        y="4"
+                        width="18"
+                        height="6"
+                        rx="2"
+                        fill="#e2e8f0"
+                    />
+                    <rect
+                        x="10"
+                        y="10"
+                        width="60"
+                        height="1.5"
+                        fill="#94a3b8"
+                    />
+                    <rect
+                        x="10"
+                        y="17"
+                        width="60"
+                        height="5"
+                        rx="2"
+                        fill="#cbd5e1"
+                    />
+                    <rect
+                        x="10"
+                        y="26"
+                        width="60"
+                        height="5"
+                        rx="2"
+                        fill="#cbd5e1"
+                    />
+                    <rect
+                        x="10"
+                        y="35"
+                        width="60"
+                        height="5"
+                        rx="2"
+                        fill="#cbd5e1"
+                    />
+                </g>
+                <g id="g-acc">
+                    <rect
+                        x="10"
+                        y="3"
+                        width="60"
+                        height="7"
+                        rx="2"
+                        fill="#94a3b8"
+                    />
+                    <rect
+                        x="14"
+                        y="13"
+                        width="52"
+                        height="4"
+                        rx="2"
+                        fill="#cbd5e1"
+                    />
+                    <rect
+                        x="14"
+                        y="20"
+                        width="52"
+                        height="4"
+                        rx="2"
+                        fill="#cbd5e1"
+                    />
+                    <rect
+                        x="10"
+                        y="28"
+                        width="60"
+                        height="7"
+                        rx="2"
+                        fill="#e2e8f0"
+                    />
+                    <rect
+                        x="10"
+                        y="38"
+                        width="60"
+                        height="7"
+                        rx="2"
+                        fill="#e2e8f0"
+                    />
+                </g>
+            </defs>
+        </svg>
+
+        <p class="caption">
+            1 · Survey: one page for layout and theme
+            <small
+                >Replaces "Pick a theme". The "Preview in" row becomes layout
+                picture tiles that <b>pick</b> the layout. Surveys open on One
+                at a time and say so. Forms and Freeform get the same page,
+                opening on Scroll, with no note.</small
+            >
+        </p>
+        <div class="frame">
+            <div class="head">
+                <div>
+                    <div class="back">← Back</div>
+                    <h1>Pick a layout and theme</h1>
+                    <p class="sub">
+                        Choose how your survey moves, then click a theme to use
+                        it.
+                    </p>
+                </div>
+                <div class="x">×</div>
+            </div>
+            <div class="body">
+                <p class="lbl">
+                    Layout
+                    <span>Every theme preview below uses this layout.</span>
+                </p>
+                <div class="tiles">
+                    <div class="tile">
+                        <svg viewBox="0 0 80 48"><use href="#g-scroll" /></svg>
+                        <div class="n">Scroll</div>
+                    </div>
+                    <div class="tile">
+                        <svg viewBox="0 0 80 48"><use href="#g-stepper" /></svg>
+                        <div class="n">Stepper</div>
+                    </div>
+                    <div class="tile">
+                        <svg viewBox="0 0 80 48"><use href="#g-split" /></svg>
+                        <div class="n">Split Hero</div>
+                    </div>
+                    <div class="tile">
+                        <svg viewBox="0 0 80 48">
+                            <use href="#g-splitone" />
+                        </svg>
+                        <div class="n">Split · Conversational</div>
+                    </div>
+                    <div class="tile">
+                        <svg viewBox="0 0 80 48"><use href="#g-rail" /></svg>
+                        <div class="n">Side Nav</div>
+                    </div>
+                    <div class="tile on">
+                        <svg viewBox="0 0 80 48"><use href="#g-one" /></svg>
+                        <div class="n">
+                            One at a Time<span class="tag">Default</span>
+                        </div>
+                    </div>
+                    <div class="tile">
+                        <svg viewBox="0 0 80 48"><use href="#g-tabs" /></svg>
+                        <div class="n">Tabbed</div>
+                    </div>
+                    <div class="tile">
+                        <svg viewBox="0 0 80 48"><use href="#g-acc" /></svg>
+                        <div class="n">Accordion</div>
+                    </div>
+                </div>
+                <p class="note">
+                    <b>Surveys start as One at a time:</b> one question per
+                    screen, the way most people answer surveys. Pick another
+                    layout here, or change it later in Design.
+                </p>
+
+                <hr />
+                <p class="lbl">
+                    Theme
+                    <span>Dots show each look. Click a preview to use it.</span>
+                </p>
+                <div class="grid">
+                    <div class="card">
+                        <div class="pv" style="background: #f6efe3">
+                            <div class="q">
+                                <div
+                                    class="bar"
+                                    style="background: #3b2a1d; width: 80%"
+                                ></div>
+                                <div
+                                    class="ans"
+                                    style="
+                                        background: #fff;
+                                        border: 1px solid #e3d5bf;
+                                    "
+                                ></div>
+                                <div
+                                    class="btn"
+                                    style="background: #b4652e"
+                                ></div>
+                            </div>
+                        </div>
+                        <div class="meta">
+                            <div class="t">Sandstone</div>
+                            <div class="d">Warm paper, terracotta</div>
+                            <div class="dots">
+                                <i style="background: #f6efe3"></i
+                                ><i style="background: #e9dcc6"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="pv" style="background: #282a36">
+                            <div class="q">
+                                <div
+                                    class="bar"
+                                    style="background: #f8f8f2; width: 80%"
+                                ></div>
+                                <div
+                                    class="ans"
+                                    style="
+                                        background: #343746;
+                                        border: 1px solid #44475a;
+                                    "
+                                ></div>
+                                <div
+                                    class="btn"
+                                    style="background: #bd93f9"
+                                ></div>
+                            </div>
+                        </div>
+                        <div class="meta">
+                            <div class="t">Dracula</div>
+                            <div class="d">Dark, purple accent</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="pv" style="background: #e8f6fa">
+                            <div class="q">
+                                <div
+                                    class="bar"
+                                    style="background: #0c4a6e; width: 80%"
+                                ></div>
+                                <div
+                                    class="ans"
+                                    style="
+                                        background: #fff;
+                                        border: 1px solid #bae6fd;
+                                    "
+                                ></div>
+                                <div
+                                    class="btn"
+                                    style="background: #0284c7"
+                                ></div>
+                            </div>
+                        </div>
+                        <div class="meta">
+                            <div class="t">Ocean Breeze</div>
+                            <div class="d">Cool, bright blue</div>
+                            <div class="dots">
+                                <i style="background: #e8f6fa"></i
+                                ><i style="background: #0c4a6e"></i
+                                ><i style="background: #d1fae5"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="pv" style="background: #120a2a">
+                            <div class="q">
+                                <div
+                                    class="bar"
+                                    style="background: #f0abfc; width: 80%"
+                                ></div>
+                                <div
+                                    class="ans"
+                                    style="
+                                        background: #1e1240;
+                                        border: 1px solid #7c3aed;
+                                    "
+                                ></div>
+                                <div
+                                    class="btn"
+                                    style="background: #22d3ee"
+                                ></div>
+                            </div>
+                        </div>
+                        <div class="meta">
+                            <div class="t">Neon Nights</div>
+                            <div class="d">Glow on deep violet</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="pv" style="background: #fbfaf7">
+                            <div class="q">
+                                <div
+                                    class="bar"
+                                    style="background: #1c1917; width: 80%"
+                                ></div>
+                                <div
+                                    class="ans"
+                                    style="
+                                        background: #fff;
+                                        border: 1px solid #d6d3d1;
+                                    "
+                                ></div>
+                                <div
+                                    class="btn"
+                                    style="background: #1c1917"
+                                ></div>
+                            </div>
+                        </div>
+                        <div class="meta">
+                            <div class="t">Editorial Ivory</div>
+                            <div class="d">Quiet, bookish</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="pv" style="background: #eef2f5">
+                            <div class="q">
+                                <div
+                                    class="bar"
+                                    style="background: #1e293b; width: 80%"
+                                ></div>
+                                <div
+                                    class="ans"
+                                    style="
+                                        background: #fff;
+                                        border: 1px solid #cbd5e1;
+                                    "
+                                ></div>
+                                <div
+                                    class="btn"
+                                    style="background: #475569"
+                                ></div>
+                            </div>
+                        </div>
+                        <div class="meta">
+                            <div class="t">Nordic</div>
+                            <div class="d">Calm greys</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="pv" style="background: #f4e2c8">
+                            <div class="q">
+                                <div
+                                    class="bar"
+                                    style="background: #5b3a1e; width: 80%"
+                                ></div>
+                                <div
+                                    class="ans"
+                                    style="
+                                        background: #fffaf2;
+                                        border: 1px solid #e0c59f;
+                                    "
+                                ></div>
+                                <div
+                                    class="btn"
+                                    style="background: #c2410c"
+                                ></div>
+                            </div>
+                        </div>
+                        <div class="meta">
+                            <div class="t">Desert Oasis</div>
+                            <div class="d">Sun-baked photo look</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="pv" style="background: #fff7c2">
+                            <div class="q">
+                                <div
+                                    class="bar"
+                                    style="background: #000; width: 80%"
+                                ></div>
+                                <div
+                                    class="ans"
+                                    style="
+                                        background: #fff;
+                                        border: 2px solid #000;
+                                    "
+                                ></div>
+                                <div
+                                    class="btn"
+                                    style="
+                                        background: #ff5c8a;
+                                        border: 2px solid #000;
+                                    "
+                                ></div>
+                            </div>
+                        </div>
+                        <div class="meta">
+                            <div class="t">Neo Brutalism</div>
+                            <div class="d">Loud, thick borders</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <p class="caption">
+            2 · Details: says what you picked
+            <small
+                >Layout gets the same chip as Theme. Both <b>Change</b> links go
+                back to page 1, keeping what you picked. Forms, Surveys and
+                Freeform all show both.</small
+            >
+        </p>
+        <div class="frame">
+            <div class="head">
+                <div>
+                    <div class="back">← Back</div>
+                    <h1>Name your survey</h1>
+                </div>
+                <div class="x">×</div>
+            </div>
+            <div class="body">
+                <div class="dgrid">
+                    <div>
+                        <div class="field">
+                            <label>Survey name</label>
+                            <div class="input">Customer satisfaction</div>
+                        </div>
+                        <div class="field">
+                            <label>Related object (optional)</label>
+                            <div class="input" style="color: #526071">
+                                Search objects…
+                            </div>
+                        </div>
+                        <div class="sec">Appearance</div>
+                        <div class="chip">
+                            <svg viewBox="0 0 80 48"><use href="#g-one" /></svg>
+                            <div>
+                                <div class="k">Layout</div>
+                                <div class="v">One at a Time</div>
+                            </div>
+                            <div class="ch">Change</div>
+                        </div>
+                        <div class="chip">
+                            <div class="sw"></div>
+                            <div>
+                                <div class="k">Theme</div>
+                                <div class="v">Sandstone</div>
+                            </div>
+                            <div class="ch">Change</div>
+                        </div>
+                        <div class="primary">Create survey</div>
+                    </div>
+                    <div class="stage">
+                        <div class="bar2">Live preview</div>
+                        <div class="live">
+                            <div class="q">
+                                <div
+                                    class="bar"
+                                    style="
+                                        background: #3b2a1d;
+                                        height: 10px;
+                                        width: 85%;
+                                        border-radius: 4px;
+                                    "
+                                ></div>
+                                <div
+                                    style="
+                                        height: 30px;
+                                        background: #fff;
+                                        border: 1px solid #e3d5bf;
+                                        border-radius: 6px;
+                                        margin-top: 14px;
+                                    "
+                                ></div>
+                                <div
+                                    style="
+                                        width: 30%;
+                                        height: 22px;
+                                        background: #b4652e;
+                                        border-radius: 6px;
+                                        margin-top: 16px;
+                                    "
+                                ></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <ul class="ann">
+            <li>
+                <b>Gone:</b> the separate layout page for Forms and Freeform,
+                the Form templates tab, and the "Form templates arrive next"
+                line.
+            </li>
+            <li>
+                <b>Flows after:</b> Form = type → layout + theme → details.
+                Survey = type → template → layout + theme → details. Freeform =
+                type → template → layout + theme → details.
+            </li>
+            <li>
+                <b>Studio untouched:</b> Design → Theme → Change… keeps its
+                preview-only "Preview in" row; Layout keeps its own Change….
+            </li>
+        </ul>
+    </body>
+</html>

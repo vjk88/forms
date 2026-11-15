@@ -1,7 +1,7 @@
 <template>
     <div class="gal">
         <div class="gal-controls">
-            <div class="gal-layout">
+            <div lwc:if={showLayoutSwitch} class="gal-layout">
                 <span class="gal-llabel" aria-hidden="true">Preview in</span>
                 <c-final-button-group
                     class="gal-layouts"

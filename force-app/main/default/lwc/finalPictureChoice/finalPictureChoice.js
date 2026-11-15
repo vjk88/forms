@@ -54,14 +54,17 @@ export default class FinalPictureChoice extends LightningElement {
     @api value;
     /** Read-only: the tiles show the choice but can't change it. */
     @api disabled = false;
-    /** Grid tiles per row: 2 (default), 3 or 4. */
+    /** Grid tiles per row: 2 (default), 3 or 4. 8 = one row when the parent's
+     *  `pc-row` container is wide enough, else 4 per row. */
     @api columns;
 
     _focusIndex = null;
 
     get gridClass() {
         const n = Number(this.columns);
-        return n === 3 || n === 4 ? `pc-grid pc-grid--${n}` : 'pc-grid';
+        return n === 3 || n === 4 || n === 8
+            ? `pc-grid pc-grid--${n}`
+            : 'pc-grid';
     }
 
     get _all() {

@@ -228,3 +228,23 @@ describe('c-final-theme-gallery: previews follow the form', () => {
         expect(card(el, 'scenic').maxWidth).toBe('wide');
     });
 });
+
+describe('c-final-theme-gallery: the creation flow picks the layout itself', () => {
+    it('shows "Preview in" by default (the Studio picker keeps it)', async () => {
+        const el = await mount();
+        expect(el.shadowRoot.querySelector('.gal-layout')).not.toBeNull();
+    });
+
+    it('hides "Preview in" when asked, and previews the layout it is given', async () => {
+        const el = await mount({ hideLayoutSwitch: true, layout: 'tabs' });
+        expect(el.shadowRoot.querySelector('.gal-layout')).toBeNull();
+        expect(el.shadowRoot.querySelector('c-final-theme-card').layout).toBe(
+            'tabs'
+        );
+        el.layout = 'accordion';
+        await flush();
+        expect(el.shadowRoot.querySelector('c-final-theme-card').layout).toBe(
+            'accordion'
+        );
+    });
+});
