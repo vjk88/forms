@@ -30,11 +30,39 @@
     order: 2;
 }
 
-.sticky-pane .pane {
-    /* --c-nav-sticky: static inside LEX embeds (pageFrame decides). */
-    position: var(--c-nav-sticky, sticky);
-    top: var(--c-space-4);
-    align-self: start;
+/* — Carded (fullBleed:false; owner 2026-11-15): the card owns the screen the
+     way Immersive does, inside the page margin. The layout is the screen's
+     height less the frame's margin and card padding (--frame-chrome-y, from
+     c/finalPageFrame); the pane runs that full height, so its steps sit at
+     its foot, and only the questions column scrolls. --frame-offset is the
+     same per-host term Immersive uses. The 320px floor keeps a squat window
+     usable (the page scrolls instead). — */
+.mode-card {
+    height: max(
+        320px,
+        calc(100vh - var(--frame-offset, 0px) - var(--frame-chrome-y, 0px))
+    );
+    height: max(
+        320px,
+        calc(100dvh - var(--frame-offset, 0px) - var(--frame-chrome-y, 0px))
+    );
+}
+
+.mode-card .pane {
+    min-height: 0;
+}
+
+.mode-card .form {
+    /* THE scrolling column (grid items must be allowed to fit the track);
+       top-anchored like every document form, never centered under overflow */
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    justify-content: flex-start;
+    /* 4px of room so the scroll edge never clips a field's focus ring; the
+       negative margin keeps the column exactly where it was */
+    margin: -4px;
+    padding: 4px;
 }
 
 /* — The brand pane: the product's hero. Config paints it (fill via paneStyle,
@@ -48,7 +76,7 @@
     color: #fff;
     overflow: hidden;
     /* Anchors .banner-layer and keeps its negative z-index inside the pane
-       whatever position the sticky rule resolves to (static inside LEX). The
+       whatever position the pane has. The
        pane already clips (overflow: hidden), so paint containment adds none. */
     contain: paint;
 }
@@ -463,15 +491,20 @@ slot[name='actions'] {
         position: static;
     }
 
-    /* Stacked, the pane must scroll away with the page: left sticky, its
-       title drew over the questions below it (2026-11-13). Needs the desktop
-       rule's own two-class strength; plain .pane above loses to it. */
-    .sticky-pane .pane {
-        position: static;
-    }
-
     .pane.pane--bare {
         display: none;
+    }
+
+    /* Stacked, the carded card gives the screen back: one document flow,
+       no inner scroll (the pane scrolls away above the questions). */
+    .mode-card {
+        height: auto;
+    }
+
+    .mode-card .form {
+        overflow-y: visible;
+        margin: 0;
+        padding: 0;
     }
 
     /* stacked panes: release the viewport cap and the inner scroll — one

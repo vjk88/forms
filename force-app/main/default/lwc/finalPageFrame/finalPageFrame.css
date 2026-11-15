@@ -88,7 +88,12 @@
        TOP-ANCHORED — never vertically centered (expanding content would yank
        the reader) — but a short card must not hug the ceiling. ~8% of the
        viewport reads as deliberate placement; bleed layouts zero this out. */
-    padding: clamp(32px, 8vh, 96px) var(--c-space-4) var(--c-space-6);
+    --frame-pad-top: clamp(32px, 8vh, 96px);
+    padding: var(--frame-pad-top) var(--c-space-4) var(--c-space-6);
+    /* The height this frame wraps around its content: both page paddings, the
+       panel's two paddings and 4px for the panel's border. A layout that fits
+       itself to the screen (carded Split Hero) subtracts it. */
+    --frame-chrome-y: calc(var(--frame-pad-top) + 3 * var(--c-space-6) + 4px);
     /* Side inset shared by full-width chrome strips: in One at a time the header
        lockup and the progress strip sit on the same edge (design-explorations/01).
        cqi = 1% of the form's own width, resolved where it is used. */

@@ -166,22 +166,22 @@ describe('Split phone strip', () => {
         expect(none.shadowRoot.querySelector('.pane-progress')).toBeNull();
     });
 
-    // 2026-11-13: at 390px the stacked pane kept sticking, so its title drew
-    // over the questions while scrolling. The desktop rule `.sticky-pane .pane`
-    // (two classes) beat the phone rule's plain `.pane { position: static }`
-    // (one class). The phone rule must switch sticky off at the same strength.
-    it('the stacked phone pane scrolls away (sticky off at full strength)', () => {
-        expect(css).toMatch(
-            /\.sticky-pane \.pane\s*\{[^}]*position:\s*var\(--c-nav-sticky, sticky\)/
+    // 2026-11-13: at 390px the stacked pane stuck and drew its title over
+    // the questions. Since 2026-11-15 nothing is sticky; stacked, the carded
+    // card must also give back its screen-high cap and inner scroll, so the
+    // pane scrolls away above the questions as one page.
+    it('stacked carded split is one page: no screen cap, no inner scroll', () => {
+        const phone = phoneRule();
+        expect(phone).toMatch(/\.mode-card\s*\{[^}]*height:\s*auto;/);
+        expect(phone).toMatch(
+            /\.mode-card \.form\s*\{[^}]*overflow-y:\s*visible;/
         );
-        expect(phoneRule()).toMatch(
-            /\.sticky-pane \.pane\s*\{[^}]*position:\s*static;/
-        );
-        const sticky = mount({ paneTitle: 'T', fullBleed: false });
+        expect(css).not.toMatch(/position:\s*(var\([^)]*)?sticky/);
+        const carded = mount({ paneTitle: 'T', fullBleed: false });
         expect(
-            sticky.shadowRoot
+            carded.shadowRoot
                 .querySelector('.layout')
-                .classList.contains('sticky-pane')
+                .classList.contains('mode-card')
         ).toBe(true);
     });
 });
