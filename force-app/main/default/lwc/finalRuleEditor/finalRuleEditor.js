@@ -1,4 +1,5 @@
-import { LightningElement, api } from 'lwc';
+import { LightningElement, api, wire } from 'lwc';
+import { getObjectInfo } from 'lightning/uiObjectInfoApi';
 import { lintVisibility, validateCustomLogic } from 'c/finalExpressionEngine';
 import { typeForPath } from 'c/finalFieldPicker';
 
@@ -300,6 +301,23 @@ export default class FinalRuleEditor extends LightningElement {
      */
     @api compareRecordObject;
 
+    /** That object's Salesforce info, for its label (DEFERRED 62). */
+    _compareInfo;
+
+    @wire(getObjectInfo, { objectApiName: '$compareRecordObject' })
+    wiredCompareInfo({ data }) {
+        this._compareInfo = data || null;
+    }
+
+    /** "Job Application", not "Job_Application__c"; the API name until
+     *  the label loads. */
+    get compareRecordLabel() {
+        return (
+            (this._compareInfo && this._compareInfo.label) ||
+            this.compareRecordObject
+        );
+    }
+
     /**
      * Mapping screen: the form's questions a row may compare with —
      * [{ key, label, fits: [lower-case field types] }]. A question that holds
@@ -444,11 +462,11 @@ export default class FinalRuleEditor extends LightningElement {
     }
 
     get recordValueHint() {
-        return `If this ${this.compareRecordObject}’s field is empty, the condition matches no records.`;
+        return `If this ${this.compareRecordLabel}’s field is empty, the condition matches no records.`;
     }
 
     get recordValuePlaceholder() {
-        return `Search ${this.compareRecordObject} fields`;
+        return `Search ${this.compareRecordLabel} fields`;
     }
 
     /** What a record screen's value can be compared with. */
@@ -460,7 +478,7 @@ export default class FinalRuleEditor extends LightningElement {
         if (this.columns === 'lookup' && this.compareRecordObject) {
             out.push({
                 value: 'record',
-                label: `This ${this.compareRecordObject}`
+                label: `This ${this.compareRecordLabel}`
             });
         }
         return out;
@@ -816,7 +834,7 @@ export default class FinalRuleEditor extends LightningElement {
                               : this._compareOf(rule, i) === 'user'
                                 ? 'Choose a user field.'
                                 : this._compareOf(rule, i) === 'record'
-                                  ? `Choose a ${this.compareRecordObject} field.`
+                                  ? `Choose a ${this.compareRecordLabel} field.`
                                   : 'Enter a value, or use “Is blank”.'
                 });
             } else if (

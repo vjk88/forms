@@ -1,5 +1,6 @@
 import { createElement } from 'lwc';
 import FinalPropertyPanel from 'c/finalPropertyPanel';
+import { getObjectInfo } from 'lightning/uiObjectInfoApi';
 import describeFields from '@salesforce/apex/FinalStudioController.describeFields';
 
 jest.mock(
@@ -567,6 +568,19 @@ describe('c-final-property-panel (the FormStudio port)', () => {
         expect(seg(el, 'Display style')).toHaveLength(3);
         expect(seg(el, 'Columns')).toHaveLength(4);
         expect(el.shadowRoot.querySelector('.pp-ro').textContent).toBe(
+            'Contact'
+        );
+        // DEFERRED 62: the object's label, its API name quietly under it
+        getObjectInfo.emit({
+            apiName: 'Contact',
+            label: 'Contact',
+            labelPlural: 'Contacts'
+        });
+        await flush();
+        expect(el.shadowRoot.querySelector('.pp-ro').textContent).toBe(
+            'Contacts'
+        );
+        expect(el.shadowRoot.querySelector('.pp-api').textContent).toBe(
             'Contact'
         );
 

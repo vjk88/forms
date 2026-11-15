@@ -4,6 +4,7 @@ import FinalBuilderCanvas, {
     PALETTE_EL_MIME,
     PALETTE_FILE_MIME
 } from 'c/finalBuilderCanvas';
+import { getObjectInfos } from 'lightning/uiObjectInfoApi';
 
 /** Minimal DataTransfer stand-in (jsdom has no DragEvent/DataTransfer). */
 function makeDataTransfer() {
@@ -464,6 +465,28 @@ describe('c-final-builder-canvas', () => {
         const el = mount({ spec });
         const chip = el.shadowRoot.querySelector('.bc-repeat');
         expect(chip.textContent).toContain('OrderItem__c');
+    });
+
+    it('the chip names the object by its label once Salesforce answers (DEFERRED 62)', async () => {
+        const spec = JSON.parse(JSON.stringify(SPEC));
+        spec.pages[0].sections.push({
+            id: 'sec_rep',
+            title: 'Line items',
+            repeat: { childObject: 'OrderItem__c' },
+            elements: []
+        });
+        const el = mount({ spec });
+        getObjectInfos.emit({
+            results: [
+                {
+                    statusCode: 200,
+                    result: { apiName: 'OrderItem__c', label: 'Order Item' }
+                }
+            ]
+        });
+        await Promise.resolve();
+        const chip = el.shadowRoot.querySelector('.bc-repeat');
+        expect(chip.textContent).toBe('↻ repeats · Order Item');
     });
 
     it('element drags cannot enter a repeater section (§2 data-context signatures)', () => {

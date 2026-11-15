@@ -35,7 +35,9 @@ export default class FinalRelationshipPicker extends LightningElement {
         return (this.relationships || []).map((r) => ({
             ...r,
             key: `${r.childObject}:${r.linkingField}`,
-            via: `via ${r.linkingFieldLabel || r.linkingField}`
+            via: `via ${r.linkingFieldLabel || r.linkingField}`,
+            // the API names, quiet under the label: "Contact.AccountId"
+            api: `${r.childObject}.${r.linkingField}`
         }));
     }
 
@@ -47,7 +49,7 @@ export default class FinalRelationshipPicker extends LightningElement {
             return this.allRows;
         }
         return this.allRows.filter((r) =>
-            [r.childObjectLabel, r.childObject, r.via].some((t) =>
+            [r.childObjectLabel, r.api, r.via].some((t) =>
                 String(t || '')
                     .toLowerCase()
                     .includes(q)

@@ -1,4 +1,5 @@
 import { LightningElement, api, wire } from 'lwc';
+import { getObjectInfo } from 'lightning/uiObjectInfoApi';
 import describeFields from '@salesforce/apex/FinalStudioController.describeFields';
 import listLookupObjects from '@salesforce/apex/FinalLookupController.listLookupObjects';
 import listSurveyTopics from '@salesforce/apex/FinalStudioController.listSurveyTopics';
@@ -274,6 +275,30 @@ export default class FinalPropertyPanel extends LightningElement {
         } else if (error) {
             this.childError = 'The child object’s fields could not be loaded.';
         }
+    }
+
+    /** The related list's object, for its label (DEFERRED 62): the
+     *  inspector says "Job Application", never "Job_Application__c". */
+    _childInfo;
+
+    @wire(getObjectInfo, { objectApiName: '$_childObject' })
+    wiredChildInfo({ data }) {
+        this._childInfo = data || null;
+    }
+
+    /** The child object's label; its API name until that loads. */
+    get childObjectLabel() {
+        return (
+            (this._childInfo && this._childInfo.label) ||
+            this.repeat.childObject
+        );
+    }
+
+    get childObjectPlural() {
+        return (
+            (this._childInfo && this._childInfo.labelPlural) ||
+            this.repeat.childObject
+        );
     }
 
     get n() {
@@ -1238,7 +1263,7 @@ export default class FinalPropertyPanel extends LightningElement {
                 : `Field · ${kind} · survey answer (no object)`;
         }
         if (this.isRepeater) {
-            return `Repeating group · ${this.n.repeat.childObject}`;
+            return `Repeating group · ${this.childObjectLabel}`;
         }
         const names = {
             richText: 'Display text',
@@ -1705,11 +1730,11 @@ export default class FinalPropertyPanel extends LightningElement {
     }
 
     get repeatShowHeading() {
-        return `Show ${this.repeat.childObject || 'related'} records where`;
+        return `Show ${this.childObjectLabel || 'related'} records where`;
     }
 
     get repeatShowLabel() {
-        return `Which ${this.repeat.childObject || 'related'} records to show`;
+        return `Which ${this.childObjectLabel || 'related'} records to show`;
     }
 
     /** Honest about slice 1: on a record page nothing can change yet. */
@@ -1782,7 +1807,7 @@ export default class FinalPropertyPanel extends LightningElement {
     }
 
     get childHeading() {
-        return `Fields — ${this.repeat.childObject}`;
+        return `Fields — ${this.childObjectLabel}`;
     }
 
     // ---- Fill on new records (P2.6) ----

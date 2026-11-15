@@ -26,6 +26,17 @@ export default class FinalRepeatFillModal extends LightningModal {
     @api description;
     @api childObject;
     @api parentObject;
+    /** Their labels, for the copy (DEFERRED 62); the API names without. */
+    @api childLabel;
+    @api parentLabel;
+
+    get _child() {
+        return this.childLabel || this.childObject;
+    }
+
+    get _parent() {
+        return this.parentLabel || this.parentObject;
+    }
     /** The child fields this fill may set (describeFields rows). */
     @api fields = [];
 
@@ -74,7 +85,7 @@ export default class FinalRepeatFillModal extends LightningModal {
     }
 
     get fieldLabel() {
-        return `${this.childObject} field`;
+        return `${this._child} field`;
     }
 
     get fieldOptions() {
@@ -99,7 +110,7 @@ export default class FinalRepeatFillModal extends LightningModal {
                 value: 'fixed',
                 disabled: this.lookupOnly
             },
-            { label: `From ${this.parentObject}`, value: 'from' }
+            { label: `From ${this._parent}`, value: 'from' }
         ];
     }
 
@@ -164,7 +175,7 @@ export default class FinalRepeatFillModal extends LightningModal {
     // ---- from the main record ----
 
     get sourceLabel() {
-        return `${this.parentObject} field`;
+        return `${this._parent} field`;
     }
 
     get sourceOptions() {
@@ -193,7 +204,7 @@ export default class FinalRepeatFillModal extends LightningModal {
     }
 
     get sourceHint() {
-        return `Only ${this.parentObject} fields that hold the same kind of value are offered.`;
+        return `Only ${this._parent} fields that hold the same kind of value are offered.`;
     }
 
     get noSourcesText() {
@@ -202,9 +213,9 @@ export default class FinalRepeatFillModal extends LightningModal {
         }
         const label = this.current ? this.current.label : 'this field';
         const tail = this.lookupOnly
-            ? ` Choose a different ${this.childObject} field.`
+            ? ` Choose a different ${this._child} field.`
             : ' Use a fixed value instead.';
-        return `No ${this.parentObject} field holds the same kind of value as ${label}.${tail}`;
+        return `No ${this._parent} field holds the same kind of value as ${label}.${tail}`;
     }
 
     async _loadSources() {
@@ -229,7 +240,7 @@ export default class FinalRepeatFillModal extends LightningModal {
         } catch {
             if (this.field === want) {
                 this.sources = [];
-                this.sourcesError = `The ${this.parentObject} fields could not be loaded.`;
+                this.sourcesError = `The ${this._parent} fields could not be loaded.`;
             }
         }
     }
@@ -309,10 +320,10 @@ export default class FinalRepeatFillModal extends LightningModal {
 
     _check() {
         if (!this.hasField) {
-            return `Choose a ${this.childObject} field.`;
+            return `Choose a ${this._child} field.`;
         }
         if (this.isFrom) {
-            return this.from ? '' : `Choose a ${this.parentObject} field.`;
+            return this.from ? '' : `Choose a ${this._parent} field.`;
         }
         if (this.isCheckbox) {
             return '';

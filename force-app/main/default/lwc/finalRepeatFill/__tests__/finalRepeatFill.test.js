@@ -1,6 +1,7 @@
 import { createElement } from 'lwc';
 import FinalRepeatFill from 'c/finalRepeatFill';
 import FinalRepeatFillModal from 'c/finalRepeatFillModal';
+import { getObjectInfo } from 'lightning/uiObjectInfoApi';
 import { isFillable, valueText } from 'c/finalRepeatGroups';
 
 jest.mock('c/finalRepeatFillModal', () => ({
@@ -173,6 +174,43 @@ describe('fill on new records: the list', () => {
         expect(FinalRepeatFillModal.open.mock.calls[0][0].label).toBe(
             'Change how Status is filled'
         );
+    });
+});
+
+describe('object labels, not API names (DEFERRED 62)', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+        jest.clearAllMocks();
+    });
+
+    it('a custom object reads as its label, in the list and the dialog', async () => {
+        FinalRepeatFillModal.open.mockResolvedValue(undefined);
+        const el = createElement('c-final-repeat-fill', {
+            is: FinalRepeatFill
+        });
+        el.fills = [{ field: 'Status', from: 'Stage__c' }];
+        el.childObject = 'Case';
+        el.parentObject = 'Job_Application__c';
+        el.childFields = FIELDS;
+        document.body.appendChild(el);
+        await flush();
+        expect(el.shadowRoot.textContent).toContain(
+            'From the Job_Application__c'
+        );
+        getObjectInfo.emit({
+            apiName: 'Job_Application__c',
+            label: 'Job Application'
+        });
+        await flush();
+        expect(el.shadowRoot.textContent).toContain('From the Job Application');
+        expect(el.shadowRoot.textContent).not.toContain('Job_Application__c');
+        $(el, '.rf-line').click();
+        await flush();
+        const args = FinalRepeatFillModal.open.mock.calls[0][0];
+        expect(args.parentObject).toBe('Job_Application__c');
+        expect(args.parentLabel).toBe('Job Application');
     });
 });
 

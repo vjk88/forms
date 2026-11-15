@@ -1,4 +1,5 @@
-import { LightningElement, api } from 'lwc';
+import { LightningElement, api, wire } from 'lwc';
+import { getObjectInfos } from 'lightning/uiObjectInfoApi';
 import { canMoveElement, findItem } from './movement';
 export { canMoveElement } from './movement';
 
@@ -91,6 +92,47 @@ export default class FinalBuilderCanvas extends LightningElement {
 
     announcement = '';
     _pendingAction;
+
+    // ---- the related lists' object labels (DEFERRED 62) ----
+
+    _objectNames = [];
+    /** apiName → label, as Salesforce answers. */
+    _objectLabels = {};
+
+    /** Every related list's object, one array per distinct set so the
+     *  wire only asks again when the set changes. */
+    get repeatObjectNames() {
+        const names = [
+            ...new Set(
+                ((this.spec && this.spec.pages) || [])
+                    .flatMap((p) => p.sections || [])
+                    .map((s) => s.repeat && s.repeat.childObject)
+                    .filter(Boolean)
+            )
+        ].sort();
+        if (names.join('|') !== this._objectNames.join('|')) {
+            this._objectNames = names;
+        }
+        return this._objectNames.length ? this._objectNames : undefined;
+    }
+
+    @wire(getObjectInfos, { objectApiNames: '$repeatObjectNames' })
+    wiredObjectInfos({ data }) {
+        if (!data || !data.results) {
+            return;
+        }
+        const labels = {};
+        data.results.forEach((r) => {
+            if (r && r.result && r.result.apiName) {
+                labels[r.result.apiName] = r.result.label;
+            }
+        });
+        this._objectLabels = labels;
+    }
+
+    _objectLabel(apiName) {
+        return this._objectLabels[apiName] || apiName;
+    }
 
     get selectedItem() {
         const hit = findItem(
@@ -368,10 +410,11 @@ export default class FinalBuilderCanvas extends LightningElement {
                     ? BLOCK_LABELS[first && first.type] || 'Block'
                     : null,
                 // §4: a repeatable section wears its child object on the
-                // blueprint — the structural fact a schematic must show
+                // blueprint — the structural fact a schematic must show;
+                // by its label, "Job Application" (DEFERRED 62)
                 repeatChip:
                     s.repeat && s.repeat.childObject
-                        ? `↻ repeats · ${s.repeat.childObject}`
+                        ? `↻ repeats · ${this._objectLabel(s.repeat.childObject)}`
                         : null,
                 title: s.title || 'Untitled section',
                 desc: !isBlock && s.description ? s.description : null,

@@ -55,6 +55,10 @@ describe('c-final-relationship-picker', () => {
         expect(items).toHaveLength(2);
         expect(items[0].textContent).toContain('Contact');
         expect(items[0].textContent).toContain('via Account ID');
+        // the API names, quiet under the label
+        expect(items[0].querySelector('.rp-item-api').textContent).toBe(
+            'Contact.AccountId'
+        );
 
         const picks = [];
         el.addEventListener('pick', (e) => picks.push(e.detail));

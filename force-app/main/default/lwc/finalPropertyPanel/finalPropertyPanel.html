@@ -1077,7 +1077,10 @@
                 <template lwc:if={isRepeater}>
                     <div class="pp-fld">
                         <span class="pp-label">Child records</span>
-                        <span class="pp-ro">{repeat.childObject}</span>
+                        <span class="pp-ro-pair">
+                            <span class="pp-ro">{childObjectPlural}</span>
+                            <span class="pp-api">{repeat.childObject}</span>
+                        </span>
                     </div>
                     <div class="pp-fld">
                         <span class="pp-label">Display style</span>

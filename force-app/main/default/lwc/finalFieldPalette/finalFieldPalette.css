@@ -97,6 +97,26 @@
     white-space: nowrap;
 }
 
+/* A field row: its label, and its API name quietly under it */
+.fp-name {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.fp-name .fp-label {
+    flex: none;
+}
+
+.fp-api {
+    font-size: var(--c-studio-fs-small);
+    color: var(--c-studio-text-weak);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .fp-req {
     color: var(--c-studio-error);
     text-decoration: none;

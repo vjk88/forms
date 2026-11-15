@@ -55,6 +55,12 @@ describe('c-final-field-palette', () => {
         expect(
             el.shadowRoot.querySelector('.fp-item.added .fp-label').textContent
         ).toContain('Email');
+        // each field's API name, quietly under its label
+        expect(
+            [...el.shadowRoot.querySelectorAll('.fp-api')].map(
+                (n) => n.textContent
+            )
+        ).toEqual(['LastName', 'Email']);
 
         const handler = jest.fn();
         el.addEventListener('addfield', handler);
