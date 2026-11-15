@@ -418,6 +418,17 @@ public inherited sharing class FinalSubmitService {
         }
         checkBudget(groupRows);
 
+        List<FieldError> badAnswers = FinalAnswerValidator.validate(
+            spec,
+            answers,
+            isUpdate
+        );
+        if (!badAnswers.isEmpty()) {
+            SubmitOutcome refused = new SubmitOutcome();
+            refused.errors = badAnswers;
+            return refused;
+        }
+
         List<FieldError> badLookups = lookupErrors(spec, answers, mode);
         if (!badLookups.isEmpty()) {
             SubmitOutcome refused = new SubmitOutcome();
@@ -1305,6 +1316,17 @@ public inherited sharing class FinalSubmitService {
 
         // Surveys carry lookups too, and a survey response is just as capable
         // of pointing at a record the filter excludes.
+        List<FieldError> badAnswers = FinalAnswerValidator.validate(
+            spec,
+            answers,
+            false
+        );
+        if (!badAnswers.isEmpty()) {
+            SubmitOutcome refused = new SubmitOutcome();
+            refused.errors = badAnswers;
+            return refused;
+        }
+
         List<FieldError> badLookups = lookupErrors(spec, answers, mode);
         if (!badLookups.isEmpty()) {
             SubmitOutcome refused = new SubmitOutcome();
@@ -1470,6 +1492,17 @@ public inherited sharing class FinalSubmitService {
         List<RepeatPlan> plans = new List<RepeatPlan>();
         collectElements(spec, flat, plans);
         checkGroups(plans, repeats);
+
+        List<FieldError> badAnswers = FinalAnswerValidator.validate(
+            spec,
+            answers,
+            false
+        );
+        if (!badAnswers.isEmpty()) {
+            SubmitOutcome refused = new SubmitOutcome();
+            refused.errors = badAnswers;
+            return refused;
+        }
 
         List<FieldError> badLookups = lookupErrors(spec, answers, mode);
         if (!badLookups.isEmpty()) {
