@@ -89,6 +89,45 @@
     overflow: hidden;
 }
 
+/* Under a filled header band (DEFERRED #16) the line runs the full width
+   and rides up onto the band's last 3px, in the header's own text colour, so
+   it reads as the band's bottom edge instead of a faint line on the photo.
+   The counter stays just below it, on the strip's side inset. */
+/* The band's ink: the header's own text colour, or its banner text colour
+   over a form's own photo, exactly as the header paints its words. */
+.has-band {
+    --band-ink: var(--c-header-text);
+}
+
+.has-band.band-banner {
+    --band-ink: var(--c-header-text-banner, var(--c-header-text));
+}
+
+.has-band .top-chrome {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--c-space-2);
+    margin: 0;
+    padding-top: 0;
+}
+
+.has-band .progress-hairline {
+    position: relative;
+    flex: none;
+    height: 3px;
+    margin-top: -3px;
+    background: color-mix(in srgb, var(--band-ink) 30%, transparent);
+}
+
+.has-band .progress-fill {
+    background: var(--band-ink);
+}
+
+.has-band .counter {
+    align-self: flex-end;
+    margin-right: var(--c-strip-inset);
+}
+
 .counter {
     margin: 0;
     /* a small pill of the same backing, only where the page needs it */
