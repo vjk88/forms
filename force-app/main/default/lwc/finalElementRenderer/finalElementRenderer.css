@@ -1087,7 +1087,14 @@
     outline: 2px solid transparent;
     box-shadow: var(--c-focus-ring);
 }
-/* matrix: grid on wide screens, stacked cards on narrow */
+/* matrix: grid on wide screens, stacked cards on narrow. The table is
+   its own container, so the switch follows the width the matrix really
+   gets: beside a left label it is narrower than its section (DEFERRED
+   #27). width:100% keeps a size container from collapsing to 0. */
+.mx-table {
+    container: mx / inline-size;
+    width: 100%;
+}
 .mx-head {
     display: grid;
     grid-template-columns: minmax(140px, 1.4fr) repeat(
@@ -1160,8 +1167,9 @@
 .mx-dot:focus-visible::before {
     box-shadow: var(--c-focus-ring);
 }
-@container section (max-width: 560px) {
-    /* stacked mobile: each statement becomes its own mini-question and the
+@container mx (max-width: 600px) {
+    /* 600px fits a 6-point grid (140px statement + 70px a point).
+       stacked mobile: each statement becomes its own mini-question and the
        cells grow labels (SURVEY_PLAN — the second rendering matrix ships
        with). The chip look lives HERE — desktop is dots-only. */
     .mx-head {

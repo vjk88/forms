@@ -1082,6 +1082,36 @@ describe('c-final-property-panel (the FormStudio port)', () => {
         });
     });
 
+    it('the matrix scale hint names the scale the question really has', async () => {
+        const hint = async (config) => {
+            const el = mount({
+                kind: 'element',
+                node: { id: 'el_m', type: 'matrix', label: 'Rate us', config }
+            });
+            await flush();
+            return [...el.shadowRoot.querySelectorAll('.pp-sub')]
+                .map((n) => n.textContent)
+                .find((s) => s.includes('Scale:'));
+        };
+        // an older matrix: the renderer's 4-point fallback
+        expect(await hint({ rows: [] })).toContain(
+            'Disagree → Strongly agree (4 points).'
+        );
+        // a new one: its own five points
+        expect(
+            await hint({
+                rows: [],
+                points: [
+                    { value: 1, label: 'Strongly disagree' },
+                    { value: 2, label: 'Disagree' },
+                    { value: 3, label: 'Neutral' },
+                    { value: 4, label: 'Agree' },
+                    { value: 5, label: 'Strongly agree' }
+                ]
+            })
+        ).toContain('Strongly disagree → Strongly agree (5 points).');
+    });
+
     // IMPL_PLAN_STUDIO_COMPONENT_SWAP rule 3: lightning-input fires change on
     // every keystroke; the inspector's boxes still save only when you leave.
     it('typing in a box saves nothing; leaving it (commit) saves', async () => {

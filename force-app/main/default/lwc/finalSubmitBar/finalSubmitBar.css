@@ -30,6 +30,14 @@
     justify-content: space-between;
 }
 
+/* Split keeps Next on the right on every page: on page 1 there is no Back,
+   and space-between would leave a lone Next on the left, then jump it right
+   on page 2 (R1 review, DEFERRED #27). A lone Submit on a one-page form
+   still sits left, as before. */
+.arr-split .next {
+    margin-left: auto;
+}
+
 /* stretch (owner QA 2026-07-07): every button shares the row equally; the
    quiet Back link becomes a boxed secondary so it holds its half. */
 .arr-stretch .buttons > * {
