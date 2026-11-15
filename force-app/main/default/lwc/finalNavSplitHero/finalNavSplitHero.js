@@ -51,7 +51,8 @@ export default class FinalNavSplitHero extends LightningElement {
      * form header: paneTitle, paneSubtitle, paneBrandName, paneLogo,
      * paneHighlight, paneImage (header IS the pane editor, finalFormViewer
      * ownsHeader; paneImage ← header.bgImage since sweep slice 3).
-     * DORMANT (renderer tolerates, NO product writer): sticky (KEEP ruling).
+     * IGNORED since 2026-11-15 (the carded card owns the screen, nothing
+     * scrolls past the pane): sticky.
      * DELETED 2026-07-18 (sweep rulings): blockPlacement, paneBg,
      * paneBgOpacity.
      */
@@ -124,14 +125,13 @@ export default class FinalNavSplitHero extends LightningElement {
         const side = this.opts.side === 'right' ? 'side-right' : 'side-left';
         const ratio =
             this.opts.ratio === 'third' ? 'ratio-third' : 'ratio-half';
-        // Carded split: the brand pane pins by DEFAULT while the form column
-        // scrolls (owner 2026-07-11; opt out via sticky:false). Never in
-        // bleed — sticky's align-self:start would unstretch the full-height
-        // half and collapse the immersive canvas.
-        const sticky =
-            !this.bleedOn && this.opts.sticky !== false ? ' sticky-pane' : '';
-        const bleed = this.bleedOn ? ' mode-bleed' : '';
-        return `layout ${side} ${ratio}${sticky}${bleed}`;
+        // Carded split owns the screen like Immersive (owner 2026-11-15):
+        // the card is as tall as the screen inside the page margin, the pane
+        // runs its full height (steps at its foot) and only the questions
+        // column scrolls. Replaces the sticky pane of 2026-07-11, whose
+        // steps floated mid-column beside a long form.
+        const mode = this.bleedOn ? ' mode-bleed' : ' mode-card';
+        return `layout ${side} ${ratio}${mode}`;
     }
 
     /** Split is this layout's registry default — unknown values land there. */

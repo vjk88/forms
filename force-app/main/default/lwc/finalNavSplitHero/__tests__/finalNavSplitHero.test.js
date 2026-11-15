@@ -139,21 +139,53 @@ describe('c-final-nav-split-hero', () => {
         );
     });
 
-    it('carded pane pins by default; bleed never; sticky:false opts out', async () => {
-        // carded (fullBleed:false) → sticky-pane by default
-        let cmp = await mount({ fullBleed: false });
-        expect(cmp.shadowRoot.querySelector('.layout').className).toContain(
-            'sticky-pane'
+    it('carded owns the screen (mode-card); bleed is mode-bleed; sticky is gone', async () => {
+        // carded (fullBleed:false): the card fills the screen, questions scroll
+        let cls = (await mount({ fullBleed: false })).shadowRoot.querySelector(
+            '.layout'
+        ).className;
+        expect(cls).toContain('mode-card');
+        expect(cls).not.toContain('mode-bleed');
+        // the retired sticky option changes nothing
+        cls = (
+            await mount({ fullBleed: false, sticky: false })
+        ).shadowRoot.querySelector('.layout').className;
+        expect(cls).toContain('mode-card');
+        expect(cls).not.toContain('sticky-pane');
+        // bleed (default)
+        cls = (await mount({ sticky: true })).shadowRoot.querySelector(
+            '.layout'
+        ).className;
+        expect(cls).toContain('mode-bleed');
+        expect(cls).not.toContain('mode-card');
+        expect(cls).not.toContain('sticky-pane');
+    });
+
+    it('carded CSS: screen-high layout, full-height pane, the questions column scrolls', () => {
+        const css = require('fs')
+            .readFileSync(
+                require('path').join(__dirname, '..', 'finalNavSplitHero.css'),
+                'utf8'
+            )
+            .replace(/\/\*[\s\S]*?\*\//g, '');
+        expect(css).toMatch(
+            /\.mode-card\s*\{[^}]*height:[^;]*100dvh - var\(--frame-offset, 0px\) - var\(--frame-chrome-y, 0px\)/
         );
-        // explicit opt-out
-        cmp = await mount({ fullBleed: false, sticky: false });
-        expect(cmp.shadowRoot.querySelector('.layout').className).not.toContain(
-            'sticky-pane'
+        expect(css).toMatch(/\.mode-card \.pane\s*\{[^}]*min-height:\s*0;/);
+        expect(css).toMatch(/\.mode-card \.form\s*\{[^}]*overflow-y:\s*auto;/);
+        expect(css).not.toMatch(/sticky-pane/);
+        const frame = require('fs').readFileSync(
+            require('path').join(
+                __dirname,
+                '..',
+                '..',
+                'finalPageFrame',
+                'finalPageFrame.css'
+            ),
+            'utf8'
         );
-        // bleed (default): sticky would unstretch the full-height half
-        cmp = await mount({ sticky: true });
-        expect(cmp.shadowRoot.querySelector('.layout').className).not.toContain(
-            'sticky-pane'
+        expect(frame).toMatch(
+            /--frame-chrome-y:\s*calc\(var\(--frame-pad-top\) \+ 3 \* var\(--c-space-6\) \+ 4px\)/
         );
     });
 
