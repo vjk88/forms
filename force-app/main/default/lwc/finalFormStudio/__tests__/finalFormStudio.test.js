@@ -858,6 +858,49 @@ describe('c-final-form-studio', () => {
         jest.useRealTimers();
     });
 
+    it('a new matrix question carries the balanced 5-point agree scale', async () => {
+        // DEFERRED #27: the renderer fallback is 4 points with no "Strongly
+        // disagree"; new matrices write the likert's agree-5 on themselves
+        jest.useFakeTimers();
+        const survey = JSON.parse(JSON.stringify(SPEC));
+        survey.form = { id: 'a0F1', name: 'Survey', type: 'survey' };
+        loadStudio.mockResolvedValue({
+            name: 'Survey',
+            specJson: JSON.stringify(survey),
+            draftVersionId: 'a0V1',
+            versionNumber: 2,
+            activeVersionNumber: 1
+        });
+        saveDraft.mockResolvedValue('a0V1');
+        const el = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+        el.shadowRoot.querySelectorAll('.st-mode')[0].click(); // Build
+        await Promise.resolve();
+        el.shadowRoot.querySelector('c-final-field-palette').dispatchEvent(
+            new CustomEvent('addquestion', {
+                detail: { questionType: 'matrix' }
+            })
+        );
+        jest.advanceTimersByTime(1000);
+        const saved = JSON.parse(
+            saveDraft.mock.calls[saveDraft.mock.calls.length - 1][0].specJson
+        );
+        const matrix = saved.pages[0].sections[0].elements.slice(-1)[0];
+        expect(matrix.type).toBe('matrix');
+        expect(matrix.config.points.map((p) => p.label)).toEqual([
+            'Strongly disagree',
+            'Disagree',
+            'Neutral',
+            'Agree',
+            'Strongly agree'
+        ]);
+        expect(matrix.analytics).toMatchObject({ scaleMin: 1, scaleMax: 5 });
+        jest.useRealTimers();
+    });
+
     it('Autofill in Build mode: palette specchange records history and autosaves', async () => {
         jest.useFakeTimers();
         const el = mount();

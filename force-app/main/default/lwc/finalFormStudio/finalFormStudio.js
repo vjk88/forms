@@ -2304,9 +2304,20 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                         rows: [
                             { value: 'row1', label: 'First statement' },
                             { value: 'row2', label: 'Second statement' }
+                        ],
+                        // the likert's balanced agree-5, written on the
+                        // question (DEFERRED #27). Older matrices keep the
+                        // renderer's 4-point fallback, so their saved
+                        // answers keep their meaning.
+                        points: [
+                            { value: 1, label: 'Strongly disagree' },
+                            { value: 2, label: 'Disagree' },
+                            { value: 3, label: 'Neutral' },
+                            { value: 4, label: 'Agree' },
+                            { value: 5, label: 'Strongly agree' }
                         ]
                     },
-                    analytics: score(1, 4)
+                    analytics: score(1, 5)
                 };
             case 'yesNo':
                 return {

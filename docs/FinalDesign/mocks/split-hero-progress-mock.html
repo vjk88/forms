@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Split Hero progress indicator mock</title>
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                padding: 24px;
+                background: #e9edf1;
+                font-family: system-ui, sans-serif;
+                color: #1f2933;
+            }
+            .block {
+                margin-bottom: 36px;
+            }
+            .cap b {
+                display: block;
+                font-size: 18px;
+                margin-bottom: 4px;
+            }
+            .cap span {
+                display: block;
+                font-size: 14px;
+                color: #5b6470;
+                margin-bottom: 12px;
+            }
+
+            .frame {
+                position: relative;
+                display: flex;
+                width: 1000px;
+                height: 460px;
+                border-radius: 12px;
+                overflow: hidden;
+                background: #fff;
+                box-shadow: 0 8px 24px rgba(31, 41, 51, 0.12);
+            }
+
+            /* Brand pane (left, 40%) */
+            .brand {
+                position: relative;
+                width: 40%;
+                padding: 40px;
+                background: #9a4f24;
+                color: #fff;
+            }
+            .brand h1 {
+                margin: 0;
+                font-size: 32px;
+                font-weight: 800;
+                line-height: 1.15;
+            }
+            .brand .sub {
+                margin: 10px 0 0;
+                font-size: 16px;
+                line-height: 1.4;
+            }
+
+            /* Variant A: dots */
+            .dots-wrap {
+                position: absolute;
+                left: 40px;
+                bottom: 36px;
+            }
+            .dots {
+                display: flex;
+                gap: 8px;
+            }
+            .dot {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.4);
+            }
+            .dot.on {
+                background: #fff;
+            }
+            .dots-wrap .step {
+                margin-top: 12px;
+                font-size: 13px;
+                opacity: 0.8;
+            }
+
+            /* Variant B: page list */
+            .steps {
+                margin-top: 28px;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                font-size: 14px;
+            }
+            .steps div {
+                position: relative;
+                padding-left: 14px;
+            }
+            .steps .done {
+                opacity: 0.9;
+            }
+            .steps .cur {
+                font-weight: 700;
+                color: #fff;
+            }
+            .steps .cur::before {
+                content: '';
+                position: absolute;
+                left: 0;
+                top: 2px;
+                bottom: 2px;
+                width: 3px;
+                border-radius: 2px;
+                background: #fff;
+            }
+            .steps .up {
+                opacity: 0.85;
+            }
+
+            /* Right pane (form) */
+            .main {
+                position: relative;
+                flex: 1;
+                padding: 48px 48px 32px;
+            }
+            .page-title {
+                margin: 0 0 24px;
+                font-size: 22px;
+                font-weight: 700;
+            }
+            .field {
+                margin-bottom: 18px;
+            }
+            .field label {
+                display: block;
+                font-size: 14px;
+                font-weight: 600;
+                color: #3e4a56;
+            }
+            input.text {
+                display: block;
+                width: 100%;
+                height: 42px;
+                margin-top: 6px;
+                padding: 0 12px;
+                border: 1px solid #b8c2cc;
+                border-radius: 8px;
+                font: inherit;
+                font-size: 15px;
+                background: #fff;
+            }
+            .actions {
+                position: absolute;
+                right: 48px;
+                bottom: 32px;
+                display: flex;
+                align-items: center;
+                gap: 18px;
+            }
+            .back {
+                border: 0;
+                background: none;
+                padding: 0;
+                font: inherit;
+                font-size: 15px;
+                font-weight: 600;
+                color: #9a4f24;
+                cursor: pointer;
+            }
+            .next {
+                border: 0;
+                border-radius: 8px;
+                padding: 10px 22px;
+                font: inherit;
+                font-size: 15px;
+                font-weight: 700;
+                color: #fff;
+                background: #9a4f24;
+                cursor: pointer;
+            }
+
+            /* Variant C: one question at a time */
+            .progress {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            .track {
+                flex: 1;
+                height: 4px;
+                border-radius: 2px;
+                background: #eadfd7;
+                overflow: hidden;
+            }
+            .fill {
+                width: 25%;
+                height: 100%;
+                background: #9a4f24;
+            }
+            .count {
+                font-size: 13px;
+                color: #5b6470;
+                white-space: nowrap;
+            }
+            .q {
+                margin: 40px 0 0;
+                font-size: 22px;
+                font-weight: 600;
+                line-height: 1.3;
+            }
+            .q-input {
+                margin-top: 18px;
+            }
+            .q-input input.text {
+                height: 46px;
+                font-size: 16px;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- A -->
+        <div class="block">
+            <div class="cap">
+                <b>A. Today: dots in the corner</b>
+                <span
+                    >Progress is only five small dots and a "Step 2 of 5" label
+                    in the bottom-left of the brand pane.</span
+                >
+            </div>
+            <div class="frame">
+                <div class="brand">
+                    <h1>Volunteer sign-up</h1>
+                    <p class="sub">
+                        Help us run the spring fair, one shift at a time.
+                    </p>
+                    <div class="dots-wrap">
+                        <div class="dots">
+                            <span class="dot on"></span>
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                        </div>
+                        <div class="step">Step 2 of 5</div>
+                    </div>
+                </div>
+                <div class="main">
+                    <h2 class="page-title">Contact details</h2>
+                    <div class="field">
+                        <label for="a1">Email address</label>
+                        <input
+                            class="text"
+                            id="a1"
+                            type="text"
+                            placeholder="you@example.com"
+                        />
+                    </div>
+                    <div class="field">
+                        <label for="a2">Mobile number</label>
+                        <input
+                            class="text"
+                            id="a2"
+                            type="text"
+                            placeholder="04xx xxx xxx"
+                        />
+                    </div>
+                    <div class="field">
+                        <label for="a3">Suburb</label>
+                        <input
+                            class="text"
+                            id="a3"
+                            type="text"
+                            placeholder="Where you live"
+                        />
+                    </div>
+                    <div class="actions">
+                        <button class="back" type="button">Back</button>
+                        <button class="next" type="button">Next</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- B -->
+        <div class="block">
+            <div class="cap">
+                <b>B. Pages: name the steps</b>
+                <span
+                    >The brand pane lists the four pages under the subtitle,
+                    with the current one marked by a white bar. The list is not
+                    clickable.</span
+                >
+            </div>
+            <div class="frame">
+                <div class="brand">
+                    <h1>Volunteer sign-up</h1>
+                    <p class="sub">
+                        Help us run the spring fair, one shift at a time.
+                    </p>
+                    <div class="steps">
+                        <div class="done">&#10003; About you</div>
+                        <div class="cur">Contact details</div>
+                        <div class="up">Availability</div>
+                        <div class="up">Review</div>
+                    </div>
+                </div>
+                <div class="main">
+                    <h2 class="page-title">Contact details</h2>
+                    <div class="field">
+                        <label for="b1">Email address</label>
+                        <input
+                            class="text"
+                            id="b1"
+                            type="text"
+                            placeholder="you@example.com"
+                        />
+                    </div>
+                    <div class="field">
+                        <label for="b2">Mobile number</label>
+                        <input
+                            class="text"
+                            id="b2"
+                            type="text"
+                            placeholder="04xx xxx xxx"
+                        />
+                    </div>
+                    <div class="field">
+                        <label for="b3">Suburb</label>
+                        <input
+                            class="text"
+                            id="b3"
+                            type="text"
+                            placeholder="Where you live"
+                        />
+                    </div>
+                    <div class="actions">
+                        <button class="back" type="button">Back</button>
+                        <button class="next" type="button">Next</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- C -->
+        <div class="block">
+            <div class="cap">
+                <b>C. Conversational: bar above the question</b>
+                <span
+                    >One question per screen, with a slim progress bar and a
+                    count above it. The brand pane shows only the title and
+                    subtitle.</span
+                >
+            </div>
+            <div class="frame">
+                <div class="brand">
+                    <h1>Volunteer sign-up</h1>
+                    <p class="sub">
+                        Help us run the spring fair, one shift at a time.
+                    </p>
+                </div>
+                <div class="main">
+                    <div class="progress">
+                        <div class="track"><div class="fill"></div></div>
+                        <span class="count">3 of 12</span>
+                    </div>
+                    <p class="q">What's the best email to reach you?</p>
+                    <div class="q-input">
+                        <input
+                            class="text"
+                            id="c1"
+                            type="text"
+                            placeholder="you@example.com"
+                            aria-label="Email address"
+                        />
+                    </div>
+                    <div class="actions">
+                        <button class="next" type="button">Next</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

@@ -532,6 +532,17 @@ export default class FinalPropertyPanel extends LightningElement {
         this._config({ options });
     }
 
+    /** The selected matrix's scale, as the respondent sees it. */
+    get matrixScaleHint() {
+        const points = this.cfg.points;
+        if (Array.isArray(points) && points.length > 1) {
+            const first = points[0].label;
+            const last = points[points.length - 1].label;
+            return `Scale: ${first} → ${last} (${points.length} points).`;
+        }
+        return 'Scale: Disagree → Strongly agree (4 points).';
+    }
+
     get matrixStatementRows() {
         return (this.cfg.rows || []).map((r, index) => ({
             ...r,
