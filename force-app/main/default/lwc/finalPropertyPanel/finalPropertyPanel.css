@@ -171,6 +171,20 @@
     color: var(--c-studio-text-weak);
 }
 
+/* A read-only value with its API name under it, quiet (DEFERRED 62) */
+.pp-ro-pair {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.pp-api {
+    font-family: var(--c-studio-font-mono);
+    font-size: var(--c-studio-fs-small);
+    color: var(--c-studio-text-weak);
+    overflow-wrap: anywhere;
+}
+
 /* (Button rows are c/finalButtonGroup since PR 430; the old .pp-seg rules
    had no users left and are gone.) */
 

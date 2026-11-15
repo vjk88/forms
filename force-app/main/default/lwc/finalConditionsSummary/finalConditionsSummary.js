@@ -1,4 +1,5 @@
-import { LightningElement, api } from 'lwc';
+import { LightningElement, api, wire } from 'lwc';
+import { getObjectInfo } from 'lightning/uiObjectInfoApi';
 import FinalConditionsModal from 'c/finalConditionsModal';
 import { removedLabel, USER_EXTRAS } from 'c/finalRuleEditor';
 import { labelForPath, typeForPath } from 'c/finalFieldPicker';
@@ -115,6 +116,23 @@ export default class FinalConditionsSummary extends LightningElement {
     @api allowCurrentUser = false;
     /** A related list: rows may compare with this record's fields. */
     @api compareRecordObject;
+
+    /** That object's Salesforce info, for its label (DEFERRED 62). */
+    _compareInfo;
+
+    @wire(getObjectInfo, { objectApiName: '$compareRecordObject' })
+    wiredCompareInfo({ data }) {
+        this._compareInfo = data || null;
+    }
+
+    /** "Job Application", not "Job_Application__c"; the API name until
+     *  the label loads. */
+    get compareRecordLabel() {
+        return (
+            (this._compareInfo && this._compareInfo.label) ||
+            this.compareRecordObject
+        );
+    }
     /** The dialog's line above the conditions, when not the default. */
     @api logicHeading;
     /** Mapping screen: the questions a row may compare with (Task 7). */
@@ -197,6 +215,13 @@ export default class FinalConditionsSummary extends LightningElement {
 
     get _labels() {
         const map = new Map(Object.entries(this._pathLabels));
+        // "$record." labels hold the field part only; the object's label
+        // may arrive after them, so it's put in front here, at render
+        map.forEach((label, key) => {
+            if (key.startsWith('$record.')) {
+                map.set(key, `This ${this.compareRecordLabel} › ${label}`);
+            }
+        });
         [...(this.sources || []), ...(this.recordSources || [])].forEach((s) =>
             map.set(s.id, s.label)
         );
@@ -255,11 +280,10 @@ export default class FinalConditionsSummary extends LightningElement {
                     ]);
                 }
                 if (source.startsWith('$record.')) {
-                    const obj = this.compareRecordObject;
-                    return labelForPath(obj, source.slice(8)).then((label) => [
-                        source,
-                        `This ${obj} › ${label}`
-                    ]);
+                    return labelForPath(
+                        this.compareRecordObject,
+                        source.slice(8)
+                    ).then((label) => [source, label]);
                 }
                 const isRecord = source.startsWith('record:');
                 const objectApi = isRecord

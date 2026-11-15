@@ -86,15 +86,20 @@
                                         onclick={handleAdd}
                                         ondragstart={handleDragStart}
                                     >
-                                        <span class="fp-label">
-                                            <template lwc:if={f.required}>
-                                                <abbr
-                                                    class="fp-req"
-                                                    title="required"
-                                                    >*</abbr
-                                                >
-                                            </template>
-                                            {f.label}
+                                        <span class="fp-name">
+                                            <span class="fp-label">
+                                                <template lwc:if={f.required}>
+                                                    <abbr
+                                                        class="fp-req"
+                                                        title="required"
+                                                        >*</abbr
+                                                    >
+                                                </template>
+                                                {f.label}
+                                            </span>
+                                            <span class="fp-api"
+                                                >{f.apiName}</span
+                                            >
                                         </span>
                                         <span class="fp-type"
                                             >{f.inputType}</span

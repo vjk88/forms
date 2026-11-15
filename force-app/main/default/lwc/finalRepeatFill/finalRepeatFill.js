@@ -1,4 +1,5 @@
-import { LightningElement, api } from 'lwc';
+import { LightningElement, api, wire } from 'lwc';
+import { getObjectInfo } from 'lightning/uiObjectInfoApi';
 import FinalRepeatFillModal from 'c/finalRepeatFillModal';
 import { isFillable, valueText } from 'c/finalRepeatGroups';
 
@@ -19,6 +20,32 @@ export default class FinalRepeatFill extends LightningElement {
     /** The group's child object (Case) and the form's object (Contact). */
     @api childObject;
     @api parentObject;
+
+    // The two objects' labels, for the copy (DEFERRED 62)
+    _childInfo;
+    _parentInfo;
+
+    @wire(getObjectInfo, { objectApiName: '$childObject' })
+    wiredChildInfo({ data }) {
+        this._childInfo = data || null;
+    }
+
+    @wire(getObjectInfo, { objectApiName: '$parentObject' })
+    wiredParentInfo({ data }) {
+        this._parentInfo = data || null;
+    }
+
+    /** "Job Application", not "Job_Application__c"; the API name until
+     *  the label loads. */
+    get childLabel() {
+        return (this._childInfo && this._childInfo.label) || this.childObject;
+    }
+
+    get parentLabel() {
+        return (
+            (this._parentInfo && this._parentInfo.label) || this.parentObject
+        );
+    }
     /** describeFields rows for the child object. */
     @api childFields = [];
     /** Child fields that can't be filled: the group's questions and the
@@ -63,7 +90,7 @@ export default class FinalRepeatFill extends LightningElement {
             const label = field ? field.label : f.field;
             const fromParent = Boolean(f.from);
             const value = fromParent
-                ? `${this.parentObject}’s ${f.fromLabel || f.from}`
+                ? `${this.parentLabel}’s ${f.fromLabel || f.from}`
                 : valueText(field, f.value);
             return {
                 key: `${f.field}:${i}`,
@@ -72,7 +99,7 @@ export default class FinalRepeatFill extends LightningElement {
                 // built here: a template drops a text's leading space
                 rest: value ? ` = ${value}` : '',
                 how: fromParent
-                    ? `From the ${this.parentObject}`
+                    ? `From the ${this.parentLabel}`
                     : 'Fixed value',
                 editText: `Change how ${label} is filled`,
                 removeText: `Remove ${label}`
@@ -85,7 +112,7 @@ export default class FinalRepeatFill extends LightningElement {
     }
 
     get helpText() {
-        return `Set on every new ${this.childObject} when the form is saved. People filling in the form don't see them.`;
+        return `Set on every new ${this.childLabel} when the form is saved. People filling in the form don't see them.`;
     }
 
     get showList() {
@@ -93,14 +120,14 @@ export default class FinalRepeatFill extends LightningElement {
     }
 
     get loadingText() {
-        return `Loading ${this.childObject} fields…`;
+        return `Loading ${this.childLabel} fields…`;
     }
 
     /** Add is off: say why, so it isn't a mystery. */
     get noChoicesText() {
         return this.loading || !this.noChoices
             ? ''
-            : `Every ${this.childObject} field that can be filled is already used.`;
+            : `Every ${this.childLabel} field that can be filled is already used.`;
     }
 
     get addDisabled() {
@@ -147,9 +174,11 @@ export default class FinalRepeatFill extends LightningElement {
             label: current
                 ? `Change how ${this._labelOf(current.field)} is filled`
                 : 'Fill a field on new records',
-            description: `Every new ${this.childObject} gets this value when the form is saved.`,
+            description: `Every new ${this.childLabel} gets this value when the form is saved.`,
             childObject: this.childObject,
             parentObject: this.parentObject,
+            childLabel: this.childLabel,
+            parentLabel: this.parentLabel,
             fields: this._choices(current ? current.field : null),
             fill: current
         });

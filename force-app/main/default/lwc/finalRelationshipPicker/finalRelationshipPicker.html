@@ -48,9 +48,12 @@
                                 data-key={r.key}
                                 onclick={handlePick}
                             >
-                                <span class="rp-item-label"
-                                    >{r.childObjectLabel}</span
-                                >
+                                <span class="rp-item-name">
+                                    <span class="rp-item-label"
+                                        >{r.childObjectLabel}</span
+                                    >
+                                    <span class="rp-item-api">{r.api}</span>
+                                </span>
                                 <span class="rp-item-via">{r.via}</span>
                             </button>
                         </li>

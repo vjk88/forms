@@ -71,10 +71,25 @@
     background: var(--c-studio-accent-surface);
 }
 
-.rp-item-label {
+.rp-item-name {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.rp-item-label {
     font-weight: var(--c-studio-fw-strong);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* The child object and its link field as API names, quiet */
+.rp-item-api {
+    font-family: var(--c-studio-font-mono);
+    font-size: var(--c-studio-fs-small);
+    color: var(--c-studio-text-weak);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

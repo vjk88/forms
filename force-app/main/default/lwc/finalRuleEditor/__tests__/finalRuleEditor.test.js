@@ -1,5 +1,6 @@
 import { createElement } from 'lwc';
 import FinalRuleEditor from 'c/finalRuleEditor';
+import { getObjectInfo } from 'lightning/uiObjectInfoApi';
 
 const SOURCES = [
     { id: 'el_1', label: 'First name' },
@@ -1061,5 +1062,30 @@ describe('record screens type the value box by field (round 1 #7)', () => {
         expect(note.textContent).toContain('“Nickname” can be skipped');
         // a note, not a problem: Apply still works
         expect(el.problems).toEqual([]);
+    });
+});
+
+describe('object labels, not API names (DEFERRED 62)', () => {
+    it('a custom object reads as its label: This Job Application', async () => {
+        const el = mount({
+            columns: 'lookup',
+            compareRecordObject: 'Job_Application__c',
+            value: config([rule('el_1', 'equals', 'x')])
+        });
+        await flush();
+        // the API name until Salesforce answers
+        expect(control(el, 0, 'compare').options[1].label).toBe(
+            'This Job_Application__c'
+        );
+        getObjectInfo.emit({
+            apiName: 'Job_Application__c',
+            label: 'Job Application',
+            labelPlural: 'Job Applications'
+        });
+        await flush();
+        expect(control(el, 0, 'compare').options[1]).toEqual({
+            value: 'record',
+            label: 'This Job Application'
+        });
     });
 });
