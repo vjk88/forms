@@ -40,6 +40,26 @@ function plateFor(tokens, scope, fallsBack) {
 }
 
 /**
+ * The header paints a surface of its own: a banner photo, a theme photo, a
+ * gradient or a fill that isn't clear. Without one it sits straight on the
+ * page.
+ * @param {object} args
+ * @param {object} args.tokens the viewer's resolved frame tokens
+ * @param {object} args.header the spec's header block
+ * @returns {boolean}
+ */
+export function headerHasSurface({ tokens, header }) {
+    const t = tokens || {};
+    const h = header || {};
+    return (
+        Boolean(h.bgImage && h.bgImage.url) ||
+        !isClear(t['--c-header-bg-image']) ||
+        !isClear(t['--c-header-bg-gradient']) ||
+        !isClear(t['--c-header-bg'])
+    );
+}
+
+/**
  * @param {object} args
  * @param {object} args.tokens the viewer's resolved frame tokens
  * @param {object} args.header the spec's header block
@@ -59,9 +79,7 @@ export function headerFade({ tokens, header, flush }) {
         eligible &&
         Boolean(flush) &&
         !banner &&
-        isClear(t['--c-header-bg-image']) &&
-        isClear(t['--c-header-bg-gradient']) &&
-        isClear(t['--c-header-bg']);
+        !headerHasSurface({ tokens: t, header: h });
     return { on: h.textFade !== false, eligible, exposed };
 }
 

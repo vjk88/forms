@@ -1,6 +1,11 @@
 import { createElement } from 'lwc';
 import FinalFormViewer from 'c/finalFormViewer';
-import { headerFade, paneFadeEligible, isClear } from '../headerFade';
+import {
+    headerFade,
+    headerHasSurface,
+    paneFadeEligible,
+    isClear
+} from '../headerFade';
 
 jest.mock('c/finalThemeCatalog', () => ({
     getBuiltinTheme: jest.fn(() => null)
@@ -297,5 +302,108 @@ describe('viewer → header and Split pane', () => {
         expect(nav.options.paneTextFade).toBe(true);
         // immersive by default: the pane reads the page plate
         expect(nav.options.paneFadeEligible).toBe(true);
+    });
+});
+
+// DEFERRED #16: a filled header band on the One at a time open page carries
+// the progress line on its bottom edge
+describe('headerHasSurface', () => {
+    it('a fill, gradient, theme photo or banner is a surface; nothing clear is', () => {
+        expect(
+            headerHasSurface({ tokens: { '--c-header-bg': '#0e7490' } })
+        ).toBe(true);
+        expect(
+            headerHasSurface({
+                tokens: {
+                    '--c-header-bg-gradient': 'linear-gradient(red, blue)'
+                }
+            })
+        ).toBe(true);
+        expect(
+            headerHasSurface({
+                tokens: {},
+                header: { bgImage: { url: '/sfc/b' } }
+            })
+        ).toBe(true);
+        expect(
+            headerHasSurface({ tokens: { '--c-header-bg': 'transparent' } })
+        ).toBe(false);
+        expect(headerHasSurface({ tokens: {} })).toBe(false);
+    });
+});
+
+describe('viewer → One at a time: header band', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+    });
+    const navOf = (cmp) =>
+        find(
+            cmp.shadowRoot,
+            (el) => el.tagName === 'X-TEST' && 'options' in el
+        );
+
+    it('a filled flush header is a band; the layout is told', async () => {
+        const cmp = await mount(
+            SPEC(
+                'oneAtATime',
+                { style: 'standard', title: 'T' },
+                {
+                    '--c-header-bg': '#0e7490'
+                }
+            )
+        );
+        expect(navOf(cmp).headerBand).toBe('fill');
+    });
+
+    it('a form banner photo is a band of its own kind (its words use the banner colour)', async () => {
+        const cmp = await mount(
+            SPEC(
+                'oneAtATime',
+                {
+                    style: 'standard',
+                    title: 'T',
+                    bgImage: { url: '/sfc/banner' }
+                },
+                {}
+            )
+        );
+        expect(navOf(cmp).headerBand).toBe('banner');
+    });
+
+    it('no fill (the header straight on the page) or a hidden header: no band', async () => {
+        const clear = await mount(
+            SPEC(
+                'oneAtATime',
+                { style: 'standard', title: 'T' },
+                {
+                    '--c-header-bg': 'transparent'
+                }
+            )
+        );
+        expect(navOf(clear).headerBand).toBe('');
+        const hidden = await mount(
+            SPEC(
+                'oneAtATime',
+                { style: 'none', title: 'T' },
+                {
+                    '--c-header-bg': '#0e7490'
+                }
+            )
+        );
+        expect(navOf(hidden).headerBand).toBe('');
+    });
+
+    it('Immersive off (the header inside the card): no band', async () => {
+        const spec = SPEC(
+            'oneAtATime',
+            { style: 'standard', title: 'T' },
+            {
+                '--c-header-bg': '#0e7490'
+            }
+        );
+        spec.layout.options = { fullBleed: false };
+        expect(navOf(await mount(spec)).headerBand).toBe('');
     });
 });

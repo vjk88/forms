@@ -71,6 +71,10 @@ export default class FinalNavOneAtATime extends LightningElement {
     @api options;
     /** Immersive full-bleed (viewer: layout.bleed && fullBleed !== false). */
     @api bleed = false;
+    /** A filled header band sits right above (viewer: headerBand, "fill" or
+     *  "banner"; "" for none): the progress line becomes its bottom edge
+     *  (DEFERRED #16). */
+    @api headerBand = '';
     /** Resolved action-row arrangement (viewer: submit ?? layout default). */
     @api arrangement = 'together-left';
     /** Terminal Submit label (viewer: submit.label). */
@@ -160,7 +164,15 @@ export default class FinalNavOneAtATime extends LightningElement {
     }
 
     get layoutClass() {
-        return this.bleed ? 'oaat mode-bleed' : 'oaat mode-panel';
+        if (!this.bleed) {
+            return 'oaat mode-panel';
+        }
+        if (!this.headerBand) {
+            return 'oaat mode-bleed';
+        }
+        return this.headerBand === 'banner'
+            ? 'oaat mode-bleed has-band band-banner'
+            : 'oaat mode-bleed has-band';
     }
 
     /** The question column on the open page (Immersive on); no wrapper

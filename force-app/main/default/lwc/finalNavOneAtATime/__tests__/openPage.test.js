@@ -136,3 +136,38 @@ describe('c-final-nav-one-at-a-time open page', () => {
         );
     });
 });
+
+// DEFERRED #16: under a filled header band the progress line rides its edge
+describe('c-final-nav-one-at-a-time under a header band', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+    });
+    const root = (cmp) => cmp.shadowRoot.querySelector('.oaat');
+
+    it('marks the open page when a band sits above', async () => {
+        const cmp = await mount({ bleed: true, headerBand: 'fill' });
+        expect(root(cmp).classList.contains('has-band')).toBe(true);
+        expect(root(cmp).classList.contains('band-banner')).toBe(false);
+    });
+
+    it('a banner band also says so, for its banner text colour', async () => {
+        const cmp = await mount({ bleed: true, headerBand: 'banner' });
+        expect(root(cmp).classList.contains('has-band')).toBe(true);
+        expect(root(cmp).classList.contains('band-banner')).toBe(true);
+    });
+
+    it('no band, or the card panel: unmarked', async () => {
+        expect(
+            root(
+                await mount({ bleed: true, headerBand: '' })
+            ).classList.contains('has-band')
+        ).toBe(false);
+        expect(
+            root(
+                await mount({ bleed: false, headerBand: 'fill' })
+            ).classList.contains('has-band')
+        ).toBe(false);
+    });
+});

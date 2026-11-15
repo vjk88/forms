@@ -229,15 +229,18 @@
 }
 
 /*
- * Flush (One at a time, open page): the progress strip follows directly. No
- * bottom margin or padding (the strip brings its own breathing room), and the
- * text sits on the same side inset as the strip (--c-strip-inset, declared once
- * on the page frame). Doubled class so this outranks the narrow-form rule above.
+ * Flush (One at a time, open page): the header is a band across the whole
+ * page, so it is square (the form's Corner rounding belongs to cards, not to a
+ * page-wide band) and keeps the same room below its last line as above its
+ * first (owner 2026-11-15, DEFERRED #16: a highlight badge sat on the edge).
+ * The text sits on the same side inset as the progress strip
+ * (--c-strip-inset, declared once on the page frame). Doubled class so this
+ * outranks the narrow-form rule above.
  */
 .hdr.hdr--flush {
     margin-bottom: 0;
     padding-inline: var(--c-strip-inset);
-    padding-bottom: 0;
+    border-radius: 0;
 }
 
 /*

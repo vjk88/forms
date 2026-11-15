@@ -36,7 +36,7 @@ import {
     isBlankAnswer,
     minimumMessage
 } from 'c/finalRepeatGroups';
-import { headerFade, paneFadeEligible } from './headerFade';
+import { headerFade, headerHasSurface, paneFadeEligible } from './headerFade';
 import {
     // The engine's two-argument reconcile, as the call below always meant:
     // previewSession's three-argument copy was imported by mistake and,
@@ -1278,6 +1278,20 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             // One at a time on the open page: a progress strip follows the
             // header, so the header runs flush with it (finalFormHeader).
             headerFlush,
+            // ...and when that header is a filled band, the strip's progress
+            // line becomes the band's bottom edge (DEFERRED #16)
+            // ("banner" when the band is the form's own photo, whose words
+            // use the banner text colour; "" when there is no band)
+            headerBand:
+                headerFlush &&
+                !layout.ownsHeader &&
+                header.style !== 'none' &&
+                hasLockup &&
+                headerHasSurface({ tokens: this.tokens, header })
+                    ? header.bgImage && header.bgImage.url
+                        ? 'banner'
+                        : 'fill'
+                    : '',
             headerFade: headerFade({
                 tokens: this.tokens,
                 header,
