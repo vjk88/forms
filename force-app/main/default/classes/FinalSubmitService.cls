@@ -1252,8 +1252,8 @@ public inherited sharing class FinalSubmitService {
 
     /**
      * Survey path: answers become Form_Response__c + Form_Response_Answer__c
-     * rows (+ Form_Answer_Topic__c tag links) instead of business-object
-     * fields.
+     * rows (topics ride as text in Topic_Snapshot__c) instead of
+     * business-object fields.
      *
      * SECURITY — SYSTEM-MODE FENCES (owner ruling 7-2, 2026-07-27; documented
      * here for AppExchange Security Review): the inserts below run in system
@@ -1339,7 +1339,6 @@ public inherited sharing class FinalSubmitService {
         try {
             insertFenced(new List<SObject>{ response });
 
-            List<List<Id>> topicsPerRow = new List<List<Id>>();
             List<SObject> rows = buildAnswerRows(
                 flat,
                 plans,
@@ -1347,36 +1346,22 @@ public inherited sharing class FinalSubmitService {
                 repeats,
                 response.Id,
                 validTopics,
-                topicsPerRow,
                 sink
             );
             // The budget counts what the groups would write: their answer
-            // rows AND those rows' topic links. Only countable once the rows
-            // exist (each carries the response Id); a refusal here rolls the
-            // response back with everything else.
+            // rows (topics are text on the row, they cost no extra rows).
+            // Only countable once the rows exist (each carries the response
+            // Id); a refusal here rolls the response back with everything
+            // else.
             Integer groupRows = 0;
             for (Integer i = 0; i < rows.size(); i++) {
                 if (rows[i].get('Entry_Index__c') != null) {
-                    groupRows += 1 + topicsPerRow[i].size();
+                    groupRows += 1;
                 }
             }
             checkBudget(groupRows);
             if (!rows.isEmpty()) {
                 insertFenced(rows);
-            }
-            List<Form_Answer_Topic__c> links = new List<Form_Answer_Topic__c>();
-            for (Integer i = 0; i < rows.size(); i++) {
-                for (Id topicId : topicsPerRow[i]) {
-                    links.add(
-                        new Form_Answer_Topic__c(
-                            Answer__c = (Id) rows[i].get('Id'),
-                            Topic__c = topicId
-                        )
-                    );
-                }
-            }
-            if (!links.isEmpty()) {
-                insertFenced(links);
             }
 
             // Survey-object writeback (SURVEY_OBJECT_SPEC, owner 2026-07-31):
@@ -1540,7 +1525,6 @@ public inherited sharing class FinalSubmitService {
                 repeats,
                 submission.Id,
                 new Set<Id>(),
-                new List<List<Id>>(),
                 sink
             );
             if (!rows.isEmpty()) {
@@ -1704,7 +1688,6 @@ public inherited sharing class FinalSubmitService {
         Map<String, Object> repeats,
         Id parentId,
         Set<Id> validTopics,
-        List<List<Id>> topicsPerRow,
         AnswerSink sink
     ) {
         List<SObject> rows = new List<SObject>();
@@ -1722,21 +1705,12 @@ public inherited sharing class FinalSubmitService {
                         parentId,
                         null,
                         validTopics,
-                        topicsPerRow,
                         sink
                     )
                 );
                 continue;
             }
-            SObject row = answerRow(
-                el,
-                raw,
-                parentId,
-                null,
-                validTopics,
-                topicsPerRow,
-                sink
-            );
+            SObject row = answerRow(el, raw, parentId, null, validTopics, sink);
             if (row != null) {
                 rows.add(row);
             }
@@ -1765,7 +1739,6 @@ public inherited sharing class FinalSubmitService {
                         parentId,
                         i,
                         validTopics,
-                        topicsPerRow,
                         sink
                     );
                     if (row != null) {
@@ -1882,15 +1855,13 @@ public inherited sharing class FinalSubmitService {
     /** Matrix picks {statementKey → value} → one answer row per statement.
      *  Element_Key = '<elementId>:<statementKey>'; the label photocopy
      *  carries "question — statement" so reports read standalone. Topics and
-     *  the normalized score apply PER ROW (each appends to topicsPerRow —
-     *  the caller's alignment law). */
+     *  the normalized score apply PER ROW. */
     private static List<SObject> matrixAnswerRows(
         Map<String, Object> el,
         Map<String, Object> picks,
         Id parentId,
         Integer entryIndex,
         Set<Id> validTopics,
-        List<List<Id>> topicsPerRow,
         AnswerSink sink
     ) {
         List<SObject> out = new List<SObject>();
@@ -1942,14 +1913,13 @@ public inherited sharing class FinalSubmitService {
                     numeric == null ? 'Choice' : 'Number'
                 );
             }
-            applyAnalytics(row, el, validTopics, topicsPerRow, sink);
+            applyAnalytics(row, el, validTopics, sink);
             out.add(row);
         }
         return out;
     }
 
-    /** One answered element → one typed answer row; its valid topic ids are
-     *  appended (as one list) to the parallel topicsPerRow. Blank values
+    /** One answered element → one typed answer row. Blank values
      *  return null — nothing to store (Boolean false is NOT blank). */
     private static SObject answerRow(
         Map<String, Object> el,
@@ -1957,7 +1927,6 @@ public inherited sharing class FinalSubmitService {
         Id parentId,
         Integer entryIndex,
         Set<Id> validTopics,
-        List<List<Id>> topicsPerRow,
         AnswerSink sink
     ) {
         if (value == null) {
@@ -1977,7 +1946,7 @@ public inherited sharing class FinalSubmitService {
             row.put('Label_Snapshot__c', ((String) label).abbreviate(255));
         }
         writeTypedValue(row, el, value, sink);
-        applyAnalytics(row, el, validTopics, topicsPerRow, sink);
+        applyAnalytics(row, el, validTopics, sink);
         return row;
     }
 
@@ -2231,23 +2200,18 @@ public inherited sharing class FinalSubmitService {
         return 'text';
     }
 
-    /** Normalized score (0–100 linear map) + topic tags from the element's
-     *  analytics block. ALWAYS appends exactly one (possibly empty) topic-id
-     *  list to topicsPerRow — the caller's row/topics alignment depends on it.
-     *  Unknown/retired topic ids keep their display name but get no link —
-     *  never fail a submit over a tag (IMPL_PLAN 7-3). */
+    /** Normalized score (0–100 linear map) + topic names (as text, joined with
+     *  "; ") from the element's analytics block. There are no topic link
+     *  rows any more: unknown/retired topics keep their display name — never
+     *  fail a submit over a tag (IMPL_PLAN 7-3). */
     private static void applyAnalytics(
         SObject row,
         Map<String, Object> el,
         Set<Id> validTopics,
-        List<List<Id>> topicsPerRow,
         AnswerSink sink
     ) {
-        List<Id> rowTopics = new List<Id>();
-        // Freeform has no analytics (D4), but the parallel-list law still
-        // holds: EVERY row appends exactly one (possibly empty) entry.
+        // Freeform has no analytics (D4).
         if (!sink.appliesAnalytics) {
-            topicsPerRow.add(rowTopics);
             return;
         }
         Map<String, Object> analytics = asMap(el.get('analytics'));
@@ -2282,10 +2246,6 @@ public inherited sharing class FinalSubmitService {
                 if (nm instanceof String && String.isNotBlank((String) nm)) {
                     names.add((String) nm);
                 }
-                Id tid = idOrNull(t.get('id'));
-                if (tid != null && validTopics.contains(tid)) {
-                    rowTopics.add(tid);
-                }
             }
             if (!names.isEmpty()) {
                 row.put(
@@ -2294,7 +2254,6 @@ public inherited sharing class FinalSubmitService {
                 );
             }
         }
-        topicsPerRow.add(rowTopics);
     }
 
     /** Every topic id the spec references, validated in ONE system-mode query
@@ -2349,9 +2308,9 @@ public inherited sharing class FinalSubmitService {
     private static Boolean testFailAnswerInsert = false;
 
     /**
-     * The five objects a submission may create (ruling 7-2, FREEFORM_SPEC
-     * §5.4 / §7.3). Two answer stores: a survey's response and its answers
-     * with their topic links, and a Freeform's submission and its answers.
+     * The four objects a submission may create (ruling 7-2, FREEFORM_SPEC
+     * §5.4 / §7.3). Two answer stores: a survey's response and its answers,
+     * and a Freeform's submission and its answers.
      *
      * Nothing is added here without deciding that a GUEST, who owns nothing
      * and can create nothing, may cause that object to be written.
@@ -2359,13 +2318,12 @@ public inherited sharing class FinalSubmitService {
     private static final Set<String> FENCE = new Set<String>{
         'Form_Response__c',
         'Form_Response_Answer__c',
-        'Form_Answer_Topic__c',
         'Form_Submission__c',
         'Form_Submission_Answer__c'
     };
 
     /**
-     * SYSTEM-MODE create for the five answer-store objects ONLY (ruling 7-2 —
+     * SYSTEM-MODE create for the four answer-store objects ONLY (ruling 7-2 —
      * the mailbox). Never reads, updates, or deletes. All-or-none.
      *
      * `AccessLevel.SYSTEM_MODE` means "skip the permission check", which is

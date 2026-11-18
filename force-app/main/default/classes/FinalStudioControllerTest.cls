@@ -520,4 +520,134 @@ private class FinalStudioControllerTest {
             'refusals leave the field untouched'
         );
     }
+
+    // ----- survey topics: create permission, dedupe, active-only list -----
+
+    /** A brand-new user, optionally holding Form_Builder_Admin (which
+     *  carries Create_Survey_Topics). Fresh each call: a fresh user never
+     *  inherits the running user's permission set assignments. */
+    private static User topicUser(Boolean withPermset) {
+        String suffix = String.valueOf(Math.abs(Crypto.getRandomInteger()));
+        User u = new User(
+            Alias = 'tp' + suffix.left(5),
+            Email = 'topic' + suffix + '@example.com',
+            EmailEncodingKey = 'UTF-8',
+            LastName = 'TopicTester',
+            LanguageLocaleKey = 'en_US',
+            LocaleSidKey = 'en_US',
+            ProfileId = UserInfo.getProfileId(),
+            TimeZoneSidKey = 'America/Los_Angeles',
+            Username = 'topic' + suffix + '@example.com.test'
+        );
+        System.runAs(new User(Id = UserInfo.getUserId())) {
+            insert u;
+            if (withPermset) {
+                insert new PermissionSetAssignment(
+                    AssigneeId = u.Id,
+                    PermissionSetId = [
+                        SELECT Id
+                        FROM PermissionSet
+                        WHERE Name = 'Form_Builder_Admin'
+                        LIMIT 1
+                    ]
+                    .Id
+                );
+            }
+        }
+        return u;
+    }
+
+    @IsTest
+    static void createSurveyTopicIsRefusedWithoutThePermission() {
+        User plain = topicUser(false);
+        System.runAs(plain) {
+            Assert.isFalse(
+                FinalStudioController.canCreateSurveyTopics(),
+                'no permission, no flag'
+            );
+            try {
+                FinalStudioController.createSurveyTopic('Sneaky');
+                Assert.fail('should be refused');
+            } catch (AuraHandledException e) {
+                Assert.isTrue(true);
+            }
+        }
+        Assert.areEqual(
+            0,
+            [SELECT COUNT() FROM Survey_Topic__c WHERE Name = 'Sneaky']
+        );
+    }
+
+    @IsTest
+    static void createSurveyTopicWorksWithThePermissionAndDedupes() {
+        User builder = topicUser(true);
+        System.runAs(builder) {
+            Assert.isTrue(FinalStudioController.canCreateSurveyTopics());
+            FinalStudioController.TopicEntry first = FinalStudioController.createSurveyTopic(
+                '  Billing   Issues '
+            );
+            Assert.areEqual(
+                'Billing Issues',
+                first.name,
+                'trimmed, spaces collapsed'
+            );
+            FinalStudioController.TopicEntry again = FinalStudioController.createSurveyTopic(
+                'billing issues'
+            );
+            Assert.areEqual(first.id, again.id, 'case/space variants reuse it');
+            FinalStudioController.TopicEntry third = FinalStudioController.createSurveyTopic(
+                'BILLING  ISSUES  '
+            );
+            Assert.areEqual(first.id, third.id);
+            try {
+                FinalStudioController.createSurveyTopic('   ');
+                Assert.fail('blank name refused');
+            } catch (AuraHandledException e) {
+                Assert.isTrue(true);
+            }
+        }
+        Assert.areEqual(
+            1,
+            [
+                SELECT COUNT()
+                FROM Survey_Topic__c
+                WHERE Name = 'Billing Issues'
+            ]
+        );
+    }
+
+    @IsTest
+    static void createSurveyTopicRefusesAnInactiveNameInsteadOfReusingIt() {
+        insert new Survey_Topic__c(Name = 'Retired', Active__c = false);
+        User builder = topicUser(true);
+        System.runAs(builder) {
+            try {
+                FinalStudioController.createSurveyTopic('retired');
+                Assert.fail('inactive match must not be attached');
+            } catch (AuraHandledException e) {
+                Assert.isTrue(true);
+            }
+        }
+    }
+
+    @IsTest
+    static void listSurveyTopicsHoldsActiveTopicsOnlyByName() {
+        insert new List<Survey_Topic__c>{
+            new Survey_Topic__c(Name = 'Zeta', Active__c = true),
+            new Survey_Topic__c(Name = 'Alpha', Active__c = true),
+            new Survey_Topic__c(Name = 'Gone', Active__c = false)
+        };
+        List<String> names = new List<String>();
+        for (
+            FinalStudioController.TopicEntry e : FinalStudioController.listSurveyTopics()
+        ) {
+            names.add(e.name);
+        }
+        Assert.isFalse(names.contains('Gone'), 'inactive hidden');
+        Assert.isTrue(names.contains('Alpha') && names.contains('Zeta'));
+        Assert.isTrue(
+            names.indexOf('Alpha') < names.indexOf('Zeta'),
+            'sorted by name'
+        );
+    }
 }

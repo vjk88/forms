@@ -322,6 +322,21 @@
     font-size: var(--c-studio-fs-small);
     font-weight: var(--c-studio-fw-strong);
 }
+.pp-topic-new {
+    display: flex;
+    flex-direction: column;
+    gap: var(--c-studio-space-2);
+    margin-top: var(--c-studio-space-2);
+    padding: var(--c-studio-space-3);
+    border: 1px solid var(--c-studio-border);
+    border-radius: var(--c-studio-radius-md);
+    background: var(--c-studio-surface-subtle);
+}
+.pp-topic-new-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--c-studio-space-2);
+}
 /* ---- per-option image upload (owner 2026-07-31). The two earlier copies of
    these rules are merged; the later values won before and still do. ---- */
 .pp-opt-thumb {
