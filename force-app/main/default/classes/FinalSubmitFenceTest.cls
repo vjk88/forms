@@ -17,7 +17,6 @@ private class FinalSubmitFenceTest {
     private static final List<SObject> ALLOWED = new List<SObject>{
         new Form_Response__c(),
         new Form_Response_Answer__c(),
-        new Form_Answer_Topic__c(),
         new Form_Submission__c(),
         new Form_Submission_Answer__c()
     };

@@ -356,15 +356,18 @@
                         <span class="pp-label">Topics (chart tags)</span>
                         <template lwc:if={topicChips.length}>
                             <div class="pp-topic-chips">
-                                <template for:each={topicChips} for:item="t">
+                                <template
+                                    for:each={topicChipViews}
+                                    for:item="t"
+                                >
                                     <span key={t.id} class="pp-topic-chip">
-                                        {t.name}
+                                        {t.label}
                                         <lightning-button-icon
                                             class="pp-x"
                                             variant="bare"
                                             size="small"
                                             icon-name="utility:close"
-                                            alternative-text="Remove topic"
+                                            alternative-text={t.removeLabel}
                                             title="Remove topic"
                                             data-id={t.id}
                                             onclick={handleRemoveTopic}
@@ -373,18 +376,54 @@
                                 </template>
                             </div>
                         </template>
-                        <input
-                            type="text"
-                            class="pp-input"
-                            list="pp-topic-list"
-                            placeholder="Add a topic… (type to pick or create)"
-                            onchange={handleTopicEntry}
-                        />
-                        <datalist id="pp-topic-list">
-                            <template for:each={availableTopics} for:item="t">
-                                <option key={t.id} value={t.name}></option>
-                            </template>
-                        </datalist>
+                        <template lwc:if={showNoTopics}>
+                            <p class="pp-sub">
+                                No topics yet. An admin adds them on the Survey
+                                Topics tab.
+                            </p>
+                        </template>
+                        <template lwc:elseif={showAllTopicsUsed}>
+                            <p class="pp-sub">
+                                Every topic is already on this question.
+                            </p>
+                        </template>
+                        <template lwc:elseif={showTopicPicker}>
+                            <lightning-combobox
+                                class="pp-topic-pick"
+                                label="Add a topic"
+                                placeholder="Pick a topic"
+                                options={topicOptions}
+                                onchange={handleTopicPick}
+                            ></lightning-combobox>
+                        </template>
+                        <template lwc:if={creatingTopic}>
+                            <div
+                                class="pp-topic-new"
+                                role="group"
+                                aria-label="Create a topic"
+                                onkeydown={handleNewTopicKeydown}
+                            >
+                                <lightning-input
+                                    class="pp-topic-new-name"
+                                    label="Topic name"
+                                    maxlength="80"
+                                    value={newTopicName}
+                                    oninput={handleNewTopicInput}
+                                ></lightning-input>
+                                <div class="pp-topic-new-actions">
+                                    <lightning-button
+                                        label="Cancel"
+                                        onclick={handleCancelNewTopic}
+                                    ></lightning-button>
+                                    <lightning-button
+                                        variant="brand"
+                                        label="Add"
+                                        disabled={savingTopic}
+                                        onclick={handleAddNewTopic}
+                                    ></lightning-button>
+                                </div>
+                            </div>
+                        </template>
                         <template lwc:if={topicError}>
                             <p class="pp-sub" role="alert">{topicError}</p>
                         </template>

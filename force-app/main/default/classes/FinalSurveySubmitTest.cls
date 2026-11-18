@@ -4,7 +4,7 @@
  * Covers the survey branch end-to-end through BOTH public entry points:
  * typed columns, label/topic snapshots, normalized score, repeat entry
  * indexes, the anonymous flag, savepoint atomicity, the availability gate
- * (7-1: closed flag + response cap), multi-topic junction rows, and bulk.
+ * (7-1: closed flag + response cap), multi-topic snapshot text, and bulk.
  */
 @isTest
 private class FinalSurveySubmitTest {
@@ -634,10 +634,10 @@ private class FinalSurveySubmitTest {
         );
     }
 
-    // ----- 9: multi-topic tags → junction rows + display string -----
+    // ----- 9: multi-topic tags → snapshot text -----
 
     @isTest
-    static void multiTopicWritesJunctionsAndDisplay() {
+    static void multiTopicWritesSnapshotText() {
         Survey_Topic__c support = new Survey_Topic__c(Name = 'Support');
         Survey_Topic__c pricing = new Survey_Topic__c(Name = 'Pricing');
         insert new List<Survey_Topic__c>{ support, pricing };
@@ -691,24 +691,73 @@ private class FinalSurveySubmitTest {
         System.assertEquals(
             'Support; Pricing; Ghost',
             ans.Topic_Snapshot__c,
-            'display string keeps every name, even the unlinkable one'
+            'snapshot keeps every name in order, even the unknown one; submit not failed'
         );
-        List<Form_Answer_Topic__c> links = [
-            SELECT Topic__c
-            FROM Form_Answer_Topic__c
-            WHERE Answer__c = :ans.Id
+    }
+
+    // ----- 9b: topics are text only; no record type beyond response + answers -----
+
+    @isTest
+    static void twoTopicsWriteSnapshotAndNothingElse() {
+        Survey_Topic__c a = new Survey_Topic__c(Name = 'A');
+        Survey_Topic__c b = new Survey_Topic__c(Name = 'B');
+        insert new List<Survey_Topic__c>{ a, b };
+
+        Form_Version__c version = makeSurvey(
+            surveySpec(
+                new List<Object>{
+                    element(
+                        'el_rate',
+                        'rating',
+                        'Rate it',
+                        null,
+                        new Map<String, Object>{
+                            'role' => 'score',
+                            'scaleMin' => 1,
+                            'scaleMax' => 5,
+                            'topics' => new List<Object>{
+                                new Map<String, Object>{
+                                    'id' => a.Id,
+                                    'name' => 'A'
+                                },
+                                new Map<String, Object>{
+                                    'id' => b.Id,
+                                    'name' => 'B'
+                                }
+                            }
+                        }
+                    )
+                },
+                null,
+                null
+            )
+        );
+        Integer topicsBefore = [SELECT COUNT() FROM Survey_Topic__c];
+        Test.startTest();
+        FinalSubmitController.SubmitResult res = FinalSubmitController.submitForm(
+            null,
+            version.Id,
+            payload(new Map<String, Object>{ 'el_rate' => 4 }, null)
+        );
+        Test.stopTest();
+
+        List<Form_Response_Answer__c> answers = [
+            SELECT Topic_Snapshot__c
+            FROM Form_Response_Answer__c
+            WHERE Form_Response__c = :res.recordId
         ];
+        System.assertEquals(1, answers.size(), 'one answer row');
+        System.assertEquals('A; B', answers[0].Topic_Snapshot__c);
         System.assertEquals(
-            2,
-            links.size(),
-            'ghost id skipped, submit not failed'
+            1,
+            [SELECT COUNT() FROM Form_Response__c],
+            'one response'
         );
-        Set<Id> linked = new Set<Id>();
-        for (Form_Answer_Topic__c l : links) {
-            linked.add(l.Topic__c);
-        }
-        System.assert(linked.contains(support.Id), 'linked to Support');
-        System.assert(linked.contains(pricing.Id), 'linked to Pricing');
+        System.assertEquals(
+            topicsBefore,
+            [SELECT COUNT() FROM Survey_Topic__c],
+            'no topic records created or changed by a submit'
+        );
     }
 
     // ----- 10: bulk — 200 answers, one transaction -----

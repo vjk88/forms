@@ -2,7 +2,7 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Topic_Snapshot__c</fullName>
     <description
-    >Display-only joined topic names ("Support; Pricing") for eyeballing rows — charts group via the Form_Answer_Topic__c junction, never this string (SURVEY_PLAN round-6 topics ruling).</description>
+    >The question's topic names joined with "; " ("Support; Pricing"). This is the only place topics are stored: reports filter on it ("Topics contains Support").</description>
     <externalId>false</externalId>
     <label>Topics (display)</label>
     <length>255</length>

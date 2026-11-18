@@ -1017,35 +1017,68 @@ public with sharing class FinalStudioController {
         return out;
     }
 
-    /** Inline "new topic". An existing name (exact match) is REUSED, never
-     *  duplicated — same-but-different tags would re-split every chart the
-     *  vocabulary exists to unify. Builder CRUD comes from the permission
-     *  set; USER_MODE keeps that honest. */
+    /** Does the running user hold the Create_Survey_Topics custom permission?
+     *  The panel only uses this to show or hide "Create a topic…"; the real
+     *  gate is createSurveyTopic, which checks it again on the server. */
+    @AuraEnabled(cacheable=true)
+    public static Boolean canCreateSurveyTopics() {
+        return FeatureManagement.checkPermission('Create_Survey_Topics');
+    }
+
+    /** Trim, collapse inner spaces, lower-case: "  Billing   Issues " and
+     *  "billing issues" are the same topic. */
+    @TestVisible
+    private static String topicKey(String raw) {
+        return raw == null
+            ? ''
+            : raw.trim().replaceAll('\\s+', ' ').toLowerCase();
+    }
+
+    /** Inline "new topic" - only for users with Create_Survey_Topics (the
+     *  server is the gate; hiding the button is courtesy). An existing name
+     *  (any case, any spacing) is REUSED, never duplicated - same-but-
+     *  different tags would re-split every chart the vocabulary exists to
+     *  unify. USER_MODE keeps object CRUD honest on top of the permission. */
     @AuraEnabled
     public static TopicEntry createSurveyTopic(String topicName) {
-        String name = topicName == null ? '' : topicName.trim();
+        if (!FeatureManagement.checkPermission('Create_Survey_Topics')) {
+            throw new AuraHandledException(
+                'You do not have permission to create topics. Ask an admin to add it on the Survey Topics tab.'
+            );
+        }
+        String name = topicName == null
+            ? ''
+            : topicName.trim().replaceAll('\\s+', ' ');
         if (String.isBlank(name)) {
             throw new AuraHandledException('A topic needs a name.');
         }
         name = name.abbreviate(80);
-        List<Survey_Topic__c> existing = [
-            SELECT Id, Name
+        String key = topicKey(name);
+        for (Survey_Topic__c t : [
+            SELECT Id, Name, Active__c
             FROM Survey_Topic__c
-            WHERE Name = :name
             WITH USER_MODE
-            LIMIT 1
-        ];
-        TopicEntry e = new TopicEntry();
-        if (!existing.isEmpty()) {
-            e.id = existing[0].Id;
-            e.name = existing[0].Name;
-            return e;
+            ORDER BY Name
+            LIMIT 2000
+        ]) {
+            if (topicKey(t.Name) == key) {
+                if (t.Active__c != true) {
+                    throw new AuraHandledException(
+                        'That topic exists but is turned off. An admin can turn it back on from the Survey Topics tab.'
+                    );
+                }
+                TopicEntry found = new TopicEntry();
+                found.id = t.Id;
+                found.name = t.Name;
+                return found;
+            }
         }
         Survey_Topic__c topic = new Survey_Topic__c(
             Name = name,
             Active__c = true
         );
         insert as user topic;
+        TopicEntry e = new TopicEntry();
         e.id = topic.Id;
         e.name = name;
         return e;

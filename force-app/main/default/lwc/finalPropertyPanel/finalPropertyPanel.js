@@ -4,6 +4,7 @@ import describeFields from '@salesforce/apex/FinalStudioController.describeField
 import listLookupObjects from '@salesforce/apex/FinalLookupController.listLookupObjects';
 import listSurveyTopics from '@salesforce/apex/FinalStudioController.listSurveyTopics';
 import createSurveyTopic from '@salesforce/apex/FinalStudioController.createSurveyTopic';
+import canCreateSurveyTopics from '@salesforce/apex/FinalStudioController.canCreateSurveyTopics';
 import uploadImage from '@salesforce/apex/FinalAssetController.uploadImage';
 import deleteImage from '@salesforce/apex/FinalAssetController.deleteImage';
 import { compatInputTypes } from 'c/finalSurveyMapping';
@@ -178,6 +179,9 @@ function renderAsChoicesFor(inputType, polymorphic) {
     }
     return opts;
 }
+
+/** The combobox's last option, with the permission: opens the inline box. */
+const CREATE_TOPIC_VALUE = '__create__';
 
 export default class FinalPropertyPanel extends LightningElement {
     /** 'element' | 'section' | 'page' (block wrapper sections arrive as
@@ -1026,22 +1030,52 @@ export default class FinalPropertyPanel extends LightningElement {
     allTopics;
     topicError;
     _topicsRequested = false;
+    /** Whether this user holds Create_Survey_Topics (asked once; the server
+     *  re-checks on create, so this only shows or hides the option). */
+    canCreateTopics = false;
+    creatingTopic = false;
+    newTopicName = '';
+    _focusNewTopic = false;
+    /** Set when the inline box closes, so focus returns to the combobox. */
+    _focusPick = false;
+    savingTopic = false;
+    /** True once the topic list AND the create permission have both landed. */
+    topicsReady = false;
 
     renderedCallback() {
         this._restoreFocus();
+        if (this._focusNewTopic) {
+            this._focusNewTopic = false;
+            const box = this.template.querySelector('.pp-topic-new-name');
+            if (box) {
+                box.focus();
+            }
+        }
         if (this.isUnboundLookup) {
             this._loadLookupObjects();
         }
         if (this.isSurveyQuestion && !this._topicsRequested) {
             this._topicsRequested = true;
-            listSurveyTopics()
-                .then((topics) => {
+            // Both answers land together, so the field never flashes the
+            // "no topics" line before the permission is known.
+            const permission = canCreateSurveyTopics().catch(() => false);
+            Promise.all([listSurveyTopics(), permission])
+                .then(([topics, can]) => {
+                    this.canCreateTopics = can === true;
                     this.allTopics = topics;
+                    this.topicsReady = true;
                 })
                 .catch(() => {
                     this.topicError =
                         'Topics could not be loaded — try reopening.';
                 });
+        }
+        if (this._focusPick) {
+            this._focusPick = false;
+            const pick = this.template.querySelector('.pp-topic-pick');
+            if (pick) {
+                pick.focus();
+            }
         }
     }
 
@@ -1049,10 +1083,71 @@ export default class FinalPropertyPanel extends LightningElement {
         return ((this.n.analytics || {}).topics || []).filter((t) => t && t.id);
     }
 
-    /** Datalist = vocabulary minus what's already on the question. */
+    /** Chips as shown: a topic switched off since it was added stays (it is
+     *  the question's history) but says so. Not judged until the list loads. */
+    get topicChipViews() {
+        const active = new Set((this.allTopics || []).map((t) => t.id));
+        return this.topicChips.map((t) => {
+            const inactive = Boolean(this.allTopics) && !active.has(t.id);
+            return {
+                id: t.id,
+                name: t.name,
+                label: inactive ? `${t.name} (inactive)` : t.name,
+                removeLabel: `Remove topic ${t.name}`
+            };
+        });
+    }
+
+    /** Active topics not already on the question. */
     get availableTopics() {
         const used = new Set(this.topicChips.map((t) => t.id));
         return (this.allTopics || []).filter((t) => !used.has(t.id));
+    }
+
+    /** Combobox options: the unused active topics, then (with the
+     *  permission) "Create a topic…" as the last one. */
+    get topicOptions() {
+        const options = this.availableTopics.map((t) => ({
+            label: t.name,
+            value: t.id
+        }));
+        if (this.canCreateTopics) {
+            options.push({
+                label: 'Create a topic…',
+                value: CREATE_TOPIC_VALUE
+            });
+        }
+        return options;
+    }
+
+    get topicsLoaded() {
+        return this.topicsReady && Array.isArray(this.allTopics);
+    }
+
+    /** Active topics exist, all are on this question, and the user cannot
+     *  create more: say so rather than let the field vanish. */
+    get showAllTopicsUsed() {
+        return (
+            this.topicsLoaded &&
+            this.allTopics.length > 0 &&
+            this.availableTopics.length === 0 &&
+            !this.canCreateTopics
+        );
+    }
+
+    /** The picker shows once the list is in, and only when it has something
+     *  to offer (nothing left to add and no right to create: no empty box). */
+    get showTopicPicker() {
+        return this.topicsLoaded && this.topicOptions.length > 0;
+    }
+
+    /** No active topics at all and no right to create one. */
+    get showNoTopics() {
+        return (
+            this.topicsLoaded &&
+            this.allTopics.length === 0 &&
+            !this.canCreateTopics
+        );
     }
 
     handleRemoveTopic(event) {
@@ -1060,37 +1155,98 @@ export default class FinalPropertyPanel extends LightningElement {
         this._patchTopics(this.topicChips.filter((t) => t.id !== id));
     }
 
-    /** Type-or-pick: an existing name (case-insensitive) attaches the
-     *  existing topic; a new name mints one server-side (name-dedupe there
-     *  too — same-but-different tags would re-split the charts). */
-    async handleTopicEntry(event) {
-        const raw = (event.target.value || '').trim();
-        if (!raw) {
+    /** Picking adds a chip; "Create a topic…" opens the inline box instead. */
+    handleTopicPick(event) {
+        const value = event.detail.value;
+        event.target.value = '';
+        this.topicError = undefined;
+        if (value === CREATE_TOPIC_VALUE) {
+            this.newTopicName = '';
+            this.creatingTopic = true;
+            this._focusNewTopic = true;
             return;
         }
-        event.target.value = '';
+        const topic = this.availableTopics.find((t) => t.id === value);
+        if (topic) {
+            this._addTopicChip(topic);
+        }
+    }
+
+    handleNewTopicInput(event) {
+        this.newTopicName = event.target.value;
+        event.target.setCustomValidity('');
+    }
+
+    /** The message lives on the input itself (announced once, tied to it). */
+    _flagNameInvalid(message) {
+        const box = this.template.querySelector('.pp-topic-new-name');
+        if (box) {
+            box.setCustomValidity(message);
+            box.reportValidity();
+        }
+    }
+
+    handleNewTopicKeydown(event) {
+        if (event.key === 'Escape') {
+            event.stopPropagation();
+            this.handleCancelNewTopic();
+        } else if (event.key === 'Enter') {
+            event.preventDefault();
+            this.handleAddNewTopic();
+        }
+    }
+
+    handleCancelNewTopic() {
+        this.creatingTopic = false;
+        this.newTopicName = '';
+        this.topicError = undefined;
+        this._focusPick = true;
+    }
+
+    /** The server is the gate (permission, same-name reuse in any case or
+     *  spacing); a name already in the list just attaches that topic. */
+    async handleAddNewTopic() {
+        if (this.savingTopic) {
+            return;
+        }
+        const raw = (this.newTopicName || '').trim().replace(/\s+/g, ' ');
+        if (!raw) {
+            this._flagNameInvalid('Type a name for the topic.');
+            return;
+        }
         this.topicError = undefined;
         const match = (this.allTopics || []).find(
             (t) => t.name.toLowerCase() === raw.toLowerCase()
         );
+        this.savingTopic = true;
         try {
             const topic =
                 match || (await createSurveyTopic({ topicName: raw }));
-            if (!match) {
+            if (!(this.allTopics || []).some((t) => t.id === topic.id)) {
                 this.allTopics = [...(this.allTopics || []), topic].sort(
                     (a, b) => a.name.localeCompare(b.name)
                 );
             }
-            if (!this.topicChips.some((t) => t.id === topic.id)) {
-                this._patchTopics([
-                    ...this.topicChips,
-                    { id: topic.id, name: topic.name }
-                ]);
-            }
+            this._addTopicChip(topic);
+            this.creatingTopic = false;
+            this.newTopicName = '';
+            this._focusPick = true;
         } catch (e) {
-            this.topicError =
+            this._flagNameInvalid(
                 (e && e.body && e.body.message) ||
-                'That topic could not be added.';
+                    'That topic could not be added.'
+            );
+        } finally {
+            this.savingTopic = false;
+        }
+    }
+
+    _addTopicChip(topic) {
+        if (!this.topicChips.some((t) => t.id === topic.id)) {
+            this._patchTopics([
+                ...this.topicChips,
+                { id: topic.id, name: topic.name }
+            ]);
         }
     }
 
