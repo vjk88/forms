@@ -193,7 +193,7 @@ describe('c-final-property-panel topics picker', () => {
 
         const name = el.shadowRoot.querySelector('.pp-topic-new-name');
         name.value = 'Pricing';
-        name.dispatchEvent(new CustomEvent('input'));
+        name.dispatchEvent(new CustomEvent('change'));
         const add = Array.from(box.querySelectorAll('lightning-button')).find(
             (b) => b.label === 'Add'
         );
@@ -221,7 +221,7 @@ describe('c-final-property-panel topics picker', () => {
         const name = el.shadowRoot.querySelector('.pp-topic-new-name');
         stubValidity(name);
         name.value = 'Billing';
-        name.dispatchEvent(new CustomEvent('input'));
+        name.dispatchEvent(new CustomEvent('change'));
         Array.from(
             el.shadowRoot.querySelectorAll('.pp-topic-new lightning-button')
         )
@@ -235,7 +235,7 @@ describe('c-final-property-panel topics picker', () => {
         // announced once, by the input itself
         expect(el.shadowRoot.querySelector('[role="alert"]')).toBeNull();
         name.value = 'Billing 2';
-        name.dispatchEvent(new CustomEvent('input'));
+        name.dispatchEvent(new CustomEvent('change'));
         expect(name.setCustomValidity).toHaveBeenLastCalledWith('');
         expect(el.shadowRoot.querySelector('.pp-topic-new')).not.toBeNull();
     });
@@ -332,7 +332,7 @@ describe('c-final-property-panel topics picker', () => {
         });
         const name = await openBox(el);
         name.value = 'Pricing';
-        name.dispatchEvent(new CustomEvent('input'));
+        name.dispatchEvent(new CustomEvent('change'));
         addBtn(el).click();
         await flush();
         expect(el.shadowRoot.querySelector('.pp-topic-new')).toBeNull();
@@ -349,7 +349,7 @@ describe('c-final-property-panel topics picker', () => {
         );
         const name = await openBox(el);
         name.value = 'Pricing';
-        name.dispatchEvent(new CustomEvent('input'));
+        name.dispatchEvent(new CustomEvent('change'));
         addBtn(el).click();
         await flush();
         expect(addBtn(el).disabled).toBe(true);
