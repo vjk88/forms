@@ -1172,8 +1172,14 @@ export default class FinalPropertyPanel extends LightningElement {
         }
     }
 
+    /** lightning-input fires `change` on every keystroke (its inner native
+     *  `input` never reaches us in the Studio), so this listens to change. */
     handleNewTopicInput(event) {
-        this.newTopicName = event.target.value;
+        const value =
+            event.detail && event.detail.value !== undefined
+                ? event.detail.value
+                : event.target.value;
+        this.newTopicName = value || '';
         event.target.setCustomValidity('');
     }
 
@@ -1209,7 +1215,13 @@ export default class FinalPropertyPanel extends LightningElement {
         if (this.savingTopic) {
             return;
         }
-        const raw = (this.newTopicName || '').trim().replace(/\s+/g, ' ');
+        // the box itself is the truth (an Enter can land before the last
+        // keystroke's change was handled)
+        const box = this.template.querySelector('.pp-topic-new-name');
+        const typed = box && box.value !== undefined ? box.value : null;
+        const raw = (typed !== null ? typed : this.newTopicName || '')
+            .trim()
+            .replace(/\s+/g, ' ');
         if (!raw) {
             this._flagNameInvalid('Type a name for the topic.');
             return;
