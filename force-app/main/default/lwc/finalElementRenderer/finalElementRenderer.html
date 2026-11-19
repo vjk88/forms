@@ -764,6 +764,7 @@
                     class="scale-row"
                     role="radiogroup"
                     aria-label={scaleGroupAriaLabel}
+                    aria-describedby={scaleDescribedBy}
                     aria-required={ariaRequired}
                     onkeydown={handleScaleKey}
                 >
@@ -788,6 +789,9 @@
                         <span>{cfg.leftLabel}</span>
                         <span>{cfg.rightLabel}</span>
                     </div>
+                    <span id={scaleEndsId} class="scale-ends-sr"
+                        >{scaleEndsText}</span
+                    >
                 </template>
             </div>
             <template lwc:if={hasErrors}>
