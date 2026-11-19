@@ -1456,7 +1456,12 @@ export default class FinalPropertyPanel extends LightningElement {
             nps: 'Question · NPS',
             rating: 'Question · Rating',
             scale: 'Question · Opinion Scale',
-            emojiScale: 'Question · Emoji Scale'
+            emojiScale: 'Question · Emoji Scale',
+            likert: 'Question · Likert',
+            yesNo: 'Question · Yes / No',
+            ranking: 'Question · Ranking',
+            matrix: 'Question · Matrix',
+            imageChoice: 'Question · Image Choice'
         };
         if (this.isElement) {
             return names[this.n.type] || 'Element';

@@ -1076,19 +1076,32 @@ export default class FinalElementRenderer extends LightningElement {
         return Boolean(this.cfg.leftLabel || this.cfg.rightLabel);
     }
 
-    /** Mirrors sliderAriaLabel: the end labels are aria-hidden visual text,
-     *  so the radiogroup's accessible name carries their meaning instead
-     *  ("Rating, 1 = Poor to 5 = Excellent"). */
+    /** The radiogroup's name is just the question; the end labels' meaning
+     *  rides as its DESCRIPTION (aria-describedby → a hidden span), so the
+     *  name stays short and the visual end labels stay aria-hidden. */
     get scaleGroupAriaLabel() {
+        return this.el.label;
+    }
+
+    get scaleEndsId() {
+        return `scale-ends-${this.el.id}`;
+    }
+
+    get scaleDescribedBy() {
+        return this.hasEndLabels ? this.scaleEndsId : undefined;
+    }
+
+    /** "0 = Not likely to 10 = Extremely" (either end may be absent). */
+    get scaleEndsText() {
         if (!this.hasEndLabels) {
-            return this.el.label;
+            return '';
         }
         const { min, max } = this.scaleBounds;
         const left = this.cfg.leftLabel;
         const right = this.cfg.rightLabel;
         const lo = left ? `${min} = ${left}` : min;
         const hi = right ? `${max} = ${right}` : max;
-        return `${this.el.label}, ${lo} to ${hi}`;
+        return `${lo} to ${hi}`;
     }
 
     // ---- S4: likert · ranking · matrix (the promoted trio) ----

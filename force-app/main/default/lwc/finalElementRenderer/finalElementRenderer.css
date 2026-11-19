@@ -438,7 +438,9 @@
     color: var(--c-text);
 }
 
-/* Visually hidden, still focusable by the button's programmatic click. */
+/* Visually hidden, still focusable by the button's programmatic click.
+   .scale-ends-sr: the scale's end-label description, read via aria-describedby. */
+.scale-ends-sr,
 .block-file-input {
     position: absolute;
     width: 1px;

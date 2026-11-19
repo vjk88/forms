@@ -212,13 +212,15 @@ describe('scale family', () => {
         expect(
             el.shadowRoot.querySelector('.scale-endlabels').textContent
         ).toContain('Not likely');
-        // visual end labels are aria-hidden; the radiogroup's accessible
-        // name carries their meaning (same contract as the slider)
-        expect(
-            el.shadowRoot
-                .querySelector('[role="radiogroup"]')
-                .getAttribute('aria-label')
-        ).toBe('Recommend?, 0 = Not likely to 10 = Extremely');
+        // visual end labels are aria-hidden; the radiogroup is NAMED by the
+        // question and DESCRIBED by a hidden span carrying their meaning
+        const group = el.shadowRoot.querySelector('[role="radiogroup"]');
+        expect(group.getAttribute('aria-label')).toBe('Recommend?');
+        const ends = el.shadowRoot.querySelector('.scale-ends-sr');
+        expect(group.getAttribute('aria-describedby')).toBe(
+            ends.getAttribute('id')
+        );
+        expect(ends.textContent).toBe('0 = Not likely to 10 = Extremely');
         const bare = mount({ id: 'e2', type: 'nps', label: 'Recommend?' });
         expect(bare.shadowRoot.querySelector('.scale-endlabels')).toBeNull();
         expect(
