@@ -39,6 +39,7 @@ const RESPONDENT = new Set([
     'finalAfterSubmit',
     'finalGuestHost',
     'finalLookup',
+    'finalLanguageMenu',
     'finalFormHighlight'
 ]);
 const isRespondent = (name) =>

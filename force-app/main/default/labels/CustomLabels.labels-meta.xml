@@ -1,11 +1,12 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomLabels xmlns="http://soap.sforce.com/2006/04/metadata">
     <labels>
         <fullName>Final_Run_Submit</fullName>
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Default Submit button text on a form</shortDescription>
+        <shortDescription
+        >Default Submit button text on a form</shortDescription>
         <value>Submit</value>
     </labels>
     <labels>
@@ -13,7 +14,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Default Next button text (multi-page forms)</shortDescription>
+        <shortDescription
+        >Default Next button text (multi-page forms)</shortDescription>
         <value>Next</value>
     </labels>
     <labels>
@@ -21,7 +23,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Default Back button text (multi-page forms)</shortDescription>
+        <shortDescription
+        >Default Back button text (multi-page forms)</shortDescription>
         <value>Back</value>
     </labels>
     <labels>
@@ -29,7 +32,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Default Continue button text (one-at-a-time, after-submit)</shortDescription>
+        <shortDescription
+        >Default Continue button text (one-at-a-time, after-submit)</shortDescription>
         <value>Continue</value>
     </labels>
     <labels>
@@ -37,7 +41,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Submit button text while the response is being sent</shortDescription>
+        <shortDescription
+        >Submit button text while the response is being sent</shortDescription>
         <value>Submitting…</value>
     </labels>
     <labels>
@@ -45,7 +50,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Retry button after a record failed to load</shortDescription>
+        <shortDescription
+        >Retry button after a record failed to load</shortDescription>
         <value>Retry</value>
     </labels>
     <labels>
@@ -53,7 +59,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Retry button on a related list that failed to load</shortDescription>
+        <shortDescription
+        >Retry button on a related list that failed to load</shortDescription>
         <value>Try again</value>
     </labels>
     <labels>
@@ -61,7 +68,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Cancel button in the delete-row confirmation</shortDescription>
+        <shortDescription
+        >Cancel button in the delete-row confirmation</shortDescription>
         <value>Cancel</value>
     </labels>
     <labels>
@@ -69,7 +77,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Delete button in the delete-row confirmation</shortDescription>
+        <shortDescription
+        >Delete button in the delete-row confirmation</shortDescription>
         <value>Delete</value>
     </labels>
     <labels>
@@ -77,7 +86,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Undo button on a row marked for deletion</shortDescription>
+        <shortDescription
+        >Undo button on a row marked for deletion</shortDescription>
         <value>Undo</value>
     </labels>
     <labels>
@@ -85,7 +95,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Screen-reader title on the required-field asterisk</shortDescription>
+        <shortDescription
+        >Screen-reader title on the required-field asterisk</shortDescription>
         <value>required</value>
     </labels>
     <labels>
@@ -93,7 +104,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Alt text of the form logo when no brand name is set</shortDescription>
+        <shortDescription
+        >Alt text of the form logo when no brand name is set</shortDescription>
         <value>Logo</value>
     </labels>
     <labels>
@@ -101,7 +113,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Progress text: position of total (e.g. 2 of 5)</shortDescription>
+        <shortDescription
+        >Progress text: position of total (e.g. 2 of 5)</shortDescription>
         <value>{0} of {1}</value>
     </labels>
     <labels>
@@ -109,7 +122,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Progress text on stepper and split layouts</shortDescription>
+        <shortDescription
+        >Progress text on stepper and split layouts</shortDescription>
         <value>Step {0} of {1}</value>
     </labels>
     <labels>
@@ -117,7 +131,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Name of an unnamed page in navigation</shortDescription>
+        <shortDescription
+        >Name of an unnamed page in navigation</shortDescription>
         <value>Step {0}</value>
     </labels>
     <labels>
@@ -125,7 +140,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Label of the pages menu button on the side-rail layout</shortDescription>
+        <shortDescription
+        >Label of the pages menu button on the side-rail layout</shortDescription>
         <value>Pages</value>
     </labels>
     <labels>
@@ -133,7 +149,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Accessible name of the page navigation</shortDescription>
+        <shortDescription
+        >Accessible name of the page navigation</shortDescription>
         <value>Form pages</value>
     </labels>
     <labels>
@@ -141,7 +158,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Accessible name of the step navigation</shortDescription>
+        <shortDescription
+        >Accessible name of the step navigation</shortDescription>
         <value>Form steps</value>
     </labels>
     <labels>
@@ -149,7 +167,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Keyboard hint under a multi-line answer</shortDescription>
+        <shortDescription
+        >Keyboard hint under a multi-line answer</shortDescription>
         <value>or press Ctrl+Enter</value>
     </labels>
     <labels>
@@ -157,7 +176,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Keyboard hint under a single-line answer</shortDescription>
+        <shortDescription
+        >Keyboard hint under a single-line answer</shortDescription>
         <value>or press Return</value>
     </labels>
     <labels>
@@ -165,7 +185,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Tooltip on a collapsible section header</shortDescription>
+        <shortDescription
+        >Tooltip on a collapsible section header</shortDescription>
         <value>Expand or collapse this section</value>
     </labels>
     <labels>
@@ -173,7 +194,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Screen-reader text while the form loads</shortDescription>
+        <shortDescription
+        >Screen-reader text while the form loads</shortDescription>
         <value>Loading form</value>
     </labels>
     <labels>
@@ -181,7 +203,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Screen-reader text while a record loads for editing</shortDescription>
+        <shortDescription
+        >Screen-reader text while a record loads for editing</shortDescription>
         <value>Loading record</value>
     </labels>
     <labels>
@@ -205,7 +228,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Error when the form is not available to a guest</shortDescription>
+        <shortDescription
+        >Error when the form is not available to a guest</shortDescription>
         <value>This form is not available.</value>
     </labels>
     <labels>
@@ -213,7 +237,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Default message when a form is closed</shortDescription>
+        <shortDescription
+        >Default message when a form is closed</shortDescription>
         <value>This form is no longer accepting responses.</value>
     </labels>
     <labels>
@@ -221,7 +246,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Error for a form with an unsupported spec version</shortDescription>
+        <shortDescription
+        >Error for a form with an unsupported spec version</shortDescription>
         <value>This form uses an unsupported specification version.</value>
     </labels>
     <labels>
@@ -229,15 +255,18 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Error: form placed on a record page of another object</shortDescription>
-        <value>This form saves to {0}, so it can't be used on a {1} page.</value>
+        <shortDescription
+        >Error: form placed on a record page of another object</shortDescription>
+        <value
+        >This form saves to {0}, so it can't be used on a {1} page.</value>
     </labels>
     <labels>
         <fullName>Final_Run_WrongPageEdit</fullName>
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Error: editing a record from a page of another object</shortDescription>
+        <shortDescription
+        >Error: editing a record from a page of another object</shortDescription>
         <value>This form saves to {0}, but the current page is for {1}.</value>
     </labels>
     <labels>
@@ -245,8 +274,10 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Error: survey needs a record but none is available</shortDescription>
-        <value>Survey context needs a valid record ID. The configured current-record expression requires a record page.</value>
+        <shortDescription
+        >Error: survey needs a record but none is available</shortDescription>
+        <value
+        >Survey context needs a valid record ID. The configured current-record expression requires a record page.</value>
     </labels>
     <labels>
         <fullName>Final_Run_EditNeedsRecord</fullName>
@@ -254,14 +285,16 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Error: edit form has no record</shortDescription>
-        <value>This form needs a valid existing record ID. A current-record expression requires a record page.</value>
+        <value
+        >This form needs a valid existing record ID. A current-record expression requires a record page.</value>
     </labels>
     <labels>
         <fullName>Final_Run_RecordLoadFailed</fullName>
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Error when the record to edit cannot be loaded</shortDescription>
+        <shortDescription
+        >Error when the record to edit cannot be loaded</shortDescription>
         <value>Could not load this record. Retry to continue.</value>
     </labels>
     <labels>
@@ -269,15 +302,18 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Message when autofill fails or times out</shortDescription>
-        <value>Could not fill these details. Enter them yourself or retry.</value>
+        <shortDescription
+        >Message when autofill fails or times out</shortDescription>
+        <value
+        >Could not fill these details. Enter them yourself or retry.</value>
     </labels>
     <labels>
         <fullName>Final_Run_SaveFailed</fullName>
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Generic message when a response fails to save</shortDescription>
+        <shortDescription
+        >Generic message when a response fails to save</shortDescription>
         <value>Your response could not be saved. Please try again.</value>
     </labels>
     <labels>
@@ -285,15 +321,18 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Message next to Submit when the server rejects answers</shortDescription>
-        <value>Some answers were not accepted. See the highlighted fields.</value>
+        <shortDescription
+        >Message next to Submit when the server rejects answers</shortDescription>
+        <value
+        >Some answers were not accepted. See the highlighted fields.</value>
     </labels>
     <labels>
         <fullName>Final_Run_AnswerRejected</fullName>
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Fallback for a server rejection with no message</shortDescription>
+        <shortDescription
+        >Fallback for a server rejection with no message</shortDescription>
         <value>This answer was rejected.</value>
     </labels>
     <labels>
@@ -301,7 +340,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Fallback message for an invalid lookup choice</shortDescription>
+        <shortDescription
+        >Fallback message for an invalid lookup choice</shortDescription>
         <value>Check this selection.</value>
     </labels>
     <labels>
@@ -309,7 +349,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Blocked Next button: one field needs fixing</shortDescription>
+        <shortDescription
+        >Blocked Next button: one field needs fixing</shortDescription>
         <value>Fix 1 field to continue</value>
     </labels>
     <labels>
@@ -317,7 +358,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Blocked Next button: several fields need fixing</shortDescription>
+        <shortDescription
+        >Blocked Next button: several fields need fixing</shortDescription>
         <value>Fix {0} fields to continue</value>
     </labels>
     <labels>
@@ -325,7 +367,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Blocked Submit button: one field needs fixing</shortDescription>
+        <shortDescription
+        >Blocked Submit button: one field needs fixing</shortDescription>
         <value>Fix 1 field to submit</value>
     </labels>
     <labels>
@@ -333,7 +376,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Blocked Submit button: several fields need fixing</shortDescription>
+        <shortDescription
+        >Blocked Submit button: several fields need fixing</shortDescription>
         <value>Fix {0} fields to submit</value>
     </labels>
     <labels>
@@ -349,7 +393,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Required matrix: names the unanswered statements</shortDescription>
+        <shortDescription
+        >Required matrix: names the unanswered statements</shortDescription>
         <value>Please answer: {0}</value>
     </labels>
     <labels>
@@ -357,7 +402,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Repeatable group minimum (one entry)</shortDescription>
+        <shortDescription
+        >Repeatable group minimum (one entry)</shortDescription>
         <value>Fill in at least {0} entry.</value>
     </labels>
     <labels>
@@ -365,7 +411,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Repeatable group minimum (several entries)</shortDescription>
+        <shortDescription
+        >Repeatable group minimum (several entries)</shortDescription>
         <value>Fill in at least {0} entries.</value>
     </labels>
     <labels>
@@ -373,7 +420,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Toast text after a successful submission</shortDescription>
+        <shortDescription
+        >Toast text after a successful submission</shortDescription>
         <value>Success! Your submission was recorded.</value>
     </labels>
     <labels>
@@ -381,7 +429,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Default thank-you message after submit</shortDescription>
+        <shortDescription
+        >Default thank-you message after submit</shortDescription>
         <value>Thank you! Your response has been recorded.</value>
     </labels>
     <labels>
@@ -389,7 +438,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Countdown text before redirecting after submit</shortDescription>
+        <shortDescription
+        >Countdown text before redirecting after submit</shortDescription>
         <value>Redirecting to {0} in {1} seconds…</value>
     </labels>
     <labels>
@@ -397,7 +447,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Redirect destination: the saved record</shortDescription>
+        <shortDescription
+        >Redirect destination: the saved record</shortDescription>
         <value>the new / updated record</value>
     </labels>
     <labels>
@@ -413,7 +464,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Fallback word for one related record</shortDescription>
+        <shortDescription
+        >Fallback word for one related record</shortDescription>
         <value>record</value>
     </labels>
     <labels>
@@ -421,7 +473,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Fallback plural of a record name (adds an s)</shortDescription>
+        <shortDescription
+        >Fallback plural of a record name (adds an s)</shortDescription>
         <value>{0}s</value>
     </labels>
     <labels>
@@ -461,7 +514,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Related list truncated; add more in Salesforce</shortDescription>
+        <shortDescription
+        >Related list truncated; add more in Salesforce</shortDescription>
         <value>Showing {0} of {1}. Add new {2} in Salesforce.</value>
     </labels>
     <labels>
@@ -477,7 +531,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Accessible name of a link to a related record</shortDescription>
+        <shortDescription
+        >Accessible name of a link to a related record</shortDescription>
         <value>Open {0} {1}</value>
     </labels>
     <labels>
@@ -485,7 +540,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Column heading of the open-record link</shortDescription>
+        <shortDescription
+        >Column heading of the open-record link</shortDescription>
         <value>Open {0}</value>
     </labels>
     <labels>
@@ -493,7 +549,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Screen-reader note after a link that opens a new tab</shortDescription>
+        <shortDescription
+        >Screen-reader note after a link that opens a new tab</shortDescription>
         <value>(opens in a new tab)</value>
     </labels>
     <labels>
@@ -501,7 +558,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Placeholder for an empty related-list cell</shortDescription>
+        <shortDescription
+        >Placeholder for an empty related-list cell</shortDescription>
         <value>No value</value>
     </labels>
     <labels>
@@ -509,7 +567,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Link to the full related list in Salesforce</shortDescription>
+        <shortDescription
+        >Link to the full related list in Salesforce</shortDescription>
         <value>View all in Salesforce</value>
     </labels>
     <labels>
@@ -517,7 +576,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Screen-reader heading of the row-number column</shortDescription>
+        <shortDescription
+        >Screen-reader heading of the row-number column</shortDescription>
         <value>Row</value>
     </labels>
     <labels>
@@ -525,7 +585,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Screen-reader heading of the row-actions column</shortDescription>
+        <shortDescription
+        >Screen-reader heading of the row-actions column</shortDescription>
         <value>Actions</value>
     </labels>
     <labels>
@@ -541,7 +602,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Name of a new row next to saved records</shortDescription>
+        <shortDescription
+        >Name of a new row next to saved records</shortDescription>
         <value>New {0}</value>
     </labels>
     <labels>
@@ -549,7 +611,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Badge on a record the person cannot edit</shortDescription>
+        <shortDescription
+        >Badge on a record the person cannot edit</shortDescription>
         <value>View only</value>
     </labels>
     <labels>
@@ -557,7 +620,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Screen-reader note on a view-only record</shortDescription>
+        <shortDescription
+        >Screen-reader note on a view-only record</shortDescription>
         <value>You can see this {0} but not change it.</value>
     </labels>
     <labels>
@@ -573,7 +637,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Default title of a repeatable entry; keep {index}</shortDescription>
+        <shortDescription
+        >Default title of a repeatable entry; keep {index}</shortDescription>
         <value>Entry {index}</value>
     </labels>
     <labels>
@@ -581,7 +646,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Default button text to add a repeatable entry</shortDescription>
+        <shortDescription
+        >Default button text to add a repeatable entry</shortDescription>
         <value>Add another</value>
     </labels>
     <labels>
@@ -589,7 +655,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Default text to remove a repeatable entry</shortDescription>
+        <shortDescription
+        >Default text to remove a repeatable entry</shortDescription>
         <value>Remove</value>
     </labels>
     <labels>
@@ -605,7 +672,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Record name followed by its number (e.g. Contact 3)</shortDescription>
+        <shortDescription
+        >Record name followed by its number (e.g. Contact 3)</shortDescription>
         <value>{0} {1}</value>
     </labels>
     <labels>
@@ -613,8 +681,10 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Error: a row is both edited and marked for delete</shortDescription>
-        <value>This {0} is changed in {1} and deleted in {2}. Undo the delete, or change it back in {1}.</value>
+        <shortDescription
+        >Error: a row is both edited and marked for delete</shortDescription>
+        <value
+        >This {0} is changed in {1} and deleted in {2}. Undo the delete, or change it back in {1}.</value>
     </labels>
     <labels>
         <fullName>Final_Run_WillBeDeleted</fullName>
@@ -629,7 +699,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Accessible name of a delete-row button</shortDescription>
+        <shortDescription
+        >Accessible name of a delete-row button</shortDescription>
         <value>Delete {0} {1}</value>
     </labels>
     <labels>
@@ -637,7 +708,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Confirmation text before deleting a row</shortDescription>
+        <shortDescription
+        >Confirmation text before deleting a row</shortDescription>
         <value>Delete this {0}? This can’t be undone after you save.</value>
     </labels>
     <labels>
@@ -645,7 +717,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Accessible name of the undo-delete button</shortDescription>
+        <shortDescription
+        >Accessible name of the undo-delete button</shortDescription>
         <value>Undo delete of {0} {1}</value>
     </labels>
     <labels>
@@ -669,7 +742,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Fallback name of a question for screen readers</shortDescription>
+        <shortDescription
+        >Fallback name of a question for screen readers</shortDescription>
         <value>This question</value>
     </labels>
     <labels>
@@ -677,7 +751,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Accessible name of the Other text box</shortDescription>
+        <shortDescription
+        >Accessible name of the Other text box</shortDescription>
         <value>{0} — your own answer</value>
     </labels>
     <labels>
@@ -685,7 +760,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Name shown for an option or statement with no label</shortDescription>
+        <shortDescription
+        >Name shown for an option or statement with no label</shortDescription>
         <value>(untitled)</value>
     </labels>
     <labels>
@@ -789,7 +865,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Emoji scale chip name: sentiment, position of total</shortDescription>
+        <shortDescription
+        >Emoji scale chip name: sentiment, position of total</shortDescription>
         <value>{0}, {1} of {2}</value>
     </labels>
     <labels>
@@ -797,7 +874,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Scale end label: number equals meaning</shortDescription>
+        <shortDescription
+        >Scale end label: number equals meaning</shortDescription>
         <value>{0} = {1}</value>
     </labels>
     <labels>
@@ -813,7 +891,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Slider accessible name: question, low to high</shortDescription>
+        <shortDescription
+        >Slider accessible name: question, low to high</shortDescription>
         <value>{0}, {1} to {2}</value>
     </labels>
     <labels>
@@ -853,7 +932,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>File size cap in the file upload hint</shortDescription>
+        <shortDescription
+        >File size cap in the file upload hint</shortDescription>
         <value>up to {0}</value>
     </labels>
     <labels>
@@ -861,7 +941,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>File upload hint with no type restriction</shortDescription>
+        <shortDescription
+        >File upload hint with no type restriction</shortDescription>
         <value>Any file type · {0}</value>
     </labels>
     <labels>
@@ -869,7 +950,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>File upload hint: allowed types and size cap</shortDescription>
+        <shortDescription
+        >File upload hint: allowed types and size cap</shortDescription>
         <value>{0} · {1}</value>
     </labels>
     <labels>
@@ -877,7 +959,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Accessible name of the remove-file button</shortDescription>
+        <shortDescription
+        >Accessible name of the remove-file button</shortDescription>
         <value>Remove {0}</value>
     </labels>
     <labels>
@@ -893,7 +976,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>File upload error for an oversize file</shortDescription>
+        <shortDescription
+        >File upload error for an oversize file</shortDescription>
         <value>{0} is larger than {1}.</value>
     </labels>
     <labels>
@@ -901,7 +985,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Default placeholder of a lookup search box</shortDescription>
+        <shortDescription
+        >Default placeholder of a lookup search box</shortDescription>
         <value>Search...</value>
     </labels>
     <labels>
@@ -909,7 +994,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Clear button name on a lookup with a label</shortDescription>
+        <shortDescription
+        >Clear button name on a lookup with a label</shortDescription>
         <value>Clear {0}</value>
     </labels>
     <labels>
@@ -917,7 +1003,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Clear button name on a lookup without a label</shortDescription>
+        <shortDescription
+        >Clear button name on a lookup without a label</shortDescription>
         <value>Clear selection</value>
     </labels>
     <labels>
@@ -925,7 +1012,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Accessible name of a lookup results list</shortDescription>
+        <shortDescription
+        >Accessible name of a lookup results list</shortDescription>
         <value>{0} results</value>
     </labels>
     <labels>
@@ -933,7 +1021,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Accessible name of a lookup results list (no label)</shortDescription>
+        <shortDescription
+        >Accessible name of a lookup results list (no label)</shortDescription>
         <value>Search results</value>
     </labels>
     <labels>
@@ -941,7 +1030,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Fallback name of a chosen lookup record</shortDescription>
+        <shortDescription
+        >Fallback name of a chosen lookup record</shortDescription>
         <value>This selection</value>
     </labels>
     <labels>
@@ -949,7 +1039,8 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Lookup: the chosen record no longer qualifies</shortDescription>
+        <shortDescription
+        >Lookup: the chosen record no longer qualifies</shortDescription>
         <value>{0} may no longer be available. Choose again.</value>
     </labels>
     <labels>
@@ -989,7 +1080,17 @@
         <categories>FinalRuntime</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Lookup: several results (screen reader)</shortDescription>
+        <shortDescription
+        >Lookup: several results (screen reader)</shortDescription>
         <value>{0} results</value>
+    </labels>
+    <labels>
+        <fullName>Final_Run_Language</fullName>
+        <categories>FinalRuntime</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+        >Language menu on the form (screen reader name)</shortDescription>
+        <value>Language</value>
     </labels>
 </CustomLabels>

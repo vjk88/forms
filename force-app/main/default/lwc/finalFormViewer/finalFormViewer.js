@@ -5,6 +5,7 @@ import {
     resolveLanguage,
     loadLanguage,
     pickLanguage,
+    normalizeLanguage,
     localizeSpec
 } from 'c/finalTranslate';
 import { CurrentPageReference, NavigationMixin } from 'lightning/navigation';
@@ -365,6 +366,8 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             return;
         }
         this._previewLanguage = next;
+        // the Translate screen's choice replaces a pick made from the menu
+        this._chosenLang = null;
         if (this._inlineSpec) {
             this._apply(this._inlineSpec, { preserveNav: true });
         }
@@ -496,6 +499,8 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     _languageLoaded = null;
     /** The language chosen for this visit (null = none asked for). */
     _lang = null;
+    /** The language the visitor picked from the menu (null = none yet). */
+    _chosenLang = null;
     /** `formId|token` whose link context was requested — one fetch per link. */
     _linkCtxKey;
     /** True while the link's values load: shows the spinner, holds Submit. */
@@ -842,22 +847,126 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         return resolveLanguage({ param: state.c__lang || state.lang });
     }
 
-    async _apply(incoming, { preserveNav } = {}) {
+    /** sessionStorage key for the language the visitor chose (this form). */
+    _langStorageKey() {
+        return `final-lang:${this.effectiveFormId || 'inline'}`;
+    }
+
+    /** The language the visitor picked from the menu, this visit; else null. */
+    _chosenLanguage() {
+        if (this._chosenLang) {
+            return this._chosenLang;
+        }
+        // An explicit ?lang= link beats a remembered pick; authoring never
+        // reads storage (the Studio must not inherit a visitor's choice).
+        if (this.authoring || this._wantedLanguage()) {
+            return null;
+        }
+        try {
+            return (
+                window.sessionStorage.getItem(this._langStorageKey()) || null
+            );
+        } catch {
+            return null;
+        }
+    }
+
+    /**
+     * The menu's data, or null when it must not show: needs 2+ offered
+     * languages and the author's switch left on. Record-edit forms never show
+     * it (a re-apply there would re-read the record over the typed answers).
+     */
+    _languageMenuFor(spec, wanted) {
+        const langs = spec && spec.languages;
+        if (!langs || langs.showSwitcher === false) {
+            return null;
+        }
+        if (this._requiresEditRecord(spec)) {
+            return null;
+        }
+        const seen = new Set();
+        const list = (Array.isArray(langs.available) ? langs.available : [])
+            .map((code) => normalizeLanguage(code))
+            .filter((code) => {
+                if (!code || seen.has(code)) {
+                    return false;
+                }
+                seen.add(code);
+                return true;
+            });
+        return list.length > 1 ? { languages: list, value: wanted } : null;
+    }
+
+    handleLanguageChange(event) {
+        const code = normalizeLanguage(event.detail && event.detail.language);
+        if (!code || !this._editSpec || code === this._lang) {
+            return;
+        }
+        this._chosenLang = code;
+        if (!this.authoring) {
+            try {
+                window.sessionStorage.setItem(this._langStorageKey(), code);
+            } catch {
+                // storage blocked: the choice lasts until the page reloads
+            }
+        }
+        // From the author's ORIGINAL spec, keeping answers and the page.
+        this._apply(this._editSpec, { preserveNav: true, keepSession: true });
+    }
+
+    get showCornerMenu() {
+        return Boolean(
+            this.model &&
+            this.model.languageMenu &&
+            !this.completed &&
+            !this.model.splitCorner
+        );
+    }
+
+    get showSplitMenu() {
+        return Boolean(
+            this.model &&
+            this.model.languageMenu &&
+            !this.completed &&
+            this.model.splitCorner
+        );
+    }
+
+    get cornerClass() {
+        return this.model && this.model.bleed
+            ? 'viewer-corner viewer-corner--bleed'
+            : 'viewer-corner';
+    }
+
+    get menuLanguages() {
+        return this.model.languageMenu.languages;
+    }
+
+    get menuValue() {
+        return this.model.languageMenu.value;
+    }
+
+    async _apply(incoming, { preserveNav, keepSession } = {}) {
         // The language for this visit (link, user, browser, form default; see
         // pickLanguage). Built-in words must be in place before any child
         // renders; with no language block and no param nothing is awaited.
         // In the Studio (authoring) the preview shows the form's default
         // language unless the URL asks for one: the author's own Salesforce or
         // browser language must not flip the text they are editing.
+        // The visitor's own pick from the language menu beats all of it.
+        const chosen = this._chosenLanguage();
         const wanted = pickLanguage(
             this.authoring
                 ? {
                       spec: incoming,
-                      param: this._previewLanguage || this._wantedLanguage(),
+                      param:
+                          chosen ||
+                          this._previewLanguage ||
+                          this._wantedLanguage(),
                       userLang: null,
                       browserLangs: []
                   }
-                : { spec: incoming, param: this._wantedLanguage() }
+                : { spec: incoming, param: chosen || this._wantedLanguage() }
         );
         this._lang = wanted;
         if (wanted !== this._languageLoaded) {
@@ -1018,6 +1127,19 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         // Capture after async theme/layout work: answers entered while it was
         // loading belong to this session too. Stale applies exit above.
         const preview = this.preservePreview ? this.getPreviewState() : null;
+        // A language switch keeps this visit going: the same answers, repeat
+        // keys, start time and idempotency key, on the same page.
+        const kept =
+            keepSession && !preview
+                ? {
+                      answers: { ...this._answers },
+                      repeatKeys: JSON.parse(
+                          JSON.stringify(this._repeatKeys || {})
+                      ),
+                      startedAt: this._startedAt,
+                      submissionKey: this._submissionKeyValue
+                  }
+                : null;
         // One question per screen (Design → Paging, surveys only): the split
         // rides paginating layouts — scroll has no paging machinery to ride.
         const onePerScreen = isOnePerScreen(spec);
@@ -1138,15 +1260,19 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         // submission — reporting success while storing nothing. Guest mode
         // makes this the only workable place: there the viewer is handed a
         // spec and never learns a formId or versionId at all.
-        this._submissionKeyValue = undefined;
+        this._submissionKeyValue = kept ? kept.submissionKey : undefined;
         this._answers = preview
             ? reconcileAnswers(preview.answers, preview.spec, spec)
-            : {};
+            : kept
+              ? kept.answers
+              : {};
         // The key counter lives as long as the answers do: a fresh form
         // session starts at en_0, the Studio preview keeps its counter.
         this._repeatKeys = preview?.repeatKeys
             ? JSON.parse(JSON.stringify(preview.repeatKeys))
-            : {};
+            : kept
+              ? kept.repeatKeys
+              : {};
         this._serverEntryErrors = {};
         this._submitEntryKeys = {};
         // R6 — preservation mode must still CREATE a session when there is not
@@ -1190,7 +1316,10 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         this._submitError = undefined;
         this._autofillError = undefined;
         this.submittedRecordId = null;
-        this._startedAt = preview?.startedAt || new Date().toISOString();
+        this._startedAt =
+            preview?.startedAt ||
+            (kept && kept.startedAt) ||
+            new Date().toISOString();
         if (this.preservePreview) {
             this._previewSpec = spec;
             this._previewRevision += 1;
@@ -1332,6 +1461,11 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 layout.buttonArrangement ||
                 'split',
             layoutOptions: paneOptions,
+            languageMenu: this._languageMenuFor(spec, wanted),
+            // splitHero hosts the chip on its FORM side, not over the picture
+            splitCorner: Boolean(
+                spec.layout && spec.layout.type === 'splitHero'
+            ),
             paginates: Boolean(layout.paginates),
             ownsAdvance,
             // Text-size set (type scale spec section 6): layouts that show one

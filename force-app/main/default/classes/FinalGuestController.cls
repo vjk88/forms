@@ -154,7 +154,8 @@ public without sharing class FinalGuestController {
         'Final_Run_TypeMore',
         'Final_Run_NoMatches',
         'Final_Run_ResultOne',
-        'Final_Run_ResultsMany'
+        'Final_Run_ResultsMany',
+        'Final_Run_Language'
     };
     // END RUNTIME_LABEL_NAMES
 

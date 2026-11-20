@@ -14,6 +14,17 @@
             onrelatedlistretry={handleRelatedListRetry}
             onrelatedrowdelete={handleRelatedRowDelete}
         >
+            <template lwc:if={showCornerMenu}>
+                <!-- The language chip, top-right of the card, in its own
+                     row above the header so it can never cover the title. -->
+                <div slot="corner" class={cornerClass}>
+                    <c-final-language-menu
+                        languages={menuLanguages}
+                        value={menuValue}
+                        onlanguagechange={handleLanguageChange}
+                    ></c-final-language-menu>
+                </div>
+            </template>
             <template lwc:if={model.header}>
                 <c-final-form-header
                     slot="header"
@@ -108,6 +119,16 @@
                             onvaluechange={handleValueChange}
                             onadvanceblocked={handleAdvanceBlocked}
                         >
+                            <template lwc:if={showSplitMenu}>
+                                <!-- Split hero: the form side's corner. -->
+                                <div slot="corner" class="viewer-corner">
+                                    <c-final-language-menu
+                                        languages={menuLanguages}
+                                        value={menuValue}
+                                        onlanguagechange={handleLanguageChange}
+                                    ></c-final-language-menu>
+                                </div>
+                            </template>
                             <!-- Slotted from the engine's template: button intents
                              never cross the primitive's shadow boundary. -->
                             <c-final-submit-bar

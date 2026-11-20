@@ -29,17 +29,17 @@ function readXmlLabels() {
         'utf8'
     );
     const out = {};
-    const blocks = xml.match(/<labels>[\s\S]*?<\/labels>/g) || [];
+    const blocks = xml.match(/<labels\s*>[\s\S]*?<\/labels>/g) || [];
     blocks.forEach((block) => {
-        const name = /<fullName>([^<]+)<\/fullName>/.exec(block)[1];
-        const value = /<value>([\s\S]*?)<\/value>/.exec(block)[1];
+        const name = /<fullName\s*>([^<]+)<\/fullName>/.exec(block)[1];
+        const value = /<value\s*>([\s\S]*?)<\/value>/.exec(block)[1];
         out[name] = {
             value: unescapeXml(value),
-            language: /<language>([^<]+)<\/language>/.exec(block)[1],
-            category: /<categories>([^<]+)<\/categories>/.exec(block)[1],
-            protectedFlag: /<protected>([^<]+)<\/protected>/.exec(block)[1],
+            language: /<language\s*>([^<]+)<\/language>/.exec(block)[1],
+            category: /<categories\s*>([^<]+)<\/categories>/.exec(block)[1],
+            protectedFlag: /<protected\s*>([^<]+)<\/protected>/.exec(block)[1],
             description: unescapeXml(
-                /<shortDescription>([\s\S]*?)<\/shortDescription>/.exec(
+                /<shortDescription\s*>([\s\S]*?)<\/shortDescription>/.exec(
                     block
                 )[1]
             )

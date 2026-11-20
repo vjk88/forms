@@ -522,4 +522,42 @@ describe('c-final-translate-pane', () => {
             ).toBe('Nothing needs work in French.');
         });
     });
+    describe('the language menu switch', () => {
+        const toggleOf = (el) =>
+            sr(el).querySelector('lightning-input.tr-switcher-toggle');
+
+        it('is hidden until a language other than the default exists', async () => {
+            const el = await mount(baseSpec());
+            expect(toggleOf(el)).toBeNull();
+        });
+
+        it('shows on by default with a hint naming the languages', async () => {
+            const el = await mount(twoLangs());
+            expect(toggleOf(el)).not.toBeNull();
+            expect(toggleOf(el).label).toBe('Show a language menu on the form');
+            expect(toggleOf(el).checked).toBe(true);
+            expect(sr(el).querySelector('.tr-switcher-hint').textContent).toBe(
+                'Respondents can switch between English, French, German.'
+            );
+        });
+
+        it('turning it off, then on, emits showSwitcher false then true', async () => {
+            const el = await mount(twoLangs());
+            const seen = [];
+            el.addEventListener('specchange', (e) => seen.push(e.detail.spec));
+            toggleOf(el).dispatchEvent(
+                new CustomEvent('change', { detail: { checked: false } })
+            );
+            expect(seen[0].languages.showSwitcher).toBe(false);
+            expect(seen[0].languages.available).toEqual(['en_US', 'fr', 'de']);
+
+            el.spec = seen[0];
+            await flush();
+            expect(toggleOf(el).checked).toBe(false);
+            toggleOf(el).dispatchEvent(
+                new CustomEvent('change', { detail: { checked: true } })
+            );
+            expect(seen[1].languages.showSwitcher).toBe(true);
+        });
+    });
 });

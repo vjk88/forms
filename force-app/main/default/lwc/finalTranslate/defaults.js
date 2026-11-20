@@ -137,5 +137,6 @@ export const EN = {
     Final_Run_TypeMore: 'Type {0} or more characters',
     Final_Run_NoMatches: 'No matches',
     Final_Run_ResultOne: '1 result',
-    Final_Run_ResultsMany: '{0} results'
+    Final_Run_ResultsMany: '{0} results',
+    Final_Run_Language: 'Language'
 };
