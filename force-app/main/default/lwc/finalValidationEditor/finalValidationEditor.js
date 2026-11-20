@@ -184,6 +184,11 @@ export default class FinalValidationEditor extends LightningElement {
                 ? current.message
                 : '';
         next[i] = preset.make();
+        // the rule keeps its id: its translations belong to the slot, not the
+        // preset
+        if (current && current.id) {
+            next[i].id = current.id;
+        }
         if (customMessage) {
             next[i].message = customMessage;
         }

@@ -129,8 +129,22 @@ In the Studio **Settings drawer**, a new **Languages** section:
    the form's `available` languages, viewer wiring, the publish snapshot and overflow test.
    Respondent-facing **server** messages (e.g. `FinalAnswerValidator` "required") take the language from the
    submit payload and use `System.Label.get` here too.
-3. **PAUSED (owner 2026-11-19): the owner is pivoting to a different authoring approach; do not build the
-   file round-trip below until the new direction is set.** Original scope, **file round-trip:** the Languages section in the Settings drawer, CSV export and import with the
+3. **REPLACED (owner 2026-11-20): an in-app Translate screen** (mock: `mocks/translate-screen-mock.html`,
+   approved). No file round-trip; an agency file (XLIFF) only if a customer asks.
+   - **3A groundwork:**
+     - Validation rules get stable ids, so `el:<id>.msg:<ruleId>` survives reordering.
+     - `translationSources {lang: {key: fingerprint}}` drives the "changed in English" flag.
+     - `listTexts` entries carry where-labels and a rich-text flag.
+     - Helpers: `translationStatus` / `setTranslation` / `pruneTranslations`.
+     - A guard test fails when a renderer reads an author text field missing from `TEXT_KEYS`.
+   - **3B the screen:**
+     - A Translate mode next to Build / Design.
+     - Languages on the left (progress, add, remove).
+     - The grid: English vs language, Done / Missing / Check, search, All / Needs work / Done.
+     - Rich-text rows use the Studio's rich-text editor.
+     - Preview in <language>.
+     - The "language menu on the form" toggle waits for PR 4 (the switcher).
+   Superseded scope, kept for the record: **file round-trip:** the Languages section in the Settings drawer, CSV export and import with the
    summary and stale flags, publish warning.
 4. **Switcher + response language:** mock → switcher, `Language__c` on both response objects, report type
    column.

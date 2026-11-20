@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Translate screen mock</title>
+        <style>
+            :root {
+                --c-studio-surface: #ffffff;
+                --c-studio-surface-subtle: #f8fafc;
+                --c-studio-workspace: #f1f5f9;
+                --c-studio-hover: #eef2f6;
+                --c-studio-text: #1f2937;
+                --c-studio-text-weak: #526071;
+                --c-studio-border-strong: #7c8999;
+                --c-studio-border: #dce2e9;
+                --c-studio-border-subtle: #e8edf2;
+                --c-studio-accent: #0f766e;
+                --c-studio-accent-hover: #115e59;
+                --c-studio-accent-text: #115e59;
+                --c-studio-accent-surface: #e8f5f2;
+                --c-studio-on-accent: #ffffff;
+                --c-studio-warning-text: #73510d;
+                --c-studio-warning-surface: #fff5df;
+                --c-studio-warning-border: #caa24c;
+                --c-studio-success-text: #21613f;
+                --c-studio-success-surface: #eaf6ee;
+                --c-studio-fs-caption: 11px;
+                --c-studio-fs-small: 12px;
+                --c-studio-fs-body: 13px;
+                --c-studio-fs-subhead: 14px;
+                --c-studio-fs-title: 16px;
+                --c-studio-fw-strong: 600;
+                --c-studio-font:
+                    'Salesforce Sans', system-ui, -apple-system, 'Segoe UI',
+                    sans-serif;
+                --c-studio-space-2: 4px;
+                --c-studio-space-3: 8px;
+                --c-studio-space-4: 12px;
+                --c-studio-space-5: 16px;
+                --c-studio-space-6: 24px;
+                --radius: 6px;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                background: var(--c-studio-workspace);
+                color: var(--c-studio-text);
+                font: var(--c-studio-fs-body) / 1.45 var(--c-studio-font);
+            }
+            .note {
+                max-width: 1280px;
+                margin: 16px auto 0;
+                padding: 0 16px;
+                color: var(--c-studio-text-weak);
+                font-size: var(--c-studio-fs-small);
+            }
+            .frame {
+                max-width: 1280px;
+                margin: 8px auto 32px;
+                background: var(--c-studio-surface);
+                border: 1px solid var(--c-studio-border);
+                border-radius: 8px;
+                overflow: hidden;
+            }
+            /* top bar (same as Build / Design) */
+            .top {
+                display: flex;
+                align-items: center;
+                gap: var(--c-studio-space-4);
+                padding: 10px var(--c-studio-space-5);
+                border-bottom: 1px solid var(--c-studio-border);
+            }
+            .back {
+                color: var(--c-studio-accent-text);
+                font-size: var(--c-studio-fs-small);
+            }
+            .title {
+                font-weight: var(--c-studio-fw-strong);
+            }
+            .ver {
+                border: 1px solid var(--c-studio-border);
+                border-radius: var(--radius);
+                padding: 4px 10px;
+                font-size: var(--c-studio-fs-small);
+            }
+            .seg {
+                display: inline-flex;
+                border: 1px solid var(--c-studio-border);
+                border-radius: var(--radius);
+                overflow: hidden;
+            }
+            .seg span {
+                padding: 5px 14px;
+                font-size: var(--c-studio-fs-small);
+                border-right: 1px solid var(--c-studio-border);
+            }
+            .seg span:last-child {
+                border-right: 0;
+            }
+            .seg .on {
+                background: var(--c-studio-accent);
+                color: var(--c-studio-on-accent);
+                font-weight: var(--c-studio-fw-strong);
+            }
+            .spacer {
+                flex: 1;
+            }
+            .btn {
+                border: 1px solid var(--c-studio-border-strong);
+                background: var(--c-studio-surface);
+                border-radius: var(--radius);
+                padding: 6px 12px;
+                font: inherit;
+                font-size: var(--c-studio-fs-small);
+                color: var(--c-studio-text);
+            }
+            .btn.primary {
+                background: var(--c-studio-accent);
+                border-color: var(--c-studio-accent);
+                color: var(--c-studio-on-accent);
+                font-weight: var(--c-studio-fw-strong);
+            }
+            .btn.link {
+                border: 0;
+                background: none;
+                color: var(--c-studio-accent-text);
+                padding: 0;
+            }
+            .saved {
+                color: var(--c-studio-text-weak);
+                font-size: var(--c-studio-fs-small);
+            }
+
+            .body {
+                display: grid;
+                grid-template-columns: 260px 1fr;
+                min-height: 640px;
+            }
+
+            /* left: languages */
+            .langs {
+                border-right: 1px solid var(--c-studio-border);
+                background: var(--c-studio-surface-subtle);
+                padding: var(--c-studio-space-5);
+            }
+            .pane-h {
+                font-size: var(--c-studio-fs-subhead);
+                font-weight: var(--c-studio-fw-strong);
+                margin: 0 0 4px;
+            }
+            .pane-sub {
+                color: var(--c-studio-text-weak);
+                font-size: var(--c-studio-fs-small);
+                margin: 0 0 var(--c-studio-space-4);
+            }
+            .lang {
+                display: block;
+                border: 1px solid var(--c-studio-border);
+                background: var(--c-studio-surface);
+                border-radius: var(--radius);
+                padding: 10px 12px;
+                margin-bottom: var(--c-studio-space-3);
+            }
+            .lang.on {
+                border-color: var(--c-studio-accent);
+                box-shadow: inset 3px 0 0 var(--c-studio-accent);
+            }
+            .lang .row1 {
+                display: flex;
+                justify-content: space-between;
+                align-items: baseline;
+            }
+            .lang .name {
+                font-weight: var(--c-studio-fw-strong);
+            }
+            .lang .count {
+                color: var(--c-studio-text-weak);
+                font-size: var(--c-studio-fs-small);
+            }
+            .bar {
+                height: 4px;
+                border-radius: 2px;
+                background: var(--c-studio-border-subtle);
+                margin-top: 8px;
+                overflow: hidden;
+            }
+            .bar i {
+                display: block;
+                height: 100%;
+                background: var(--c-studio-accent);
+            }
+            .lang .meta {
+                margin-top: 6px;
+                font-size: var(--c-studio-fs-caption);
+                color: var(--c-studio-text-weak);
+            }
+            .lang .meta b {
+                color: var(--c-studio-warning-text);
+                font-weight: var(--c-studio-fw-strong);
+            }
+            .lang.default .name::after {
+                content: 'Default';
+                margin-left: 6px;
+                font-size: var(--c-studio-fs-caption);
+                font-weight: 400;
+                color: var(--c-studio-text-weak);
+                border: 1px solid var(--c-studio-border);
+                border-radius: 10px;
+                padding: 0 6px;
+            }
+            .add {
+                display: block;
+                text-align: center;
+                border: 1px dashed var(--c-studio-border-strong);
+                border-radius: var(--radius);
+                padding: 9px;
+                color: var(--c-studio-accent-text);
+                font-size: var(--c-studio-fs-small);
+                margin-top: var(--c-studio-space-4);
+            }
+            .opt {
+                margin-top: var(--c-studio-space-6);
+                border-top: 1px solid var(--c-studio-border);
+                padding-top: var(--c-studio-space-5);
+            }
+            .toggle {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 8px;
+                font-size: var(--c-studio-fs-small);
+            }
+            .sw {
+                width: 30px;
+                height: 16px;
+                border-radius: 8px;
+                background: var(--c-studio-accent);
+                position: relative;
+                flex: none;
+            }
+            .sw::after {
+                content: '';
+                position: absolute;
+                right: 2px;
+                top: 2px;
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                background: #fff;
+            }
+            .hint {
+                color: var(--c-studio-text-weak);
+                font-size: var(--c-studio-fs-caption);
+                margin: 4px 0 0;
+            }
+
+            /* main */
+            .main {
+                padding: var(--c-studio-space-5) var(--c-studio-space-6);
+            }
+            .main-h {
+                display: flex;
+                align-items: center;
+                gap: var(--c-studio-space-4);
+                margin-bottom: var(--c-studio-space-4);
+            }
+            .main-h h2 {
+                font-size: var(--c-studio-fs-title);
+                margin: 0;
+            }
+            .tools {
+                display: flex;
+                align-items: center;
+                gap: var(--c-studio-space-3);
+                margin-bottom: var(--c-studio-space-4);
+            }
+            .search {
+                flex: 0 1 280px;
+                border: 1px solid var(--c-studio-border-strong);
+                border-radius: var(--radius);
+                padding: 6px 10px;
+                color: var(--c-studio-text-weak);
+                font-size: var(--c-studio-fs-small);
+            }
+            .chips {
+                display: inline-flex;
+                border: 1px solid var(--c-studio-border);
+                border-radius: var(--radius);
+                overflow: hidden;
+            }
+            .chips span {
+                padding: 5px 12px;
+                font-size: var(--c-studio-fs-small);
+                border-right: 1px solid var(--c-studio-border);
+            }
+            .chips span:last-child {
+                border-right: 0;
+            }
+            .chips .on {
+                background: var(--c-studio-accent-surface);
+                color: var(--c-studio-accent-text);
+                font-weight: var(--c-studio-fw-strong);
+            }
+
+            .grid {
+                border: 1px solid var(--c-studio-border);
+                border-radius: var(--radius);
+                overflow: hidden;
+            }
+            .ghead,
+            .r {
+                display: grid;
+                grid-template-columns: 150px 1fr 1fr 96px;
+                gap: var(--c-studio-space-4);
+                align-items: start;
+            }
+            .ghead {
+                background: var(--c-studio-surface-subtle);
+                border-bottom: 1px solid var(--c-studio-border);
+                padding: 8px 12px;
+                font-size: var(--c-studio-fs-small);
+                color: var(--c-studio-text-weak);
+                font-weight: var(--c-studio-fw-strong);
+            }
+            .group {
+                padding: 8px 12px;
+                background: var(--c-studio-surface-subtle);
+                border-bottom: 1px solid var(--c-studio-border-subtle);
+                font-size: var(--c-studio-fs-small);
+                font-weight: var(--c-studio-fw-strong);
+            }
+            .group span {
+                color: var(--c-studio-text-weak);
+                font-weight: 400;
+            }
+            .r {
+                padding: 8px 12px;
+                border-bottom: 1px solid var(--c-studio-border-subtle);
+            }
+            .r:last-child {
+                border-bottom: 0;
+            }
+            .what {
+                font-size: var(--c-studio-fs-small);
+                color: var(--c-studio-text-weak);
+                padding-top: 6px;
+            }
+            .src {
+                padding-top: 6px;
+            }
+            .in {
+                border: 1px solid var(--c-studio-border-strong);
+                border-radius: var(--radius);
+                padding: 6px 10px;
+                min-height: 32px;
+                background: var(--c-studio-surface);
+            }
+            .in.empty {
+                color: var(--c-studio-text-weak);
+                font-style: italic;
+            }
+            .in.focus {
+                outline: 2px solid var(--c-studio-accent);
+                outline-offset: 1px;
+            }
+            .pill {
+                display: inline-block;
+                margin-top: 6px;
+                font-size: var(--c-studio-fs-caption);
+                border-radius: 10px;
+                padding: 1px 8px;
+                border: 1px solid;
+            }
+            .ok {
+                color: var(--c-studio-success-text);
+                background: var(--c-studio-success-surface);
+                border-color: transparent;
+            }
+            .miss {
+                color: var(--c-studio-text-weak);
+                background: var(--c-studio-surface-subtle);
+                border-color: var(--c-studio-border);
+            }
+            .stale {
+                color: var(--c-studio-warning-text);
+                background: var(--c-studio-warning-surface);
+                border-color: var(--c-studio-warning-border);
+            }
+            .was {
+                margin-top: 4px;
+                font-size: var(--c-studio-fs-caption);
+                color: var(--c-studio-warning-text);
+            }
+            .was s {
+                color: var(--c-studio-text-weak);
+            }
+            .rich {
+                font-size: var(--c-studio-fs-caption);
+                color: var(--c-studio-text-weak);
+                margin-top: 2px;
+            }
+            .foot {
+                margin-top: var(--c-studio-space-4);
+                color: var(--c-studio-text-weak);
+                font-size: var(--c-studio-fs-small);
+            }
+            .callouts {
+                max-width: 1280px;
+                margin: 0 auto 40px;
+                padding: 0 16px;
+                font-size: var(--c-studio-fs-small);
+                color: var(--c-studio-text-weak);
+            }
+            .callouts li {
+                margin: 4px 0;
+            }
+        </style>
+    </head>
+    <body>
+        <p class="note">
+            Mock: Translate screen (DEFERRED #4, replaces the paused file
+            round-trip). Desktop sketch, Studio tokens. Not built.
+        </p>
+        <div class="frame">
+            <div class="top">
+                <span class="back">← Back to forms</span>
+                <span class="title">Customer survey</span>
+                <span class="ver">v3 · Draft</span>
+                <span class="seg"
+                    ><span>Build</span><span>Design</span
+                    ><span class="on">Translate</span></span
+                >
+                <span class="spacer"></span>
+                <span class="saved">✓ All changes saved</span>
+                <button class="btn">Preview in French</button>
+                <button class="btn primary">Publish</button>
+            </div>
+
+            <div class="body">
+                <aside class="langs">
+                    <p class="pane-h">Languages</p>
+                    <p class="pane-sub">
+                        Respondents see their own language when the form offers
+                        it; everything untranslated shows in English.
+                    </p>
+
+                    <div class="lang default">
+                        <div class="row1">
+                            <span class="name">English</span
+                            ><span class="count">48 texts</span>
+                        </div>
+                        <div class="meta">
+                            Written in Build. Edit the English there.
+                        </div>
+                    </div>
+
+                    <div class="lang on">
+                        <div class="row1">
+                            <span class="name">French</span
+                            ><span class="count">41 / 48</span>
+                        </div>
+                        <div class="bar"><i style="width: 85%"></i></div>
+                        <div class="meta">
+                            5 missing · <b>2 changed in English</b>
+                        </div>
+                    </div>
+
+                    <div class="lang">
+                        <div class="row1">
+                            <span class="name">German</span
+                            ><span class="count">12 / 48</span>
+                        </div>
+                        <div class="bar"><i style="width: 25%"></i></div>
+                        <div class="meta">36 missing</div>
+                    </div>
+
+                    <span class="add">+ Add a language</span>
+
+                    <div class="opt">
+                        <div class="toggle">
+                            <span>Show a language menu on the form</span
+                            ><span class="sw" aria-hidden="true"></span>
+                        </div>
+                        <p class="hint">
+                            Respondents can switch between English, French and
+                            German.
+                        </p>
+                    </div>
+                </aside>
+
+                <section class="main">
+                    <div class="main-h">
+                        <h2>French</h2>
+                        <span class="spacer"></span>
+                        <button class="btn link">Remove French</button>
+                    </div>
+
+                    <div class="tools">
+                        <span class="search">Find text…</span>
+                        <span class="chips"
+                            ><span>All 48</span
+                            ><span class="on">Needs work 7</span
+                            ><span>Done 41</span></span
+                        >
+                    </div>
+
+                    <div class="grid">
+                        <div class="ghead">
+                            <span>Where</span><span>English</span
+                            ><span>French</span><span>Status</span>
+                        </div>
+
+                        <div class="group">
+                            Page 1 · About you
+                            <span>· Section: Your details</span>
+                        </div>
+                        <div class="r">
+                            <div class="what">Section title</div>
+                            <div class="src">Your details</div>
+                            <div><div class="in">Vos coordonnées</div></div>
+                            <div><span class="pill ok">Done</span></div>
+                        </div>
+                        <div class="r">
+                            <div class="what">Question</div>
+                            <div class="src">
+                                How satisfied are you with our support?
+                            </div>
+                            <div>
+                                <div class="in">
+                                    Êtes-vous satisfait de notre support ?
+                                </div>
+                                <div class="was">
+                                    English changed:
+                                    <s>How happy are you with support?</s>
+                                </div>
+                            </div>
+                            <div><span class="pill stale">Check</span></div>
+                        </div>
+                        <div class="r">
+                            <div class="what">Scale · left end</div>
+                            <div class="src">Very dissatisfied</div>
+                            <div><div class="in">Très insatisfait</div></div>
+                            <div><span class="pill ok">Done</span></div>
+                        </div>
+                        <div class="r">
+                            <div class="what">Scale · right end</div>
+                            <div class="src">Very satisfied</div>
+                            <div><div class="in focus">Très sat|</div></div>
+                            <div><span class="pill miss">Missing</span></div>
+                        </div>
+
+                        <div class="group">
+                            Page 1 · About you
+                            <span>· Question: Which plan are you on?</span>
+                        </div>
+                        <div class="r">
+                            <div class="what">Question</div>
+                            <div class="src">Which plan are you on?</div>
+                            <div>
+                                <div class="in">Quelle est votre formule ?</div>
+                            </div>
+                            <div><span class="pill ok">Done</span></div>
+                        </div>
+                        <div class="r">
+                            <div class="what">Option · basic</div>
+                            <div class="src">Basic</div>
+                            <div>
+                                <div class="in empty">
+                                    Shows “Basic” until translated
+                                </div>
+                            </div>
+                            <div><span class="pill miss">Missing</span></div>
+                        </div>
+                        <div class="r">
+                            <div class="what">Option · pro</div>
+                            <div class="src">Professional</div>
+                            <div>
+                                <div class="in empty">
+                                    Shows “Professional” until translated
+                                </div>
+                            </div>
+                            <div><span class="pill miss">Missing</span></div>
+                        </div>
+
+                        <div class="group">After submit</div>
+                        <div class="r">
+                            <div class="what">Thank-you message</div>
+                            <div class="src">
+                                Thanks! We read every answer.
+                                <div class="rich">Formatted text</div>
+                            </div>
+                            <div>
+                                <div class="in empty">
+                                    Shows the English until translated
+                                </div>
+                            </div>
+                            <div><span class="pill miss">Missing</span></div>
+                        </div>
+                        <div class="r">
+                            <div class="what">Submit button</div>
+                            <div class="src">Send feedback</div>
+                            <div><div class="in">Envoyer</div></div>
+                            <div><span class="pill stale">Check</span></div>
+                        </div>
+                    </div>
+
+                    <p class="foot">
+                        Built-in words (Next, Back, “This field is required”)
+                        are translated once for the whole org in Setup →
+                        Translation Workbench, not per form.
+                    </p>
+                </section>
+            </div>
+        </div>
+        <ul class="callouts">
+            <li>
+                <b>Translate</b> sits next to Build and Design in the top bar;
+                English is edited only in Build.
+            </li>
+            <li>
+                Rows come from the form itself (no keys to type, nothing to
+                import). Typing saves like the rest of the Studio.
+            </li>
+            <li>
+                <b>Check</b> = the English changed after this was translated;
+                the old English is shown so the translator sees what moved.
+            </li>
+            <li>
+                “Needs work” = missing + changed. Choice options are listed by
+                their stored value, so renaming a label keeps the translation.
+            </li>
+            <li>
+                Preview in French opens the preview with that language (the
+                <code>?lang=</code> path that already works).
+            </li>
+        </ul>
+    </body>
+</html>
