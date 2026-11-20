@@ -100,6 +100,16 @@
                 >
                     Design
                 </button>
+                <button
+                    type="button"
+                    class={translateClass}
+                    aria-pressed={isTranslatePressed}
+                    disabled={modeDisabled}
+                    data-id="mode-translate"
+                    onclick={handleModeTranslate}
+                >
+                    Translate
+                </button>
             </div>
             <template lwc:if={isEditable}>
                 <div class={saveStatusClass}>
@@ -238,6 +248,14 @@
                     ></lightning-menu-item>
                 </lightning-button-menu>
             </template>
+            <template lwc:if={showPreviewInLanguage}>
+                <lightning-button
+                    class="st-translate-preview"
+                    label={previewInLanguageLabel}
+                    data-id="preview-in-language"
+                    onclick={handlePreviewInLanguage}
+                ></lightning-button>
+            </template>
             <button
                 type="button"
                 class="st-primary"
@@ -293,6 +311,33 @@
                             ></c-final-preview-stage>
                         </div>
                     </main>
+                </template>
+                <template lwc:elseif={isTranslate}>
+                    <template lwc:if={showTranslatePane}>
+                        <main class="st-translate">
+                            <c-final-translate-pane
+                                spec={spec}
+                                languages={orgLanguages}
+                                selected-language={translateLanguageCode}
+                                onspecchange={handleSpecChange}
+                                onlanguagechange={handleTranslateLanguage}
+                            ></c-final-translate-pane>
+                        </main>
+                    </template>
+                    <template lwc:else>
+                        <main class="st-stagearea">
+                            <div class="st-scroll">
+                                <c-final-preview-stage
+                                    spec={spec}
+                                    preview-language={translatePreviewLanguage}
+                                    expandable
+                                    expanded
+                                    authoring
+                                    onpreviewexpand={handleTranslatePreviewExpand}
+                                ></c-final-preview-stage>
+                            </div>
+                        </main>
+                    </template>
                 </template>
                 <template lwc:elseif={isDesign}>
                     <aside class="st-left">

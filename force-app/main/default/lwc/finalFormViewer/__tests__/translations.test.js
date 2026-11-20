@@ -296,4 +296,65 @@ describe('c-final-form-viewer translations', () => {
             undefined
         );
     });
+
+    describe('previewLanguage (the Translate screen preview)', () => {
+        function authoringViewer(previewLanguage) {
+            const el = createElement('c-final-form-viewer', {
+                is: FinalFormViewer
+            });
+            el.authoring = true;
+            if (previewLanguage) {
+                el.previewLanguage = previewLanguage;
+            }
+            el.spec = spec(LANGUAGES);
+            el.delegateSubmit = true;
+            document.body.appendChild(el);
+            return el;
+        }
+
+        it('authoring + previewLanguage renders that language', async () => {
+            const el = authoringViewer('fr');
+            await settle();
+            const text = deepText(el.shadowRoot);
+            expect(text).toContain('Votre nom');
+            expect(text).toContain('Oui merci');
+        });
+
+        it('authoring without it stays in the default language', async () => {
+            const el = authoringViewer();
+            await settle();
+            const text = deepText(el.shadowRoot);
+            expect(text).toContain('Your name');
+            expect(text).not.toContain('Votre nom');
+        });
+
+        it('changing it re-renders, and clearing it goes back', async () => {
+            const el = authoringViewer();
+            await settle();
+            el.previewLanguage = 'fr';
+            await settle();
+            expect(deepText(el.shadowRoot)).toContain('Votre nom');
+            el.previewLanguage = null;
+            await settle();
+            expect(deepText(el.shadowRoot)).toContain('Your name');
+        });
+
+        it('is ignored for a language the form does not offer', async () => {
+            const el = authoringViewer('ja');
+            await settle();
+            expect(deepText(el.shadowRoot)).toContain('Your name');
+        });
+
+        it('is not used outside authoring', async () => {
+            const el = createElement('c-final-form-viewer', {
+                is: FinalFormViewer
+            });
+            el.previewLanguage = 'fr';
+            el.spec = spec(LANGUAGES);
+            el.delegateSubmit = true;
+            document.body.appendChild(el);
+            await settle();
+            expect(deepText(el.shadowRoot)).toContain('Your name');
+        });
+    });
 });

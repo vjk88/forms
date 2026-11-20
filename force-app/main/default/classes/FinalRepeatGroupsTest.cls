@@ -364,7 +364,7 @@ private class FinalRepeatGroupsTest {
     }
 
     @IsTest
-    static void surveyBudgetCountsTopicLinksAndRollsTheResponseBack() {
+    static void surveyBudgetIgnoresTopicsAndRollsTheResponseBack() {
         List<Survey_Topic__c> topics = new List<Survey_Topic__c>();
         for (Integer i = 0; i < 4; i++) {
             topics.add(new Survey_Topic__c(Name = 'T' + i));
@@ -374,27 +374,22 @@ private class FinalRepeatGroupsTest {
         for (Survey_Topic__c t : topics) {
             refs.add(new Map<String, Object>{ 'id' => t.Id, 'name' => t.Name });
         }
-        // a retired topic id links nothing, so it costs nothing
-        refs.add(
-            new Map<String, Object>{
-                'id' => 'a00000000000000AAA',
-                'name' => 'Gone'
-            }
-        );
         Form_Version__c v = survey(refs);
-        FinalSubmitService.groupRowBudget = 20;
+        FinalSubmitService.groupRowBudget = 5;
 
-        // 5 answers x (1 row + 4 links) = 25 rows: refused, though 5 < 20
+        // Topics live in the answer's Topic_Snapshot__c text (DEFERRED #67,
+        // PR 464): they cost no rows. 6 tagged answers = 6 rows: refused and
+        // rolled back.
         Assert.areEqual(
             'This response has too many entries. Remove some and try again.',
-            refusal(v.Id, jobs(5))
+            refusal(v.Id, jobs(6))
         );
         Assert.areEqual(
             0,
             [SELECT COUNT() FROM Form_Response__c WHERE Form_Version__c = :v.Id]
         );
-        // 4 x 5 = exactly 20: accepted
-        Assert.isNull(refusal(v.Id, jobs(4)));
+        // 5 tagged answers = exactly 5 rows: accepted, topics notwithstanding
+        Assert.isNull(refusal(v.Id, jobs(5)));
     }
 
     @IsTest

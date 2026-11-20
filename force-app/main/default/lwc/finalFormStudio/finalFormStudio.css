@@ -394,6 +394,13 @@
     background: var(--c-studio-workspace);
 }
 
+.st-translate {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
 .st-scroll {
     box-sizing: border-box;
     height: 100%;

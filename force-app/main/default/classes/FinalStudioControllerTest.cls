@@ -744,4 +744,17 @@ private class FinalStudioControllerTest {
             'nothing was saved'
         );
     }
+
+    @IsTest
+    static void listLanguagesReturnsTheOrgsActiveLanguages() {
+        List<Map<String, String>> langs = FinalStudioController.listLanguages();
+        Assert.isFalse(langs.isEmpty(), 'every org offers languages');
+        Boolean hasEnglish = false;
+        for (Map<String, String> l : langs) {
+            Assert.isFalse(String.isBlank(l.get('code')), 'code');
+            Assert.isFalse(String.isBlank(l.get('label')), 'label');
+            hasEnglish = hasEnglish || l.get('code') == 'en_US';
+        }
+        Assert.isTrue(hasEnglish, 'English (US) is always active');
+    }
 }

@@ -40,7 +40,8 @@ import {
 } from 'c/finalLayoutRegistry';
 import { repeatsPageName } from 'c/finalPageName';
 import { toSchemaOptions } from 'c/finalChoiceLook';
-import { ensureRuleIds, mintRuleId } from 'c/finalTranslate';
+import { ensureRuleIds, mintRuleId, pruneTranslations } from 'c/finalTranslate';
+import listLanguages from '@salesforce/apex/FinalStudioController.listLanguages';
 
 /**
  * finalFormStudio — the builder shell (FORM_STUDIO_IA §2–4, P3 slice 1).
@@ -108,6 +109,14 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
     viewEntry = null;
 
     mode = 'design';
+    /** Translate mode (translations 3B): the language the screen shows
+     *  ({ code, label }, reported by the pane), whether the expanded preview
+     *  of it is open, and the org's active languages (loaded once). Workspace
+     *  state only: never the spec, history or autosave. */
+    translateLang = null;
+    translatePreview = false;
+    orgLanguages = [];
+    _languagesRequested = false;
     /**
      * The Mapping dialog (IMPL_PLAN_F2_AUTOFILL 5.2): open, the spec it
      * edits (a copy — nothing reaches the form until Done), the step to open
@@ -570,6 +579,45 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         return this.mode === 'design';
     }
 
+    get isTranslate() {
+        return this.mode === 'translate';
+    }
+
+    get showTranslatePane() {
+        return !this.translatePreview;
+    }
+
+    get translateClass() {
+        return this.mode === 'translate' ? 'st-mode on' : 'st-mode';
+    }
+
+    get isTranslatePressed() {
+        return String(this.mode === 'translate');
+    }
+
+    /** "Preview in French": only in Translate mode, with a language picked,
+     *  while the pane (not the preview) is showing. */
+    get showPreviewInLanguage() {
+        return (
+            this.isTranslate &&
+            !this.isReadOnly &&
+            Boolean(this.translateLang && this.translateLang.code) &&
+            !this.translatePreview
+        );
+    }
+
+    get previewInLanguageLabel() {
+        return `Preview in ${this.translateLang ? this.translateLang.label : ''}`;
+    }
+
+    get translatePreviewLanguage() {
+        return this.translateLang ? this.translateLang.code : null;
+    }
+
+    get translateLanguageCode() {
+        return this.translateLang ? this.translateLang.code : undefined;
+    }
+
     get availability() {
         return this.spec?.settings?.availability || {};
     }
@@ -678,7 +726,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
      *  the Build sizing rules never touch Design or history. */
     get bodyClass() {
         let cls = 'st-body';
-        if (!this.isReadOnly && !this.isDesign) {
+        if (!this.isReadOnly && !this.isDesign && !this.isTranslate) {
             cls += ' st-body--build';
         }
         if (this.previewExpanded) {
@@ -748,6 +796,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             this.capturePreviewSession();
             this.previewExpanded = false;
         }
+        this.translatePreview = false;
         this.mode = 'build';
         this.settingsMenuOpen = false;
     }
@@ -760,8 +809,63 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             this.capturePreviewSession();
             this.previewExpanded = false;
         }
+        this.translatePreview = false;
         this.mode = 'design';
         this.settingsMenuOpen = false;
+    }
+
+    handleModeTranslate() {
+        if (this.isReadOnly) {
+            return;
+        }
+        if (this.mode !== 'translate') {
+            this.capturePreviewSession();
+            this.previewExpanded = false;
+            this.translatePreview = false;
+            this.mode = 'translate';
+            this._loadLanguages();
+            // Texts of deleted questions, options and rules leave the
+            // translation tables here, as one normal (undoable) edit.
+            const pruned = pruneTranslations(this.spec);
+            if (JSON.stringify(pruned) !== JSON.stringify(this.spec)) {
+                this.handleSpecChange({ detail: { spec: pruned } });
+            }
+        }
+        this.settingsMenuOpen = false;
+    }
+
+    /** The org's active languages, asked for once; the pane falls back to a
+     *  short built-in list if this fails. */
+    _loadLanguages() {
+        if (this._languagesRequested) {
+            return;
+        }
+        this._languagesRequested = true;
+        Promise.resolve(listLanguages())
+            .then((list) => {
+                this.orgLanguages = Array.isArray(list) ? list : [];
+            })
+            .catch(() => {
+                this._languagesRequested = false;
+            });
+    }
+
+    handleTranslateLanguage(event) {
+        const { code, label } = event.detail || {};
+        this.translateLang = code ? { code, label } : null;
+    }
+
+    handlePreviewInLanguage() {
+        if (this.showPreviewInLanguage) {
+            this.translatePreview = true;
+        }
+    }
+
+    handleTranslatePreviewExpand(event) {
+        // the stage's "Collapse preview" goes back to the Translate screen
+        if (!event.detail?.expanded) {
+            this.translatePreview = false;
+        }
     }
 
     // ----- the Autofill rule dialog (IMPL_PLAN_F2_AUTOFILL 6.1, D65) -----

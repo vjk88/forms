@@ -40,6 +40,8 @@ export default class FinalPreviewStage extends LightningElement {
     @api preserveSession = false;
     @api session;
     @api recordContext;
+    /** Studio only: preview the form in this language (Translate screen). */
+    @api previewLanguage;
     /** Opt-in: the host that can give the stage more room shows the toggle.
      *  The stage only asks (`previewexpand`); the host owns the layout and
      *  feeds the result back through `expanded`. */

@@ -1096,4 +1096,29 @@ public with sharing class FinalStudioController {
         e.name = name;
         return e;
     }
+
+    /**
+     * The org's active languages for the Translate screen: the
+     * User.LanguageLocaleKey picklist (the same list as a user's Language
+     * setting), as { code => 'fr', label => 'French' } in label order.
+     * Describe data only; no records are read.
+     */
+    @AuraEnabled(cacheable=true)
+    public static List<Map<String, String>> listLanguages() {
+        List<Map<String, String>> out = new List<Map<String, String>>();
+        for (
+            Schema.PicklistEntry entry : User.LanguageLocaleKey.getDescribe()
+                .getPicklistValues()
+        ) {
+            if (entry.isActive()) {
+                out.add(
+                    new Map<String, String>{
+                        'code' => entry.getValue(),
+                        'label' => entry.getLabel()
+                    }
+                );
+            }
+        }
+        return out;
+    }
 }
