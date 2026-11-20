@@ -93,6 +93,7 @@
                 onadvancekey={handleAdvanceKey}
                 onadvancefocus={handleAdvanceFocus}
             >
+                <slot name="corner"></slot>
                 <div class={formCardClass}>
                     <template lwc:if={showLockup}>
                         <header class="lockup">

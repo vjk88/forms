@@ -25,6 +25,7 @@ const RESPONDENT = [
     'finalFormHeader',
     'finalFormViewer',
     'finalSubmitBar',
+    'finalLanguageMenu',
     'finalAfterSubmit',
     'finalGuestHost',
     'finalLookup',

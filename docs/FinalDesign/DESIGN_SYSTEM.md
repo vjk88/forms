@@ -352,6 +352,7 @@ the missing one here first.
 
 ## Change log
 
+- **2026-11-20 v2.22.** Respondent side: the language chip (`c/finalLanguageMenu`, translations PR 4). A native `<select>` dressed as a pill: globe, the language's own name ("Français"), a caret; 32px tall, `--c-field-bg` / `--c-field-border` / `--c-text`, focus ring `--c-focus-ring`, role size `--c-fs-button`. Right-aligned in its own row above the form header (in flow, so it never covers a title, progress bar or stepper); on Split it sits at the top of the FORM column, never over the picture. Shown only with 2+ languages and the author's "Show a language menu on the form" on.
 - **2026-11-20 v2.21.** New pattern 5.31 (Translation grid) for the Translate screen, the third mode next to Build and Design in the top bar (same joined pair, current mode solid teal). "Preview in <language>" is a secondary button beside Publish while a language is open.
 - **2026-11-13 v2.20.** Respondent side: a related list's row delete (`c/finalRowDelete`): a bin, then an inline alertdialog in the row ("Delete this Case? This can't be undone after you save." with Delete outlined in the error colour and Cancel focused), then "Will be deleted when you save" + Undo with the name struck through. Studio: the group inspector's "Allow delete" switch row.
 - **2026-11-13 v2.19.** The conditions editor's "Compare with" column offers "This {object}" (a related list's Show conditions only), with a field picker "Search {object} fields", beside "A fixed value" and "Current user".

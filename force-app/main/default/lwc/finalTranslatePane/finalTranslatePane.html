@@ -72,6 +72,23 @@
                 + Add a language
             </button>
         </template>
+        <template lwc:if={hasLanguage}>
+            <div class="tr-switcher" data-id="switcher">
+                <lightning-input
+                    class="tr-switcher-toggle"
+                    type="toggle"
+                    label="Show a language menu on the form"
+                    message-toggle-active=""
+                    message-toggle-inactive=""
+                    checked={showSwitcher}
+                    aria-describedby="tr-switcher-hint"
+                    onchange={handleSwitcher}
+                ></lightning-input>
+                <p class="tr-switcher-hint" id="tr-switcher-hint">
+                    {switcherHint}
+                </p>
+            </div>
+        </template>
     </aside>
 
     <section class="tr-main" aria-label="Translations">

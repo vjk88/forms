@@ -338,3 +338,13 @@ button.tr-lang.tr-lang--on:hover {
     font-size: var(--c-studio-fs-small);
     color: var(--c-studio-text-weak);
 }
+
+.tr-switcher {
+    margin-top: var(--c-studio-space-4);
+}
+
+.tr-switcher-hint {
+    margin: var(--c-studio-space-1) 0 0;
+    color: var(--c-studio-text-weak);
+    font-size: var(--c-studio-fs-small);
+}

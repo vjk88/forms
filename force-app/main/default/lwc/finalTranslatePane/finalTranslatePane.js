@@ -401,6 +401,30 @@ export default class FinalTranslatePane extends LightningElement {
         return 'Pick a language';
     }
 
+    // ----- the form's language menu -----
+
+    /** On unless the author turned it off (absent = on). */
+    get showSwitcher() {
+        return this._spec?.languages?.showSwitcher !== false;
+    }
+    get switcherHint() {
+        const names = [this.defaultCode, ...this.otherCodes].map((c) =>
+            this._nameOf(c)
+        );
+        return `Respondents can switch between ${names.join(', ')}.`;
+    }
+    handleSwitcher(event) {
+        if (!this._spec) {
+            return;
+        }
+        this._flush();
+        const checked = Boolean(event.detail && event.detail.checked);
+        this._emit({
+            ...this._spec,
+            languages: { ...this._spec.languages, showSwitcher: checked }
+        });
+    }
+
     // ----- picking, adding, removing -----
 
     handleSelect(event) {
@@ -547,6 +571,8 @@ export default class FinalTranslatePane extends LightningElement {
         });
         if (changed) {
             this._pinRev += 1;
+            // keep the flushed edit in the base for a change made right after
+            this._spec = next;
             this._emit(next);
         }
     }

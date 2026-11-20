@@ -1,0 +1,58 @@
+/* The corner chip. Neutral field surface + ink so it reads on every theme
+   (the same pair the form's own controls use). */
+:host {
+    display: inline-block;
+    max-width: 100%;
+}
+
+.chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    font-family: var(--c-font-body);
+    color: var(--c-text);
+}
+
+.globe {
+    position: absolute;
+    left: var(--c-space-3, 0.75rem);
+    width: 14px;
+    height: 14px;
+    pointer-events: none;
+}
+
+.caret {
+    position: absolute;
+    right: var(--c-space-3, 0.75rem);
+    font-size: var(--c-fs-secondary, 0.875rem);
+    line-height: 1;
+    pointer-events: none;
+}
+
+.select {
+    appearance: none;
+    -webkit-appearance: none;
+    max-width: 100%;
+    margin: 0;
+    height: 32px;
+    padding: 0 calc(var(--c-space-3, 0.75rem) + 1rem) 0
+        calc(var(--c-space-3, 0.75rem) + 14px + var(--c-space-2, 0.5rem));
+    border: 1px solid var(--c-field-border);
+    border-radius: 999px;
+    background: var(--c-field-bg);
+    color: var(--c-text);
+    font: inherit;
+    font-size: var(--c-fs-button, 0.8125rem);
+    text-overflow: ellipsis;
+    cursor: pointer;
+}
+
+.select:hover {
+    border-color: var(--c-text-weak);
+}
+
+.select:focus-visible {
+    outline: 2px solid transparent;
+    box-shadow: var(--c-focus-ring);
+}

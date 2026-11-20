@@ -73,3 +73,17 @@
     color: var(--c-field-error, #b42318);
     font-size: var(--c-fs-error);
 }
+
+/* The language chip's row (translations PR 4): flush right, above the header,
+   in flow so it never overlaps a title, progress bar or stepper. On the
+   bleed layouts the panel has no padding, so the row carries its own. */
+.viewer-corner {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: var(--c-space-2, 0.5rem);
+}
+
+.viewer-corner--bleed {
+    padding: var(--c-space-3, 0.75rem) var(--c-space-4, 1rem) 0;
+    margin-bottom: 0;
+}

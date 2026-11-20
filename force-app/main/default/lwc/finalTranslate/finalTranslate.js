@@ -135,6 +135,7 @@ import Final_Run_TypeMore from '@salesforce/label/c.Final_Run_TypeMore';
 import Final_Run_NoMatches from '@salesforce/label/c.Final_Run_NoMatches';
 import Final_Run_ResultOne from '@salesforce/label/c.Final_Run_ResultOne';
 import Final_Run_ResultsMany from '@salesforce/label/c.Final_Run_ResultsMany';
+import Final_Run_Language from '@salesforce/label/c.Final_Run_Language';
 
 const IMPORTED = {
     Final_Run_Submit,
@@ -260,7 +261,8 @@ const IMPORTED = {
     Final_Run_TypeMore,
     Final_Run_NoMatches,
     Final_Run_ResultOne,
-    Final_Run_ResultsMany
+    Final_Run_ResultsMany,
+    Final_Run_Language
 };
 
 const LANG_PATTERN = /^[a-z]{2,3}([_-][A-Za-z]{2})?$/;
