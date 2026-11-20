@@ -1302,7 +1302,8 @@ public inherited sharing class FinalSubmitService {
             Form_Version__c = versionId,
             Status__c = 'Completed',
             Submitted_Date__c = Datetime.now(),
-            Completion_Time_Seconds__c = completionSeconds(meta)
+            Completion_Time_Seconds__c = completionSeconds(meta),
+            Language__c = FinalSpecLanguage.stored(spec, getStr(meta, 'lang'))
         );
         if (!isAnonymous(spec) && mode == Posture.INTERNAL) {
             // capture what the channel knows: internal = the running user;
@@ -1500,7 +1501,8 @@ public inherited sharing class FinalSubmitService {
             Form__c = formId,
             Form_Version__c = versionId,
             Submitted_Date__c = Datetime.now(),
-            Completion_Time_Seconds__c = completionSeconds(meta)
+            Completion_Time_Seconds__c = completionSeconds(meta),
+            Language__c = FinalSpecLanguage.stored(spec, getStr(meta, 'lang'))
         );
         if (String.isNotBlank(submissionKey)) {
             submission.Submission_Key__c = submissionKey.abbreviate(64);

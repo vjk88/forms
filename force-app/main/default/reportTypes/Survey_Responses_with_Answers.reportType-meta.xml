@@ -38,6 +38,11 @@
         </columns>
         <columns>
             <checkedByDefault>false</checkedByDefault>
+            <field>Language__c</field>
+            <table>Form_Response__c</table>
+        </columns>
+        <columns>
+            <checkedByDefault>false</checkedByDefault>
             <field>Form_Version__c</field>
             <table>Form_Response__c</table>
         </columns>

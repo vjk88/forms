@@ -76,6 +76,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Form_Submission__c.Language__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Form_Submission__c.Created_Records__c</field>
         <readable>true</readable>
     </fieldPermissions>

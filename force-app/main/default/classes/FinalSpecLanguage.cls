@@ -23,6 +23,32 @@ public with sharing class FinalSpecLanguage {
             : parts[0];
     }
 
+    /**
+     * The language to RECORD on a response: the respondent's language when
+     * the form offers exactly that code (fr-CA is read as fr_CA), otherwise
+     * the form's default; a spec with no `languages` block -> null. Unlike
+     * pick() there is no base/regional matching: we store what was seen.
+     */
+    public static String stored(Map<String, Object> spec, String lang) {
+        Map<String, Object> languages = spec == null
+            ? null
+            : asMap(spec.get('languages'));
+        if (languages == null) {
+            return null;
+        }
+        String code = normalize(lang);
+        Object offered = languages.get('available');
+        if (code != null && offered instanceof List<Object>) {
+            for (Object o : (List<Object>) offered) {
+                if (o instanceof String && normalize((String) o) == code) {
+                    return code;
+                }
+            }
+        }
+        Object def = languages.get('default');
+        return def instanceof String ? normalize((String) def) : null;
+    }
+
     private static String baseOf(String code) {
         return code == null ? null : code.split('_')[0];
     }

@@ -319,6 +319,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Form_Response__c.Language__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Form_Response__c.Status__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -615,6 +620,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Form_Submission__c.Session_Id__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Form_Submission__c.Language__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
