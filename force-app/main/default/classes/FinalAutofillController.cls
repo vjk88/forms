@@ -39,7 +39,9 @@ public with sharing class FinalAutofillController {
         }
         Form_Version__c version = loadActivePublishedVersion(formId, versionId);
         return userValuesFor(
-            (Map<String, Object>) JSON.deserializeUntyped(version.Spec_JSON__c)
+            (Map<String, Object>) JSON.deserializeUntyped(
+                FinalSpecStore.read(version)
+            )
         );
     }
 
@@ -243,7 +245,7 @@ public with sharing class FinalAutofillController {
 
         Form_Version__c version = loadActivePublishedVersion(formId, versionId);
         Map<String, Object> spec = (Map<String, Object>) JSON.deserializeUntyped(
-            version.Spec_JSON__c
+            FinalSpecStore.read(version)
         );
 
         String formTargetObject = getFormTargetObject(spec);
@@ -361,14 +363,17 @@ public with sharing class FinalAutofillController {
         // The respondent must be able to open the form at all: the same
         // USER_MODE read FinalSpecController.getSpec renders it from.
         List<Form_Version__c> versions = [
-            SELECT Id, Spec_JSON__c
+            SELECT Id, Spec_JSON__c, Spec_JSON_2__c, Spec_JSON_3__c
             FROM Form_Version__c
             WHERE Form__c = :formId AND Is_Active__c = TRUE
             WITH USER_MODE
             ORDER BY Version_Number__c DESC
             LIMIT 1
         ];
-        if (versions.isEmpty() || String.isBlank(versions[0].Spec_JSON__c)) {
+        if (
+            versions.isEmpty() ||
+            String.isBlank(FinalSpecStore.read(versions[0]))
+        ) {
             throw new AuraHandledException(UNAVAILABLE);
         }
         return FinalLinkService.contextFor(formId, versions[0], token);
@@ -443,12 +448,20 @@ public with sharing class FinalAutofillController {
         }
 
         List<Form_Version__c> versions = [
-            SELECT Id, Spec_JSON__c, Is_Active__c
+            SELECT
+                Id,
+                Spec_JSON__c,
+                Spec_JSON_2__c,
+                Spec_JSON_3__c,
+                Is_Active__c
             FROM Form_Version__c
             WHERE Id = :versionId AND Form__c = :formId AND Is_Active__c = TRUE
             LIMIT 1
         ];
-        if (versions.isEmpty() || String.isBlank(versions[0].Spec_JSON__c)) {
+        if (
+            versions.isEmpty() ||
+            String.isBlank(FinalSpecStore.read(versions[0]))
+        ) {
             throw new AuraHandledException(UNAVAILABLE);
         }
         return versions[0];

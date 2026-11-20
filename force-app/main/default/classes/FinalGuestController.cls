@@ -213,7 +213,7 @@ public without sharing class FinalGuestController {
     public static String getGuestSpec(Id formId) {
         Form__c f = gate(formId);
         Form_Version__c version = activeVersion(f.Id);
-        Map<String, Object> spec = parseSpec(version.Spec_JSON__c);
+        Map<String, Object> spec = parseSpec(FinalSpecStore.read(version));
         // Availability (A3, helpers now shared via FinalSubmitService — one
         // truth for both controllers; S1 ruling 7-1 adds the response cap):
         // a closed / not-yet-open / past-window / capped form returns ONLY
@@ -244,7 +244,7 @@ public without sharing class FinalGuestController {
     public static Map<String, Object> getGuestRuntimeSpec(Id formId) {
         Form__c f = gate(formId);
         Form_Version__c version = activeVersion(f.Id);
-        Map<String, Object> spec = parseSpec(version.Spec_JSON__c);
+        Map<String, Object> spec = parseSpec(FinalSpecStore.read(version));
         if (
             FinalSubmitService.isClosed(spec) ||
             FinalSubmitService.responseCapReached(spec, version.Id)
@@ -279,7 +279,7 @@ public without sharing class FinalGuestController {
         }
         Form__c f = gate(formId); // re-gated: a replayed POST re-checks
         Form_Version__c version = activeVersion(f.Id);
-        Map<String, Object> spec = parseSpec(version.Spec_JSON__c);
+        Map<String, Object> spec = parseSpec(FinalSpecStore.read(version));
 
         Map<String, Object> payload;
         try {
@@ -414,7 +414,7 @@ public without sharing class FinalGuestController {
         try {
             gate(formId); // published + guest-enabled, same hard gate
             Form_Version__c version = activeVersion(formId);
-            Map<String, Object> spec = parseSpec(version.Spec_JSON__c);
+            Map<String, Object> spec = parseSpec(FinalSpecStore.read(version));
             String targetObject = FinalLinkService.surveyTargetObject(spec);
             if (String.isBlank(targetObject)) {
                 return empty;
@@ -532,13 +532,16 @@ public without sharing class FinalGuestController {
      *  Returns the RECORD so submits anchor to the SERVER-loaded version. */
     private static Form_Version__c activeVersion(Id formId) {
         List<Form_Version__c> versions = [
-            SELECT Id, Spec_JSON__c
+            SELECT Id, Spec_JSON__c, Spec_JSON_2__c, Spec_JSON_3__c
             FROM Form_Version__c
             WHERE Form__c = :formId AND Is_Active__c = TRUE
             ORDER BY Version_Number__c DESC
             LIMIT 1
         ];
-        if (versions.isEmpty() || String.isBlank(versions[0].Spec_JSON__c)) {
+        if (
+            versions.isEmpty() ||
+            String.isBlank(FinalSpecStore.read(versions[0]))
+        ) {
             throw new AuraHandledException(UNAVAILABLE);
         }
         return versions[0];

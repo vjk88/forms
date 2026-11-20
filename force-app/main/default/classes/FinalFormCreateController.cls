@@ -140,7 +140,7 @@ public with sharing class FinalFormCreateController {
             version.Form__c = form.Id;
             version.Version_Number__c = 1;
             version.Is_Active__c = true;
-            version.Spec_JSON__c = JSON.serialize(spec);
+            FinalSpecStore.write(version, JSON.serialize(spec));
             version.Engine_Version__c = 1;
             insert as user version;
 
@@ -434,9 +434,9 @@ public with sharing class FinalFormCreateController {
                 Form__c = form.Id,
                 Version_Number__c = 1,
                 Is_Active__c = true,
-                Spec_JSON__c = JSON.serialize(tpl.spec),
                 Engine_Version__c = 1
             );
+            FinalSpecStore.write(version, JSON.serialize(tpl.spec));
             insert as user version;
             return new Map<String, Object>{
                 'formId' => form.Id,
@@ -518,9 +518,9 @@ public with sharing class FinalFormCreateController {
                 Form__c = form.Id,
                 Version_Number__c = 1,
                 Is_Active__c = true,
-                Spec_JSON__c = JSON.serialize(spec),
                 Engine_Version__c = 1
             );
+            FinalSpecStore.write(version, JSON.serialize(spec));
             insert as user version;
             return new Map<String, Object>{
                 'formId' => form.Id,

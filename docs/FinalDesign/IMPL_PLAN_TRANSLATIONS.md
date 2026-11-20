@@ -129,7 +129,8 @@ In the Studio **Settings drawer**, a new **Languages** section:
    the form's `available` languages, viewer wiring, the publish snapshot and overflow test.
    Respondent-facing **server** messages (e.g. `FinalAnswerValidator` "required") take the language from the
    submit payload and use `System.Label.get` here too.
-3. **File round-trip:** the Languages section in the Settings drawer, CSV export and import with the
+3. **PAUSED (owner 2026-11-19): the owner is pivoting to a different authoring approach; do not build the
+   file round-trip below until the new direction is set.** Original scope, **file round-trip:** the Languages section in the Settings drawer, CSV export and import with the
    summary and stale flags, publish warning.
 4. **Switcher + response language:** mock → switcher, `Language__c` on both response objects, report type
    column.

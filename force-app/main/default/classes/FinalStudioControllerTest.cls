@@ -650,4 +650,98 @@ private class FinalStudioControllerTest {
             'sorted by name'
         );
     }
+
+    private static String bigSpec(Integer padLength) {
+        // Valid, published-shaped spec with a long help text carried in `pad`.
+        return JSON.serialize(
+            new Map<String, Object>{
+                'specVersion' => 1,
+                'resolved' => new Map<String, Object>{
+                    'tokens' => new Map<String, Object>{
+                        '--c-accent' => '#123456'
+                    },
+                    'engineVersion' => 1,
+                    'resolvedAt' => '2026-07-06T00:00:00Z'
+                },
+                'pad' => 'h'.repeat(padLength)
+            }
+        );
+    }
+
+    @IsTest
+    static void saveAndLoadKeepASpecOverOneFieldWhole() {
+        Form__c f = makeForm('Big draft');
+        makeVersion(f.Id, 1, true, '{"specVersion":1}');
+        String big = bigSpec(200000);
+        Assert.isTrue(big.length() > FinalSpecStore.PART);
+
+        Id draftId = FinalStudioController.saveDraft(f.Id, big);
+        Map<String, Object> out = FinalStudioController.loadStudio(f.Id);
+
+        Assert.areEqual(draftId, out.get('draftVersionId'));
+        Assert.areEqual(big, (String) out.get('specJson'), 'identical JSON');
+
+        // saving a small spec afterwards clears the continuation fields
+        FinalStudioController.saveDraft(f.Id, '{"specVersion":1,"n":3}');
+        Form_Version__c row = [
+            SELECT Spec_JSON_2__c, Spec_JSON_3__c
+            FROM Form_Version__c
+            WHERE Id = :draftId
+        ];
+        Assert.isNull(row.Spec_JSON_2__c);
+        Assert.isNull(row.Spec_JSON_3__c);
+    }
+
+    @IsTest
+    static void publishedBigSpecIsServedToTheViewerWhole() {
+        Form__c f = makeForm('Big publish');
+        String big = bigSpec(200000);
+
+        Id publishedId = FinalSpecController.publishSpec(f.Id, big);
+
+        Map<String, Object> env = FinalSpecController.getSpecEnvelope(
+            f.Id,
+            null
+        );
+        Assert.areEqual(publishedId, env.get('versionId'));
+        Assert.areEqual(big, (String) env.get('spec'), 'identical JSON');
+        Map<String, Object> parsed = (Map<String, Object>) JSON.deserializeUntyped(
+            (String) env.get('spec')
+        );
+        Assert.areEqual(200000, ((String) parsed.get('pad')).length());
+        Assert.areEqual(
+            big,
+            FinalSpecController.getSpec(f.Id, publishedId),
+            'by version id too'
+        );
+    }
+
+    @IsTest
+    static void aSpecOverTheLimitSaysSoVerbatim() {
+        Form__c f = makeForm('Too big');
+        String tooBig = bigSpec(FinalSpecStore.MAX);
+        try {
+            FinalStudioController.saveDraft(f.Id, tooBig);
+            Assert.fail('should throw');
+        } catch (AuraHandledException e) {
+            Assert.isTrue(
+                e.getMessage().startsWith('This form is too large to save ('),
+                e.getMessage()
+            );
+        }
+        try {
+            FinalSpecController.publishSpec(f.Id, tooBig);
+            Assert.fail('should throw');
+        } catch (AuraHandledException e) {
+            Assert.isTrue(
+                e.getMessage().startsWith('This form is too large to save ('),
+                e.getMessage()
+            );
+        }
+        Assert.areEqual(
+            0,
+            [SELECT COUNT() FROM Form_Version__c WHERE Form__c = :f.Id],
+            'nothing was saved'
+        );
+    }
 }

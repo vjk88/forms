@@ -311,16 +311,21 @@ public with sharing class FinalRelatedListService {
 
     private static Map<String, Object> publishedSpec(Id versionId) {
         List<Form_Version__c> versions = [
-            SELECT Spec_JSON__c
+            SELECT Spec_JSON__c, Spec_JSON_2__c, Spec_JSON_3__c
             FROM Form_Version__c
             WHERE Id = :versionId
             WITH USER_MODE
             LIMIT 1
         ];
-        if (versions.isEmpty() || String.isBlank(versions[0].Spec_JSON__c)) {
+        if (
+            versions.isEmpty() ||
+            String.isBlank(FinalSpecStore.read(versions[0]))
+        ) {
             throw refusal('No published specification found for this form.');
         }
-        Object parsed = JSON.deserializeUntyped(versions[0].Spec_JSON__c);
+        Object parsed = JSON.deserializeUntyped(
+            FinalSpecStore.read(versions[0])
+        );
         if (!(parsed instanceof Map<String, Object>)) {
             throw refusal('This form’s specification can’t be read.');
         }

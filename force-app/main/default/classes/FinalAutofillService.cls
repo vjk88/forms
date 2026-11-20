@@ -359,7 +359,7 @@ public with sharing class FinalAutofillService {
         }
 
         List<Form_Version__c> versions = [
-            SELECT Spec_JSON__c
+            SELECT Spec_JSON__c, Spec_JSON_2__c, Spec_JSON_3__c
             FROM Form_Version__c
             WHERE Form__c = :formId AND Is_Active__c = TRUE
             WITH USER_MODE
@@ -369,10 +369,11 @@ public with sharing class FinalAutofillService {
 
         Map<String, Object> spec = null;
         if (
-            !versions.isEmpty() && String.isNotBlank(versions[0].Spec_JSON__c)
+            !versions.isEmpty() &&
+            String.isNotBlank(FinalSpecStore.read(versions[0]))
         ) {
             spec = (Map<String, Object>) JSON.deserializeUntyped(
-                versions[0].Spec_JSON__c
+                FinalSpecStore.read(versions[0])
             );
         } else if (f.Form_Type__c != 'Survey') {
             throw new AuraHandledException(

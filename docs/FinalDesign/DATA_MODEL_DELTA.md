@@ -28,10 +28,9 @@
 | Deprecate `Schema_Snapshot__c` / `Layout_Spec__c` / `Layout_Config__c` / `Layout_Mode__c`          | Three-way spec split was the old build; the new spec is ONE document. Deprecate = stop writing, keep until legacy cutover (§5) |
 | Keep `Is_Active__c`, `Version_Number__c`, `Published_By__c`/`Published_Date__c`, `Change_Notes__c` | Already right                                                                                                                  |
 
-> **131k overflow rule:** if `Spec_JSON__c` exceeds the LongTextArea cap (giant forms), the publish
-> action stores the spec as a `ContentVersion` attached to the version record and `Spec_JSON__c`
-> holds `{"overflow": true}`. The runtime loader handles both. Don't build this until a real form
-> hits the cap — just don't _preclude_ it.
+> **131k overflow rule (built 2026-11-19, DEFERRED #9):** the spec splits across `Spec_JSON__c`,
+> `Spec_JSON_2__c` and `Spec_JSON_3__c` (up to 393,216 characters). Read and write only through
+> `FinalSpecStore`. (The earlier ContentVersion idea was dropped by the owner.)
 
 ### `Form__c` — draft-side config consolidates
 

@@ -28,12 +28,12 @@ public without sharing class FinalMappingTriggerHandler {
         if (!versionIds.isEmpty()) {
             // System mode: a guest cannot read Form_Version__c.
             for (Form_Version__c v : [
-                SELECT Id, Spec_JSON__c
+                SELECT Id, Spec_JSON__c, Spec_JSON_2__c, Spec_JSON_3__c
                 FROM Form_Version__c
                 WHERE Id IN :versionIds
                 WITH SYSTEM_MODE
             ]) {
-                if (hasMapping(v.Spec_JSON__c)) {
+                if (hasMapping(FinalSpecStore.read(v))) {
                     mapped.add(v.Id);
                 }
             }

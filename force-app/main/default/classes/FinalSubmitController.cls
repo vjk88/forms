@@ -38,7 +38,7 @@ public with sharing class FinalSubmitController {
             throw new AuraHandledException('A submission payload is required.');
         }
         Form_Version__c version = loadVersion(formId, versionId);
-        Map<String, Object> spec = parseSpec(version.Spec_JSON__c);
+        Map<String, Object> spec = parseSpec(FinalSpecStore.read(version));
         // Availability (DEFERRED #20 → S1 ruling 7-1): the authored closed
         // flag / open-close window now gates INTERNAL submits too — same one
         // truth the guest controller enforces.
@@ -110,7 +110,7 @@ public with sharing class FinalSubmitController {
         List<Form_Version__c> versions;
         if (versionId != null) {
             versions = [
-                SELECT Id, Form__c, Spec_JSON__c
+                SELECT Id, Form__c, Spec_JSON__c, Spec_JSON_2__c, Spec_JSON_3__c
                 FROM Form_Version__c
                 WHERE Id = :versionId
                 WITH USER_MODE
@@ -118,7 +118,7 @@ public with sharing class FinalSubmitController {
             ];
         } else if (formId != null) {
             versions = [
-                SELECT Id, Form__c, Spec_JSON__c
+                SELECT Id, Form__c, Spec_JSON__c, Spec_JSON_2__c, Spec_JSON_3__c
                 FROM Form_Version__c
                 WHERE Form__c = :formId AND Is_Active__c = TRUE
                 WITH USER_MODE
@@ -128,7 +128,10 @@ public with sharing class FinalSubmitController {
         } else {
             throw new AuraHandledException('A form or version Id is required.');
         }
-        if (versions.isEmpty() || String.isBlank(versions[0].Spec_JSON__c)) {
+        if (
+            versions.isEmpty() ||
+            String.isBlank(FinalSpecStore.read(versions[0]))
+        ) {
             throw new AuraHandledException(
                 'This form has no published version to submit to.'
             );
