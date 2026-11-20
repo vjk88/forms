@@ -1,9 +1,7 @@
 <template>
     <span class="rd">
         <template lwc:if={marked}>
-            <span id="rd-status" class="rd-gone"
-                >Will be deleted when you save</span
-            >
+            <span id="rd-status" class="rd-gone">{labels.willDelete}</span>
             <button
                 type="button"
                 class="rd-undo"
@@ -11,7 +9,7 @@
                 aria-describedby="rd-status"
                 onclick={handleUndo}
             >
-                Undo
+                {labels.undo}
             </button>
         </template>
         <template lwc:elseif={showAsk}>
@@ -24,10 +22,10 @@
                 <span id="rd-question" class="rd-question">{askText}</span>
                 <span class="rd-answers">
                     <button type="button" class="rd-no" onclick={handleCancel}>
-                        Cancel
+                        {labels.cancel}
                     </button>
                     <button type="button" class="rd-yes" onclick={handleDelete}>
-                        Delete
+                        {labels.del}
                     </button>
                 </span>
             </span>

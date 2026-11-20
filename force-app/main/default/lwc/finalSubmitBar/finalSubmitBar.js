@@ -1,4 +1,5 @@
 import { LightningElement, api } from 'lwc';
+import { t } from 'c/finalTranslate';
 
 /**
  * finalSubmitBar — THE one button implementation (catalog §1) for the paginated
@@ -51,15 +52,19 @@ export default class FinalSubmitBar extends LightningElement {
     }
 
     get submitLabel() {
-        return this.cfg.label || 'Submit';
+        return this.cfg.label || t('Final_Run_Submit');
     }
 
     get nextLabel() {
-        return this.cfg.nextLabel || 'Next';
+        return this.cfg.nextLabel || t('Final_Run_Next');
     }
 
     get backLabel() {
-        return this.cfg.backLabel || 'Back';
+        return this.cfg.backLabel || t('Final_Run_Back');
+    }
+
+    get submittingText() {
+        return t('Final_Run_Submitting');
     }
 
     get primaryClass() {

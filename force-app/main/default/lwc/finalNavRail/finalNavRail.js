@@ -1,5 +1,6 @@
 import { LightningElement, api, track } from 'lwc';
 import { observeStuck } from 'c/finalStuck';
+import { t } from 'c/finalTranslate';
 
 /**
  * finalNavRail — persistent side-nav primitive (catalog §2).
@@ -127,7 +128,7 @@ export default class FinalNavRail extends LightningElement {
         const reachable = this.firstBlocked;
         return (this.pages || []).map((page, index) => ({
             key: page.id || `pg_${index}`,
-            label: page.name || `Step ${index + 1}`,
+            label: page.name || t('Final_Run_StepN', index + 1),
             number: index + 1,
             index,
             cls: index === current ? 'rail-link active' : 'rail-link',
@@ -137,7 +138,11 @@ export default class FinalNavRail extends LightningElement {
     }
 
     get progressText() {
-        return `${(this.currentPageIndex || 0) + 1} of ${(this.pages || []).length}`;
+        return t(
+            'Final_Run_PageOf',
+            (this.currentPageIndex || 0) + 1,
+            (this.pages || []).length
+        );
     }
 
     get progressFillStyle() {
@@ -154,9 +159,13 @@ export default class FinalNavRail extends LightningElement {
             : [];
     }
 
+    get navLabel() {
+        return t('Final_Run_FormPages');
+    }
+
     get drawerToggleLabel() {
         const page = (this.pages || [])[this.currentPageIndex || 0];
-        return page && page.name ? page.name : 'Pages';
+        return page && page.name ? page.name : t('Final_Run_Pages');
     }
 
     get drawerExpanded() {

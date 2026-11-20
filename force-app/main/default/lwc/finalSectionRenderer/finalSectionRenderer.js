@@ -1,5 +1,6 @@
 import { LightningElement, api } from 'lwc';
 import { repeatLimits, isAnswerable } from 'c/finalRepeatGroups';
+import { t } from 'c/finalTranslate';
 
 /**
  * finalSectionRenderer — one spec section: header, style treatment, field grid.
@@ -226,7 +227,7 @@ export default class FinalSectionRenderer extends LightningElement {
     }
 
     _entryTitle(index) {
-        return (this.repeatCfg.entryLabel || 'Entry {index}')
+        return (this.repeatCfg.entryLabel || t('Final_Run_EntryDefault'))
             .split('{index}')
             .join(String(index + 1));
     }
@@ -235,9 +236,25 @@ export default class FinalSectionRenderer extends LightningElement {
      *  × the same name, so the number is added for screen readers. */
     _removeName(index, title) {
         const numbered = (
-            this.repeatCfg.entryLabel || 'Entry {index}'
+            this.repeatCfg.entryLabel || t('Final_Run_EntryDefault')
         ).includes('{index}');
         return `${this.removeTitle} ${title}${numbered ? '' : ` ${index + 1}`}`;
+    }
+
+    /** Built-in words the template shows (Custom Labels). */
+    get labels() {
+        return {
+            expandCollapse: t('Final_Run_ExpandCollapse'),
+            tryAgain: t('Final_Run_TryAgain'),
+            noValue: t('Final_Run_NoValue'),
+            viewAll: t('Final_Run_ViewAll'),
+            row: t('Final_Run_Row'),
+            required: t('Final_Run_Required'),
+            actions: t('Final_Run_Actions'),
+            newTag: t('Final_Run_New'),
+            viewOnly: t('Final_Run_ViewOnly'),
+            open: t('Final_Run_Open')
+        };
     }
 
     get repeatEntries() {
@@ -260,9 +277,9 @@ export default class FinalSectionRenderer extends LightningElement {
             const thisNew = ex ? -1 : newIndex++;
             const label = ex
                 ? ex.name
-                : `${this._hasLoadedRows ? 'New ' : ''}${this._entryTitle(
-                      thisNew
-                  )}`;
+                : this._hasLoadedRows
+                  ? t('Final_Run_NewEntry', this._entryTitle(thisNew))
+                  : this._entryTitle(thisNew);
             const rowErrors = (errors.__row || []).slice();
             // The new entry's first question takes the cursor after Add.
             const addFocus =
@@ -322,7 +339,7 @@ export default class FinalSectionRenderer extends LightningElement {
                     : this._removeName(ex ? i : thisNew, label),
                 viewOnly: Boolean(ex && !editable),
                 viewOnlySr: ex
-                    ? `. You can see this ${this.entriesNameLabel} but not change it.`
+                    ? `. ${t('Final_Run_ViewOnlySr', this.entriesNameLabel)}`
                     : '',
                 rowErrors,
                 hasRowErrors: rowErrors.length > 0,
@@ -382,7 +399,7 @@ export default class FinalSectionRenderer extends LightningElement {
     /** Read after a required column's name (a template drops a leading
      *  space, so it is built here). */
     get requiredSr() {
-        return ' required';
+        return ` ${t('Final_Run_Required')}`;
     }
 
     get _hasLoadedRows() {
@@ -403,12 +420,12 @@ export default class FinalSectionRenderer extends LightningElement {
      *  never an API name like Job_Application__c. */
     _newRowName(i) {
         if (this.sec.listNoun) {
-            return `${this.sec.listNoun} ${i + 1}`;
+            return t('Final_Run_NameN', this.sec.listNoun, i + 1);
         }
         if ((this.repeatCfg.entryLabel || '').includes('{index}')) {
             return this._entryTitle(i);
         }
-        return `Row ${i + 1}`;
+        return t('Final_Run_RowN', i + 1);
     }
 
     /** The Table's first column: just the row number, or wider when saved
@@ -441,11 +458,11 @@ export default class FinalSectionRenderer extends LightningElement {
     }
 
     get addLabel() {
-        return this.repeatCfg.addLabel || 'Add another';
+        return this.repeatCfg.addLabel || t('Final_Run_AddAnother');
     }
 
     get removeTitle() {
-        return this.repeatCfg.removeLabel || 'Remove';
+        return this.repeatCfg.removeLabel || t('Final_Run_RemoveEntry');
     }
 
     get minMessage() {
@@ -461,7 +478,7 @@ export default class FinalSectionRenderer extends LightningElement {
     /** Read after a link's own words; built here because a template
      *  drops the space at the start of an element's text. */
     get newTabText() {
-        return ' (opens in a new tab)';
+        return ` ${t('Final_Run_OpensNewTab')}`;
     }
 
     /** The Studio preview's line for a read-only list. */

@@ -1,5 +1,6 @@
 import { LightningElement, api } from 'lwc';
 import { observeStuck } from 'c/finalStuck';
+import { t } from 'c/finalTranslate';
 
 /**
  * finalNavTabs — tabbed-pages nav primitive (catalog §2).
@@ -72,6 +73,10 @@ export default class FinalNavTabs extends LightningElement {
             : 'underline';
     }
 
+    get navLabel() {
+        return t('Final_Run_FormPages');
+    }
+
     get listClass() {
         const align = ALIGN_CLASS[this.opts.tabAlignment] || ALIGN_CLASS.left;
         return `tab-list style-${this.tabStyle} ${align}`;
@@ -84,7 +89,7 @@ export default class FinalNavTabs extends LightningElement {
             return {
                 key: page.id || `pg_${index}`,
                 tabId: tabIdFor(page, index),
-                label: page.name || `Step ${index + 1}`,
+                label: page.name || t('Final_Run_StepN', index + 1),
                 index,
                 cls: active ? 'tab active' : 'tab',
                 selected: active ? 'true' : 'false',

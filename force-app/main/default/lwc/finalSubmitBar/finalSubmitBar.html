@@ -38,7 +38,7 @@
                 >
                     <template lwc:if={submitting}>
                         <span class="spinner" aria-hidden="true"></span>
-                        Submitting…
+                        {submittingText}
                     </template>
                     <template lwc:else>{submitLabel}</template>
                 </button>

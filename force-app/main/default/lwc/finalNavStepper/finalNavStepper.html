@@ -3,7 +3,7 @@
         <div class={layoutClass}>
             <!-- zero-height tripwire: leaves the viewport top == strip pinned -->
             <div class="stuck-sentinel" aria-hidden="true"></div>
-            <nav class={stepsClass} aria-label="Form steps">
+            <nav class={stepsClass} aria-label={navLabel}>
                 <template lwc:if={showBar}>
                     <div
                         class="progress-track"

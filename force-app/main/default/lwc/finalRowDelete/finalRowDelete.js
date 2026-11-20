@@ -1,4 +1,5 @@
 import { LightningElement, api } from 'lwc';
+import { t } from 'c/finalTranslate';
 
 /**
  * Delete for one existing row of a related list on a record page
@@ -29,6 +30,15 @@ export default class FinalRowDelete extends LightningElement {
     /** Where the cursor goes once the next state has drawn. */
     _focusNext = null;
 
+    get labels() {
+        return {
+            willDelete: t('Final_Run_WillBeDeleted'),
+            undo: t('Final_Run_Undo'),
+            cancel: t('Final_Run_Cancel'),
+            del: t('Final_Run_Delete')
+        };
+    }
+
     get showAsk() {
         return !this.marked && this.confirming;
     }
@@ -38,16 +48,16 @@ export default class FinalRowDelete extends LightningElement {
     }
 
     get binLabel() {
-        return `Delete ${this.noun} ${this.name || ''}`.trim();
+        return t('Final_Run_DeleteRowAria', this.noun, this.name || '').trim();
     }
 
     // built here: a template drops a text's leading space
     get askText() {
-        return `Delete this ${this.noun}? This can’t be undone after you save.`;
+        return t('Final_Run_DeleteRowConfirm', this.noun);
     }
 
     get undoLabel() {
-        return `Undo delete of ${this.noun} ${this.name || ''}`.trim();
+        return t('Final_Run_UndoDeleteAria', this.noun, this.name || '').trim();
     }
 
     renderedCallback() {
