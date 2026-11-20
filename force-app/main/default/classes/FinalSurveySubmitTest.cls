@@ -889,4 +889,88 @@ private class FinalSurveySubmitTest {
             '2 on 1-4 = 33.33'
         );
     }
+
+    // ----- response language (translations PR 4) -----
+
+    private static String surveyLang(
+        Map<String, Object> languages,
+        String lang
+    ) {
+        Map<String, Object> spec = (Map<String, Object>) JSON.deserializeUntyped(
+            surveySpec(
+                new List<Object>{
+                    element(
+                        'el_rate',
+                        'rating',
+                        'Rate',
+                        null,
+                        new Map<String, Object>{
+                            'role' => 'score',
+                            'scaleMin' => 1,
+                            'scaleMax' => 5
+                        }
+                    )
+                },
+                null,
+                null
+            )
+        );
+        if (languages != null) {
+            spec.put('languages', languages);
+        }
+        Form_Version__c version = makeSurvey(JSON.serialize(spec));
+        Map<String, Object> meta = new Map<String, Object>();
+        if (lang != null) {
+            meta.put('lang', lang);
+        }
+        FinalSubmitController.SubmitResult res = FinalSubmitController.submitForm(
+            null,
+            version.Id,
+            JSON.serialize(
+                new Map<String, Object>{
+                    'answers' => new Map<String, Object>{ 'el_rate' => 4 },
+                    'repeats' => new Map<String, Object>(),
+                    'meta' => meta
+                }
+            )
+        );
+        return [
+            SELECT Language__c
+            FROM Form_Response__c
+            WHERE Id = :res.recordId
+        ]
+        .Language__c;
+    }
+
+    private static Map<String, Object> langs() {
+        return new Map<String, Object>{
+            'default' => 'en',
+            'available' => new List<Object>{ 'en', 'fr', 'fr_CA' }
+        };
+    }
+
+    @isTest
+    static void responseLanguageStoresOfferedCode() {
+        System.assertEquals('fr', surveyLang(langs(), 'fr'));
+    }
+
+    @isTest
+    static void responseLanguageNormalisesDashedCode() {
+        System.assertEquals('fr_CA', surveyLang(langs(), 'fr-CA'));
+    }
+
+    @isTest
+    static void responseLanguageUnofferedStoresDefault() {
+        System.assertEquals('en', surveyLang(langs(), 'de'));
+    }
+
+    @isTest
+    static void responseLanguageGarbageStoresDefault() {
+        System.assertEquals('en', surveyLang(langs(), '<script>x'));
+    }
+
+    @isTest
+    static void responseLanguageBlankWithoutLanguagesBlock() {
+        System.assertEquals(null, surveyLang(null, 'fr'));
+    }
 }

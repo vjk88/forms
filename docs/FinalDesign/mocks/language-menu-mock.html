@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Language menu mock</title>
+        <style>
+            :root {
+                --page: #eef2f6;
+                --card: #ffffff;
+                --ink: #1f2937;
+                --weak: #526071;
+                --line: #dce2e9;
+                --accent: #1e3a8a;
+                --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                background: #f8fafc;
+                color: var(--ink);
+                font: 14px/1.45 var(--font);
+            }
+            h1 {
+                font-size: 18px;
+                margin: 20px 24px 4px;
+            }
+            .lead {
+                margin: 0 24px 16px;
+                color: var(--weak);
+                font-size: 13px;
+            }
+            .opts {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 24px;
+                padding: 0 24px 32px;
+            }
+            .opt h2 {
+                font-size: 15px;
+                margin: 0 0 4px;
+            }
+            .opt p.why {
+                margin: 0 0 12px;
+                color: var(--weak);
+                font-size: 13px;
+            }
+            .pair {
+                display: grid;
+                gap: 16px;
+            }
+            .tag {
+                font-size: 12px;
+                color: var(--weak);
+                margin: 0 0 6px;
+            }
+            .stage {
+                background: var(--page);
+                border: 1px solid var(--line);
+                border-radius: 10px;
+                padding: 18px;
+            }
+            .form {
+                background: var(--card);
+                border-radius: 10px;
+                box-shadow: 0 1px 3px rgb(0 0 0 / 8%);
+                padding: 20px 24px;
+                position: relative;
+            }
+            .hdr {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin-bottom: 14px;
+            }
+            .logo {
+                width: 28px;
+                height: 28px;
+                border-radius: 6px;
+                background: var(--accent);
+            }
+            .ttl {
+                font-weight: 700;
+                font-size: 17px;
+            }
+            .sub {
+                color: var(--weak);
+                font-size: 13px;
+            }
+            .q {
+                margin: 12px 0;
+            }
+            .q label {
+                display: block;
+                font-weight: 600;
+                margin-bottom: 6px;
+            }
+            .in {
+                border: 1px solid #b9c3cf;
+                border-radius: 6px;
+                height: 34px;
+            }
+            .scale {
+                display: flex;
+                gap: 6px;
+            }
+            .scale span {
+                width: 34px;
+                height: 34px;
+                border: 1px solid #b9c3cf;
+                border-radius: 6px;
+                display: grid;
+                place-items: center;
+                font-size: 13px;
+            }
+            .btns {
+                display: flex;
+                justify-content: flex-end;
+                margin-top: 16px;
+            }
+            .primary {
+                background: var(--accent);
+                color: #fff;
+                border-radius: 6px;
+                padding: 8px 18px;
+                font-weight: 600;
+                font-size: 13px;
+            }
+            .lang {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                border: 1px solid var(--line);
+                border-radius: 999px;
+                padding: 4px 10px;
+                font-size: 13px;
+                color: var(--ink);
+                background: var(--card);
+            }
+            .lang svg {
+                width: 14px;
+                height: 14px;
+            }
+            .corner {
+                position: absolute;
+                top: 14px;
+                right: 16px;
+            }
+            .progress {
+                height: 4px;
+                border-radius: 2px;
+                background: var(--line);
+                margin: 0 0 18px;
+            }
+            .progress i {
+                display: block;
+                width: 40%;
+                height: 100%;
+                background: var(--accent);
+                border-radius: 2px;
+            }
+            .oaat {
+                text-align: left;
+                padding: 52px 28px 32px;
+            }
+            .oaat .big {
+                font-size: 20px;
+                font-weight: 700;
+                margin: 0 0 14px;
+            }
+            .foot {
+                display: flex;
+                justify-content: center;
+                gap: 4px;
+                margin-top: 14px;
+                font-size: 13px;
+                color: var(--weak);
+            }
+            .foot a {
+                color: var(--accent);
+                text-decoration: none;
+            }
+            .foot b {
+                color: var(--ink);
+            }
+            .menu {
+                position: absolute;
+                top: 44px;
+                right: 16px;
+                background: var(--card);
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                box-shadow: 0 6px 18px rgb(0 0 0 / 12%);
+                padding: 4px;
+                min-width: 150px;
+                font-size: 13px;
+                z-index: 2;
+            }
+            .menu div {
+                padding: 6px 10px;
+                border-radius: 6px;
+            }
+            .menu .on {
+                background: #e8eefc;
+                font-weight: 600;
+            }
+            .notes {
+                padding: 0 24px 32px;
+                color: var(--weak);
+                font-size: 13px;
+            }
+            .notes li {
+                margin: 4px 0;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Language menu on the form (translations PR 4)</h1>
+        <p class="lead">
+            Shown only when the form offers 2+ languages and the author left
+            “Show a language menu on the form” on. Switching keeps every answer
+            and the current page. Names are in their own language.
+        </p>
+
+        <div class="opts">
+            <section class="opt">
+                <h2>A · Corner chip (recommended)</h2>
+                <p class="why">
+                    Top-right of the form card on every layout. Findable at a
+                    glance, never competes with the title, works the same on all
+                    8 layouts.
+                </p>
+                <div class="pair">
+                    <div>
+                        <p class="tag">Scroll layout</p>
+                        <div class="stage">
+                            <div class="form">
+                                <span class="lang corner"
+                                    ><svg
+                                        viewBox="0 0 16 16"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="1.4"
+                                    >
+                                        <circle cx="8" cy="8" r="6.3" />
+                                        <path
+                                            d="M1.7 8h12.6M8 1.7c2 2 2 10.6 0 12.6M8 1.7c-2 2-2 10.6 0 12.6"
+                                        /></svg
+                                    >Français ▾</span
+                                >
+                                <div class="menu">
+                                    <div>English</div>
+                                    <div class="on">Français</div>
+                                    <div>Deutsch</div>
+                                </div>
+                                <div class="hdr">
+                                    <span class="logo"></span>
+                                    <div>
+                                        <div class="ttl">Enquête client</div>
+                                        <div class="sub">
+                                            Deux minutes, promis.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="q">
+                                    <label
+                                        >Êtes-vous satisfait de notre support
+                                        ?</label
+                                    >
+                                    <div class="scale">
+                                        <span>1</span><span>2</span
+                                        ><span>3</span><span>4</span
+                                        ><span>5</span>
+                                    </div>
+                                </div>
+                                <div class="q">
+                                    <label
+                                        >Que pourrions-nous améliorer ?</label
+                                    >
+                                    <div class="in"></div>
+                                </div>
+                                <div class="btns">
+                                    <span class="primary">Envoyer</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="tag">One at a time</p>
+                        <div class="stage">
+                            <div class="form oaat">
+                                <span class="lang corner"
+                                    ><svg
+                                        viewBox="0 0 16 16"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="1.4"
+                                    >
+                                        <circle cx="8" cy="8" r="6.3" />
+                                        <path
+                                            d="M1.7 8h12.6M8 1.7c2 2 2 10.6 0 12.6M8 1.7c-2 2-2 10.6 0 12.6"
+                                        /></svg
+                                    >Français ▾</span
+                                >
+                                <div class="progress"><i></i></div>
+                                <p class="big">
+                                    Êtes-vous satisfait de notre support ?
+                                </p>
+                                <div class="scale">
+                                    <span>1</span><span>2</span><span>3</span
+                                    ><span>4</span><span>5</span>
+                                </div>
+                                <div class="btns">
+                                    <span class="primary">Continuer</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="opt">
+                <h2>B · Footer links</h2>
+                <p class="why">
+                    Quiet text links under the buttons. Zero clutter up top, but
+                    respondents who need it most (they can't read the current
+                    language) have to find it at the bottom.
+                </p>
+                <div class="pair">
+                    <div>
+                        <p class="tag">Scroll layout</p>
+                        <div class="stage">
+                            <div class="form">
+                                <div class="hdr">
+                                    <span class="logo"></span>
+                                    <div>
+                                        <div class="ttl">Enquête client</div>
+                                        <div class="sub">
+                                            Deux minutes, promis.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="q">
+                                    <label
+                                        >Êtes-vous satisfait de notre support
+                                        ?</label
+                                    >
+                                    <div class="scale">
+                                        <span>1</span><span>2</span
+                                        ><span>3</span><span>4</span
+                                        ><span>5</span>
+                                    </div>
+                                </div>
+                                <div class="q">
+                                    <label
+                                        >Que pourrions-nous améliorer ?</label
+                                    >
+                                    <div class="in"></div>
+                                </div>
+                                <div class="btns">
+                                    <span class="primary">Envoyer</span>
+                                </div>
+                            </div>
+                            <div class="foot">
+                                <a href="#">English</a> · <b>Français</b> ·
+                                <a href="#">Deutsch</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="tag">One at a time</p>
+                        <div class="stage">
+                            <div class="form oaat">
+                                <div class="progress"><i></i></div>
+                                <p class="big">
+                                    Êtes-vous satisfait de notre support ?
+                                </p>
+                                <div class="scale">
+                                    <span>1</span><span>2</span><span>3</span
+                                    ><span>4</span><span>5</span>
+                                </div>
+                                <div class="btns">
+                                    <span class="primary">Continuer</span>
+                                </div>
+                            </div>
+                            <div class="foot">
+                                <a href="#">English</a> · <b>Français</b> ·
+                                <a href="#">Deutsch</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+        <ul class="notes">
+            <li>
+                Both: the menu is a real control (keyboard, screen reader:
+                “Language, Français”), sits outside the form's own colours'
+                contrast traps (neutral chip), and the choice sticks for the
+                visit.
+            </li>
+            <li>
+                Split layout: A goes in the form side's corner, not on the
+                picture pane.
+            </li>
+            <li>
+                The Studio's Translate screen gets the toggle “Show a language
+                menu on the form” (on by default once a 2nd language is added).
+            </li>
+        </ul>
+    </body>
+</html>

@@ -516,4 +516,77 @@ private class FinalFreeformSubmitTest {
             'while form A keeps the one it earned'
         );
     }
+
+    // ----- response language (translations PR 4) -----
+
+    private static String freeformLang(
+        Map<String, Object> languages,
+        String lang
+    ) {
+        Map<String, Object> spec = makeForm(
+            new List<Object>{
+                question(
+                    'el_name',
+                    'field',
+                    'Name',
+                    new Map<String, Object>{ 'inputType' => 'text' }
+                )
+            },
+            null
+        );
+        if (languages != null) {
+            spec.put('languages', languages);
+        }
+        Map<String, Object> p = payload(
+            new Map<String, Object>{ 'el_name' => 'Ada' },
+            'key-lang'
+        );
+        if (lang != null) {
+            ((Map<String, Object>) p.get('meta')).put('lang', lang);
+        }
+        FinalSubmitService.SubmitOutcome out = FinalSubmitService.run(
+            spec,
+            p,
+            versionId,
+            FinalSubmitService.Posture.INTERNAL
+        );
+        return [
+            SELECT Language__c
+            FROM Form_Submission__c
+            WHERE Id = :out.recordId
+        ]
+        .Language__c;
+    }
+
+    private static Map<String, Object> langs() {
+        return new Map<String, Object>{
+            'default' => 'en',
+            'available' => new List<Object>{ 'en', 'fr', 'fr_CA' }
+        };
+    }
+
+    @IsTest
+    static void responseLanguageStoresOfferedCode() {
+        Assert.areEqual('fr', freeformLang(langs(), 'fr'));
+    }
+
+    @IsTest
+    static void responseLanguageNormalisesDashedCode() {
+        Assert.areEqual('fr_CA', freeformLang(langs(), 'fr-CA'));
+    }
+
+    @IsTest
+    static void responseLanguageUnofferedStoresDefault() {
+        Assert.areEqual('en', freeformLang(langs(), 'de'));
+    }
+
+    @IsTest
+    static void responseLanguageGarbageStoresDefault() {
+        Assert.areEqual('en', freeformLang(langs(), '<script>x'));
+    }
+
+    @IsTest
+    static void responseLanguageBlankWithoutLanguagesBlock() {
+        Assert.isNull(freeformLang(null, 'fr'));
+    }
 }

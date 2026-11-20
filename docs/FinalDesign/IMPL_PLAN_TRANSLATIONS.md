@@ -100,6 +100,8 @@ In the Studio **Settings drawer**, a new **Languages** section:
 
 ### 6. Response language
 
+**Built (PR 4):** `Language__c` on both objects, set by `FinalSubmitService` via `FinalSpecLanguage.stored`, in both report types.
+
 - New field `Language__c` (Text 10, the language code) on `Form_Response__c` (Survey) and
   `Form_Submission__c` (Freeform), set by `FinalSubmitService` from the language the respondent saw. It is
   validated against the form's `available` list; anything else stores the default.
