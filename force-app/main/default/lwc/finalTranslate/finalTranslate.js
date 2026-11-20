@@ -363,73 +363,140 @@ export async function loadLanguage(lang) {
 
 /**
  * EVERY author-written text the respondent sees, in ONE table, shared by
- * localizeSpec (swap) and listTexts (future export). A property missing here
- * stays in the default language, so a new text property gets a row here and
- * the inventory test (finalTranslate.test.js) fails until it does.
+ * localizeSpec (swap) and listTexts (the Translate screen). A property missing
+ * here stays in the default language, so a new text property gets a row here
+ * and the inventory test (finalTranslate.test.js) fails until it does; the
+ * renderer guard test (rendererTextGuard.test.js) fails when a renderer reads
+ * a property that is neither listed here nor known not to be text.
  *
- * Each row is [key, dotted path]. Paths are read from the spec root, the page,
- * the section or the element. Never listed: choice/point/row VALUES, ids, URLs,
- * icons, config.accept, schemaOptions (Salesforce's own picklist labels).
+ * Each row is [key, dotted path, kind, rich?]. Paths are read from the spec
+ * root, the page, the section or the element. `kind` is the short sentence-case
+ * label the grid shows; `rich` marks texts rendered as HTML. Never listed:
+ * choice/point/row VALUES, ids, URLs, icons, config.accept, schemaOptions
+ * (Salesforce's own picklist labels).
  */
 export const TEXT_KEYS = {
     root: [
-        ['header.title', 'header.title'],
-        ['header.description', 'header.description'],
-        ['header.brandName', 'header.brandName'],
-        ['header.highlight', 'header.highlight.text'],
-        ['pane.title', 'layout.options.paneTitle'],
-        ['pane.subtitle', 'layout.options.paneSubtitle'],
-        ['pane.brandName', 'layout.options.paneBrandName'],
-        ['pane.highlight', 'layout.options.paneHighlight.text'],
-        ['submit.label', 'submit.label'],
-        ['submit.nextLabel', 'submit.nextLabel'],
-        ['submit.backLabel', 'submit.backLabel'],
-        ['layout.advanceLabel', 'layout.options.advanceLabel'],
-        ['done.title', 'settings.completion.title'],
-        ['done.message', 'settings.completion.message'],
-        ['done.buttonLabel', 'settings.completion.buttonLabel'],
-        ['closed.message', 'settings.availability.closedMessage']
+        ['header.title', 'header.title', 'Form title', true],
+        ['header.description', 'header.description', 'Form description', true],
+        ['header.brandName', 'header.brandName', 'Brand name', true],
+        ['header.highlight', 'header.highlight.text', 'Highlight'],
+        ['pane.title', 'layout.options.paneTitle', 'Pane title', true],
+        ['pane.subtitle', 'layout.options.paneSubtitle', 'Pane subtitle', true],
+        ['pane.brandName', 'layout.options.paneBrandName', 'Pane brand name'],
+        [
+            'pane.highlight',
+            'layout.options.paneHighlight.text',
+            'Pane highlight'
+        ],
+        ['submit.label', 'submit.label', 'Submit button'],
+        ['submit.nextLabel', 'submit.nextLabel', 'Next button'],
+        ['submit.backLabel', 'submit.backLabel', 'Back button'],
+        [
+            'layout.advanceLabel',
+            'layout.options.advanceLabel',
+            'Continue button'
+        ],
+        ['done.title', 'settings.completion.title', 'Thank-you title'],
+        [
+            'done.message',
+            'settings.completion.message',
+            'Thank-you message',
+            true
+        ],
+        [
+            'done.buttonLabel',
+            'settings.completion.buttonLabel',
+            'Thank-you button'
+        ],
+        [
+            'closed.message',
+            'settings.availability.closedMessage',
+            'Closed message'
+        ]
     ],
     // key = `page:<id>.<name>`; a page with no id is keyed by its index
-    page: [['name', 'name']],
+    page: [['name', 'name', 'Page name']],
     // key = `sec:<id>.<name>`; {index} stays as written in repeat.entryLabel
     section: [
-        ['title', 'title'],
-        ['description', 'description'],
-        ['addLabel', 'repeat.addLabel'],
-        ['removeLabel', 'repeat.removeLabel'],
-        ['entryLabel', 'repeat.entryLabel']
+        ['title', 'title', 'Section title'],
+        ['description', 'description', 'Section description'],
+        ['addLabel', 'repeat.addLabel', 'Add button'],
+        ['removeLabel', 'repeat.removeLabel', 'Remove button'],
+        ['entryLabel', 'repeat.entryLabel', 'Entry name']
     ],
     // key = `el:<id>.<name>`
     element: [
-        ['label', 'label'],
-        ['help', 'help'],
-        ['description', 'description'],
-        ['placeholder', 'placeholder'],
-        ['leftLabel', 'config.leftLabel'],
-        ['rightLabel', 'config.rightLabel'],
-        ['yesLabel', 'config.yesLabel'],
-        ['noLabel', 'config.noLabel'],
-        ['valuePrefix', 'config.valuePrefix'],
-        ['valueSuffix', 'config.valueSuffix'],
-        ['html', 'config.html'],
-        ['alt', 'config.alt']
+        ['label', 'label', 'Question'],
+        ['help', 'help', 'Help text'],
+        ['description', 'description', 'Caption'],
+        ['placeholder', 'placeholder', 'Placeholder'],
+        ['leftLabel', 'config.leftLabel', 'Scale · left end'],
+        ['rightLabel', 'config.rightLabel', 'Scale · right end'],
+        ['yesLabel', 'config.yesLabel', 'Yes label'],
+        ['noLabel', 'config.noLabel', 'No label'],
+        ['valuePrefix', 'config.valuePrefix', 'Value prefix'],
+        ['valueSuffix', 'config.valueSuffix', 'Value suffix'],
+        ['html', 'config.html', 'Content', true],
+        ['alt', 'config.alt', 'Image description']
     ],
     // key = `el:<id>.<prefix>:<item id>`; value rows are keyed by the stored
-    // value, never the label; validation entries by their position
+    // value, never the label; validation rules by their stable `id` (falling
+    // back to their position for specs from before rule ids existed)
     elementLists: [
-        { prefix: 'opt', list: 'config.options', text: 'label', by: 'value' },
+        {
+            prefix: 'opt',
+            list: 'config.options',
+            text: 'label',
+            by: 'value',
+            kind: 'Option'
+        },
         {
             prefix: 'optdesc',
             list: 'config.options',
             text: 'description',
-            by: 'value'
+            by: 'value',
+            kind: 'Option description'
         },
-        { prefix: 'point', list: 'config.points', text: 'label', by: 'value' },
-        { prefix: 'row', list: 'config.rows', text: 'label', by: 'value' },
-        { prefix: 'msg', list: 'validation', text: 'message', by: 'index' }
+        {
+            prefix: 'point',
+            list: 'config.points',
+            text: 'label',
+            by: 'value',
+            kind: 'Point'
+        },
+        {
+            prefix: 'row',
+            list: 'config.rows',
+            text: 'label',
+            by: 'value',
+            kind: 'Statement'
+        },
+        {
+            prefix: 'msg',
+            list: 'validation',
+            text: 'message',
+            by: 'ruleId',
+            kind: 'Error message'
+        }
     ]
 };
+
+const GROUP_HEADER = 'Form header';
+const GROUP_BUTTONS = 'Buttons';
+const GROUP_DONE = 'After submit';
+const GROUP_CLOSED = 'When the form is closed';
+
+/** Which form-level group a root key belongs to. */
+function rootGroupOf(key) {
+    if (/^(header|pane)\./.test(key)) {
+        return GROUP_HEADER;
+    }
+    if (/^(submit|layout)\./.test(key)) {
+        return GROUP_BUTTONS;
+    }
+    return key.startsWith('done.') ? GROUP_DONE : GROUP_CLOSED;
+}
 
 function getAt(obj, path) {
     let cur = obj;
@@ -450,67 +517,143 @@ function isObject(value) {
     return Boolean(value) && typeof value === 'object';
 }
 
-function listElementTexts(add, el, elPath) {
-    TEXT_KEYS.element.forEach(([name, dotted]) =>
-        add(`el:${el.id}.${name}`, [...elPath, ...dotted.split('.')])
+function clone(value) {
+    return JSON.parse(JSON.stringify(value));
+}
+
+function hasText(value) {
+    return typeof value === 'string' && value.trim() !== '';
+}
+
+/** The id a list row is keyed by (undefined = no key, row skipped). */
+function itemKeyOf(row, item, index) {
+    if (row.by === 'ruleId') {
+        return isObject(item) && hasText(item.id) ? item.id : index;
+    }
+    return item && item.value;
+}
+
+function listElementTexts(add, el, elPath, pageNo) {
+    const label = hasText(el.label) ? el.label.trim() : 'Untitled question';
+    const group = { id: `el:${el.id}`, title: `Page ${pageNo} · ${label}` };
+    TEXT_KEYS.element.forEach(([name, dotted, kind, rich]) =>
+        add(`el:${el.id}.${name}`, [...elPath, ...dotted.split('.')], {
+            kind,
+            rich,
+            group
+        })
     );
     TEXT_KEYS.elementLists.forEach((row) => {
         const listPath = row.list.split('.');
         asArray(getAt(el, listPath)).forEach((item, ii) => {
-            const id = row.by === 'index' ? ii : item && item.value;
+            const id = itemKeyOf(row, item, ii);
             if (id === undefined || id === null || id === '') {
                 return;
             }
-            add(`el:${el.id}.${row.prefix}:${id}`, [
-                ...elPath,
-                ...listPath,
-                ii,
-                row.text
-            ]);
+            add(
+                `el:${el.id}.${row.prefix}:${id}`,
+                [...elPath, ...listPath, ii, row.text],
+                {
+                    kind:
+                        row.prefix === 'msg' ? row.kind : `${row.kind} · ${id}`,
+                    rich: false,
+                    group
+                }
+            );
         });
     });
 }
 
-function listSectionTexts(add, section, secPath) {
+function listSectionTexts(add, section, secPath, pageNo, pageName) {
     if (section.id) {
-        TEXT_KEYS.section.forEach(([name, dotted]) =>
-            add(`sec:${section.id}.${name}`, [...secPath, ...dotted.split('.')])
+        const where = hasText(pageName) ? ` · ${pageName.trim()}` : '';
+        const title = hasText(section.title)
+            ? section.title.trim()
+            : 'Untitled section';
+        const group = {
+            id: `sec:${section.id}`,
+            title: `Page ${pageNo}${where} · Section: ${title}`
+        };
+        TEXT_KEYS.section.forEach(([name, dotted, kind, rich]) =>
+            add(
+                `sec:${section.id}.${name}`,
+                [...secPath, ...dotted.split('.')],
+                { kind, rich, group }
+            )
         );
     }
     asArray(section.elements).forEach((el, ei) => {
         if (isObject(el) && el.id) {
-            listElementTexts(add, el, [...secPath, 'elements', ei]);
+            listElementTexts(add, el, [...secPath, 'elements', ei], pageNo);
         }
     });
 }
 
-/** Every author text in `spec` as { key, path, text } (path from the root). */
+/**
+ * Every author text in `spec` as { key, path, text, kind, rich, group } (path
+ * from the root; group = { order, title }). Spec order: the form header, then
+ * pages -> sections -> elements, then the buttons, the thank-you page and the
+ * closed message. Only texts that exist (non-empty default text) are listed.
+ */
 export function listTexts(spec) {
     const out = [];
     if (!isObject(spec)) {
         return out;
     }
-    const add = (key, path) => {
+    const groups = new Map();
+    const add = (key, path, { kind, rich, group }) => {
         const text = getAt(spec, path);
-        if (typeof text === 'string' && text !== '') {
-            out.push({ key, path, text });
+        if (typeof text !== 'string' || text === '') {
+            return;
         }
+        if (!groups.has(group.id)) {
+            groups.set(group.id, { order: groups.size, title: group.title });
+        }
+        out.push({
+            key,
+            path,
+            text,
+            kind,
+            rich: Boolean(rich),
+            group: groups.get(group.id)
+        });
     };
-    TEXT_KEYS.root.forEach(([key, dotted]) => add(key, dotted.split('.')));
+    const addRoot = (wanted) =>
+        TEXT_KEYS.root.forEach(([key, dotted, kind, rich]) => {
+            const title = rootGroupOf(key);
+            if (wanted(title)) {
+                add(key, dotted.split('.'), {
+                    kind,
+                    rich,
+                    group: { id: `root:${title}`, title }
+                });
+            }
+        });
+    addRoot((title) => title === GROUP_HEADER);
     asArray(spec.pages).forEach((page, pi) => {
         if (!isObject(page)) {
             return;
         }
         const pageId = page.id === undefined || page.id === null ? pi : page.id;
-        TEXT_KEYS.page.forEach(([name, dotted]) =>
-            add(`page:${pageId}.${name}`, ['pages', pi, ...dotted.split('.')])
+        TEXT_KEYS.page.forEach(([name, dotted, kind]) =>
+            add(`page:${pageId}.${name}`, ['pages', pi, ...dotted.split('.')], {
+                kind,
+                group: { id: `page:${pageId}`, title: `Page ${pi + 1}` }
+            })
         );
         asArray(page.sections).forEach((section, si) => {
             if (isObject(section)) {
-                listSectionTexts(add, section, ['pages', pi, 'sections', si]);
+                listSectionTexts(
+                    add,
+                    section,
+                    ['pages', pi, 'sections', si],
+                    pi + 1,
+                    page.name
+                );
             }
         });
     });
+    addRoot((title) => title !== GROUP_HEADER);
     return out;
 }
 
@@ -614,5 +757,260 @@ export function localizeSpec(spec, lang) {
             setAt(copy, path, hit);
         }
     }
+    return copy;
+}
+
+// ---------------------------------------------------------------------------
+// Translate-screen groundwork (IMPL_PLAN_TRANSLATIONS build order 3A)
+// ---------------------------------------------------------------------------
+
+/** A new validation-rule id, same style as the Studio's element ids. */
+export function mintRuleId() {
+    let suffix = '';
+    for (let i = 0; i < 8; i++) {
+        let n;
+        if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+            n = crypto.getRandomValues(new Uint8Array(1))[0];
+        } else {
+            n = Math.floor(Math.random() * 256);
+        }
+        suffix += (n % 36).toString(36);
+    }
+    return `vr_${suffix}`;
+}
+
+function eachElement(spec, visit) {
+    asArray(spec.pages).forEach((page) =>
+        asArray(isObject(page) && page.sections).forEach((section) =>
+            asArray(isObject(section) && section.elements).forEach((el) => {
+                if (isObject(el)) {
+                    visit(el);
+                }
+            })
+        )
+    );
+}
+
+/**
+ * A copy of `spec` where every validation rule has an `id`, and translation
+ * keys written by position (`el:<id>.msg:0`) are renamed to the rule's id
+ * (`el:<id>.msg:vr_x1`), in every language and in translationSources. An
+ * existing id key is never overwritten. Safe to run repeatedly.
+ */
+export function ensureRuleIds(spec) {
+    if (!isObject(spec)) {
+        return spec;
+    }
+    const copy = clone(spec);
+    const renames = [];
+    eachElement(copy, (el) => {
+        asArray(el.validation).forEach((rule, i) => {
+            if (!isObject(rule)) {
+                return;
+            }
+            if (!hasText(rule.id)) {
+                rule.id = mintRuleId();
+            }
+            if (hasText(el.id)) {
+                renames.push([
+                    `el:${el.id}.msg:${i}`,
+                    `el:${el.id}.msg:${rule.id}`
+                ]);
+            }
+        });
+    });
+    ['translations', 'translationSources'].forEach((block) => {
+        if (!isObject(copy[block])) {
+            return;
+        }
+        Object.values(copy[block]).forEach((table) => {
+            if (!isObject(table)) {
+                return;
+            }
+            renames.forEach(([from, to]) => {
+                if (Object.prototype.hasOwnProperty.call(table, from)) {
+                    if (!Object.prototype.hasOwnProperty.call(table, to)) {
+                        table[to] = table[from];
+                    }
+                    delete table[from];
+                }
+            });
+        });
+    });
+    return copy;
+}
+
+/** A copy of an element (duplicate / paste) whose rules all get NEW ids. */
+export function withFreshRuleIds(element) {
+    const copy = clone(element);
+    asArray(copy.validation).forEach((rule) => {
+        if (isObject(rule)) {
+            rule.id = mintRuleId();
+        }
+    });
+    return copy;
+}
+
+/**
+ * 8 hex chars (FNV-1a, 32 bit) of `text` with whitespace collapsed and
+ * trimmed, so re-flowing the English never reads as a change.
+ */
+export function textFingerprint(text) {
+    const norm = String(text === undefined || text === null ? '' : text)
+        .replace(/\s+/g, ' ')
+        .trim();
+    let h = 0x811c9dc5;
+    for (let i = 0; i < norm.length; i++) {
+        h ^= norm.charCodeAt(i);
+        h = Math.imul(h, 0x01000193) >>> 0;
+    }
+    return (h >>> 0).toString(16).padStart(8, '0');
+}
+
+function tableOf(spec, block, code) {
+    const all = isObject(spec[block]) ? spec[block] : {};
+    return isObject(all[code]) ? all[code] : {};
+}
+
+/**
+ * Every listed text with its translation into `lang`:
+ * { ...entry, source, translation, status } where status is `done`
+ * (translated, and the English is what it was then), `changed` (translated,
+ * but the English differs or its fingerprint was never stored) or `missing`.
+ */
+export function translationStatus(spec, lang) {
+    const code = normalizeLanguage(lang) || lang;
+    const table = isObject(spec) ? tableOf(spec, 'translations', code) : {};
+    const sources = isObject(spec)
+        ? tableOf(spec, 'translationSources', code)
+        : {};
+    return listTexts(spec).map((entry) => {
+        const translation = table[entry.key];
+        let status = 'missing';
+        if (hasText(translation)) {
+            status =
+                sources[entry.key] === textFingerprint(entry.text)
+                    ? 'done'
+                    : 'changed';
+        }
+        return {
+            ...entry,
+            source: entry.text,
+            translation: hasText(translation) ? translation : '',
+            status
+        };
+    });
+}
+
+/** { total, done, missing, changed } for one language. */
+export function translationProgress(spec, lang) {
+    const out = { total: 0, done: 0, missing: 0, changed: 0 };
+    translationStatus(spec, lang).forEach(({ status }) => {
+        out.total += 1;
+        out[status] += 1;
+    });
+    return out;
+}
+
+/**
+ * A NEW spec with `text` stored as the `lang` translation of `key`, and the
+ * fingerprint of the English it was written against. Blank text removes both.
+ * A key that is not a listed text leaves the spec unchanged.
+ */
+export function setTranslation(spec, lang, key, text) {
+    const copy = clone(spec);
+    const code = normalizeLanguage(lang) || lang;
+    const entry = listTexts(spec).find((x) => x.key === key);
+    if (!entry) {
+        return copy;
+    }
+    ['translations', 'translationSources'].forEach((block) => {
+        if (!isObject(copy[block])) {
+            copy[block] = {};
+        }
+        if (!isObject(copy[block][code])) {
+            copy[block][code] = {};
+        }
+    });
+    if (hasText(text)) {
+        copy.translations[code][key] = text;
+        copy.translationSources[code][key] = textFingerprint(entry.text);
+    } else {
+        delete copy.translations[code][key];
+        delete copy.translationSources[code][key];
+    }
+    return copy;
+}
+
+/** A NEW spec offering `lang`; creates `languages` when the spec has none. */
+export function addLanguage(spec, lang) {
+    const copy = clone(spec);
+    const code = normalizeLanguage(lang);
+    if (!code) {
+        return copy;
+    }
+    const languages = isObject(copy.languages) ? copy.languages : {};
+    const def = normalizeLanguage(languages.default) || 'en_US';
+    const available = asArray(languages.available)
+        .map(normalizeLanguage)
+        .filter(Boolean);
+    if (!available.includes(def)) {
+        available.unshift(def);
+    }
+    if (!available.includes(code)) {
+        available.push(code);
+    }
+    copy.languages = { ...languages, default: def, available };
+    return copy;
+}
+
+/**
+ * A NEW spec without `lang`: its translations and fingerprints go too. The
+ * default language is never removed.
+ */
+export function removeLanguage(spec, lang) {
+    const copy = clone(spec);
+    const code = normalizeLanguage(lang) || lang;
+    const def = isObject(copy.languages)
+        ? normalizeLanguage(copy.languages.default)
+        : null;
+    if (!code || code === def) {
+        return copy;
+    }
+    if (isObject(copy.languages)) {
+        copy.languages.available = asArray(copy.languages.available).filter(
+            (a) => normalizeLanguage(a) !== code
+        );
+    }
+    ['translations', 'translationSources'].forEach((block) => {
+        if (isObject(copy[block])) {
+            delete copy[block][code];
+        }
+    });
+    return copy;
+}
+
+/**
+ * A NEW spec without translation / fingerprint keys that no listed text
+ * produces any more (deleted questions, options, rules; blanked English).
+ */
+export function pruneTranslations(spec) {
+    const copy = clone(spec);
+    const live = new Set(listTexts(spec).map((x) => x.key));
+    ['translations', 'translationSources'].forEach((block) => {
+        if (!isObject(copy[block])) {
+            return;
+        }
+        Object.values(copy[block]).forEach((table) => {
+            if (!isObject(table)) {
+                return;
+            }
+            Object.keys(table).forEach((key) => {
+                if (!live.has(key)) {
+                    delete table[key];
+                }
+            });
+        });
+    });
     return copy;
 }

@@ -1287,7 +1287,11 @@ describe('c-final-form-studio', () => {
         const elx = saved.pages[0].sections[0].elements[0];
         expect(elx.required).toBe(true);
         expect(elx.validation).toEqual([
-            { type: 'required', message: 'First is required.' }
+            {
+                id: expect.stringMatching(/^vr_[0-9a-z]{8}$/),
+                type: 'required',
+                message: 'First is required.'
+            }
         ]);
         jest.useRealTimers();
     });
@@ -1649,8 +1653,18 @@ describe('c-final-form-studio', () => {
         jest.advanceTimersByTime(1000);
         const saved = JSON.parse(saveDraft.mock.calls.at(-1)[0].specJson);
         expect(saved.pages[0].sections[0].elements[0].validation).toEqual([
-            { type: 'required', message: 'Need it.' },
-            { type: 'range', min: 1, max: 9, message: '1-9' }
+            {
+                id: expect.stringMatching(/^vr_[0-9a-z]{8}$/),
+                type: 'required',
+                message: 'Need it.'
+            },
+            {
+                id: expect.stringMatching(/^vr_[0-9a-z]{8}$/),
+                type: 'range',
+                min: 1,
+                max: 9,
+                message: '1-9'
+            }
         ]);
         jest.useRealTimers();
     });
@@ -3646,5 +3660,74 @@ describe('Mapping in the Build rail (no Data tab)', () => {
         const el = await open('form');
         await openMapping(el);
         expect(dialog(el)).toBeNull();
+    });
+});
+
+describe('Validation rule ids on load', () => {
+    afterEach(() => {
+        jest.useRealTimers();
+    });
+
+    it('gives id-less rules ids, renames msg:<index> keys, and saves them on the next edit', async () => {
+        jest.useFakeTimers();
+        const spec = JSON.parse(JSON.stringify(SPEC));
+        spec.pages = [
+            {
+                id: 'pg1',
+                name: 'One',
+                sections: [
+                    {
+                        id: 'sec1',
+                        elements: [
+                            {
+                                id: 'q1',
+                                type: 'field',
+                                label: 'Email',
+                                validation: [
+                                    { type: 'required', message: 'Need it' },
+                                    { type: 'pattern', message: 'Bad shape' }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ];
+        spec.languages = { default: 'en_US', available: ['en_US', 'fr'] };
+        spec.translations = {
+            fr: { 'el:q1.msg:0': 'Requis', 'el:q1.msg:1': 'Mauvais' }
+        };
+        spec.translationSources = { fr: { 'el:q1.msg:1': 'abcd1234' } };
+        loadStudio.mockResolvedValue({
+            name: 'Ids',
+            specJson: JSON.stringify(spec),
+            draftVersionId: 'a0V1',
+            versionNumber: 1
+        });
+        listVersions.mockResolvedValue([]);
+        saveDraft.mockResolvedValue('a0V1');
+        const el = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await micro(40);
+
+        const panel = el.shadowRoot.querySelector('c-final-design-panel');
+        const edited = JSON.parse(JSON.stringify(panel.spec));
+        edited.submit.label = 'Send';
+        panel.dispatchEvent(
+            new CustomEvent('specchange', { detail: { spec: edited } })
+        );
+        jest.advanceTimersByTime(1000);
+        const saved = JSON.parse(saveDraft.mock.calls.at(-1)[0].specJson);
+        const rules = saved.pages[0].sections[0].elements[0].validation;
+        expect(rules[0].id).toMatch(/^vr_[0-9a-z]{8}$/);
+        expect(rules[1].id).toMatch(/^vr_[0-9a-z]{8}$/);
+        expect(rules[0].id).not.toBe(rules[1].id);
+        expect(saved.translations.fr).toEqual({
+            [`el:q1.msg:${rules[0].id}`]: 'Requis',
+            [`el:q1.msg:${rules[1].id}`]: 'Mauvais'
+        });
+        expect(saved.translationSources.fr).toEqual({
+            [`el:q1.msg:${rules[1].id}`]: 'abcd1234'
+        });
     });
 });

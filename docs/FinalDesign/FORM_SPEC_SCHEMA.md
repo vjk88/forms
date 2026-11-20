@@ -481,6 +481,24 @@ Studio keeps them untouched on every save, and Publish copies them into the froz
   `FinalSpecLanguage` via `FinalGuestController.getGuestRuntimeSpecForLangs`). Other server messages
   stay in the default language for now.
 
+**`translationSources`** (optional, written by the Translate screen):
+`{ "<lang>": { "<key>": "<fingerprint>" } }`. The fingerprint is `textFingerprint(default text)` at the time
+the translation was saved: FNV-1a, 32 bit, 8 hex characters, over the text with whitespace collapsed and
+trimmed. `translations` values stay plain strings, so the runtime and `localizeSpec` ignore this block. The
+Studio compares it with the current English to show "English changed since this was translated"; a
+translation with no stored fingerprint counts as changed. Removing a language, or pruning keys for deleted
+texts, removes the matching entries in both blocks.
+
+```jsonc
+"translationSources": { "fr": { "el:el_m4t8s6vb.label": "9e3a07c1" } }
+```
+
+**Validation rule ids.** Every `elements[].validation[]` entry carries an `id` (`vr_` + 8 base36
+characters), minted by the Studio when the rule is created. Message keys use that id, so reordering or
+deleting rules never moves a translation onto another message. On load the Studio gives id-less rules an
+id and renames `el:<id>.msg:<index>` keys (in `translations` and `translationSources`); the next autosave
+saves it. Published specs from before this change keep working: a rule with no `id` is keyed by its position.
+
 **Keys.** One table, `TEXT_KEYS` in `c/finalTranslate`, drives both the swap and any future export. Pages,
 sections and elements use their `id`; a page with no `id` is keyed by its index (`page:0.name`). Choice,
 point and row keys use the stored `value`, never the label.
@@ -497,7 +515,7 @@ point and row keys use the stored `value`, never the label.
 | `el:<id>.valuePrefix` / `.valueSuffix` / `.html` / `.alt`                            | `elements[].config.*` (`html` = richText, callout, consent)                            |
 | `el:<id>.opt:<value>` / `.optdesc:<value>`                                           | `config.options[].label` / `description`                                               |
 | `el:<id>.point:<value>` / `.row:<value>`                                             | `config.points[].label` (likert, matrix columns) / `config.rows[].label` (matrix)      |
-| `el:<id>.msg:<index>`                                                                | `validation[index].message`                                                            |
+| `el:<id>.msg:<ruleId>`                                                               | `validation[].message` of the rule with that `id` (`msg:<index>` for a rule with no id) |
 | `submit.label` / `.nextLabel` / `.backLabel`, `layout.advanceLabel`                  | `submit.*`, `layout.options.advanceLabel`                                              |
 | `done.title` / `.message` / `.buttonLabel`                                           | `settings.completion.title` / `message` / `buttonLabel`                                |
 | `closed.message`                                                                     | `settings.availability.closedMessage`                                                  |

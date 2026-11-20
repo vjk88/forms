@@ -40,6 +40,7 @@ import {
 } from 'c/finalLayoutRegistry';
 import { repeatsPageName } from 'c/finalPageName';
 import { toSchemaOptions } from 'c/finalChoiceLook';
+import { ensureRuleIds, mintRuleId } from 'c/finalTranslate';
 
 /**
  * finalFormStudio — the builder shell (FORM_STUDIO_IA §2–4, P3 slice 1).
@@ -292,7 +293,9 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             this.draftVersionId = out.draftVersionId;
             this.versionNumber = out.versionNumber;
             this.activeVersionNumber = out.activeVersionNumber;
-            const spec = JSON.parse(out.specJson);
+            // validation rules get stable ids (translation keys follow them);
+            // the next autosave persists the migration
+            const spec = ensureRuleIds(JSON.parse(out.specJson));
             // `resolved` is a publish artifact (ARCH §5) — a draft seeded
             // from a published version inherits the frozen token snapshot,
             // and the viewer then ignores every theme change (resolved wins
@@ -1678,7 +1681,12 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             const required = (t.node.validation || []).filter(
                 (v) => v.type === 'required'
             );
-            t.node.validation = [...required, ...entries];
+            // new rules (added in the editor) get their id here, the one
+            // place every Checks edit passes through
+            const ruled = entries.map((e) => {
+                return e && !e.id ? { ...e, id: mintRuleId() } : e;
+            });
+            t.node.validation = [...required, ...ruled];
         });
     }
 
@@ -1706,6 +1714,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                 );
                 if (patch.required) {
                     entries.push({
+                        id: mintRuleId(),
                         type: 'required',
                         message: `${t.node.label || 'This field'} is required.`
                     });
@@ -1897,6 +1906,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             validation: field.required
                 ? [
                       {
+                          id: mintRuleId(),
                           type: 'required',
                           message: `${field.label} is required.`
                       }
@@ -2514,7 +2524,11 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             // required entry — engine §7)
             element.required = true;
             element.validation = [
-                { type: 'required', message: 'Please accept to continue.' }
+                {
+                    id: mintRuleId(),
+                    type: 'required',
+                    message: 'Please accept to continue.'
+                }
             ];
         }
         return element;
