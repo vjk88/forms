@@ -20,6 +20,7 @@ import archiveForm from '@salesforce/apex/FinalFormActionsController.archiveForm
 import deleteForm from '@salesforce/apex/FinalFormActionsController.deleteForm';
 import restoreForm from '@salesforce/apex/FinalFormActionsController.restoreForm';
 import invalidateLinks from '@salesforce/apex/FinalStudioController.invalidateLinks';
+import listLanguages from '@salesforce/apex/FinalStudioController.listLanguages';
 
 // capture NavigationMixin.Navigate calls (lwc-recipes pattern)
 const NAVIGATE = [];
@@ -35,6 +36,11 @@ jest.mock(
 );
 jest.mock(
     '@salesforce/apex/FinalMappingController.describeQuestions',
+    () => ({ default: jest.fn(() => Promise.resolve([])) }),
+    { virtual: true }
+);
+jest.mock(
+    '@salesforce/apex/FinalStudioController.listLanguages',
     () => ({ default: jest.fn(() => Promise.resolve([])) }),
     { virtual: true }
 );
@@ -3570,7 +3576,8 @@ describe('Mapping in the Build rail (no Data tab)', () => {
         const el = await open(type);
         expect(modes(el).map((b) => b.textContent.trim())).toEqual([
             'Build',
-            'Design'
+            'Design',
+            'Translate'
         ]);
     });
 
@@ -3729,5 +3736,186 @@ describe('Validation rule ids on load', () => {
         expect(saved.translationSources.fr).toEqual({
             [`el:q1.msg:${rules[1].id}`]: 'abcd1234'
         });
+    });
+});
+
+describe('c-final-form-studio Translate mode', () => {
+    afterEach(() => {
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+        jest.clearAllMocks();
+        jest.useRealTimers();
+    });
+
+    function translateSpec(extra = {}) {
+        return {
+            ...SPEC,
+            languages: { default: 'en_US', available: ['en_US', 'fr'] },
+            pages: [
+                {
+                    id: 'pg1',
+                    name: 'One',
+                    sections: [
+                        {
+                            id: 's1',
+                            title: 'Details',
+                            elements: [
+                                { id: 'q1', type: 'field', label: 'Your name' }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            ...extra
+        };
+    }
+
+    async function open(spec) {
+        jest.useFakeTimers();
+        listLanguages.mockResolvedValue([{ code: 'fr', label: 'French' }]);
+        loadStudio.mockResolvedValue({
+            name: 'Tr',
+            specJson: JSON.stringify(spec),
+            draftVersionId: 'a0V1',
+            versionNumber: 1
+        });
+        listVersions.mockResolvedValue([]);
+        saveDraft.mockResolvedValue('a0V1');
+        const el = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await micro(40);
+        el.shadowRoot.querySelector('[data-id="mode-translate"]').click();
+        await micro(20);
+        return el;
+    }
+
+    it('adds Translate next to Build and Design and shows the pane full width', async () => {
+        const el = await open(translateSpec());
+        const modes = [...el.shadowRoot.querySelectorAll('.st-mode')].map((b) =>
+            b.textContent.trim()
+        );
+        expect(modes).toEqual(['Build', 'Design', 'Translate']);
+        const pane = el.shadowRoot.querySelector('c-final-translate-pane');
+        expect(pane).not.toBeNull();
+        expect(pane.spec.languages.available).toEqual(['en_US', 'fr']);
+        expect(
+            el.shadowRoot.querySelector('c-final-builder-canvas')
+        ).toBeNull();
+        expect(el.shadowRoot.querySelector('c-final-design-panel')).toBeNull();
+        expect(listLanguages).toHaveBeenCalledTimes(1);
+        await micro(10);
+        expect(pane.languages).toEqual([{ code: 'fr', label: 'French' }]);
+    });
+
+    it('a pane edit goes through the normal edit path: autosave and undo', async () => {
+        const el = await open(translateSpec());
+        const pane = el.shadowRoot.querySelector('c-final-translate-pane');
+        const edited = JSON.parse(JSON.stringify(pane.spec));
+        edited.translations = { fr: { 'el:q1.label': 'Votre nom' } };
+        edited.translationSources = { fr: { 'el:q1.label': 'abcd1234' } };
+        pane.dispatchEvent(
+            new CustomEvent('specchange', { detail: { spec: edited } })
+        );
+        await micro(20);
+        expect(
+            el.shadowRoot.querySelector('c-final-translate-pane').spec
+                .translations.fr['el:q1.label']
+        ).toBe('Votre nom');
+        const undo = el.shadowRoot.querySelector('.st-undo');
+        expect(undo.disabled).toBe(false);
+        jest.advanceTimersByTime(1000);
+        await micro(30);
+        expect(
+            JSON.parse(saveDraft.mock.calls.at(-1)[0].specJson).translations.fr[
+                'el:q1.label'
+            ]
+        ).toBe('Votre nom');
+        undo.click();
+        await micro(20);
+        expect(
+            el.shadowRoot.querySelector('c-final-translate-pane').spec
+                .translations
+        ).toBeUndefined();
+    });
+
+    it('opening Translate prunes translations of deleted texts as one undoable edit', async () => {
+        const spec = translateSpec({
+            translations: {
+                fr: { 'el:q1.label': 'Votre nom', 'el:gone.label': 'Perdu' }
+            },
+            translationSources: {
+                fr: { 'el:q1.label': 'abcd1234', 'el:gone.label': 'ffff0000' }
+            }
+        });
+        const el = await open(spec);
+        const pane = el.shadowRoot.querySelector('c-final-translate-pane');
+        expect(Object.keys(pane.spec.translations.fr)).toEqual(['el:q1.label']);
+        expect(Object.keys(pane.spec.translationSources.fr)).toEqual([
+            'el:q1.label'
+        ]);
+        expect(el.shadowRoot.querySelector('.st-undo').disabled).toBe(false);
+        el.shadowRoot.querySelector('.st-undo').click();
+        await micro(20);
+        expect(
+            el.shadowRoot.querySelector('c-final-translate-pane').spec
+                .translations.fr['el:gone.label']
+        ).toBe('Perdu');
+    });
+
+    it('a clean spec is not touched when Translate opens', async () => {
+        const el = await open(translateSpec());
+        expect(el.shadowRoot.querySelector('.st-undo').disabled).toBe(true);
+    });
+
+    it('has no Preview button while no language is added', async () => {
+        const el = await open(translateSpec({ languages: undefined }));
+        expect(
+            el.shadowRoot.querySelector('[data-id="preview-in-language"]')
+        ).toBeNull();
+    });
+
+    it('Preview in <language> opens the expanded preview showing that language', async () => {
+        const el = await open(translateSpec());
+        await micro(20);
+        const button = el.shadowRoot.querySelector(
+            '[data-id="preview-in-language"]'
+        );
+        expect(button.label).toBe('Preview in French');
+        button.click();
+        await micro(30);
+        expect(
+            el.shadowRoot.querySelector('c-final-translate-pane')
+        ).toBeNull();
+        const stage = el.shadowRoot.querySelector('c-final-preview-stage');
+        expect(stage.previewLanguage).toBe('fr');
+        expect(stage.expanded).toBe(true);
+        expect(
+            stage.shadowRoot.querySelector('c-final-form-viewer')
+                .previewLanguage
+        ).toBe('fr');
+        expect(
+            el.shadowRoot.querySelector('[data-id="preview-in-language"]')
+        ).toBeNull();
+        // Collapse preview comes back to the Translate screen, language kept
+        stage.dispatchEvent(
+            new CustomEvent('previewexpand', { detail: { expanded: false } })
+        );
+        await micro(20);
+        const pane = el.shadowRoot.querySelector('c-final-translate-pane');
+        expect(pane).not.toBeNull();
+        expect(pane.selectedLanguage).toBe('fr');
+    });
+
+    it('Build replaces the Translate screen', async () => {
+        const el = await open(translateSpec());
+        el.shadowRoot.querySelectorAll('.st-mode')[0].click();
+        await micro(20);
+        expect(
+            el.shadowRoot.querySelector('c-final-translate-pane')
+        ).toBeNull();
+        expect(
+            el.shadowRoot.querySelector('c-final-builder-canvas')
+        ).not.toBeNull();
     });
 });

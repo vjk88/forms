@@ -533,9 +533,20 @@ function itemKeyOf(row, item, index) {
     return item && item.value;
 }
 
-function listElementTexts(add, el, elPath, pageNo) {
+/** "Page 2" or "Page 2 · About you" (a page still named "Page 2" adds nothing). */
+function pageLabel(pageNo, pageName) {
+    const name = hasText(pageName) ? pageName.trim() : '';
+    return name && name.toLowerCase() !== `page ${pageNo}`
+        ? `Page ${pageNo} · ${name}`
+        : `Page ${pageNo}`;
+}
+
+function listElementTexts(add, el, elPath, pageNo, pageName) {
     const label = hasText(el.label) ? el.label.trim() : 'Untitled question';
-    const group = { id: `el:${el.id}`, title: `Page ${pageNo} · ${label}` };
+    const group = {
+        id: `el:${el.id}`,
+        title: `${pageLabel(pageNo, pageName)} · Question: ${label}`
+    };
     TEXT_KEYS.element.forEach(([name, dotted, kind, rich]) =>
         add(`el:${el.id}.${name}`, [...elPath, ...dotted.split('.')], {
             kind,
@@ -566,13 +577,12 @@ function listElementTexts(add, el, elPath, pageNo) {
 
 function listSectionTexts(add, section, secPath, pageNo, pageName) {
     if (section.id) {
-        const where = hasText(pageName) ? ` · ${pageName.trim()}` : '';
         const title = hasText(section.title)
             ? section.title.trim()
             : 'Untitled section';
         const group = {
             id: `sec:${section.id}`,
-            title: `Page ${pageNo}${where} · Section: ${title}`
+            title: `${pageLabel(pageNo, pageName)} · Section: ${title}`
         };
         TEXT_KEYS.section.forEach(([name, dotted, kind, rich]) =>
             add(
@@ -584,7 +594,13 @@ function listSectionTexts(add, section, secPath, pageNo, pageName) {
     }
     asArray(section.elements).forEach((el, ei) => {
         if (isObject(el) && el.id) {
-            listElementTexts(add, el, [...secPath, 'elements', ei], pageNo);
+            listElementTexts(
+                add,
+                el,
+                [...secPath, 'elements', ei],
+                pageNo,
+                pageName
+            );
         }
     });
 }
@@ -638,7 +654,10 @@ export function listTexts(spec) {
         TEXT_KEYS.page.forEach(([name, dotted, kind]) =>
             add(`page:${pageId}.${name}`, ['pages', pi, ...dotted.split('.')], {
                 kind,
-                group: { id: `page:${pageId}`, title: `Page ${pi + 1}` }
+                group: {
+                    id: `page:${pageId}`,
+                    title: pageLabel(pi + 1, page.name)
+                }
             })
         );
         asArray(page.sections).forEach((section, si) => {

@@ -1,0 +1,340 @@
+@import 'c/finalStudioStyles';
+
+/* The Translate screen: Studio tokens only (DESIGN_SYSTEM §4, pattern 5.31). */
+:host {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    font-size: var(--c-studio-fs-body);
+    line-height: var(--c-studio-lh-body);
+    color: var(--c-studio-text);
+    background: var(--c-studio-surface);
+}
+
+/* ----- languages (left) ----- */
+.tr-langs {
+    flex: none;
+    width: 260px;
+    box-sizing: border-box;
+    padding: var(--c-studio-space-5);
+    overflow: hidden auto;
+    border-right: 1px solid var(--c-studio-border);
+    background: var(--c-studio-surface-subtle);
+}
+
+.tr-pane-h {
+    margin: 0 0 var(--c-studio-space-2);
+    font-size: var(--c-studio-fs-subhead);
+    font-weight: var(--c-studio-fw-strong);
+}
+
+.tr-pane-sub {
+    margin: 0 0 var(--c-studio-space-4);
+    font-size: var(--c-studio-fs-small);
+    color: var(--c-studio-text-weak);
+}
+
+.tr-lang {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0 0 var(--c-studio-space-3);
+    padding: var(--c-studio-space-3) var(--c-studio-space-4);
+    border: 1px solid var(--c-studio-border);
+    border-radius: var(--c-studio-radius-md);
+    background: var(--c-studio-surface);
+    color: var(--c-studio-text);
+    font: inherit;
+    text-align: left;
+}
+
+button.tr-lang {
+    cursor: pointer;
+}
+
+button.tr-lang:hover {
+    border-color: var(--c-studio-border-strong);
+}
+
+button.tr-lang:focus-visible,
+.tr-add:focus-visible,
+.tr-still:focus-visible {
+    outline: 2px solid var(--c-studio-focus);
+    outline-offset: 2px;
+}
+
+.tr-lang--on,
+button.tr-lang.tr-lang--on:hover {
+    border-color: var(--c-studio-accent);
+    background: var(--c-studio-accent-surface);
+    box-shadow: var(--c-studio-selected-bar);
+}
+
+.tr-row1 {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--c-studio-space-3);
+}
+
+.tr-name {
+    font-weight: var(--c-studio-fw-strong);
+}
+
+.tr-default-tag {
+    margin-left: var(--c-studio-space-2);
+    padding: 0 var(--c-studio-space-3);
+    border: 1px solid var(--c-studio-border);
+    border-radius: var(--c-studio-radius-pill);
+    font-size: var(--c-studio-fs-caption);
+    font-weight: var(--c-studio-fw-regular);
+    color: var(--c-studio-text-weak);
+}
+
+.tr-count {
+    font-size: var(--c-studio-fs-small);
+    color: var(--c-studio-text-weak);
+}
+
+.tr-bar {
+    display: block;
+    height: 4px;
+    margin-top: var(--c-studio-space-3);
+    border-radius: var(--c-studio-radius-sm);
+    background: var(--c-studio-border-subtle);
+    overflow: hidden;
+}
+
+.tr-bar i {
+    display: block;
+    height: 100%;
+    background: var(--c-studio-accent);
+}
+
+.tr-meta {
+    display: block;
+    margin-top: var(--c-studio-space-2);
+    font-size: var(--c-studio-fs-caption);
+    color: var(--c-studio-text-weak);
+}
+
+.tr-warn {
+    font-weight: var(--c-studio-fw-strong);
+    color: var(--c-studio-warning-text);
+}
+
+.tr-add {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    margin-top: var(--c-studio-space-4);
+    padding: var(--c-studio-space-3);
+    border: 1px dashed var(--c-studio-border-strong);
+    border-radius: var(--c-studio-radius-md);
+    background: transparent;
+    color: var(--c-studio-accent-text);
+    font: inherit;
+    font-size: var(--c-studio-fs-small);
+    text-align: center;
+    cursor: pointer;
+}
+
+.tr-add:hover {
+    background: var(--c-studio-accent-surface);
+}
+
+.tr-add-box {
+    margin-top: var(--c-studio-space-4);
+}
+
+/* ----- main ----- */
+.tr-main {
+    flex: 1;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: var(--c-studio-space-5) var(--c-studio-space-6);
+    overflow: auto;
+}
+
+.tr-main-h {
+    display: flex;
+    align-items: center;
+    gap: var(--c-studio-space-4);
+    margin-bottom: var(--c-studio-space-4);
+}
+
+.tr-title {
+    margin: 0;
+    font-size: var(--c-studio-fs-title);
+    font-weight: var(--c-studio-fw-strong);
+}
+
+.tr-spacer {
+    flex: 1;
+}
+
+.tr-ask {
+    margin-bottom: var(--c-studio-space-4);
+    padding: var(--c-studio-space-4);
+    border: 1px solid var(--c-studio-warning-border);
+    border-radius: var(--c-studio-radius-md);
+    background: var(--c-studio-warning-surface);
+}
+
+.tr-ask-title {
+    margin: 0 0 var(--c-studio-space-2);
+    font-weight: var(--c-studio-fw-strong);
+}
+
+.tr-ask-text {
+    margin: 0 0 var(--c-studio-space-4);
+    font-size: var(--c-studio-fs-small);
+    color: var(--c-studio-text-weak);
+}
+
+.tr-ask-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--c-studio-space-3);
+}
+
+.tr-tools {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--c-studio-space-3);
+    margin-bottom: var(--c-studio-space-4);
+}
+
+.tr-search {
+    flex: 0 1 280px;
+    min-width: 160px;
+}
+
+/* ----- the grid ----- */
+.tr-grid {
+    min-width: 720px;
+    border: 1px solid var(--c-studio-border);
+    border-radius: var(--c-studio-radius-md);
+    background: var(--c-studio-surface);
+}
+
+.tr-cols {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr) minmax(0, 1fr) 96px;
+    gap: var(--c-studio-space-4);
+    align-items: start;
+}
+
+.tr-ghead {
+    position: sticky;
+    top: calc(-1 * var(--c-studio-space-5));
+    z-index: var(--c-studio-z-raised);
+    padding: var(--c-studio-space-3) var(--c-studio-space-4);
+    border-bottom: 1px solid var(--c-studio-border);
+    border-radius: var(--c-studio-radius-md) var(--c-studio-radius-md) 0 0;
+    background: var(--c-studio-surface-subtle);
+    font-size: var(--c-studio-fs-small);
+    font-weight: var(--c-studio-fw-strong);
+    color: var(--c-studio-text-weak);
+}
+
+.tr-group {
+    padding: var(--c-studio-space-3) var(--c-studio-space-4);
+    border-bottom: 1px solid var(--c-studio-border-subtle);
+    background: var(--c-studio-surface-subtle);
+    font-size: var(--c-studio-fs-small);
+    font-weight: var(--c-studio-fw-strong);
+}
+
+.tr-row {
+    padding: var(--c-studio-space-3) var(--c-studio-space-4);
+    border-bottom: 1px solid var(--c-studio-border-subtle);
+}
+
+.tr-what {
+    padding-top: var(--c-studio-space-3);
+    font-size: var(--c-studio-fs-small);
+    color: var(--c-studio-text-weak);
+}
+
+.tr-src {
+    padding-top: var(--c-studio-space-3);
+    overflow-wrap: anywhere;
+}
+
+.tr-rich {
+    margin-top: var(--c-studio-space-1);
+    font-size: var(--c-studio-fs-caption);
+    color: var(--c-studio-text-weak);
+}
+
+.tr-pill {
+    display: inline-block;
+    margin-top: var(--c-studio-space-3);
+    padding: 0 var(--c-studio-space-3);
+    border: 1px solid transparent;
+    border-radius: var(--c-studio-radius-pill);
+    font-size: var(--c-studio-fs-caption);
+}
+
+.tr-pill--done {
+    background: var(--c-studio-success-surface);
+    color: var(--c-studio-success-text);
+}
+
+.tr-pill--missing {
+    border-color: var(--c-studio-border);
+    background: var(--c-studio-surface-subtle);
+    color: var(--c-studio-text-weak);
+}
+
+.tr-pill--check {
+    border-color: var(--c-studio-warning-border);
+    background: var(--c-studio-warning-surface);
+    color: var(--c-studio-warning-text);
+}
+
+.tr-was {
+    margin-top: var(--c-studio-space-2);
+    font-size: var(--c-studio-fs-caption);
+    color: var(--c-studio-warning-text);
+}
+
+.tr-still {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--c-studio-accent-text);
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.tr-none,
+.tr-empty-p {
+    margin: 0;
+    padding: var(--c-studio-space-5) var(--c-studio-space-4);
+    color: var(--c-studio-text-weak);
+}
+
+.tr-empty--lead {
+    max-width: 480px;
+    padding-top: var(--c-studio-space-6);
+}
+
+.tr-empty--lead .tr-empty-p {
+    padding: 0 0 var(--c-studio-space-4);
+}
+
+.tr-empty-h {
+    margin: 0 0 var(--c-studio-space-2);
+    font-size: var(--c-studio-fs-title);
+    font-weight: var(--c-studio-fw-strong);
+}
+
+.tr-foot {
+    margin: var(--c-studio-space-4) 0 0;
+    font-size: var(--c-studio-fs-small);
+    color: var(--c-studio-text-weak);
+}

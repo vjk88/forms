@@ -1,0 +1,263 @@
+<template>
+    <aside class="tr-langs" aria-label="Languages">
+        <h2 class="tr-pane-h">Languages</h2>
+        <p class="tr-pane-sub">{introText}</p>
+
+        <div class="tr-lang tr-lang--default" data-id="default-language">
+            <div class="tr-row1">
+                <span class="tr-name"
+                    >{defaultName}
+                    <span class="tr-default-tag">Default</span></span
+                >
+                <span class="tr-count">{defaultCount}</span>
+            </div>
+            <div class="tr-meta">Written in Build. Edit the English there.</div>
+        </div>
+
+        <template for:each={cards} for:item="card">
+            <button
+                key={card.code}
+                type="button"
+                class={card.cls}
+                data-code={card.code}
+                aria-current={card.current}
+                onclick={handleSelect}
+            >
+                <span class="tr-row1">
+                    <span class="tr-name">{card.name}</span>
+                    <span class="tr-count">{card.count}</span>
+                </span>
+                <template lwc:if={card.hasBar}>
+                    <span class="tr-bar" aria-hidden="true"
+                        ><i style={card.barStyle}></i
+                    ></span>
+                </template>
+                <span class="tr-meta">
+                    <template lwc:if={card.allDone}>All done</template>
+                    <template lwc:if={card.hasMissing}
+                        >{card.missingText}</template
+                    >
+                    <template lwc:if={card.separator}> · </template>
+                    <template lwc:if={card.hasChanged}
+                        ><b class="tr-warn">{card.changedText}</b></template
+                    >
+                </span>
+            </button>
+        </template>
+
+        <template lwc:if={adding}>
+            <div class="tr-add-box">
+                <lightning-combobox
+                    class="tr-add-combo"
+                    label="Add a language"
+                    placeholder={addPlaceholder}
+                    options={addOptions}
+                    onchange={handleAddPick}
+                ></lightning-combobox>
+                <lightning-button
+                    class="tr-add-cancel"
+                    variant="base"
+                    label="Cancel"
+                    onclick={handleAddCancel}
+                ></lightning-button>
+            </div>
+        </template>
+        <template lwc:elseif={canAdd}>
+            <button
+                type="button"
+                class="tr-add"
+                data-id="add-language"
+                onclick={handleAddStart}
+            >
+                + Add a language
+            </button>
+        </template>
+    </aside>
+
+    <section class="tr-main" aria-label="Translations">
+        <template lwc:if={noLanguage}>
+            <div class="tr-empty tr-empty--lead" data-id="no-languages">
+                <h2 class="tr-empty-h">Translate your form</h2>
+                <p class="tr-empty-p">
+                    Add a language and every question, option and message in
+                    this form is listed here to translate. Anything you leave
+                    untranslated shows in {defaultName}. You write the
+                    {defaultName} text in Build.
+                </p>
+                <template lwc:if={canAdd}>
+                    <lightning-button
+                        variant="brand"
+                        label="+ Add a language"
+                        data-id="add-language-lead"
+                        onclick={handleAddStart}
+                    ></lightning-button>
+                </template>
+            </div>
+        </template>
+        <template lwc:else>
+            <div class="tr-main-h">
+                <h2 class="tr-title">{heading}</h2>
+                <span class="tr-spacer"></span>
+                <lightning-button
+                    class="tr-remove"
+                    variant="base"
+                    label={removeLabel}
+                    onclick={handleRemoveStart}
+                ></lightning-button>
+            </div>
+            <template lwc:if={confirmingRemove}>
+                <div
+                    class="tr-ask"
+                    role="alertdialog"
+                    aria-labelledby="tr-ask-title"
+                    aria-describedby="tr-ask-text"
+                    onkeydown={handleRemoveKeydown}
+                >
+                    <p id="tr-ask-title" class="tr-ask-title">
+                        {removeQuestion}
+                    </p>
+                    <p id="tr-ask-text" class="tr-ask-text">
+                        Respondents will no longer be offered it. Undo brings it
+                        back.
+                    </p>
+                    <div class="tr-ask-actions">
+                        <lightning-button
+                            class="tr-ask-cancel"
+                            label="Cancel"
+                            onclick={handleRemoveCancel}
+                        ></lightning-button>
+                        <lightning-button
+                            class="tr-ask-confirm"
+                            variant="destructive"
+                            label={removeLabel}
+                            onclick={handleRemoveConfirm}
+                        ></lightning-button>
+                    </div>
+                </div>
+            </template>
+
+            <div class="tr-tools">
+                <div class="tr-search">
+                    <lightning-input
+                        type="search"
+                        variant="label-hidden"
+                        label="Find text"
+                        placeholder="Find text…"
+                        value={query}
+                        data-id="search"
+                        onchange={handleSearch}
+                    ></lightning-input>
+                </div>
+                <c-final-button-group
+                    label="Show texts"
+                    options={filterOptions}
+                    value={filterValue}
+                    onchange={handleFilter}
+                ></c-final-button-group>
+            </div>
+
+            <div class="tr-grid" role="table" aria-label="Texts to translate">
+                <div class="tr-ghead tr-cols" role="row">
+                    <span role="columnheader">Where</span>
+                    <span role="columnheader">{englishHeader}</span>
+                    <span role="columnheader">{heading}</span>
+                    <span role="columnheader">Status</span>
+                </div>
+                <template lwc:if={noRows}>
+                    <p class="tr-none" role="status" data-id="no-rows">
+                        {emptyText}
+                    </p>
+                </template>
+                <template for:each={groups} for:item="group">
+                    <div key={group.id} role="rowgroup">
+                        <div class="tr-group" role="row">
+                            <span role="rowheader">{group.title}</span>
+                        </div>
+                        <template for:each={group.rows} for:item="row">
+                            <div
+                                key={row.key}
+                                class="tr-row tr-cols"
+                                role="row"
+                                data-row={row.key}
+                            >
+                                <div class="tr-what" role="cell">
+                                    {row.kind}
+                                </div>
+                                <div class="tr-src" role="cell">
+                                    {row.source}
+                                    <template lwc:if={row.isRich}>
+                                        <div class="tr-rich">
+                                            Formatted text
+                                        </div>
+                                    </template>
+                                </div>
+                                <div role="cell">
+                                    <template lwc:if={row.isRich}>
+                                        <lightning-input-rich-text
+                                            label={row.inputLabel}
+                                            placeholder={row.placeholder}
+                                            variant="bottom-toolbar"
+                                            value={row.value}
+                                            data-key={row.key}
+                                            data-rich="true"
+                                            onchange={handleEdit}
+                                            onblur={handleBlur}
+                                            onfocusout={handleBlur}
+                                        ></lightning-input-rich-text>
+                                    </template>
+                                    <template lwc:elseif={row.isLong}>
+                                        <lightning-textarea
+                                            variant="label-hidden"
+                                            label={row.inputLabel}
+                                            placeholder={row.placeholder}
+                                            value={row.value}
+                                            data-key={row.key}
+                                            onchange={handleEdit}
+                                            onblur={handleBlur}
+                                        ></lightning-textarea>
+                                    </template>
+                                    <template lwc:else>
+                                        <lightning-input
+                                            variant="label-hidden"
+                                            label={row.inputLabel}
+                                            placeholder={row.placeholder}
+                                            value={row.value}
+                                            data-key={row.key}
+                                            onchange={handleEdit}
+                                            onblur={handleBlur}
+                                        ></lightning-input>
+                                    </template>
+                                    <template lwc:if={row.isChanged}>
+                                        <div class="tr-was">
+                                            English changed since this was
+                                            translated.
+                                            <button
+                                                type="button"
+                                                class="tr-still"
+                                                data-key={row.key}
+                                                onclick={handleStillCorrect}
+                                            >
+                                                Still correct
+                                            </button>
+                                        </div>
+                                    </template>
+                                </div>
+                                <div role="cell">
+                                    <span class={row.pillClass}
+                                        >{row.pillLabel}</span
+                                    >
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+            </div>
+
+            <p class="tr-foot">
+                Built-in words (Next, Back, “This field is required”) are
+                translated once for the whole org in Setup → Translation
+                Workbench, not per form.
+            </p>
+        </template>
+    </section>
+</template>

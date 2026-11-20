@@ -350,6 +350,27 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         }
     }
 
+    /**
+     * Studio only: the language the author asked to preview (the Translate
+     * screen's "Preview in French"). Honoured only while `authoring` is true,
+     * and it wins over `?lang=`. Ignored when the form does not offer it.
+     */
+    @api
+    get previewLanguage() {
+        return this._previewLanguage;
+    }
+    set previewLanguage(value) {
+        const next = value || null;
+        if (next === this._previewLanguage) {
+            return;
+        }
+        this._previewLanguage = next;
+        if (this._inlineSpec) {
+            this._apply(this._inlineSpec, { preserveNav: true });
+        }
+    }
+    _previewLanguage = null;
+
     model;
     tokens = {};
     /** One at a time open page: the card-scope tokens, kept for the
@@ -832,7 +853,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             this.authoring
                 ? {
                       spec: incoming,
-                      param: this._wantedLanguage(),
+                      param: this._previewLanguage || this._wantedLanguage(),
                       userLang: null,
                       browserLangs: []
                   }

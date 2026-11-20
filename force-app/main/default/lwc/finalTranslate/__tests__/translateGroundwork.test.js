@@ -85,7 +85,9 @@ describe('listTexts entries', () => {
             'Page 1 · About you · Section: Your details'
         );
         expect(all['el:q1.label'].kind).toBe('Question');
-        expect(all['el:q1.label'].group.title).toBe('Page 1 · Which plan?');
+        expect(all['el:q1.label'].group.title).toBe(
+            'Page 1 · About you · Question: Which plan?'
+        );
         expect(all['el:q1.help'].kind).toBe('Help text');
         expect(all['el:q1.leftLabel'].kind).toBe('Scale · left end');
         expect(all['el:q1.html']).toMatchObject({
