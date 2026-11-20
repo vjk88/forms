@@ -16,6 +16,8 @@
  * `lintVisibility` reports the same conditions as build-time errors.
  */
 
+import { t as tr } from 'c/finalTranslate';
+
 const OPERATORS = new Set([
     'equals',
     'notEquals',
@@ -415,7 +417,7 @@ export function validateEntry(entry, value, ctx) {
     if (!entry || !whenApplies(entry.when, ctx)) {
         return null;
     }
-    const message = entry.message || 'This value is not valid.';
+    const message = entry.message || tr('Final_Run_ValueNotValid');
     switch (entry.type) {
         case 'required':
             return isBlank(value) || value === false ? message : null;
@@ -496,9 +498,12 @@ export function validateElement(element, value, ctx) {
                 if (missing.length) {
                     out.push(
                         entry.message ||
-                            `Please answer: ${missing
-                                .map((r) => r.label || r.value)
-                                .join(', ')}`
+                            tr(
+                                'Final_Run_PleaseAnswer',
+                                missing
+                                    .map((r) => r.label || r.value)
+                                    .join(', ')
+                            )
                     );
                 }
                 continue;

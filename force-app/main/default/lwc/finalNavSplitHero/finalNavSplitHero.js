@@ -12,6 +12,7 @@ import {
 } from 'c/finalStepFlow';
 import { bannerLayerStyle } from 'c/finalThemeEngine';
 import { watchTextFade } from 'c/finalTextFade';
+import { t } from 'c/finalTranslate';
 
 /**
  * finalNavSplitHero — brand pane + form pane (catalog §2).
@@ -60,11 +61,11 @@ export default class FinalNavSplitHero extends LightningElement {
     @api backLabel;
 
     get backButtonLabel() {
-        return this.backLabel || 'Back';
+        return this.backLabel || t('Final_Run_Back');
     }
 
     get advanceLabel() {
-        return this.opts.advanceLabel || 'Continue';
+        return this.opts.advanceLabel || t('Final_Run_Continue');
     }
     /** Minimal form-side lockup {title, description} — engine-passed; rendered in bleed mode only. */
     @api lockup;
@@ -293,7 +294,7 @@ export default class FinalNavSplitHero extends LightningElement {
         const plain = String(this.opts.paneBrandName || '')
             .replace(/<[^>]+>/g, '')
             .trim();
-        return plain || 'Logo';
+        return plain || t('Final_Run_Logo');
     }
 
     /** header.highlight.placement (owner 2026-07-12): 'aboveTitle' = kicker
@@ -397,7 +398,7 @@ export default class FinalNavSplitHero extends LightningElement {
     }
 
     get progressText() {
-        return `Step ${this.stepNumber} of ${this.stepCount}`;
+        return t('Final_Run_StepOf', this.stepNumber, this.stepCount);
     }
 
     get progressFillStyle() {
@@ -454,7 +455,9 @@ export default class FinalNavSplitHero extends LightningElement {
         if (!this.keyboardAdvanceOn) {
             return null;
         }
-        return this.multilineFocus ? 'or press Ctrl+Enter' : 'or press Return';
+        return this.multilineFocus
+            ? t('Final_Run_PressCtrlEnter')
+            : t('Final_Run_PressReturn');
     }
 
     get paneProgressFraction() {

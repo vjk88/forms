@@ -1,5 +1,6 @@
 import { LightningElement, api } from 'lwc';
 import { observeStuck } from 'c/finalStuck';
+import { t } from 'c/finalTranslate';
 
 /**
  * finalNavStepper — wizard-steps nav primitive (catalog §2).
@@ -170,7 +171,7 @@ export default class FinalNavStepper extends LightningElement {
                 // item so its (only visible) label isn't crushed to a letter
                 itemCls: active ? 'step-item item-active' : 'step-item',
                 key: page.id || `pg_${index}`,
-                label: page.name || `Step ${index + 1}`,
+                label: page.name || t('Final_Run_StepN', index + 1),
                 number: index + 1,
                 index,
                 cls,
@@ -180,9 +181,17 @@ export default class FinalNavStepper extends LightningElement {
         });
     }
 
+    get navLabel() {
+        return t('Final_Run_FormSteps');
+    }
+
     get stepCountText() {
         return this.opts.showStepCount
-            ? `Step ${(this.currentPageIndex || 0) + 1} of ${(this.pages || []).length}`
+            ? t(
+                  'Final_Run_StepOf',
+                  (this.currentPageIndex || 0) + 1,
+                  (this.pages || []).length
+              )
             : null;
     }
 

@@ -10,6 +10,7 @@ import {
     isMultilineTarget,
     isTouchOnly
 } from 'c/finalStepFlow';
+import { t } from 'c/finalTranslate';
 
 /**
  * finalNavOneAtATime — conversational nav primitive (catalog §2).
@@ -78,12 +79,12 @@ export default class FinalNavOneAtATime extends LightningElement {
     /** Resolved action-row arrangement (viewer: submit ?? layout default). */
     @api arrangement = 'together-left';
     /** Terminal Submit label (viewer: submit.label). */
-    @api submitLabel = 'Submit';
+    @api submitLabel;
     @api submitDisabled = false;
     @api backLabel;
 
     get backButtonLabel() {
-        return this.backLabel || 'Back';
+        return this.backLabel || t('Final_Run_Back');
     }
 
     @track screenIndex = 0;
@@ -149,13 +150,13 @@ export default class FinalNavOneAtATime extends LightningElement {
     }
 
     get advanceLabel() {
-        return this.opts.advanceLabel || 'Continue';
+        return this.opts.advanceLabel || t('Final_Run_Continue');
     }
 
     /** Continue while stepping; the Submit label on the final screen. */
     get primaryLabel() {
         return this.onLastScreen
-            ? this.submitLabel || 'Submit'
+            ? this.submitLabel || t('Final_Run_Submit')
             : this.advanceLabel;
     }
 
@@ -202,7 +203,11 @@ export default class FinalNavOneAtATime extends LightningElement {
     }
 
     get progressText() {
-        return `${this.screenIndex + 1} of ${this._screens.length}`;
+        return t(
+            'Final_Run_PageOf',
+            this.screenIndex + 1,
+            this._screens.length
+        );
     }
 
     get counterText() {
@@ -218,7 +223,9 @@ export default class FinalNavOneAtATime extends LightningElement {
         if (!this.keyboardAdvanceOn) {
             return null;
         }
-        return this.multilineFocus ? 'or press Ctrl+Enter' : 'or press Return';
+        return this.multilineFocus
+            ? t('Final_Run_PressCtrlEnter')
+            : t('Final_Run_PressReturn');
     }
 
     get showHelperRow() {

@@ -5,6 +5,7 @@ import getGuestAutofillContext from '@salesforce/apex/FinalGuestController.getGu
 import submitGuest from '@salesforce/apex/FinalGuestController.submitGuest';
 import getLookupPlan from '@salesforce/apex/FinalAutofillController.getLookupPlan';
 import isGuest from '@salesforce/user/isGuest';
+import { t } from 'c/finalTranslate';
 
 /**
  * finalGuestHost — the guest-site page component (Phase A2).
@@ -99,6 +100,10 @@ export default class FinalGuestHost extends LightningElement {
         }
     }
 
+    get loadingText() {
+        return t('Final_Run_LoadingForm');
+    }
+
     get effectiveFormId() {
         return this._urlFormId || this.formId;
     }
@@ -136,8 +141,7 @@ export default class FinalGuestHost extends LightningElement {
             if (runtimeRes && runtimeRes.closed) {
                 this.spec = undefined;
                 this.error =
-                    runtimeRes.closedMessage ||
-                    'This form is no longer accepting responses.';
+                    runtimeRes.closedMessage || t('Final_Run_FormClosed');
                 return;
             }
             this.versionId = runtimeRes.versionId;
@@ -209,7 +213,7 @@ export default class FinalGuestHost extends LightningElement {
             this.spec = undefined;
             this.error =
                 (e && e.body && e.body.message) ||
-                'This form is not available.';
+                t('Final_Run_FormUnavailable');
         }
     }
 
@@ -250,8 +254,7 @@ export default class FinalGuestHost extends LightningElement {
             }
         } catch (e) {
             const message =
-                (e && e.body && e.body.message) ||
-                'Your response could not be saved. Please try again.';
+                (e && e.body && e.body.message) || t('Final_Run_SaveFailed');
             if (viewer) {
                 viewer.failSubmit(message);
             }

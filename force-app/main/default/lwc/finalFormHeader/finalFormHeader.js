@@ -1,6 +1,7 @@
 import { LightningElement, api } from 'lwc';
 import { bannerLayerStyle } from 'c/finalThemeEngine';
 import { watchTextFade } from 'c/finalTextFade';
+import { t } from 'c/finalTranslate';
 
 /**
  * finalFormHeader — the header lockup (catalog §1, owner header model 2026-07-05).
@@ -164,7 +165,7 @@ export default class FinalFormHeader extends LightningElement {
         const plain = String(this.hdr.brandName || '')
             .replace(/<[^>]+>/g, '')
             .trim();
-        return plain || 'Logo';
+        return plain || t('Final_Run_Logo');
     }
 
     get highlight() {

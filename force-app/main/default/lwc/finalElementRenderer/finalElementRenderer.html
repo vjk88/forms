@@ -15,7 +15,9 @@
                         onclick={handleLabelClick}
                     >
                         <template lwc:if={el.required}>
-                            <abbr class="field-req" title="required">*</abbr>
+                            <abbr class="field-req" title={requiredTitle}
+                                >*</abbr
+                            >
                         </template>
                         {el.label}
                     </label>
@@ -62,7 +64,7 @@
                         type="text"
                         class="choice-other"
                         value={_otherText}
-                        placeholder="Your own answer…"
+                        placeholder={ownAnswerPlaceholder}
                         aria-label={otherAriaLabel}
                         oninput={handleOtherText}
                     />
@@ -336,7 +338,9 @@
                 <div class="field-label-row">
                     <label class="field-label" for={fileInputId}>
                         <template lwc:if={el.required}>
-                            <abbr class="field-req" title="required">*</abbr>
+                            <abbr class="field-req" title={requiredTitle}
+                                >*</abbr
+                            >
                         </template>
                         {el.label}
                     </label>
@@ -426,7 +430,9 @@
                 <div class="field-label-row">
                     <label class={labelClass} aria-hidden="true">
                         <template lwc:if={el.required}>
-                            <abbr class="field-req" title="required">*</abbr>
+                            <abbr class="field-req" title={requiredTitle}
+                                >*</abbr
+                            >
                         </template>
                         {el.label}
                     </label>
@@ -477,7 +483,9 @@
                 <div class="field-label-row">
                     <label class={labelClass} aria-hidden="true">
                         <template lwc:if={el.required}>
-                            <abbr class="field-req" title="required">*</abbr>
+                            <abbr class="field-req" title={requiredTitle}
+                                >*</abbr
+                            >
                         </template>
                         {el.label}
                     </label>
@@ -551,7 +559,9 @@
                 <div class="field-label-row">
                     <label class={labelClass} aria-hidden="true">
                         <template lwc:if={el.required}>
-                            <abbr class="field-req" title="required">*</abbr>
+                            <abbr class="field-req" title={requiredTitle}
+                                >*</abbr
+                            >
                         </template>
                         {el.label}
                     </label>
@@ -636,7 +646,9 @@
                 <div class="field-label-row">
                     <label class={labelClass} aria-hidden="true">
                         <template lwc:if={el.required}>
-                            <abbr class="field-req" title="required">*</abbr>
+                            <abbr class="field-req" title={requiredTitle}
+                                >*</abbr
+                            >
                         </template>
                         {el.label}
                     </label>
@@ -685,7 +697,9 @@
                 <div class="field-label-row">
                     <label class={labelClass} aria-hidden="true">
                         <template lwc:if={el.required}>
-                            <abbr class="field-req" title="required">*</abbr>
+                            <abbr class="field-req" title={requiredTitle}
+                                >*</abbr
+                            >
                         </template>
                         {el.label}
                     </label>
@@ -745,7 +759,9 @@
                 <div class="field-label-row">
                     <label class={labelClass} aria-hidden="true">
                         <template lwc:if={el.required}>
-                            <abbr class="field-req" title="required">*</abbr>
+                            <abbr class="field-req" title={requiredTitle}
+                                >*</abbr
+                            >
                         </template>
                         {el.label}
                     </label>
@@ -809,7 +825,7 @@
                 icon-name="utility:puzzle"
                 size="x-small"
             ></lightning-icon>
-            <span>This element type isn&#8217;t supported yet.</span>
+            <span>{unsupportedText}</span>
         </div>
     </template>
 </template>

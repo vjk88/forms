@@ -18,7 +18,7 @@
                             type="button"
                             class="sec-fold"
                             aria-expanded={toggleExpanded}
-                            title="Expand or collapse this section"
+                            title={labels.expandCollapse}
                             onclick={handleToggleCollapse}
                         >
                             <lightning-icon
@@ -51,7 +51,7 @@
                                 class="rl-retry"
                                 onclick={handleListRetry}
                             >
-                                Try again
+                                {labels.tryAgain}
                             </button>
                         </div>
                     </template>
@@ -152,7 +152,7 @@
                                                             >—</span
                                                         >
                                                         <span class="rl-sr"
-                                                            >No value</span
+                                                            >{labels.noValue}</span
                                                         >
                                                     </template>
                                                     <template lwc:else>
@@ -174,7 +174,7 @@
                                     href={list.viewAllHref}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    >View all in Salesforce<span class="rl-sr"
+                                    >{labels.viewAll}<span class="rl-sr"
                                         >{newTabText}</span
                                     ></a
                                 >
@@ -200,7 +200,9 @@
                                     <tr>
                                         <th scope="col" class={numColClass}>
                                             <span aria-hidden="true">#</span
-                                            ><span class="rl-sr">Row</span>
+                                            ><span class="rl-sr"
+                                                >{labels.row}</span
+                                            >
                                         </th>
                                         <template
                                             for:each={tableQuestions}
@@ -211,7 +213,7 @@
                                                 <template lwc:if={q.isRequired}>
                                                     <abbr
                                                         class="field-req"
-                                                        title="required"
+                                                        title={labels.required}
                                                         aria-hidden="true"
                                                         >*</abbr
                                                     ><span class="rl-sr"
@@ -221,7 +223,9 @@
                                             </th>
                                         </template>
                                         <th scope="col" class={actCellClass}>
-                                            <span class="rl-sr">Actions</span>
+                                            <span class="rl-sr"
+                                                >{labels.actions}</span
+                                            >
                                         </th>
                                     </tr>
                                 </thead>
@@ -268,7 +272,7 @@
                                                         lwc:elseif={entry.newTag}
                                                     >
                                                         <span class="rl-tag"
-                                                            >New</span
+                                                            >{labels.newTag}</span
                                                         >
                                                     </template>
                                                     <template
@@ -277,7 +281,7 @@
                                                         <span class="rl-tag"
                                                             ><span class="rl-sr"
                                                                 >{rowSep}</span
-                                                            >View only<span
+                                                            >{labels.viewOnly}<span
                                                                 class="rl-sr"
                                                                 >{entry.viewOnlySr}</span
                                                             ></span
@@ -368,7 +372,8 @@
                                     >
                                     <template lwc:if={entry.viewOnly}>
                                         <span class="rl-tag"
-                                            >View only<span class="rl-sr"
+                                            >{labels.viewOnly}<span
+                                                class="rl-sr"
                                                 >{entry.viewOnlySr}</span
                                             ></span
                                         >
@@ -379,7 +384,7 @@
                                             href={entry.href}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            >Open<span class="rl-sr"
+                                            >{labels.open}<span class="rl-sr"
                                                 >{entry.openSr}</span
                                             ></a
                                         >
@@ -447,7 +452,7 @@
                                     href={listMoreHref}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    >View all in Salesforce<span class="rl-sr"
+                                    >{labels.viewAll}<span class="rl-sr"
                                         >{newTabText}</span
                                     ></a
                                 >

@@ -1,4 +1,5 @@
 import { LightningElement, api, wire } from 'lwc';
+import { t, tn, resolveLanguage, loadLanguage } from 'c/finalTranslate';
 import { CurrentPageReference, NavigationMixin } from 'lightning/navigation';
 import { getRecord, notifyRecordUpdateAvailable } from 'lightning/uiRecordApi';
 import { getObjectInfo } from 'lightning/uiObjectInfoApi';
@@ -463,6 +464,8 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     /** Personalized link token from `?c__rt=` (signed-in hosts only; the guest
      *  host reads its own and delegates submit). */
     _urlLinkToken;
+    /** The language whose built-in words are loaded (null = defaults). */
+    _languageLoaded = null;
     /** `formId|token` whose link context was requested — one fetch per link. */
     _linkCtxKey;
     /** True while the link's values load: shows the spinner, holds Submit. */
@@ -740,7 +743,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             this.navCtor = module.default;
         } catch {
             // chunk load failed at reconnect — say so instead of a blank page
-            this.error = 'This form could not be loaded.';
+            this.error = t('Final_Run_FormCouldNotLoad');
         }
     }
 
@@ -799,11 +802,24 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             this.model = null;
             this.error =
                 (e && e.body && e.body.message) ||
-                'This form could not be loaded.';
+                t('Final_Run_FormCouldNotLoad');
         }
     }
 
+    /** The language the link asks for (`?lang=` or `?c__lang=`), or null. */
+    _wantedLanguage() {
+        const state = (this._pageRef && this._pageRef.state) || {};
+        return resolveLanguage({ param: state.c__lang || state.lang });
+    }
+
     async _apply(spec, { preserveNav } = {}) {
+        // Built-in words in the asked language must be in place before any
+        // child renders. With no language param nothing is awaited.
+        const wanted = this._wantedLanguage();
+        if (wanted !== this._languageLoaded) {
+            this._languageLoaded = wanted;
+            await loadLanguage(wanted);
+        }
         const seq = (this._applySeq = (this._applySeq || 0) + 1);
         this._submitGeneration += 1;
         this._submitting = false;
@@ -814,7 +830,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         this._editReaders = [];
         if (this._requiresEditRecord(spec)) this._editState = 'loading';
         if (!spec || spec.specVersion !== 1) {
-            this.error = 'This form uses an unsupported specification version.';
+            this.error = t('Final_Run_UnsupportedSpec');
             this.model = null;
             return;
         }
@@ -831,7 +847,11 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             placementTarget &&
             this.objectApiName !== placementTarget
         ) {
-            this.error = `This form saves to ${placementTarget}, so it can't be used on a ${this.objectApiName} page.`;
+            this.error = t(
+                'Final_Run_WrongPageCreate',
+                placementTarget,
+                this.objectApiName
+            );
             this.model = null;
             return;
         }
@@ -1334,8 +1354,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             !this.preservePreview &&
             !this.delegateSubmit
         ) {
-            this.error =
-                'Survey context needs a valid record ID. The configured current-record expression requires a record page.';
+            this.error = t('Final_Run_SurveyNeedsRecord');
             this.model = null;
             return;
         }
@@ -1838,7 +1857,11 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             form.targetObject &&
             pageObject !== form.targetObject
         ) {
-            this._editConfigurationError = `This form saves to ${form.targetObject}, but the current page is for ${pageObject}.`;
+            this._editConfigurationError = t(
+                'Final_Run_WrongPageEdit',
+                form.targetObject,
+                pageObject
+            );
         }
         if (this._editConfigurationError) this._editState = 'error';
         else if (rid && form.targetObject) this._beginEditRead();
@@ -2028,7 +2051,8 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                     if (!base[key]) {
                         return;
                     }
-                    nounOf[key] = loaded.childLabel || 'record';
+                    nounOf[key] =
+                        loaded.childLabel || t('Final_Run_RecordNoun');
                     if (this._isMarked(section.id, key)) {
                         deletedIn[key] = deletedIn[key] || title;
                         return;
@@ -2047,10 +2071,12 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         const out = {};
         Object.keys(deletedIn).forEach((id) => {
             if (changedIn[id]) {
-                out[id] =
-                    `This ${nounOf[id]} is changed in ${changedIn[id]} and ` +
-                    `deleted in ${deletedIn[id]}. Undo the delete, or ` +
-                    `change it back in ${changedIn[id]}.`;
+                out[id] = t(
+                    'Final_Run_DeleteConflict',
+                    nounOf[id],
+                    changedIn[id],
+                    deletedIn[id]
+                );
             }
         });
         return out;
@@ -2097,6 +2123,16 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         );
     }
 
+    /** Built-in words the template shows (Custom Labels). */
+    get labels() {
+        return {
+            loadingRecord: t('Final_Run_LoadingRecord'),
+            retry: t('Final_Run_Retry'),
+            fillingDetails: t('Final_Run_FillingDetails'),
+            loadingForm: t('Final_Run_LoadingForm')
+        };
+    }
+
     get isEditLoading() {
         return this._editState === 'loading';
     }
@@ -2106,9 +2142,8 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     get editError() {
         if (this._editConfigurationError) return this._editConfigurationError;
         if (this._editState === 'missingRecord')
-            return 'This form needs a valid existing record ID. A current-record expression requires a record page.';
-        if (this._editState === 'error')
-            return 'Could not load this record. Retry to continue.';
+            return t('Final_Run_EditNeedsRecord');
+        if (this._editState === 'error') return t('Final_Run_RecordLoadFailed');
         return null;
     }
 
@@ -2400,8 +2435,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             const types = {};
             for (const path of this._userPaths) {
                 const field = path.includes('.') ? null : data.fields[path];
-                const t = field ? String(field.dataType).toLowerCase() : '';
-                types[path] = t === 'date' || t === 'datetime' ? t : 'field';
+                const kind = field ? String(field.dataType).toLowerCase() : '';
+                types[path] =
+                    kind === 'date' || kind === 'datetime' ? kind : 'field';
             }
             this._userTypes = types;
         } else if (error) {
@@ -2864,8 +2900,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     _editableListExtra(section, loaded) {
         const cfg = section.repeat || {};
         const childObject = loaded.childObject || cfg.childObject;
-        const one = loaded.childLabel || childObject || 'record';
-        const many = loaded.childLabelPlural || `${one}s`;
+        const one =
+            loaded.childLabel || childObject || t('Final_Run_RecordNoun');
+        const many = loaded.childLabelPlural || t('Final_Run_PluralOf', one);
         const locked = new Set(loaded.lockedQuestions || []);
         const existing = {};
         for (const row of loaded.rows || []) {
@@ -2875,7 +2912,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                     cfg.link !== false
                         ? `/lightning/r/${childObject}/${row.id}/view`
                         : null,
-                openSr: ` ${row.name || ''} (opens in a new tab)`.replace(
+                openSr: ` ${row.name || ''} ${t('Final_Run_OpensNewTab')}`.replace(
                     /\s+/g,
                     ' '
                 ),
@@ -2897,16 +2934,20 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         const room = truncated ? 0 : Math.max(0, max - total + marked);
         let moreText = '';
         if (truncated) {
-            moreText = `Showing ${shown} of ${total}. Add new ${many} in Salesforce.`;
+            moreText = t('Final_Run_ListShowingAdd', shown, total, many);
         } else if (room === 0) {
-            moreText = `This list holds up to ${max} ${max === 1 ? one : many}.`;
+            moreText = t(
+                'Final_Run_ListHoldsUpTo',
+                max,
+                max === 1 ? one : many
+            );
         }
         return {
             existing,
             noun: loaded.childLabel || '',
             revision: loaded.generation,
             room,
-            emptyText: `No ${many} yet.`,
+            emptyText: t('Final_Run_ListNoYet', many),
             moreText,
             viewAllHref:
                 truncated && cfg.relationshipName
@@ -2939,8 +2980,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         );
         const ids = new Set((section.elements || []).map((el) => el.id));
         const childObject = loaded.childObject || cfg.childObject;
-        const one = loaded.childLabel || childObject || 'record';
-        const many = loaded.childLabelPlural || `${one}s`;
+        const one =
+            loaded.childLabel || childObject || t('Final_Run_RecordNoun');
+        const many = loaded.childLabelPlural || t('Final_Run_PluralOf', one);
         const showLink = cfg.link !== false;
         const rows = (loaded.rows || []).map((row) => {
             const values = row.values || {};
@@ -2969,10 +3011,14 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 href: showLink
                     ? `/lightning/r/${childObject}/${row.id}/view`
                     : null,
-                openLabel: `Open ${one} ${row.name || ''}`.trim(),
+                openLabel: t(
+                    'Final_Run_OpenRecord',
+                    one,
+                    row.name || ''
+                ).trim(),
                 // after "Open Case", for screen readers: which one, and
                 // that it opens a new tab
-                openSr: ` ${row.name || ''} (opens in a new tab)`.replace(
+                openSr: ` ${row.name || ''} ${t('Final_Run_OpensNewTab')}`.replace(
                     /\s+/g,
                     ' '
                 ),
@@ -2991,9 +3037,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 loading: loaded.state === 'loading',
                 failed: loaded.state === 'failed',
                 ready: loaded.state === 'ready',
-                errorText: loaded.error || `These ${many} couldn’t be loaded.`,
-                loadingText: `Loading ${many}…`,
-                emptyText: `No ${many} yet.`,
+                errorText: loaded.error || t('Final_Run_ListLoadFailed', many),
+                loadingText: t('Final_Run_ListLoading', many),
+                emptyText: t('Final_Run_ListNoYet', many),
                 empty: loaded.state === 'ready' && rows.length === 0,
                 rows,
                 columns: questions.map((el) => ({
@@ -3001,10 +3047,10 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                     label: el.label || ''
                 })),
                 nameLabel: one,
-                openText: `Open ${one}`,
+                openText: t('Final_Run_OpenOne', one),
                 moreText:
                     total > rows.length
-                        ? `Showing ${rows.length} of ${total}.`
+                        ? t('Final_Run_ListShowing', rows.length, total)
                         : '',
                 viewAllHref:
                     total > rows.length && relName
@@ -3303,9 +3349,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             (page.sections || []).forEach((sec) => {
                 if (sec.repeat) {
                     // inside a group the target names its entry too (§4)
-                    const t = this._groupFocusTarget(sec);
-                    if (t) {
-                        target = target || { ...t, groupId: sec.id };
+                    const groupTarget = this._groupFocusTarget(sec);
+                    if (groupTarget) {
+                        target = target || { ...groupTarget, groupId: sec.id };
                         sectionIds.push(sec.id);
                     }
                     return;
@@ -3359,9 +3405,18 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         if (!count) {
             return '';
         }
-        const fields = count === 1 ? 'field' : 'fields';
-        const verb = this.showNext ? 'continue' : 'submit';
-        return `Fix ${count} ${fields} to ${verb}`;
+        if (this.showNext) {
+            return tn(
+                'Final_Run_FixFieldsContinueOne',
+                'Final_Run_FixFieldsContinueMany',
+                count
+            );
+        }
+        return tn(
+            'Final_Run_FixFieldsSubmitOne',
+            'Final_Run_FixFieldsSubmitMany',
+            count
+        );
     }
 
     handleNext() {
@@ -3499,7 +3554,8 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         const unmapped = [];
         const entryMapped = {};
         for (const err of errors) {
-            const message = (err && err.message) || 'This answer was rejected.';
+            const message =
+                (err && err.message) || t('Final_Run_AnswerRejected');
             if (err && err.sectionId) {
                 // entryIndex is zero-based, counted in the list AS SENT; a
                 // row marked for delete isn't sent, so it's named by record
@@ -3565,8 +3621,8 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         this._submitError = unmapped.length
             ? unmapped.join(' ')
             : anyField
-              ? 'Some answers were not accepted. See the highlighted fields.'
-              : 'Your response could not be saved. Please try again.';
+              ? t('Final_Run_AnswersRejected')
+              : t('Final_Run_SaveFailed');
 
         // Land them on the first page that actually has a problem; a message
         // on a page they cannot see is no message at all.
@@ -3603,7 +3659,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         }
         const next = { ...this._lookupStale };
         if (invalid) {
-            next[elementId] = message || 'Check this selection.';
+            next[elementId] = message || t('Final_Run_CheckSelection');
         } else {
             delete next[elementId];
         }
@@ -3714,8 +3770,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 return;
             }
             this._submitError =
-                (e && e.body && e.body.message) ||
-                'Your response could not be saved. Please try again.';
+                (e && e.body && e.body.message) || t('Final_Run_SaveFailed');
         } finally {
             if (submitGeneration === this._submitGeneration)
                 this._submitting = false;
@@ -3741,8 +3796,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     @api
     failSubmit(message) {
         this._submitting = false;
-        this._submitError =
-            message || 'Your response could not be saved. Please try again.';
+        this._submitError = message || t('Final_Run_SaveFailed');
     }
 
     /** Answer keys the rules currently HIDE. A hidden question keeps its
@@ -3991,7 +4045,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         if (this.isAutofillPending) {
             return {
                 ...base,
-                label: 'Filling in details…'
+                label: t('Final_Run_FillingDetails')
             };
         }
         return base;
@@ -3999,11 +4053,11 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
 
     get effectiveSubmitLabel() {
         if (this.isAutofillPending) {
-            return 'Filling in details…';
+            return t('Final_Run_FillingDetails');
         }
         return (
             (this.model && this.model.submit && this.model.submit.label) ||
-            'Submit'
+            t('Final_Run_Submit')
         );
     }
 
@@ -4181,8 +4235,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         if (this._autofillSession) {
             onRequestFailure(this._autofillSession, identity, 'timeout');
         }
-        this._autofillError =
-            'Could not fill these details. Enter them yourself or retry.';
+        this._autofillError = t('Final_Run_AutofillFailed');
     }
 
     handleAutofillRecordSuccess(event) {
@@ -4231,8 +4284,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         if (this._autofillSession) {
             onRequestFailure(this._autofillSession, identity, 'failed');
         }
-        this._autofillError =
-            'Could not fill these details. Enter them yourself or retry.';
+        this._autofillError = t('Final_Run_AutofillFailed');
     }
 
     _applyAutofillPatch(patch) {

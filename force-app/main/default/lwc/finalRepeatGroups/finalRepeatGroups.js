@@ -4,6 +4,8 @@
  * (IMPL_PLAN_RELATED_RECORDS §2, §5). A plain module; no component state.
  */
 
+import { tn } from 'c/finalTranslate';
+
 /** One absolute cap per group, whatever Max says (§5). */
 export const MAX_ENTRIES_PER_GROUP = 50;
 
@@ -102,7 +104,7 @@ export function isAnswerable(el) {
 
 /** "Fill in at least 2 entries." (§5) */
 export function minimumMessage(min) {
-    return `Fill in at least ${min} ${min === 1 ? 'entry' : 'entries'}.`;
+    return tn('Final_Run_MinEntriesOne', 'Final_Run_MinEntriesMany', min);
 }
 
 // ---- Fill on new records (IMPL_PLAN_RELATED_RECORDS P2.6): which child

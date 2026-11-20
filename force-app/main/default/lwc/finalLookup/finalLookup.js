@@ -1,6 +1,7 @@
 import { LightningElement, api } from 'lwc';
 import search from '@salesforce/apex/FinalLookupController.search';
 import searchPreview from '@salesforce/apex/FinalLookupController.searchPreview';
+import { t } from 'c/finalTranslate';
 
 const DEBOUNCE_MS = 300;
 const MIN_TERM = 2;
@@ -24,7 +25,19 @@ const MIN_TERM = 2;
 export default class FinalLookup extends LightningElement {
     @api elementId;
     @api label;
-    @api placeholder = 'Search...';
+    /** Until the host sets one, the built-in "Search...". */
+    @api
+    get placeholder() {
+        return this._placeholderSet
+            ? this._placeholder
+            : t('Final_Run_SearchPlaceholder');
+    }
+    set placeholder(value) {
+        this._placeholderSet = true;
+        this._placeholder = value;
+    }
+    _placeholderSet = false;
+    _placeholder;
     @api required = false;
     @api disabled = false;
     @api readOnly = false;
@@ -150,7 +163,9 @@ export default class FinalLookup extends LightningElement {
     }
 
     get clearTitle() {
-        return this.label ? `Clear ${this.label}` : 'Clear selection';
+        return this.label
+            ? t('Final_Run_ClearNamed', this.label)
+            : t('Final_Run_ClearSelection');
     }
 
     get hasResults() {
@@ -170,7 +185,9 @@ export default class FinalLookup extends LightningElement {
     }
 
     get listboxLabel() {
-        return this.label ? `${this.label} results` : 'Search results';
+        return this.label
+            ? t('Final_Run_ResultsNamed', this.label)
+            : t('Final_Run_SearchResults');
     }
 
     get errorMessage() {
@@ -181,8 +198,8 @@ export default class FinalLookup extends LightningElement {
     }
 
     get staleMessage() {
-        const what = this._displayLabel || 'This selection';
-        return `${what} may no longer be available. Choose again.`;
+        const what = this._displayLabel || t('Final_Run_ThisSelection');
+        return t('Final_Run_SelectionStale', what);
     }
 
     _markStale(stale) {
@@ -205,11 +222,11 @@ export default class FinalLookup extends LightningElement {
 
     get emptyMessage() {
         if (this.loading) {
-            return 'Searching…';
+            return t('Final_Run_Searching');
         }
         return this.term.length < MIN_TERM
-            ? `Type ${MIN_TERM} or more characters`
-            : 'No matches';
+            ? t('Final_Run_TypeMore', MIN_TERM)
+            : t('Final_Run_NoMatches');
     }
 
     /** What a screen reader is told after each search settles. */
@@ -222,9 +239,11 @@ export default class FinalLookup extends LightningElement {
         }
         const n = this.results.length;
         if (n === 0) {
-            return 'No matches';
+            return t('Final_Run_NoMatches');
         }
-        return n === 1 ? '1 result' : `${n} results`;
+        return n === 1
+            ? t('Final_Run_ResultOne')
+            : t('Final_Run_ResultsMany', n);
     }
 
     renderedCallback() {

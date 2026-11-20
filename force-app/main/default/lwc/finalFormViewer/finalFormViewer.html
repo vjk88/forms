@@ -34,7 +34,7 @@
                     <template lwc:if={isEditLoading}>
                         <div class="viewer-loading" role="status">
                             <lightning-spinner
-                                alternative-text="Loading record"
+                                alternative-text={labels.loadingRecord}
                                 size="medium"
                             ></lightning-spinner>
                         </div>
@@ -44,7 +44,7 @@
                             <p>{editError}</p>
                             <template lwc:if={canRetryEdit}>
                                 <lightning-button
-                                    label="Retry"
+                                    label={labels.retry}
                                     onclick={handleEditRetry}
                                 ></lightning-button>
                             </template>
@@ -76,7 +76,7 @@
                                 <div class="viewer-busy-box">
                                     <div class="viewer-busy-spinner">
                                         <lightning-spinner
-                                            alternative-text="Filling in details"
+                                            alternative-text={labels.fillingDetails}
                                             size="small"
                                         ></lightning-spinner>
                                     </div>
@@ -84,7 +84,7 @@
                                         class="viewer-busy-text"
                                         aria-hidden="true"
                                     >
-                                        Filling in details…
+                                        {labels.fillingDetails}
                                     </p>
                                 </div>
                             </div>
@@ -163,7 +163,7 @@
     <template lwc:else>
         <div class="viewer-loading">
             <lightning-spinner
-                alternative-text="Loading form"
+                alternative-text={labels.loadingForm}
                 size="medium"
             ></lightning-spinner>
         </div>

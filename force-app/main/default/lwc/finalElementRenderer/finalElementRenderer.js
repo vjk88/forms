@@ -6,6 +6,7 @@ import {
 } from 'c/finalStepFlow';
 import { applyScaleRowLayout } from 'c/finalScaleLayout';
 import { lookOf, optionsFor } from 'c/finalChoiceLook';
+import { t } from 'c/finalTranslate';
 
 /**
  * finalElementRenderer — one spec element.
@@ -132,12 +133,13 @@ const EMOJI_FACES = ['😠', '😕', '😐', '🙂', '😍'];
 // end labels, so each chip must SAY its sentiment — "3 of 5" alone is
 // meaningless when the meaning lives in a picture you can't see.
 const EMOJI_SENTIMENTS = [
-    'Very unhappy',
-    'Unhappy',
-    'Neutral',
-    'Happy',
-    'Very happy'
+    'Final_Run_VeryUnhappy',
+    'Final_Run_Unhappy',
+    'Final_Run_Neutral',
+    'Final_Run_Happy',
+    'Final_Run_VeryHappy'
 ];
+const sentiment = (i) => t(EMOJI_SENTIMENTS[i]);
 const RATING_GLYPHS = { star: '★', heart: '♥', thumb: '👍' };
 const SCALE_SIZES = [5, 7, 10];
 
@@ -596,8 +598,20 @@ export default class FinalElementRenderer extends LightningElement {
             key: `${i}:${f.name}`,
             name: f.name,
             size: formatBytes(b64Bytes(f.base64)),
-            removeLabel: `Remove ${f.name}`
+            removeLabel: t('Final_Run_RemoveFile', f.name)
         }));
+    }
+
+    get requiredTitle() {
+        return t('Final_Run_Required');
+    }
+
+    get ownAnswerPlaceholder() {
+        return t('Final_Run_OwnAnswerPlaceholder');
+    }
+
+    get unsupportedText() {
+        return t('Final_Run_UnsupportedElement');
     }
 
     get fileInputId() {
@@ -617,14 +631,16 @@ export default class FinalElementRenderer extends LightningElement {
     }
 
     get filePrompt() {
-        return this.fileMultiple ? 'Add files' : 'Add a file';
+        return this.fileMultiple
+            ? t('Final_Run_AddFiles')
+            : t('Final_Run_AddFile');
     }
 
     get fileHint() {
-        const cap = `up to ${formatBytes(MAX_FILE_BYTES)}`;
+        const cap = t('Final_Run_FileUpTo', formatBytes(MAX_FILE_BYTES));
         return this.cfg.accept
-            ? `${this.cfg.accept} · ${cap}`
-            : `Any file type · ${cap}`;
+            ? t('Final_Run_FileHintAccept', this.cfg.accept, cap)
+            : t('Final_Run_FileHintAny', cap);
     }
 
     get fileDropClass() {
@@ -709,12 +725,16 @@ export default class FinalElementRenderer extends LightningElement {
                 )
             );
         } catch {
-            this.fileError = 'That file could not be read.';
+            this.fileError = t('Final_Run_FileReadFailed');
             return;
         }
 
         this.fileError = oversize.length
-            ? `${oversize[0].name} is larger than ${formatBytes(MAX_FILE_BYTES)}.`
+            ? t(
+                  'Final_Run_FileTooLarge',
+                  oversize[0].name,
+                  formatBytes(MAX_FILE_BYTES)
+              )
             : undefined;
         this._commitFiles(
             this.fileMultiple ? [...this.fileValues, ...read] : read
@@ -939,9 +959,9 @@ export default class FinalElementRenderer extends LightningElement {
                 // one tab stop; arrows move within the group
                 tabIndex: isSel || (sel == null && v === min) ? '0' : '-1',
                 ariaLabel: this.isEmojiScale
-                    ? `${EMOJI_SENTIMENTS[v - min]}, ${v} of ${max}`
+                    ? t('Final_Run_EmojiOf', sentiment(v - min), v, max)
                     : this.isRating
-                      ? `${v} of ${max}`
+                      ? t('Final_Run_PageOf', v, max)
                       : String(v)
             });
         }
@@ -1001,9 +1021,9 @@ export default class FinalElementRenderer extends LightningElement {
         if (!left && !right) {
             return this.el.label;
         }
-        const lo = left ? `${s.min} = ${left}` : s.min;
-        const hi = right ? `${s.max} = ${right}` : s.max;
-        return `${this.el.label}, ${lo} to ${hi}`;
+        const lo = left ? t('Final_Run_ScaleEnd', s.min, left) : s.min;
+        const hi = right ? t('Final_Run_ScaleEnd', s.max, right) : s.max;
+        return t('Final_Run_SliderRange', this.el.label, lo, hi);
     }
 
     /** Feeds the track's filled-portion gradient (--sl-pct). */
@@ -1099,9 +1119,9 @@ export default class FinalElementRenderer extends LightningElement {
         const { min, max } = this.scaleBounds;
         const left = this.cfg.leftLabel;
         const right = this.cfg.rightLabel;
-        const lo = left ? `${min} = ${left}` : min;
-        const hi = right ? `${max} = ${right}` : max;
-        return `${lo} to ${hi}`;
+        const lo = left ? t('Final_Run_ScaleEnd', min, left) : min;
+        const hi = right ? t('Final_Run_ScaleEnd', max, right) : max;
+        return t('Final_Run_ScaleRange', lo, hi);
     }
 
     // ---- S4: likert · ranking · matrix (the promoted trio) ----
@@ -1117,11 +1137,11 @@ export default class FinalElementRenderer extends LightningElement {
             return authored;
         }
         return [
-            { value: 1, label: 'Strongly disagree' },
-            { value: 2, label: 'Disagree' },
-            { value: 3, label: 'Neutral' },
-            { value: 4, label: 'Agree' },
-            { value: 5, label: 'Strongly agree' }
+            { value: 1, label: t('Final_Run_StronglyDisagree') },
+            { value: 2, label: t('Final_Run_Disagree') },
+            { value: 3, label: t('Final_Run_Neutral') },
+            { value: 4, label: t('Final_Run_Agree') },
+            { value: 5, label: t('Final_Run_StronglyAgree') }
         ];
     }
 
@@ -1172,7 +1192,7 @@ export default class FinalElementRenderer extends LightningElement {
         const byValue = new Map(
             (this.cfg.options || []).map((o) => [
                 o.value,
-                o.label || '(untitled)'
+                o.label || t('Final_Run_Untitled')
             ])
         );
         const last = this.rankValues.length - 1;
@@ -1183,8 +1203,8 @@ export default class FinalElementRenderer extends LightningElement {
             position: index + 1,
             upDisabled: index === 0,
             downDisabled: index === last,
-            upLabel: `Move ${byValue.get(value) || value} up`,
-            downLabel: `Move ${byValue.get(value) || value} down`
+            upLabel: t('Final_Run_MoveUp', byValue.get(value) || value),
+            downLabel: t('Final_Run_MoveDown', byValue.get(value) || value)
         }));
     }
 
@@ -1249,10 +1269,10 @@ export default class FinalElementRenderer extends LightningElement {
             return authored;
         }
         return [
-            { value: 1, label: 'Disagree' },
-            { value: 2, label: 'Neutral' },
-            { value: 3, label: 'Agree' },
-            { value: 4, label: 'Strongly agree' }
+            { value: 1, label: t('Final_Run_Disagree') },
+            { value: 2, label: t('Final_Run_Neutral') },
+            { value: 3, label: t('Final_Run_Agree') },
+            { value: 4, label: t('Final_Run_StronglyAgree') }
         ];
     }
 
@@ -1276,7 +1296,7 @@ export default class FinalElementRenderer extends LightningElement {
             const hasPick = points.some((p) => p.value === picked);
             return {
                 key: r.value,
-                label: r.label || '(untitled)',
+                label: r.label || t('Final_Run_Untitled'),
                 cells: points.map((pt, i) => ({
                     key: `${r.value}:${pt.value}`,
                     row: r.value,
@@ -1399,8 +1419,8 @@ export default class FinalElementRenderer extends LightningElement {
 
     get yesNoItems() {
         const sel = this.choiceSelectedSet;
-        const yes = this.cfg.yesLabel || 'Yes';
-        const no = this.cfg.noLabel || 'No';
+        const yes = this.cfg.yesLabel || t('Final_Run_Yes');
+        const no = this.cfg.noLabel || t('Final_Run_No');
         return [
             {
                 value: 'true',
@@ -1517,7 +1537,7 @@ export default class FinalElementRenderer extends LightningElement {
         if (this.cfg.allowOther) {
             items.push({
                 value: '__other__',
-                display: 'Other…',
+                display: t('Final_Run_Other'),
                 cls: this._otherOn ? `${base} selected` : base,
                 ariaChecked: this._otherOn ? 'true' : 'false'
             });
@@ -1569,7 +1589,10 @@ export default class FinalElementRenderer extends LightningElement {
     }
 
     get otherAriaLabel() {
-        return `${this.el.label || 'This question'} — your own answer`;
+        return t(
+            'Final_Run_OtherAria',
+            this.el.label || t('Final_Run_ThisQuestion')
+        );
     }
 
     handleOtherText(event) {
@@ -1600,7 +1623,7 @@ export default class FinalElementRenderer extends LightningElement {
         const sel = this.choiceSelectedSet;
         return (this.cfg.options || []).map((o) => ({
             value: o.value,
-            label: o.label || '(untitled)',
+            label: o.label || t('Final_Run_Untitled'),
             url: o.url,
             hasImage: Boolean(o.url),
             cls: sel.has(o.value) ? 'ic-tile selected' : 'ic-tile',
@@ -1759,8 +1782,10 @@ export default class FinalElementRenderer extends LightningElement {
 
     handleChange(event) {
         // A checkbox's state lives in `checked`; `value` is a constant string.
-        const t = event.target;
-        this.dispatchValue(t.type === 'checkbox' ? t.checked : t.value);
+        const target = event.target;
+        this.dispatchValue(
+            target.type === 'checkbox' ? target.checked : target.value
+        );
     }
 
     /** Toggles + consent checkboxes answer with the boolean. */

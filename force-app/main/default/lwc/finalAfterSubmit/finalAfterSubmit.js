@@ -1,4 +1,5 @@
 import { LightningElement, api } from 'lwc';
+import { t } from 'c/finalTranslate';
 
 /**
  * finalAfterSubmit — the post-submit render (owner FormBuilder port, 2026-07-09).
@@ -13,11 +14,17 @@ import { LightningElement, api } from 'lwc';
  * Until then the same render doubles as the Design-mode preview.
  */
 
-const DEFAULT_MESSAGE = '<p>Thank you! Your response has been recorded.</p>';
+function defaultMessage() {
+    const text = t('Final_Run_ThankYou')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    return `<p>${text}</p>`;
+}
 
-const DEST_LABELS = {
-    record: 'the new / updated record',
-    url: 'the custom URL'
+const DEST_LABEL_NAMES = {
+    record: 'Final_Run_DestRecord',
+    url: 'Final_Run_DestUrl'
 };
 
 export default class FinalAfterSubmit extends LightningElement {
@@ -34,7 +41,7 @@ export default class FinalAfterSubmit extends LightningElement {
     }
 
     get message() {
-        return this.cfg.message || DEFAULT_MESSAGE;
+        return this.cfg.message || defaultMessage();
     }
 
     get title() {
@@ -47,7 +54,7 @@ export default class FinalAfterSubmit extends LightningElement {
     }
 
     get buttonLabel() {
-        return this.cfg.buttonLabel || 'Continue';
+        return this.cfg.buttonLabel || t('Final_Run_Continue');
     }
 
     get showRedirect() {
@@ -55,7 +62,9 @@ export default class FinalAfterSubmit extends LightningElement {
     }
 
     get redirectDest() {
-        return DEST_LABELS[this.cfg.redirectTo] || DEST_LABELS.record;
+        return t(
+            DEST_LABEL_NAMES[this.cfg.redirectTo] || DEST_LABEL_NAMES.record
+        );
     }
 
     get redirectDelay() {
@@ -64,7 +73,11 @@ export default class FinalAfterSubmit extends LightningElement {
     }
 
     get redirectPill() {
-        return `Redirecting to ${this.redirectDest} in ${this.redirectDelay} seconds…`;
+        return t('Final_Run_RedirectIn', this.redirectDest, this.redirectDelay);
+    }
+
+    get toastText() {
+        return t('Final_Run_Success');
     }
 
     get toastRedirectLine() {

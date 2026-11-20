@@ -25,6 +25,190 @@ public without sharing class FinalGuestController {
     private static final String UNAVAILABLE = 'This form is not available.';
     private static final String VERSION_CHANGED = 'This form changed. Reload it before submitting.';
 
+    // BEGIN RUNTIME_LABEL_NAMES
+    // The Custom Labels the respondent runtime reads (labels/
+    // CustomLabels.labels-meta.xml). A jest test keeps this list in sync with
+    // the metadata file and c/finalTranslate/defaults.js.
+    @TestVisible
+    private static final List<String> RUNTIME_LABEL_NAMES = new List<String>{
+        'Final_Run_Submit',
+        'Final_Run_Next',
+        'Final_Run_Back',
+        'Final_Run_Continue',
+        'Final_Run_Submitting',
+        'Final_Run_Retry',
+        'Final_Run_TryAgain',
+        'Final_Run_Cancel',
+        'Final_Run_Delete',
+        'Final_Run_Undo',
+        'Final_Run_Required',
+        'Final_Run_Logo',
+        'Final_Run_PageOf',
+        'Final_Run_StepOf',
+        'Final_Run_StepN',
+        'Final_Run_Pages',
+        'Final_Run_FormPages',
+        'Final_Run_FormSteps',
+        'Final_Run_PressCtrlEnter',
+        'Final_Run_PressReturn',
+        'Final_Run_ExpandCollapse',
+        'Final_Run_LoadingForm',
+        'Final_Run_LoadingRecord',
+        'Final_Run_FillingDetails',
+        'Final_Run_FormCouldNotLoad',
+        'Final_Run_FormUnavailable',
+        'Final_Run_FormClosed',
+        'Final_Run_UnsupportedSpec',
+        'Final_Run_WrongPageCreate',
+        'Final_Run_WrongPageEdit',
+        'Final_Run_SurveyNeedsRecord',
+        'Final_Run_EditNeedsRecord',
+        'Final_Run_RecordLoadFailed',
+        'Final_Run_AutofillFailed',
+        'Final_Run_SaveFailed',
+        'Final_Run_AnswersRejected',
+        'Final_Run_AnswerRejected',
+        'Final_Run_CheckSelection',
+        'Final_Run_FixFieldsContinueOne',
+        'Final_Run_FixFieldsContinueMany',
+        'Final_Run_FixFieldsSubmitOne',
+        'Final_Run_FixFieldsSubmitMany',
+        'Final_Run_ValueNotValid',
+        'Final_Run_PleaseAnswer',
+        'Final_Run_MinEntriesOne',
+        'Final_Run_MinEntriesMany',
+        'Final_Run_Success',
+        'Final_Run_ThankYou',
+        'Final_Run_RedirectIn',
+        'Final_Run_DestRecord',
+        'Final_Run_DestUrl',
+        'Final_Run_RecordNoun',
+        'Final_Run_PluralOf',
+        'Final_Run_ListNoYet',
+        'Final_Run_ListLoading',
+        'Final_Run_ListLoadFailed',
+        'Final_Run_ListHoldsUpTo',
+        'Final_Run_ListShowingAdd',
+        'Final_Run_ListShowing',
+        'Final_Run_OpenRecord',
+        'Final_Run_OpenOne',
+        'Final_Run_OpensNewTab',
+        'Final_Run_NoValue',
+        'Final_Run_ViewAll',
+        'Final_Run_Row',
+        'Final_Run_Actions',
+        'Final_Run_New',
+        'Final_Run_NewEntry',
+        'Final_Run_ViewOnly',
+        'Final_Run_ViewOnlySr',
+        'Final_Run_Open',
+        'Final_Run_EntryDefault',
+        'Final_Run_AddAnother',
+        'Final_Run_RemoveEntry',
+        'Final_Run_RowN',
+        'Final_Run_NameN',
+        'Final_Run_DeleteConflict',
+        'Final_Run_WillBeDeleted',
+        'Final_Run_DeleteRowAria',
+        'Final_Run_DeleteRowConfirm',
+        'Final_Run_UndoDeleteAria',
+        'Final_Run_OwnAnswerPlaceholder',
+        'Final_Run_Other',
+        'Final_Run_ThisQuestion',
+        'Final_Run_OtherAria',
+        'Final_Run_Untitled',
+        'Final_Run_UnsupportedElement',
+        'Final_Run_Yes',
+        'Final_Run_No',
+        'Final_Run_VeryUnhappy',
+        'Final_Run_Unhappy',
+        'Final_Run_Neutral',
+        'Final_Run_Happy',
+        'Final_Run_VeryHappy',
+        'Final_Run_StronglyDisagree',
+        'Final_Run_Disagree',
+        'Final_Run_Agree',
+        'Final_Run_StronglyAgree',
+        'Final_Run_EmojiOf',
+        'Final_Run_ScaleEnd',
+        'Final_Run_ScaleRange',
+        'Final_Run_SliderRange',
+        'Final_Run_MoveUp',
+        'Final_Run_MoveDown',
+        'Final_Run_AddFile',
+        'Final_Run_AddFiles',
+        'Final_Run_FileUpTo',
+        'Final_Run_FileHintAny',
+        'Final_Run_FileHintAccept',
+        'Final_Run_RemoveFile',
+        'Final_Run_FileReadFailed',
+        'Final_Run_FileTooLarge',
+        'Final_Run_SearchPlaceholder',
+        'Final_Run_ClearNamed',
+        'Final_Run_ClearSelection',
+        'Final_Run_ResultsNamed',
+        'Final_Run_SearchResults',
+        'Final_Run_ThisSelection',
+        'Final_Run_SelectionStale',
+        'Final_Run_Searching',
+        'Final_Run_TypeMore',
+        'Final_Run_NoMatches',
+        'Final_Run_ResultOne',
+        'Final_Run_ResultsMany'
+    };
+    // END RUNTIME_LABEL_NAMES
+
+    /**
+     * The built-in respondent words (Custom Labels named Final_Run_*) in ONE
+     * language, for guests and ?lang= links. A Custom Label resolves to the
+     * RUNNING user's language, and a guest is the site's guest user, so the
+     * browser could never change them; this reads each label in the asked
+     * language instead. Only names that have a translation are returned, so the
+     * English imports in the browser stay the fallback. Touches no data.
+     */
+    @AuraEnabled(cacheable=true)
+    public static Map<String, String> runtimeLabels(String lang) {
+        Map<String, String> out = new Map<String, String>();
+        String code = normalizeLang(lang);
+        if (code == null) {
+            return out;
+        }
+        String ns = labelNamespace();
+        try {
+            for (String name : RUNTIME_LABEL_NAMES) {
+                if (System.Label.translationExists(ns, name, code)) {
+                    out.put(name, System.Label.get(ns, name, code));
+                }
+            }
+        } catch (Exception e) {
+            // a language the org does not support: no translations, no error
+            return new Map<String, String>();
+        }
+        return out;
+    }
+
+    /** "fr", "fr_CA" or "fr-CA" -> "fr" / "fr_CA"; anything else -> null. */
+    @TestVisible
+    private static String normalizeLang(String lang) {
+        if (
+            String.isBlank(lang) ||
+            !Pattern.matches('^[a-z]{2,3}([_-][A-Za-z]{2})?$', lang.trim())
+        ) {
+            return null;
+        }
+        List<String> parts = lang.trim().split('[_-]');
+        return parts.size() > 1
+            ? parts[0] + '_' + parts[1].toUpperCase()
+            : parts[0];
+    }
+
+    /** The package namespace ('' when unmanaged), from this class's own name. */
+    private static String labelNamespace() {
+        String full = FinalGuestController.class.getName();
+        Integer dot = full.indexOf('.');
+        return dot > 0 ? full.substring(0, dot) : '';
+    }
+
     @AuraEnabled(cacheable=true)
     public static String getGuestSpec(Id formId) {
         Form__c f = gate(formId);

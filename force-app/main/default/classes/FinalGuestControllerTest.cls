@@ -480,4 +480,64 @@ private class FinalGuestControllerTest {
             'a step id leaked to a guest'
         );
     }
+
+    // ----- runtimeLabels (built-in words, Custom Labels) -----
+
+    @IsTest
+    static void runtimeLabels_badLanguageIsEmpty() {
+        for (
+            String bad : new List<String>{
+                null,
+                '',
+                '  ',
+                'FR',
+                'french',
+                'f',
+                'fr_',
+                'fr-CAN',
+                'en_US_x',
+                'fr; DROP'
+            }
+        ) {
+            Assert.isTrue(
+                FinalGuestController.runtimeLabels(bad).isEmpty(),
+                'expected no labels for ' + bad
+            );
+        }
+    }
+
+    @IsTest
+    static void runtimeLabels_noTranslationsIsEmptyAndDoesNotThrow() {
+        // 'xx' is well-formed but not a real language. Salesforce treats an
+        // unknown code as the default language (translationExists = true,
+        // value = the default text; checked in the org 2026-11-19), so the
+        // map may hold default text. It must never throw or hold blanks.
+        Map<String, String> out = FinalGuestController.runtimeLabels('xx');
+        Assert.isNotNull(out);
+        for (String name : out.keySet()) {
+            Assert.isTrue(String.isNotBlank(out.get(name)), name + ' is blank');
+        }
+    }
+
+    @IsTest
+    static void runtimeLabels_acceptsBothRegionSpellings() {
+        Assert.areEqual('fr_CA', FinalGuestController.normalizeLang('fr-CA'));
+        Assert.areEqual('fr_CA', FinalGuestController.normalizeLang('fr_ca'));
+        Assert.areEqual('fr', FinalGuestController.normalizeLang('fr'));
+        Assert.areEqual('haw', FinalGuestController.normalizeLang(' haw '));
+        Assert.isNull(FinalGuestController.normalizeLang('FR'));
+        // well-formed but untranslated: no error either way
+        FinalGuestController.runtimeLabels('fr-CA');
+        FinalGuestController.runtimeLabels('fr_CA');
+    }
+
+    @IsTest
+    static void runtimeLabels_everyNameIsAFinalRunLabel() {
+        Assert.isFalse(FinalGuestController.RUNTIME_LABEL_NAMES.isEmpty());
+        Set<String> seen = new Set<String>();
+        for (String name : FinalGuestController.RUNTIME_LABEL_NAMES) {
+            Assert.isTrue(name.startsWith('Final_Run_'), name);
+            Assert.isTrue(seen.add(name), 'duplicate ' + name);
+        }
+    }
 }
