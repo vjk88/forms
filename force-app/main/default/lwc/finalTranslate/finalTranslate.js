@@ -9,6 +9,8 @@
  */
 import { EN } from './defaults';
 import runtimeLabels from '@salesforce/apex/FinalGuestController.runtimeLabels';
+import USER_LANG from '@salesforce/i18n/lang';
+import IS_GUEST from '@salesforce/user/isGuest';
 import Final_Run_Submit from '@salesforce/label/c.Final_Run_Submit';
 import Final_Run_Next from '@salesforce/label/c.Final_Run_Next';
 import Final_Run_Back from '@salesforce/label/c.Final_Run_Back';
@@ -353,4 +355,264 @@ export async function loadLanguage(lang) {
         // fall back silently to the imported (running user's language) labels
         clearLabelOverrides();
     }
+}
+
+// ---------------------------------------------------------------------------
+// Author text in the spec (IMPL_PLAN_TRANSLATIONS §1-§2, PR 2)
+// ---------------------------------------------------------------------------
+
+/**
+ * EVERY author-written text the respondent sees, in ONE table, shared by
+ * localizeSpec (swap) and listTexts (future export). A property missing here
+ * stays in the default language, so a new text property gets a row here and
+ * the inventory test (finalTranslate.test.js) fails until it does.
+ *
+ * Each row is [key, dotted path]. Paths are read from the spec root, the page,
+ * the section or the element. Never listed: choice/point/row VALUES, ids, URLs,
+ * icons, config.accept, schemaOptions (Salesforce's own picklist labels).
+ */
+export const TEXT_KEYS = {
+    root: [
+        ['header.title', 'header.title'],
+        ['header.description', 'header.description'],
+        ['header.brandName', 'header.brandName'],
+        ['header.highlight', 'header.highlight.text'],
+        ['pane.title', 'layout.options.paneTitle'],
+        ['pane.subtitle', 'layout.options.paneSubtitle'],
+        ['pane.brandName', 'layout.options.paneBrandName'],
+        ['pane.highlight', 'layout.options.paneHighlight.text'],
+        ['submit.label', 'submit.label'],
+        ['submit.nextLabel', 'submit.nextLabel'],
+        ['submit.backLabel', 'submit.backLabel'],
+        ['layout.advanceLabel', 'layout.options.advanceLabel'],
+        ['done.title', 'settings.completion.title'],
+        ['done.message', 'settings.completion.message'],
+        ['done.buttonLabel', 'settings.completion.buttonLabel'],
+        ['closed.message', 'settings.availability.closedMessage']
+    ],
+    // key = `page:<id>.<name>`; a page with no id is keyed by its index
+    page: [['name', 'name']],
+    // key = `sec:<id>.<name>`; {index} stays as written in repeat.entryLabel
+    section: [
+        ['title', 'title'],
+        ['description', 'description'],
+        ['addLabel', 'repeat.addLabel'],
+        ['removeLabel', 'repeat.removeLabel'],
+        ['entryLabel', 'repeat.entryLabel']
+    ],
+    // key = `el:<id>.<name>`
+    element: [
+        ['label', 'label'],
+        ['help', 'help'],
+        ['description', 'description'],
+        ['placeholder', 'placeholder'],
+        ['leftLabel', 'config.leftLabel'],
+        ['rightLabel', 'config.rightLabel'],
+        ['yesLabel', 'config.yesLabel'],
+        ['noLabel', 'config.noLabel'],
+        ['valuePrefix', 'config.valuePrefix'],
+        ['valueSuffix', 'config.valueSuffix'],
+        ['html', 'config.html'],
+        ['alt', 'config.alt']
+    ],
+    // key = `el:<id>.<prefix>:<item id>`; value rows are keyed by the stored
+    // value, never the label; validation entries by their position
+    elementLists: [
+        { prefix: 'opt', list: 'config.options', text: 'label', by: 'value' },
+        {
+            prefix: 'optdesc',
+            list: 'config.options',
+            text: 'description',
+            by: 'value'
+        },
+        { prefix: 'point', list: 'config.points', text: 'label', by: 'value' },
+        { prefix: 'row', list: 'config.rows', text: 'label', by: 'value' },
+        { prefix: 'msg', list: 'validation', text: 'message', by: 'index' }
+    ]
+};
+
+function getAt(obj, path) {
+    let cur = obj;
+    for (const part of path) {
+        if (cur === null || typeof cur !== 'object') {
+            return undefined;
+        }
+        cur = cur[part];
+    }
+    return cur;
+}
+
+function asArray(value) {
+    return Array.isArray(value) ? value : [];
+}
+
+function isObject(value) {
+    return Boolean(value) && typeof value === 'object';
+}
+
+function listElementTexts(add, el, elPath) {
+    TEXT_KEYS.element.forEach(([name, dotted]) =>
+        add(`el:${el.id}.${name}`, [...elPath, ...dotted.split('.')])
+    );
+    TEXT_KEYS.elementLists.forEach((row) => {
+        const listPath = row.list.split('.');
+        asArray(getAt(el, listPath)).forEach((item, ii) => {
+            const id = row.by === 'index' ? ii : item && item.value;
+            if (id === undefined || id === null || id === '') {
+                return;
+            }
+            add(`el:${el.id}.${row.prefix}:${id}`, [
+                ...elPath,
+                ...listPath,
+                ii,
+                row.text
+            ]);
+        });
+    });
+}
+
+function listSectionTexts(add, section, secPath) {
+    if (section.id) {
+        TEXT_KEYS.section.forEach(([name, dotted]) =>
+            add(`sec:${section.id}.${name}`, [...secPath, ...dotted.split('.')])
+        );
+    }
+    asArray(section.elements).forEach((el, ei) => {
+        if (isObject(el) && el.id) {
+            listElementTexts(add, el, [...secPath, 'elements', ei]);
+        }
+    });
+}
+
+/** Every author text in `spec` as { key, path, text } (path from the root). */
+export function listTexts(spec) {
+    const out = [];
+    if (!isObject(spec)) {
+        return out;
+    }
+    const add = (key, path) => {
+        const text = getAt(spec, path);
+        if (typeof text === 'string' && text !== '') {
+            out.push({ key, path, text });
+        }
+    };
+    TEXT_KEYS.root.forEach(([key, dotted]) => add(key, dotted.split('.')));
+    asArray(spec.pages).forEach((page, pi) => {
+        if (!isObject(page)) {
+            return;
+        }
+        const pageId = page.id === undefined || page.id === null ? pi : page.id;
+        TEXT_KEYS.page.forEach(([name, dotted]) =>
+            add(`page:${pageId}.${name}`, ['pages', pi, ...dotted.split('.')])
+        );
+        asArray(page.sections).forEach((section, si) => {
+            if (isObject(section)) {
+                listSectionTexts(add, section, ['pages', pi, 'sections', si]);
+            }
+        });
+    });
+    return out;
+}
+
+function setAt(obj, path, value) {
+    let cur = obj;
+    for (let i = 0; i < path.length - 1; i++) {
+        cur = cur[path[i]];
+    }
+    cur[path[path.length - 1]] = value;
+}
+
+function baseOf(code) {
+    return code ? code.split('_')[0] : null;
+}
+
+/** Matching rule shared with Apex FinalSpecLanguage: exact, then the
+ *  candidate's base language (fr_CA -> fr), then an offered regional variant
+ *  of that base (fr -> fr_CA). Returns the code as offered, or null. */
+function matchAvailable(candidate, available) {
+    const code = normalizeLanguage(candidate);
+    if (!code) {
+        return null;
+    }
+    const base = baseOf(code);
+    return (
+        available.find((a) => a === code) ||
+        available.find((a) => a === base) ||
+        available.find((a) => baseOf(a) === base) ||
+        null
+    );
+}
+
+function availableOf(spec) {
+    return asArray(spec.languages.available)
+        .map(normalizeLanguage)
+        .filter(Boolean);
+}
+
+function defaultBrowserLanguages() {
+    if (typeof navigator === 'undefined') {
+        return [];
+    }
+    return navigator.languages || [navigator.language];
+}
+
+/**
+ * The form language for this visit, limited to `languages.available`.
+ * Order: link param -> the signed-in user's language (never a guest's: a
+ * guest's is the site guest user's) -> each browser language -> the default.
+ * Without `spec.languages` the old rule holds: the link param only.
+ */
+export function pickLanguage({ spec, param, userLang, browserLangs } = {}) {
+    if (!spec || !spec.languages) {
+        return normalizeLanguage(param);
+    }
+    const available = availableOf(spec);
+    let own = userLang;
+    if (own === undefined) {
+        own = IS_GUEST ? null : USER_LANG;
+    }
+    const browser =
+        browserLangs === undefined ? defaultBrowserLanguages() : browserLangs;
+    for (const c of [param, own, ...asArray(browser)]) {
+        const hit = c ? matchAvailable(c, available) : null;
+        if (hit) {
+            return hit;
+        }
+    }
+    return normalizeLanguage(spec.languages.default);
+}
+
+/**
+ * A copy of `spec` with every inventoried author text replaced from
+ * `spec.translations[lang]` (the exact code, else its base language). A key
+ * with no translation keeps the default text. Never mutates the input; with
+ * no language, the default language or no translations it returns `spec`.
+ */
+export function localizeSpec(spec, lang) {
+    const code = normalizeLanguage(lang);
+    if (!spec || !code || !isObject(spec.translations)) {
+        return spec;
+    }
+    const def = spec.languages && normalizeLanguage(spec.languages.default);
+    if (def && def === code) {
+        return spec;
+    }
+    const candidates = [
+        spec.translations[code],
+        spec.translations[baseOf(code)]
+    ];
+    const tables = candidates.filter(isObject);
+    if (!tables.length) {
+        return spec;
+    }
+    const copy = JSON.parse(JSON.stringify(spec));
+    for (const { key, path } of listTexts(spec)) {
+        const hit = tables
+            .map((x) => x[key])
+            .find((v) => typeof v === 'string' && v !== '');
+        if (hit !== undefined) {
+            setAt(copy, path, hit);
+        }
+    }
+    return copy;
 }

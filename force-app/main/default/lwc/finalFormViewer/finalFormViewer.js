@@ -1,5 +1,12 @@
 import { LightningElement, api, wire } from 'lwc';
-import { t, tn, resolveLanguage, loadLanguage } from 'c/finalTranslate';
+import {
+    t,
+    tn,
+    resolveLanguage,
+    loadLanguage,
+    pickLanguage,
+    localizeSpec
+} from 'c/finalTranslate';
 import { CurrentPageReference, NavigationMixin } from 'lightning/navigation';
 import { getRecord, notifyRecordUpdateAvailable } from 'lightning/uiRecordApi';
 import { getObjectInfo } from 'lightning/uiObjectInfoApi';
@@ -466,6 +473,8 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     _urlLinkToken;
     /** The language whose built-in words are loaded (null = defaults). */
     _languageLoaded = null;
+    /** The language chosen for this visit (null = none asked for). */
+    _lang = null;
     /** `formId|token` whose link context was requested — one fetch per link. */
     _linkCtxKey;
     /** True while the link's values load: shows the spinner, holds Submit. */
@@ -812,20 +821,39 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         return resolveLanguage({ param: state.c__lang || state.lang });
     }
 
-    async _apply(spec, { preserveNav } = {}) {
-        // Built-in words in the asked language must be in place before any
-        // child renders. With no language param nothing is awaited.
-        const wanted = this._wantedLanguage();
+    async _apply(incoming, { preserveNav } = {}) {
+        // The language for this visit (link, user, browser, form default; see
+        // pickLanguage). Built-in words must be in place before any child
+        // renders; with no language block and no param nothing is awaited.
+        // In the Studio (authoring) the preview shows the form's default
+        // language unless the URL asks for one: the author's own Salesforce or
+        // browser language must not flip the text they are editing.
+        const wanted = pickLanguage(
+            this.authoring
+                ? {
+                      spec: incoming,
+                      param: this._wantedLanguage(),
+                      userLang: null,
+                      browserLangs: []
+                  }
+                : { spec: incoming, param: this._wantedLanguage() }
+        );
+        this._lang = wanted;
         if (wanted !== this._languageLoaded) {
             this._languageLoaded = wanted;
             await loadLanguage(wanted);
         }
+        // Everything below (render, rules, messages, header/pane copy) reads
+        // the swapped copy. `incoming` stays the author's default-language
+        // spec: it is what a re-apply starts from, and nothing is ever saved
+        // or emitted from the copy.
+        const spec = localizeSpec(incoming, wanted);
         const seq = (this._applySeq = (this._applySeq || 0) + 1);
         this._submitGeneration += 1;
         this._submitting = false;
         if (this._requiresEditRecord(spec) || this._editState !== 'inactive')
             this.model = null;
-        this._editSpec = spec;
+        this._editSpec = incoming;
         this._editGeneration += 1;
         this._editReaders = [];
         if (this._requiresEditRecord(spec)) this._editState = 'loading';
@@ -3953,6 +3981,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             // (FREEFORM_SPEC D15). A new key is minted only for a new form.
             submissionKey: this._submissionKey()
         };
+        if (this._lang) {
+            meta.lang = this._lang;
+        }
         if (this._recordCtx) {
             // survey-object writeback context — server re-validates the type
             // and walks the SPEC for mappings; never guest (guard in _apply)

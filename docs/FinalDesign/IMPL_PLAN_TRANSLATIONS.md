@@ -124,7 +124,7 @@ In the Studio **Settings drawer**, a new **Languages** section:
    link parameter, labels follow the running user's language (standard Salesforce, the same as bound field
    labels). `?lang=` / `c__lang=` swaps only the built-in words in PR 1. Automatic browser language waits
    for PR 2, so a guest never gets French buttons on English questions.
-2. **Author text inventory, spec translations, swap:** the text-property inventory and its guard test;
+2. **DONE 2026-11-19 (PR 2).** In the Studio (authoring) the preview ignores the author's own and browser language; only `?lang=` changes it. Server messages other than the closed message stay default-language for now. **Author text inventory, spec translations, swap:** the text-property inventory and its guard test;
    `languages` / `translations` in the spec schema, `localizeSpec`, the full `resolveLanguage` order limited to
    the form's `available` languages, viewer wiring, the publish snapshot and overflow test.
    Respondent-facing **server** messages (e.g. `FinalAnswerValidator` "required") take the language from the

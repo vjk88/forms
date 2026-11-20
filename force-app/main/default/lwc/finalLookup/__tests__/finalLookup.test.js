@@ -324,4 +324,23 @@ describe('c-final-lookup', () => {
             'No matches'
         );
     });
+
+    describe('placeholder', () => {
+        it('shows the built-in one when the author left it unset', () => {
+            const el = mount();
+            expect(input(el).placeholder).toBe('Search...');
+        });
+
+        it('shows the built-in one when the host passes undefined or blank', () => {
+            const el = mount({ placeholder: undefined });
+            expect(input(el).placeholder).toBe('Search...');
+            const blank = mount({ placeholder: '' });
+            expect(input(blank).placeholder).toBe('Search...');
+        });
+
+        it('keeps an authored placeholder', () => {
+            const el = mount({ placeholder: 'Find a contact' });
+            expect(input(el).placeholder).toBe('Find a contact');
+        });
+    });
 });

@@ -197,6 +197,36 @@ private class FinalSpecControllerTest {
     }
 
     @IsTest
+    static void publishKeepsLanguagesAndTranslationsInTheSnapshot() {
+        Form__c form = [SELECT Id FROM Form__c LIMIT 1];
+        String spec =
+            '{"specVersion":1,' +
+            '"languages":{"default":"en_US","available":["en_US","fr"],"showSwitcher":true},' +
+            '"translations":{"fr":{"el:q_1.label":"Votre nom","el:q_1.opt:yes":"Oui"}},' +
+            '"resolved":{"tokens":{"--c-accent":"#123456"},"engineVersion":1,' +
+            '"resolvedAt":"2026-07-06T00:00:00Z"}}';
+
+        Test.startTest();
+        FinalSpecController.publishSpec(form.Id, spec);
+        Test.stopTest();
+
+        Map<String, Object> served = (Map<String, Object>) JSON.deserializeUntyped(
+            (String) FinalSpecController.getSpecEnvelope(form.Id, null)
+                .get('spec')
+        );
+        Map<String, Object> languages = (Map<String, Object>) served.get(
+            'languages'
+        );
+        Assert.areEqual('en_US', languages.get('default'));
+        Map<String, Object> fr = (Map<String, Object>) ((Map<String, Object>) served.get(
+                'translations'
+            ))
+            .get('fr');
+        Assert.areEqual('Votre nom', fr.get('el:q_1.label'));
+        Assert.areEqual('Oui', fr.get('el:q_1.opt:yes'));
+    }
+
+    @IsTest
     static void publishStampsFormPublished() {
         Form__c form = [SELECT Id FROM Form__c LIMIT 1];
 
