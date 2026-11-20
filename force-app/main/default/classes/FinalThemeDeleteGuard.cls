@@ -31,12 +31,18 @@ public without sharing class FinalThemeDeleteGuard {
 
         Map<Id, List<String>> formsByTheme = new Map<Id, List<String>>();
         for (Form_Version__c v : [
-            SELECT Id, Form__c, Form__r.Name, Spec_JSON__c
+            SELECT
+                Id,
+                Form__c,
+                Form__r.Name,
+                Spec_JSON__c,
+                Spec_JSON_2__c,
+                Spec_JSON_3__c
             FROM Form_Version__c
             WHERE Id IN :workingIds
             WITH SYSTEM_MODE
         ]) {
-            String spec = v.Spec_JSON__c;
+            String spec = FinalSpecStore.read(v);
             if (String.isBlank(spec)) {
                 continue; // nothing to match
             }

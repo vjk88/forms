@@ -406,6 +406,54 @@ private class FinalGuestLinkTest {
         );
     }
 
+    @isTest
+    static void invocableEdgeCasesAndTrackedLinks() {
+        grantJobAppAccess();
+        Form__c form = makeGuestSurvey('Invoke edges');
+        Form__c gone = new Form__c(
+            Name = 'Deleted',
+            Primary_Context_Object__c = 'Contact'
+        );
+        insert gone;
+        Id goneId = gone.Id;
+        delete gone;
+        List<FinalSurveyLinkInvocable.Result> results;
+        System.runAs(new User(Id = UserInfo.getUserId())) {
+            Job_Application__c ja = makeRecord();
+            FinalSurveyLinkInvocable.Request noForm = new FinalSurveyLinkInvocable.Request();
+            noForm.recordId = ja.Id;
+            FinalSurveyLinkInvocable.Request missing = new FinalSurveyLinkInvocable.Request();
+            missing.formId = goneId;
+            missing.recordId = ja.Id;
+            FinalSurveyLinkInvocable.Request tracked = new FinalSurveyLinkInvocable.Request();
+            tracked.formId = form.Id;
+            tracked.recordId = ja.Id;
+            tracked.tracked = true;
+            tracked.singleUse = true;
+            tracked.ttlDays = 3;
+            Test.startTest();
+            Assert.isTrue(
+                FinalSurveyLinkInvocable.createLinks(null).isEmpty(),
+                'no requests, no results'
+            );
+            results = FinalSurveyLinkInvocable.createLinks(
+                new List<FinalSurveyLinkInvocable.Request>{
+                    noForm,
+                    missing,
+                    tracked
+                }
+            );
+            Test.stopTest();
+        }
+        Assert.areEqual('Form Id is required.', results[0].error);
+        Assert.areEqual('FORM_NOT_FOUND', results[1].error);
+        Assert.isTrue(
+            String.isNotBlank(results[2].token),
+            'a tracked link still mints a token'
+        );
+        Assert.isTrue(results[2].query.contains('c__rt='), 'query is ready');
+    }
+
     // ---------------------------------------------------------- Tier 2
 
     private static String subPayload(String token) {

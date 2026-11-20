@@ -69,14 +69,14 @@ public with sharing class FinalSurveyObjectController {
         }
         List<Form_Version__c> versions = versionId != null
             ? [
-                  SELECT Spec_JSON__c
+                  SELECT Spec_JSON__c, Spec_JSON_2__c, Spec_JSON_3__c
                   FROM Form_Version__c
                   WHERE Id = :versionId
                   WITH USER_MODE
                   LIMIT 1
               ]
             : [
-                  SELECT Spec_JSON__c
+                  SELECT Spec_JSON__c, Spec_JSON_2__c, Spec_JSON_3__c
                   FROM Form_Version__c
                   WHERE Form__c = :formId AND Is_Active__c = TRUE
                   WITH USER_MODE
@@ -88,7 +88,7 @@ public with sharing class FinalSurveyObjectController {
         }
         Ctx ctx = new Ctx();
         ctx.spec = (Map<String, Object>) JSON.deserializeUntyped(
-            versions[0].Spec_JSON__c
+            FinalSpecStore.read(versions[0])
         );
         ctx.recordId = recordId;
         Map<String, Object> formNode = (Map<String, Object>) ctx.spec.get(

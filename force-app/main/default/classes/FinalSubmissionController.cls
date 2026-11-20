@@ -32,7 +32,9 @@ public with sharing class FinalSubmissionController {
                 Form__r.Name,
                 Form_Version__c,
                 Form_Version__r.Version_Number__c,
-                Form_Version__r.Spec_JSON__c
+                Form_Version__r.Spec_JSON__c,
+                Form_Version__r.Spec_JSON_2__c,
+                Form_Version__r.Spec_JSON_3__c
             FROM Form_Submission__c
             WHERE Id = :submissionId
             WITH USER_MODE
@@ -94,7 +96,7 @@ public with sharing class FinalSubmissionController {
             // The spec AS PUBLISHED when this submission was filled in.
             'specJson' => sub.Form_Version__r == null
                 ? null
-                : sub.Form_Version__r.Spec_JSON__c,
+                : FinalSpecStore.read(sub.Form_Version__r),
             'answers' => answers,
             'files' => fileLinks(submissionId)
         };

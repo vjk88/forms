@@ -93,18 +93,18 @@ public with sharing class FinalSurveyLinkInvocable {
         );
         Map<Id, Map<String, Object>> specByFormId = new Map<Id, Map<String, Object>>();
         for (Form_Version__c v : [
-            SELECT Form__c, Spec_JSON__c
+            SELECT Form__c, Spec_JSON__c, Spec_JSON_2__c, Spec_JSON_3__c
             FROM Form_Version__c
             WHERE Form__c IN :formIds AND Is_Active__c = TRUE
             WITH USER_MODE
             ORDER BY Version_Number__c ASC
         ]) {
-            if (String.isNotBlank(v.Spec_JSON__c)) {
+            if (String.isNotBlank(FinalSpecStore.read(v))) {
                 try {
                     specByFormId.put(
                         v.Form__c,
                         (Map<String, Object>) JSON.deserializeUntyped(
-                            v.Spec_JSON__c
+                            FinalSpecStore.read(v)
                         )
                     );
                 } catch (Exception ignored) {

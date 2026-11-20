@@ -31,7 +31,12 @@ public with sharing class FinalSpecController {
             List<Form_Version__c> versions;
             if (versionId != null) {
                 versions = [
-                    SELECT Id, Form__c, Spec_JSON__c
+                    SELECT
+                        Id,
+                        Form__c,
+                        Spec_JSON__c,
+                        Spec_JSON_2__c,
+                        Spec_JSON_3__c
                     FROM Form_Version__c
                     WHERE Id = :versionId
                     WITH USER_MODE
@@ -39,7 +44,12 @@ public with sharing class FinalSpecController {
                 ];
             } else if (formId != null) {
                 versions = [
-                    SELECT Id, Form__c, Spec_JSON__c
+                    SELECT
+                        Id,
+                        Form__c,
+                        Spec_JSON__c,
+                        Spec_JSON_2__c,
+                        Spec_JSON_3__c
                     FROM Form_Version__c
                     WHERE Form__c = :formId AND Is_Active__c = TRUE
                     WITH USER_MODE
@@ -52,7 +62,8 @@ public with sharing class FinalSpecController {
                 );
             }
             if (
-                versions.isEmpty() || String.isBlank(versions[0].Spec_JSON__c)
+                versions.isEmpty() ||
+                String.isBlank(FinalSpecStore.read(versions[0]))
             ) {
                 throw new AuraHandledException(
                     'No published specification found for this form.'
@@ -61,7 +72,7 @@ public with sharing class FinalSpecController {
             return new Map<String, Object>{
                 'versionId' => versions[0].Id,
                 'formId' => versions[0].Form__c,
-                'spec' => versions[0].Spec_JSON__c
+                'spec' => FinalSpecStore.read(versions[0])
             };
         } catch (AuraHandledException e) {
             throw e;
@@ -165,7 +176,7 @@ public with sharing class FinalSpecController {
             Decimal nextNumber = latest == null ? 1 : latest + 1;
 
             List<Form_Version__c> actives = [
-                SELECT Id, Spec_JSON__c
+                SELECT Id, Spec_JSON__c, Spec_JSON_2__c, Spec_JSON_3__c
                 FROM Form_Version__c
                 WHERE Form__c = :formId AND Is_Active__c = TRUE
                 WITH USER_MODE
@@ -173,11 +184,12 @@ public with sharing class FinalSpecController {
 
             Boolean disclosureChanged = false;
             if (
-                !actives.isEmpty() && String.isNotBlank(actives[0].Spec_JSON__c)
+                !actives.isEmpty() &&
+                String.isNotBlank(FinalSpecStore.read(actives[0]))
             ) {
                 try {
                     Map<String, Object> oldSpec = (Map<String, Object>) JSON.deserializeUntyped(
-                        actives[0].Spec_JSON__c
+                        FinalSpecStore.read(actives[0])
                     );
                     disclosureChanged = FinalAutofillService.hasGuestDisclosureChanged(
                         oldSpec,
@@ -206,9 +218,9 @@ public with sharing class FinalSpecController {
                 Form__c = formId,
                 Version_Number__c = nextNumber,
                 Is_Active__c = true,
-                Spec_JSON__c = specJson,
                 Engine_Version__c = engineVersion
             );
+            FinalSpecStore.write(published, specJson);
             insert as user published;
 
             // Gate writer (Phase A1.5): publishing marks the form Published and
@@ -225,6 +237,13 @@ public with sharing class FinalSpecController {
             }
             update as user formUpdate;
             return published.Id;
+        } catch (FinalSpecStore.TooLargeException e) {
+            Database.rollback(sp);
+            AuraHandledException tooLarge = new AuraHandledException(
+                e.getMessage()
+            );
+            tooLarge.setMessage(e.getMessage());
+            throw tooLarge;
         } catch (Exception e) {
             Database.rollback(sp);
             throw new AuraHandledException(

@@ -35,7 +35,9 @@ public without sharing class FinalLinkService {
         try {
             // Parse before any projection: projectForGuest strips
             // settings.prefill in place.
-            Map<String, Object> activeSpec = parseSpec(version.Spec_JSON__c);
+            Map<String, Object> activeSpec = parseSpec(
+                FinalSpecStore.read(version)
+            );
 
             // R9 — a closed/capped form discloses nothing, even to a valid link.
             if (
@@ -68,7 +70,7 @@ public without sharing class FinalLinkService {
             }
 
             Map<String, Object> computed = FinalGuestContextService.compute(
-                parseSpec(version.Spec_JSON__c),
+                parseSpec(FinalSpecStore.read(version)),
                 targetObject,
                 c.recordId
             );

@@ -44,7 +44,13 @@ public with sharing class FinalStudioController {
                 };
             }
             List<Form_Version__c> versions = [
-                SELECT Id, Version_Number__c, Is_Active__c, Spec_JSON__c
+                SELECT
+                    Id,
+                    Version_Number__c,
+                    Is_Active__c,
+                    Spec_JSON__c,
+                    Spec_JSON_2__c,
+                    Spec_JSON_3__c
                 FROM Form_Version__c
                 WHERE Form__c = :formId
                 WITH USER_MODE
@@ -59,7 +65,7 @@ public with sharing class FinalStudioController {
             }
             Form_Version__c draft = draftOf(versions, active);
             Form_Version__c source = draft != null ? draft : active;
-            if (source == null || String.isBlank(source.Spec_JSON__c)) {
+            if (source == null || String.isBlank(FinalSpecStore.read(source))) {
                 throw new AuraHandledException(
                     'This form has no specification to edit.'
                 );
@@ -73,7 +79,7 @@ public with sharing class FinalStudioController {
                 // record-level fallback: pre-creation-controller specs may
                 // lack form.targetObject; the palette needs SOME object
                 'objectApi' => forms[0].Primary_Context_Object__c,
-                'specJson' => source.Spec_JSON__c,
+                'specJson' => FinalSpecStore.read(source),
                 'draftVersionId' => draft != null ? (Object) draft.Id : null,
                 'versionNumber' => source.Version_Number__c,
                 'activeVersionNumber' => active != null
@@ -183,7 +189,7 @@ public with sharing class FinalStudioController {
             }
             Form_Version__c draft = draftOf(versions, active);
             if (draft != null) {
-                draft.Spec_JSON__c = specJson;
+                FinalSpecStore.write(draft, specJson);
                 update as user draft;
                 return draft.Id;
             }
@@ -194,14 +200,21 @@ public with sharing class FinalStudioController {
                 Form__c = formId,
                 Version_Number__c = maxNumber + 1,
                 Is_Active__c = false,
-                Spec_JSON__c = specJson,
                 Engine_Version__c = 1
             );
+            FinalSpecStore.write(fresh, specJson);
             insert as user fresh;
             return fresh.Id;
         } catch (AuraHandledException e) {
             Database.rollback(sp);
             throw e;
+        } catch (FinalSpecStore.TooLargeException e) {
+            Database.rollback(sp);
+            AuraHandledException tooLarge = new AuraHandledException(
+                e.getMessage()
+            );
+            tooLarge.setMessage(e.getMessage());
+            throw tooLarge;
         } catch (Exception e) {
             Database.rollback(sp);
             throw new AuraHandledException('The draft could not be saved.');

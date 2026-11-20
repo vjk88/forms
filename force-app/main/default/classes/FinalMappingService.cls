@@ -100,13 +100,13 @@ public without sharing class FinalMappingService {
 
     private static Map<String, Id> execute(Form_Submission__c sub) {
         Form_Version__c version = [
-            SELECT Spec_JSON__c
+            SELECT Spec_JSON__c, Spec_JSON_2__c, Spec_JSON_3__c
             FROM Form_Version__c
             WHERE Id = :sub.Form_Version__c
             WITH SYSTEM_MODE
         ];
         Map<String, Object> spec = (Map<String, Object>) JSON.deserializeUntyped(
-            version.Spec_JSON__c
+            FinalSpecStore.read(version)
         );
         List<Map<String, Object>> actions = FinalMappingRules.actionsOf(spec);
         Run run = new Run();

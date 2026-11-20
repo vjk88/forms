@@ -95,9 +95,9 @@ public with sharing class FinalFormActionsService {
                 Form__c = imported.Id,
                 Version_Number__c = 1,
                 Is_Active__c = true,
-                Spec_JSON__c = specJson,
                 Engine_Version__c = 1
             );
+            FinalSpecStore.write(version, specJson);
             insert as user version;
 
             List<ContentDocumentLink> links = new List<ContentDocumentLink>();
@@ -119,6 +119,9 @@ public with sharing class FinalFormActionsService {
             result.formId = imported.Id;
             result.versionId = version.Id;
             return result;
+        } catch (FinalSpecStore.TooLargeException e) {
+            Database.rollback(savepoint);
+            throw new ActionException(e.getMessage());
         } catch (DmlException e) {
             Database.rollback(savepoint);
             throw new ActionException('The imported form could not be saved.');
@@ -190,9 +193,9 @@ public with sharing class FinalFormActionsService {
                 Form__c = clone.Id,
                 Version_Number__c = 1,
                 Is_Active__c = true,
-                Spec_JSON__c = cloneSpecJson,
                 Engine_Version__c = 1
             );
+            FinalSpecStore.write(version, cloneSpecJson);
             insert as user version;
 
             List<ContentDocumentLink> cloneLinks = new List<ContentDocumentLink>();
@@ -217,6 +220,9 @@ public with sharing class FinalFormActionsService {
         } catch (ActionException e) {
             Database.rollback(savepoint);
             throw e;
+        } catch (FinalSpecStore.TooLargeException e) {
+            Database.rollback(savepoint);
+            throw new ActionException(e.getMessage());
         } catch (DmlException e) {
             Database.rollback(savepoint);
             throw new ActionException('The cloned form could not be saved.');

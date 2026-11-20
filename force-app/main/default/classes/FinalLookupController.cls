@@ -295,7 +295,7 @@ public with sharing class FinalLookupController {
             throw new AuraHandledException(UNAVAILABLE);
         }
         List<Form_Version__c> versions = [
-            SELECT Id, Spec_JSON__c
+            SELECT Id, Spec_JSON__c, Spec_JSON_2__c, Spec_JSON_3__c
             FROM Form_Version__c
             WHERE
                 Id = :versionId
@@ -304,11 +304,14 @@ public with sharing class FinalLookupController {
                 AND Form__r.Status__c = 'Published'
             LIMIT 1
         ];
-        if (versions.isEmpty() || String.isBlank(versions[0].Spec_JSON__c)) {
+        if (
+            versions.isEmpty() ||
+            String.isBlank(FinalSpecStore.read(versions[0]))
+        ) {
             throw new AuraHandledException(UNAVAILABLE);
         }
         Map<String, Object> spec = (Map<String, Object>) JSON.deserializeUntyped(
-            versions[0].Spec_JSON__c
+            FinalSpecStore.read(versions[0])
         );
         Map<String, Object> cfg = findLookupConfig(spec, elementId);
         if (cfg == null) {

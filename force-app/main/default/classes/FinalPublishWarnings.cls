@@ -528,19 +528,19 @@ public with sharing class FinalPublishWarnings {
     /** The spec currently live for this form, or null when nothing is. */
     private static Map<String, Object> liveSpec(Id formId) {
         List<Form_Version__c> live = [
-            SELECT Spec_JSON__c
+            SELECT Spec_JSON__c, Spec_JSON_2__c, Spec_JSON_3__c
             FROM Form_Version__c
             WHERE Form__c = :formId AND Is_Active__c = TRUE
             WITH USER_MODE
             ORDER BY Version_Number__c DESC
             LIMIT 1
         ];
-        if (live.isEmpty() || String.isBlank(live[0].Spec_JSON__c)) {
+        if (live.isEmpty() || String.isBlank(FinalSpecStore.read(live[0]))) {
             return null;
         }
         try {
             return (Map<String, Object>) JSON.deserializeUntyped(
-                live[0].Spec_JSON__c
+                FinalSpecStore.read(live[0])
             );
         } catch (Exception e) {
             return null;
