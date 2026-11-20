@@ -1,7 +1,7 @@
 import { createElement } from 'lwc';
 import { CurrentPageReference } from 'lightning/navigation';
 import FinalGuestHost from 'c/finalGuestHost';
-import getGuestRuntimeSpec from '@salesforce/apex/FinalGuestController.getGuestRuntimeSpec';
+import getGuestRuntimeSpec from '@salesforce/apex/FinalGuestController.getGuestRuntimeSpecForLangs';
 import getGuestAutofillContext from '@salesforce/apex/FinalGuestController.getGuestAutofillContext';
 import submitGuest from '@salesforce/apex/FinalGuestController.submitGuest';
 
@@ -9,7 +9,7 @@ jest.mock('c/finalThemeCatalog', () => ({
     getBuiltinTheme: jest.fn(() => null)
 }));
 jest.mock(
-    '@salesforce/apex/FinalGuestController.getGuestRuntimeSpec',
+    '@salesforce/apex/FinalGuestController.getGuestRuntimeSpecForLangs',
     () => ({ default: jest.fn() }),
     { virtual: true }
 );
@@ -85,7 +85,8 @@ describe('c-final-guest-host (guest site host, A2)', () => {
         await flush();
 
         expect(getGuestRuntimeSpec).toHaveBeenCalledWith({
-            formId: 'a0Xguest'
+            formId: 'a0Xguest',
+            langs: expect.any(Array)
         });
         const viewer = el.shadowRoot.querySelector('c-final-form-viewer');
         expect(viewer).not.toBeNull();
@@ -95,6 +96,38 @@ describe('c-final-guest-host (guest site host, A2)', () => {
         expect(viewer.formId).toBe('a0Xguest');
         expect(viewer.versionId).toBe('v1');
         expect(el.shadowRoot.querySelector('.guest-unavailable')).toBeNull();
+    });
+
+    it('sends the link language first, then the browser languages', async () => {
+        jest.spyOn(navigator, 'languages', 'get').mockReturnValue([
+            'de-DE',
+            'en'
+        ]);
+        getGuestRuntimeSpec.mockResolvedValue({ versionId: 'v1', spec: SPEC });
+        mount('a0Xlang');
+        CurrentPageReference.emit({ state: { lang: 'fr' } });
+        await flush();
+        await flush();
+
+        expect(getGuestRuntimeSpec).toHaveBeenLastCalledWith({
+            formId: 'a0Xlang',
+            langs: ['fr', 'de-DE', 'en']
+        });
+    });
+
+    it('shows the translated closed message the server returns', async () => {
+        getGuestRuntimeSpec.mockResolvedValue({
+            closed: true,
+            closedMessage: 'Termine.'
+        });
+        const el = mount('a0Xclosed');
+        await flush();
+        await flush();
+
+        expect(el.shadowRoot.querySelector('c-final-form-viewer')).toBeNull();
+        expect(
+            el.shadowRoot.querySelector('.guest-unavailable').textContent
+        ).toContain('Termine.');
     });
 
     it('gate fail: shows the generic unavailable message, no viewer', async () => {

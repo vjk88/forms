@@ -340,6 +340,46 @@ private class FinalGuestControllerTest {
         Assert.isFalse(json.contains('el_ln'), 'no form structure when closed');
     }
 
+    private static Form__c closedTranslatedForm() {
+        String spec = settingsSpec(
+            '"availability":{"status":"closed","closedMessage":"Done for now."}'
+        );
+        spec =
+            spec.substring(0, spec.length() - 1) +
+            ',"languages":{"default":"en_US","available":["en_US","fr"]},' +
+            '"translations":{"fr":{"closed.message":"Termine pour le moment."}}}';
+        return makeForm('Published', 'Public_Guest', true, spec);
+    }
+
+    @IsTest
+    static void closedMessageIsTranslatedForTheFirstOfferedLanguage() {
+        Form__c f = closedTranslatedForm();
+        Map<String, Object> res = FinalGuestController.getGuestRuntimeSpecForLangs(
+            f.Id,
+            new List<String>{ 'ja', 'fr-CA', 'en' }
+        );
+        Assert.areEqual(true, res.get('closed'));
+        Assert.areEqual('Termine pour le moment.', res.get('closedMessage'));
+    }
+
+    @IsTest
+    static void closedMessageStaysDefaultWithoutOrWithUnofferedLanguages() {
+        Form__c f = closedTranslatedForm();
+        Assert.areEqual(
+            'Done for now.',
+            FinalGuestController.getGuestRuntimeSpecForLangs(
+                    f.Id,
+                    new List<String>{ 'ja' }
+                )
+                .get('closedMessage')
+        );
+        // the old one-argument call keeps working
+        Assert.areEqual(
+            'Done for now.',
+            FinalGuestController.getGuestRuntimeSpec(f.Id).get('closedMessage')
+        );
+    }
+
     @IsTest
     static void beforeOpensAtIsClosed() {
         Form__c f = makeForm(

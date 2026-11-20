@@ -710,6 +710,78 @@ describe('c-final-form-studio', () => {
         jest.useRealTimers();
     });
 
+    it('keeps languages and translations through an edit and a save (translations PR 2)', async () => {
+        jest.useFakeTimers();
+        const translated = {
+            ...SPEC,
+            languages: {
+                default: 'en_US',
+                available: ['en_US', 'fr'],
+                showSwitcher: true
+            },
+            translations: {
+                fr: { 'el:el_1.label': 'Votre nom', 'el:q.opt:yes': 'Oui' }
+            }
+        };
+        loadStudio.mockResolvedValue({
+            name: 'Contact us',
+            specJson: JSON.stringify(translated),
+            draftVersionId: 'a0V1',
+            versionNumber: 2,
+            activeVersionNumber: 1
+        });
+        saveDraft.mockResolvedValue('a0V1');
+        const el = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+
+        // a Studio-built edit (Build mode palette)
+        el.shadowRoot.querySelectorAll('.st-mode')[0].click();
+        await Promise.resolve();
+        el.shadowRoot.querySelector('c-final-field-palette').dispatchEvent(
+            new CustomEvent('addfield', {
+                detail: {
+                    field: {
+                        apiName: 'Email',
+                        label: 'Email',
+                        inputType: 'email',
+                        required: false
+                    }
+                }
+            })
+        );
+        jest.advanceTimersByTime(1000);
+        expect(saveDraft).toHaveBeenCalledTimes(1);
+        let saved = JSON.parse(saveDraft.mock.calls[0][0].specJson);
+        expect(saved.languages).toEqual(translated.languages);
+        expect(saved.translations).toEqual(translated.translations);
+
+        // and a panel-built edit, which hands the whole spec back
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+        el.shadowRoot.querySelectorAll('.st-mode')[1].click(); // Design
+        await Promise.resolve();
+        const panel = el.shadowRoot.querySelector('c-final-design-panel');
+        const edited = JSON.parse(JSON.stringify(panel.spec));
+        edited.submit.label = 'Send';
+        panel.dispatchEvent(
+            new CustomEvent('specchange', { detail: { spec: edited } })
+        );
+        jest.advanceTimersByTime(1000);
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(saveDraft).toHaveBeenCalledTimes(2);
+        saved = JSON.parse(saveDraft.mock.calls.at(-1)[0].specJson);
+        expect(saved.submit.label).toBe('Send');
+        expect(saved.languages).toEqual(translated.languages);
+        expect(saved.translations).toEqual(translated.translations);
+        jest.useRealTimers();
+    });
+
     it('Build mode: a polymorphic lookup is minted flagged, with no single target', async () => {
         jest.useFakeTimers();
         loadStudio.mockResolvedValue({

@@ -242,6 +242,21 @@ public without sharing class FinalGuestController {
      */
     @AuraEnabled
     public static Map<String, Object> getGuestRuntimeSpec(Id formId) {
+        return getGuestRuntimeSpecForLangs(formId, null);
+    }
+
+    /**
+     * getGuestRuntimeSpec plus the visitor's language candidates, in order
+     * (link param first, then browser languages). Only the closed message
+     * uses them: the first language the form offers decides which
+     * translation of `closed.message` comes back (FinalSpecLanguage). A
+     * separate method because an @AuraEnabled method cannot be overloaded.
+     */
+    @AuraEnabled
+    public static Map<String, Object> getGuestRuntimeSpecForLangs(
+        Id formId,
+        List<String> langs
+    ) {
         Form__c f = gate(formId);
         Form_Version__c version = activeVersion(f.Id);
         Map<String, Object> spec = parseSpec(FinalSpecStore.read(version));
@@ -252,7 +267,12 @@ public without sharing class FinalGuestController {
             return new Map<String, Object>{
                 'versionId' => version.Id,
                 'closed' => true,
-                'closedMessage' => FinalSubmitService.closedMessage(spec)
+                'closedMessage' => FinalSpecLanguage.text(
+                    spec,
+                    FinalSpecLanguage.pick(spec, langs),
+                    'closed.message',
+                    FinalSubmitService.closedMessage(spec)
+                )
             };
         }
         projectForGuest(spec);

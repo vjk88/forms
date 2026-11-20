@@ -456,3 +456,52 @@ hardening list) — otherwise re-publish becomes the fix for every rotated file 
   draft record (token + payload + expiry), survey answer-store rows.
 - **BUILD_PHASES.md** — P0 walking skeleton parses exactly this schema with one page / one section /
   `field` elements only; every later phase adds blocks without reshaping them.
+
+## 10 · Translations (languages + translations)
+
+Author text can be translated **inside the spec** (no extra records). Both blocks are optional; a spec
+with no `languages` block behaves exactly as before. Parsers that don't know them ignore them (§2), the
+Studio keeps them untouched on every save, and Publish copies them into the frozen snapshot as written.
+
+```jsonc
+"languages": { "default": "en_US", "available": ["en_US", "fr"], "showSwitcher": true },
+"translations": { "fr": { "el:el_m4t8s6vb.label": "Votre nom", "el:el_q1.opt:yes": "Oui" } }
+```
+
+- Language codes are Salesforce style (`fr`, `fr_CA`, `en_US`); `fr-CA` is read as `fr_CA`.
+- **Which language shows** (`pickLanguage` in `c/finalTranslate`, limited to `available`): the link's
+  `?lang=` / `c__lang` → the signed-in user's language (never a guest's, that is the site guest user's)
+  → each browser language in order → `languages.default`. A code matches exactly, else by its base
+  language (`fr_CA` → `fr`), else an offered regional variant of that base (`fr` → `fr_CA`).
+- **Swap** (`localizeSpec`): the viewer swaps text once, before rendering, from `translations[lang]`, then the
+  base language table. A missing or blank key keeps the default text. The spec the author owns is never
+  changed, and answers are untouched (choices are stored by `value`).
+- The viewer sends the chosen code as `meta.lang` on submit (stored by translations PR 4).
+- Server side, only `settings.availability.closedMessage` is translated (`closed.message`,
+  `FinalSpecLanguage` via `FinalGuestController.getGuestRuntimeSpecForLangs`). Other server messages
+  stay in the default language for now.
+
+**Keys.** One table, `TEXT_KEYS` in `c/finalTranslate`, drives both the swap and any future export. Pages,
+sections and elements use their `id`; a page with no `id` is keyed by its index (`page:0.name`). Choice,
+point and row keys use the stored `value`, never the label.
+
+| Key                                                                                  | Spec path                                                                              |
+| ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| `header.title` / `.description` / `.brandName` / `.highlight`                        | `header.title` / `description` / `brandName` / `highlight.text` (rich text: whole string) |
+| `pane.title` / `.subtitle` / `.brandName` / `.highlight`                             | `layout.options.paneTitle` / `paneSubtitle` / `paneBrandName` / `paneHighlight.text`   |
+| `page:<id>.name`                                                                     | `pages[].name`                                                                         |
+| `sec:<id>.title` / `.description`                                                    | `sections[].title` / `description`                                                     |
+| `sec:<id>.addLabel` / `.removeLabel` / `.entryLabel`                                 | `sections[].repeat.*` (keep the `{index}` token as written)                            |
+| `el:<id>.label` / `.help` / `.description` / `.placeholder`                          | `elements[].label` / `help` / `description` / `placeholder`                            |
+| `el:<id>.leftLabel` / `.rightLabel` / `.yesLabel` / `.noLabel`                       | `elements[].config.*`                                                                  |
+| `el:<id>.valuePrefix` / `.valueSuffix` / `.html` / `.alt`                            | `elements[].config.*` (`html` = richText, callout, consent)                            |
+| `el:<id>.opt:<value>` / `.optdesc:<value>`                                           | `config.options[].label` / `description`                                               |
+| `el:<id>.point:<value>` / `.row:<value>`                                             | `config.points[].label` (likert, matrix columns) / `config.rows[].label` (matrix)      |
+| `el:<id>.msg:<index>`                                                                | `validation[index].message`                                                            |
+| `submit.label` / `.nextLabel` / `.backLabel`, `layout.advanceLabel`                  | `submit.*`, `layout.options.advanceLabel`                                              |
+| `done.title` / `.message` / `.buttonLabel`                                           | `settings.completion.title` / `message` / `buttonLabel`                                |
+| `closed.message`                                                                     | `settings.availability.closedMessage`                                                  |
+
+Never translated: choice/point/row values, ids, URLs, icons, emoji, `config.accept`, `schemaOptions`
+(Salesforce picklist labels come from the platform) and record data. A new author-text property must get a
+row in `TEXT_KEYS`; the inventory test in `finalTranslate.test.js` fails until it does.

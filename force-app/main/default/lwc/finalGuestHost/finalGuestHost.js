@@ -1,6 +1,6 @@
 import { LightningElement, api, wire } from 'lwc';
 import { CurrentPageReference } from 'lightning/navigation';
-import getGuestRuntimeSpec from '@salesforce/apex/FinalGuestController.getGuestRuntimeSpec';
+import getGuestRuntimeSpec from '@salesforce/apex/FinalGuestController.getGuestRuntimeSpecForLangs';
 import getGuestAutofillContext from '@salesforce/apex/FinalGuestController.getGuestAutofillContext';
 import submitGuest from '@salesforce/apex/FinalGuestController.submitGuest';
 import getLookupPlan from '@salesforce/apex/FinalAutofillController.getLookupPlan';
@@ -37,6 +37,7 @@ export default class FinalGuestHost extends LightningElement {
     autofillPlan;
     _urlFormId;
     _token;
+    _langParam;
     _loadedKey;
     _loadGen = 0;
     _reloadedForVersion = false;
@@ -47,6 +48,7 @@ export default class FinalGuestHost extends LightningElement {
             this._urlFormId = ref.state.formId || ref.state.c__formId;
             // SO-4 record link token (opaque, encrypted; server resolves it).
             this._token = ref.state.c__rt || ref.state.rt || null;
+            this._langParam = ref.state.c__lang || ref.state.lang || null;
         }
         this._load();
     }
@@ -104,6 +106,17 @@ export default class FinalGuestHost extends LightningElement {
         return t('Final_Run_LoadingForm');
     }
 
+    /** The visitor's languages in order of preference: the link's `lang`,
+     *  then the browser's. Only the closed message is chosen from them on the
+     *  server; the viewer picks its own language for the form itself. */
+    _languageCandidates() {
+        const browser =
+            typeof navigator === 'undefined'
+                ? []
+                : navigator.languages || [navigator.language];
+        return [this._langParam, ...browser].filter(Boolean);
+    }
+
     get effectiveFormId() {
         return this._urlFormId || this.formId;
     }
@@ -111,7 +124,9 @@ export default class FinalGuestHost extends LightningElement {
     async _load() {
         const formId = this.effectiveFormId;
         const token = this._token;
-        const loadKey = `${formId}:${token || ''}`;
+        // the link language is part of the key: the page reference can land
+        // after the first load, and the closed message depends on it
+        const loadKey = `${formId}:${token || ''}:${this._langParam || ''}`;
         if (!formId || loadKey === this._loadedKey) {
             return;
         }
@@ -134,7 +149,10 @@ export default class FinalGuestHost extends LightningElement {
         this.error = undefined;
 
         try {
-            const runtimeRes = await getGuestRuntimeSpec({ formId });
+            const runtimeRes = await getGuestRuntimeSpec({
+                formId,
+                langs: this._languageCandidates()
+            });
             if (this._loadGen !== currentGen) {
                 return;
             }

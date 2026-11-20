@@ -25,18 +25,14 @@ const MIN_TERM = 2;
 export default class FinalLookup extends LightningElement {
     @api elementId;
     @api label;
-    /** Until the host sets one, the built-in "Search...". */
+    /** Blank or unset (an unauthored lookup) = the built-in "Search...". */
     @api
     get placeholder() {
-        return this._placeholderSet
-            ? this._placeholder
-            : t('Final_Run_SearchPlaceholder');
+        return this._placeholder || t('Final_Run_SearchPlaceholder');
     }
     set placeholder(value) {
-        this._placeholderSet = true;
         this._placeholder = value;
     }
-    _placeholderSet = false;
     _placeholder;
     @api required = false;
     @api disabled = false;
