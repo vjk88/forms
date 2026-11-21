@@ -117,6 +117,8 @@
 
 .blocked-link {
     padding: 0;
+    /* long names with no spaces still wrap */
+    overflow-wrap: anywhere;
     border: none;
     background: none;
     color: inherit;
@@ -129,6 +131,11 @@
 
 .blocked-link:hover {
     text-decoration-thickness: 2px;
+}
+
+.blocked-list li + li {
+    /* spacing between stacked link targets (WCAG 2.5.8) */
+    margin-top: var(--c-space-1);
 }
 
 .blocked-link:focus-visible {

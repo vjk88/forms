@@ -3806,9 +3806,30 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             return;
         }
         const target = item.target;
-        const at = this.visiblePages.findIndex((page) =>
-            (page.sections || []).some((sec) => sec.id === target.sectionId)
-        );
+        // Find the page by the QUESTION first: one-per-screen surveys rename
+        // their screen sections (secId~elKey), so the spec's section id
+        // matches no page there. The section id is the fallback (a group
+        // target with no question, e.g. "add an entry").
+        let sectionId = target.sectionId;
+        let at = -1;
+        if (target.elementId) {
+            at = this.visiblePages.findIndex((page) =>
+                (page.sections || []).some((sec) => {
+                    const hit = (sec.elements || []).some(
+                        (el) => el && el.id === target.elementId
+                    );
+                    if (hit) {
+                        sectionId = sec.id;
+                    }
+                    return hit;
+                })
+            );
+        }
+        if (at < 0) {
+            at = this.visiblePages.findIndex((page) =>
+                (page.sections || []).some((sec) => sec.id === target.sectionId)
+            );
+        }
         if (at >= 0 && at !== this.pageIndex) {
             this.pageIndex = at;
             this._reveal(at);
@@ -3817,7 +3838,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         this._focusTarget = {
             n: focusSeq,
             ...target,
-            sectionIds: target.sectionId ? [target.sectionId] : []
+            sectionIds: sectionId ? [sectionId] : []
         };
     }
 
@@ -4171,6 +4192,12 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             (this.model.paginates ? bad.slice(0, 1) : bad).forEach((i) =>
                 this._reveal(i)
             );
+            // This click was blocked by the browser's own checks: an older
+            // server list must not stand in for it (it would hide the newly
+            // red question). Server-refused questions that are still red
+            // stay in the list by name.
+            this._submitError = undefined;
+            this._serverItems = [];
             this._requestFocus();
             return;
         }

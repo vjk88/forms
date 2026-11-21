@@ -70,8 +70,12 @@
                         </div>
                     </template>
                     <template lwc:if={topBanner}>
-                        <div class="viewer-submit-error" role="alert">
-                            {topBanner.text}
+                        <div class="viewer-submit-error">
+                            <!-- only the heading is announced, once; the
+                                 bullets are buttons outside the alert -->
+                            <p class="viewer-banner-text" role="alert">
+                                {topBanner.text}
+                            </p>
                             <template lwc:if={topBanner.items.length}>
                                 <ul class="viewer-blocked-list">
                                     <template

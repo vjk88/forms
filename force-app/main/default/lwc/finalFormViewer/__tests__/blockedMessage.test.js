@@ -575,6 +575,60 @@ describe('the list of questions by Submit / Next (DEFERRED #68, blocked list)', 
         expect(stamped(el).map((e) => e.id)).toEqual(['el_C']);
     });
 
+    it('one question per screen: a refused bullet jumps to that question’s own screen', async () => {
+        const spec = TWO_ON_ONE('stepper');
+        spec.form.type = 'survey';
+        spec.settings.onePerScreen = true;
+        const el = await mount(spec);
+        el.failSubmit(null, {
+            errors: [{ message: 'Bad number.', elementId: 'el_b', fields: [] }]
+        });
+        await flush();
+        expect(items(el)).toEqual(['Phone: Bad number.']);
+        bar(el).dispatchEvent(
+            new CustomEvent('blockedjump', {
+                detail: { key: bar(el).blockedItems[0].key }
+            })
+        );
+        await flush();
+        await flush();
+        // screens are split per question (sec~el), so the jump must find the
+        // screen by the question, not by the spec's section id
+        const current = nav(el).pages[nav(el).currentPageIndex];
+        const onScreen = current.sections.flatMap((s) =>
+            s.elements.map((e) => e.id)
+        );
+        expect(onScreen).toContain('el_b');
+        expect(stamped(el).map((e) => e.id)).toEqual(['el_b']);
+    });
+
+    it('a later browser block replaces an old server list', async () => {
+        const el = await mount(OPTIONAL());
+        el.failSubmit(null, {
+            errors: [{ message: 'Not allowed.', fields: ['Question B'] }]
+        });
+        await flush();
+        expect(items(el)).toEqual(['Question B: Not allowed.']);
+
+        // a different question becomes the problem; Submit again
+        const spec = OPTIONAL();
+        spec.pages[0].sections[0].elements[0].required = true;
+        spec.pages[0].sections[0].elements[0].validation = [
+            { type: 'required', message: 'Question A is required.' }
+        ];
+        el.spec = JSON.parse(JSON.stringify(spec));
+        await flush();
+        await flush();
+        el.failSubmit(null, {
+            errors: [{ message: 'Not allowed.', fields: ['Question B'] }]
+        });
+        await flush();
+        await click(el, 'submit');
+        // the browser's own block speaks now: names only, the new red question
+        expect(items(el)).toContain('Question A');
+        expect(items(el)).not.toContain('Question B: Not allowed.');
+    });
+
     it('editing a refused question removes its bullet', async () => {
         const el = await mount(OPTIONAL());
         el.failSubmit(null, {
