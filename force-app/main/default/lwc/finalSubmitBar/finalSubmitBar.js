@@ -35,6 +35,8 @@ export default class FinalSubmitBar extends LightningElement {
     @api showSubmit = false;
     /** Engine-set while a submit is in flight. */
     @api submitting = false;
+    /** Engine-set once a submit has taken a while ("Still sending..."). */
+    @api slow = false;
     /** Engine-set while Next/Submit is blocked by invalid fields; '' when clear. */
     @api blockedMessage = '';
     /** Disables the submit button without entering the submitting spinner state. */
@@ -63,8 +65,15 @@ export default class FinalSubmitBar extends LightningElement {
         return this.cfg.backLabel || t('Final_Run_Back');
     }
 
+    /** "Still sending…" for screen readers, only while a send is slow. */
+    get slowAnnouncement() {
+        return this.submitting && this.slow ? t('Final_Run_StillSending') : '';
+    }
+
     get submittingText() {
-        return t('Final_Run_Submitting');
+        return this.slow
+            ? t('Final_Run_StillSending')
+            : t('Final_Run_Submitting');
     }
 
     get primaryClass() {

@@ -136,6 +136,9 @@ import Final_Run_NoMatches from '@salesforce/label/c.Final_Run_NoMatches';
 import Final_Run_ResultOne from '@salesforce/label/c.Final_Run_ResultOne';
 import Final_Run_ResultsMany from '@salesforce/label/c.Final_Run_ResultsMany';
 import Final_Run_Language from '@salesforce/label/c.Final_Run_Language';
+import Final_Run_TooFast from '@salesforce/label/c.Final_Run_TooFast';
+import Final_Run_StillSending from '@salesforce/label/c.Final_Run_StillSending';
+import Final_Run_AlreadySent from '@salesforce/label/c.Final_Run_AlreadySent';
 
 const IMPORTED = {
     Final_Run_Submit,
@@ -262,7 +265,10 @@ const IMPORTED = {
     Final_Run_NoMatches,
     Final_Run_ResultOne,
     Final_Run_ResultsMany,
-    Final_Run_Language
+    Final_Run_Language,
+    Final_Run_TooFast,
+    Final_Run_StillSending,
+    Final_Run_AlreadySent
 };
 
 const LANG_PATTERN = /^[a-z]{2,3}([_-][A-Za-z]{2})?$/;

@@ -3,6 +3,9 @@
         <!-- Persistent aria-live row: present even when empty so screen readers
              announce the blocked message the moment the engine sets it. -->
         <p class="blocked" aria-live="polite">{blockedMessage}</p>
+        <!-- Same idea for a slow send: the button text changes inside a
+             disabled button, which screen readers do not re-read. -->
+        <span class="sr-only" aria-live="polite">{slowAnnouncement}</span>
         <div class="buttons">
             <template lwc:if={showBack}>
                 <button

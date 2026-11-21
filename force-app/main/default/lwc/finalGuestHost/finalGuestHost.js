@@ -3,9 +3,38 @@ import { CurrentPageReference } from 'lightning/navigation';
 import getGuestRuntimeSpec from '@salesforce/apex/FinalGuestController.getGuestRuntimeSpecForLangs';
 import getGuestAutofillContext from '@salesforce/apex/FinalGuestController.getGuestAutofillContext';
 import submitGuest from '@salesforce/apex/FinalGuestController.submitGuest';
+import guestTicket from '@salesforce/apex/FinalGuestController.guestTicket';
 import getLookupPlan from '@salesforce/apex/FinalAutofillController.getLookupPlan';
 import isGuest from '@salesforce/user/isGuest';
 import { t } from 'c/finalTranslate';
+import { solveTicket } from 'c/finalProofOfWork';
+
+/** The server refuses a submit whose ticket is younger than this. The wait is
+ *  measured on the monotonic clock from the moment the ticket ARRIVED, so a
+ *  wrong device clock cannot shorten or stretch it (the server's own clock
+ *  does the real check). */
+const MIN_TICKET_AGE_MS = 2000;
+const BOT_PREFIX = 'FINAL_BOT:';
+
+function monotonicNow() {
+    return typeof performance !== 'undefined' && performance.now
+        ? performance.now()
+        : Date.now();
+}
+
+function wait(ms) {
+    // eslint-disable-next-line @lwc/lwc/no-async-operation
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** The FINAL_BOT:* code in an Apex error, or null (a network failure, or a
+ *  message meant for the respondent). Never shown as text. */
+function botCode(error) {
+    const message = error && error.body && error.body.message;
+    return typeof message === 'string' && message.startsWith(BOT_PREFIX)
+        ? message
+        : null;
+}
 
 /**
  * finalGuestHost — the guest-site page component (Phase A2).
@@ -41,6 +70,11 @@ export default class FinalGuestHost extends LightningElement {
     _loadedKey;
     _loadGen = 0;
     _reloadedForVersion = false;
+    /** The guest bot-check ticket and its puzzle: { ticket, receivedAt (the
+     *  monotonic clock), controller, promise }. See _startTicket. */
+    _entry;
+    /** The one submit sequence in flight, or null. */
+    _activeSend = null;
 
     @wire(CurrentPageReference)
     wiredPageRef(ref) {
@@ -55,6 +89,11 @@ export default class FinalGuestHost extends LightningElement {
 
     connectedCallback() {
         this._load();
+        // A page the platform kept alive across a tab switch comes back with
+        // its puzzle cancelled; start it again (same ticket, same age).
+        if (this._entry && this._entry.controller.signal.aborted) {
+            this._solveEntry(this._entry);
+        }
     }
 
     // ----- iframe embed height bridge (A4) -----
@@ -74,6 +113,9 @@ export default class FinalGuestHost extends LightningElement {
     }
 
     disconnectedCallback() {
+        if (this._entry) {
+            this._entry.controller.abort();
+        }
         if (this._ro) {
             this._ro.disconnect();
             this._ro = null;
@@ -132,6 +174,10 @@ export default class FinalGuestHost extends LightningElement {
         }
         this._loadedKey = loadKey;
         const currentGen = ++this._loadGen;
+        // Anything started for the previous form / respondent is dead: its
+        // puzzle stops and its submit sequence (if any) is released.
+        this._dropTicket();
+        this._activeSend = null;
 
         // R7 — tear the previous respondent's session down BEFORE awaiting
         // anything. The generation guard alone only discards late RESULTS; the
@@ -163,6 +209,9 @@ export default class FinalGuestHost extends LightningElement {
                 return;
             }
             this.versionId = runtimeRes.versionId;
+            // Guest bot check: keep the ticket that rode with the spec and
+            // start its puzzle right away, while the person fills the form in.
+            this._startTicket(runtimeRes.ticket);
             this.spec =
                 typeof runtimeRes.spec === 'string'
                     ? JSON.parse(runtimeRes.spec)
@@ -244,38 +293,211 @@ export default class FinalGuestHost extends LightningElement {
         );
     }
 
+    // ----- guest bot check: ticket, puzzle, minimum age -----
+
+    /** Forget the current ticket and stop its puzzle. */
+    _dropTicket() {
+        if (this._entry) {
+            this._entry.controller.abort();
+        }
+        this._entry = undefined;
+    }
+
+    /** Adopt a ticket (null/empty = none) and start solving it. The monotonic
+     *  clock is read at receipt for the 2 s minimum age. */
+    _startTicket(ticket) {
+        this._dropTicket();
+        if (!ticket) {
+            return undefined;
+        }
+        const entry = { ticket, receivedAt: monotonicNow() };
+        this._entry = entry;
+        this._solveEntry(entry);
+        return entry;
+    }
+
+    /** (Re)start the puzzle for an entry; its promise resolves with the nonce.
+     *  A rejection nobody awaits yet (a cancel, or an unreadable ticket) is
+     *  swallowed here and surfaces to whoever awaits entry.promise later. */
+    _solveEntry(entry) {
+        entry.controller = new AbortController();
+        entry.promise = solveTicket(entry.ticket, {
+            signal: entry.controller.signal
+        });
+        entry.promise.catch(() => {});
+        return entry.promise;
+    }
+
+    /** The puzzle's nonce for an entry, restarting it if it was cancelled
+     *  (a disconnect) or had failed. */
+    _nonceFor(entry) {
+        if (!entry.promise || entry.controller.signal.aborted) {
+            this._solveEntry(entry);
+        }
+        return entry.promise;
+    }
+
+    /** Wait out whatever is left of the 2 s minimum ticket age. */
+    async _waitForTicketAge(entry) {
+        const left = MIN_TICKET_AGE_MS - (monotonicNow() - entry.receivedAt);
+        if (left > 0) {
+            await wait(left);
+        }
+    }
+
+    /** Fetch a brand-new ticket (expiry, or a server that sent none) and start
+     *  its puzzle. */
+    async _refreshTicket(formId, gen) {
+        const ticket = await guestTicket({ formId });
+        if (this._loadGen !== gen) {
+            return null;
+        }
+        return this._startTicket(ticket);
+    }
+
+    // ----- submit -----
+
+    /**
+     * One submit sequence at a time: solve (usually long done), wait out the
+     * minimum ticket age, send with meta.tk / meta.pow. An EXPIRED ticket is
+     * refreshed and the SAME payload (same submissionKey, version, link)
+     * is sent once more. Nothing is resent after a network failure, and
+     * the load generation is rechecked after every await so a late result can
+     * never touch another respondent's viewer.
+     */
     async handleSubmitRequest(event) {
+        if (this._activeSend) {
+            return; // the viewer already holds the one-click guard; belt and braces
+        }
+        const send = {};
+        this._activeSend = send;
+        const gen = this._loadGen;
         const viewer = this.refs.viewer;
+        const formId = this.effectiveFormId;
         const payload = (event.detail && event.detail.payload) || {};
         // Merge the honeypot value into meta.hp — the viewer builds the payload
         // and knows nothing of the bait; the host owns it (server checks it).
         const hpField = this.refs.honeypot;
-        const withMeta = {
-            ...payload,
-            meta: {
-                ...(payload.meta || {}),
-                hp: hpField ? hpField.value : '',
-                ...(this.versionId ? { specVersionId: this.versionId } : {}),
-                // SO-4: the link token rides meta.rt (same channel as hp); the
-                // server re-validates it and stamps the record ref from the
-                // TOKEN, never a raw client recordId.
-                ...(this._token ? { rt: this._token } : {})
+        const baseMeta = {
+            ...(payload.meta || {}),
+            hp: hpField ? hpField.value : '',
+            ...(this.versionId ? { specVersionId: this.versionId } : {}),
+            // SO-4: the link token rides meta.rt (same channel as hp); the
+            // server re-validates it and stamps the record ref from the
+            // TOKEN, never a raw client recordId.
+            ...(this._token ? { rt: this._token } : {})
+        };
+        const live = () => this._loadGen === gen && this._activeSend === send;
+        const fail = (message, options) => {
+            if (live() && viewer) {
+                if (options) {
+                    viewer.failSubmit(message, options);
+                } else {
+                    viewer.failSubmit(message);
+                }
             }
         };
+
         try {
-            await submitGuest({
-                formId: this.effectiveFormId,
-                payloadJson: JSON.stringify(withMeta)
-            });
-            if (viewer) {
-                viewer.completeSubmit();
+            let refreshed = false;
+            for (;;) {
+                let entry = this._entry;
+                if (!entry) {
+                    // no ticket (an older server, or a refresh that never
+                    // landed): ask for one once, then carry on as normal
+                    // eslint-disable-next-line no-await-in-loop
+                    entry = await this._refreshTicket(formId, gen);
+                    if (!live()) {
+                        return;
+                    }
+                    if (!entry) {
+                        // never leave Submit spinning: no ticket, no send
+                        fail(t('Final_Run_SaveFailed'));
+                        return;
+                    }
+                }
+                // eslint-disable-next-line no-await-in-loop
+                const nonce = await this._nonceFor(entry);
+                if (!live()) {
+                    return;
+                }
+                // eslint-disable-next-line no-await-in-loop
+                await this._waitForTicketAge(entry);
+                if (!live()) {
+                    return;
+                }
+                try {
+                    // eslint-disable-next-line no-await-in-loop
+                    await submitGuest({
+                        formId,
+                        payloadJson: JSON.stringify({
+                            ...payload,
+                            meta: { ...baseMeta, tk: entry.ticket, pow: nonce }
+                        })
+                    });
+                } catch (e) {
+                    if (!live()) {
+                        return;
+                    }
+                    const code = botCode(e);
+                    if (code === BOT_PREFIX + 'EXPIRED' && !refreshed) {
+                        refreshed = true;
+                        try {
+                            // eslint-disable-next-line no-await-in-loop
+                            await this._refreshTicket(formId, gen);
+                        } catch (refreshError) {
+                            // a form that closed or filled up meanwhile says
+                            // so (the server's own message), not "try again"
+                            fail(
+                                ...this._failureFor(
+                                    refreshError,
+                                    botCode(refreshError)
+                                )
+                            );
+                            return;
+                        }
+                        if (!live()) {
+                            return;
+                        }
+                        continue; // resend ONCE with a fresh ticket
+                    }
+                    fail(...this._failureFor(e, code));
+                    return;
+                }
+                if (live() && viewer) {
+                    viewer.completeSubmit();
+                }
+                return;
             }
-        } catch (e) {
-            const message =
-                (e && e.body && e.body.message) || t('Final_Run_SaveFailed');
-            if (viewer) {
-                viewer.failSubmit(message);
+        } catch {
+            // the puzzle itself failed (never a give-up timer: only a real
+            // error or a cancel lands here); answers stay on screen
+            fail(t('Final_Run_SaveFailed'));
+        } finally {
+            if (this._activeSend === send) {
+                this._activeSend = null;
             }
+        }
+    }
+
+    /** [message, options] for the viewer after a refused/failed submit. A bot
+     *  code is NEVER shown raw: each maps to respondent wording. */
+    _failureFor(error, code) {
+        switch (code) {
+            case BOT_PREFIX + 'TOO_FAST':
+                return [t('Final_Run_TooFast')];
+            case BOT_PREFIX + 'USED':
+                // this page's response is already in; answers stay on screen
+                // but Submit is off for the rest of the visit
+                return [t('Final_Run_AlreadySent'), { locked: true }];
+            case null:
+                return [
+                    (error && error.body && error.body.message) ||
+                        t('Final_Run_SaveFailed')
+                ];
+            default:
+                // INVALID, PROOF, a second EXPIRED, or a code from a newer server
+                return [t('Final_Run_SaveFailed')];
         }
     }
 }

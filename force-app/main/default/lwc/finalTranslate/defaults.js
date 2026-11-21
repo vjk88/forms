@@ -138,5 +138,9 @@ export const EN = {
     Final_Run_NoMatches: 'No matches',
     Final_Run_ResultOne: '1 result',
     Final_Run_ResultsMany: '{0} results',
-    Final_Run_Language: 'Language'
+    Final_Run_Language: 'Language',
+    Final_Run_TooFast: 'Please check your answers, then submit again.',
+    Final_Run_StillSending: 'Still sending…',
+    Final_Run_AlreadySent:
+        "Your response was already received. Changes made after that weren't saved."
 };

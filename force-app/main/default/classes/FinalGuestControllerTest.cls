@@ -212,7 +212,7 @@ private class FinalGuestControllerTest {
         Test.startTest();
         FinalGuestController.GuestSubmitResult res = FinalGuestController.submitGuest(
             f.Id,
-            payload
+            FinalGuestTicketTestUtil.withTicket(f.Id, payload)
         );
         Test.stopTest();
 
@@ -240,7 +240,13 @@ private class FinalGuestControllerTest {
         Form__c f = makeForm('Published', 'Public_Guest', true, spec);
 
         try {
-            FinalGuestController.submitGuest(f.Id, '{"answers":{"el_ln":"X"}}');
+            FinalGuestController.submitGuest(
+                f.Id,
+                FinalGuestTicketTestUtil.withTicket(
+                    f.Id,
+                    '{"answers":{"el_ln":"X"}}'
+                )
+            );
             Assert.fail('update mode must be refused for guests');
         } catch (AuraHandledException e) {
             Assert.isTrue(true, 'guest update refused');
@@ -274,7 +280,10 @@ private class FinalGuestControllerTest {
         );
 
         try {
-            FinalGuestController.submitGuest(f.Id, payload);
+            FinalGuestController.submitGuest(
+                f.Id,
+                FinalGuestTicketTestUtil.withTicket(f.Id, payload)
+            );
             Assert.fail('should throw');
         } catch (AuraHandledException e) {
             Assert.isTrue(true);
@@ -290,7 +299,13 @@ private class FinalGuestControllerTest {
     static void submitGateRejectsUnpublished() {
         Form__c f = makeForm('Draft', 'Public_Guest', true, contactSpec());
         try {
-            FinalGuestController.submitGuest(f.Id, '{"answers":{"el_ln":"X"}}');
+            FinalGuestController.submitGuest(
+                f.Id,
+                FinalGuestTicketTestUtil.withTicket(
+                    f.Id,
+                    '{"answers":{"el_ln":"X"}}'
+                )
+            );
             Assert.fail('should throw');
         } catch (AuraHandledException e) {
             Assert.isTrue(true, 'unpublished submit blocked');
@@ -301,7 +316,10 @@ private class FinalGuestControllerTest {
     static void submitGuardsBlankPayload() {
         Form__c f = publishedForm();
         try {
-            FinalGuestController.submitGuest(f.Id, '');
+            FinalGuestController.submitGuest(
+                f.Id,
+                FinalGuestTicketTestUtil.withTicket(f.Id, '')
+            );
             Assert.fail('should throw');
         } catch (AuraHandledException e) {
             Assert.isTrue(true);
@@ -452,7 +470,13 @@ private class FinalGuestControllerTest {
             settingsSpec('"availability":{"status":"closed"}')
         );
         try {
-            FinalGuestController.submitGuest(f.Id, '{"answers":{"el_ln":"X"}}');
+            FinalGuestController.submitGuest(
+                f.Id,
+                FinalGuestTicketTestUtil.withTicket(
+                    f.Id,
+                    '{"answers":{"el_ln":"X"}}'
+                )
+            );
             Assert.fail('closed form must reject a submit');
         } catch (AuraHandledException e) {
             Assert.isTrue(true, 'closed submit rejected');
@@ -471,7 +495,10 @@ private class FinalGuestControllerTest {
         );
         FinalGuestController.GuestSubmitResult res = FinalGuestController.submitGuest(
             f.Id,
-            '{"answers":{"el_ln":"BotName"},"meta":{"hp":"http://spam"}}'
+            FinalGuestTicketTestUtil.withTicket(
+                f.Id,
+                '{"answers":{"el_ln":"BotName"},"meta":{"hp":"http://spam"}}'
+            )
         );
         Assert.isTrue(res.success, 'bot gets a fake success');
         Assert.areEqual(
@@ -491,7 +518,10 @@ private class FinalGuestControllerTest {
         );
         FinalGuestController.submitGuest(
             f.Id,
-            '{"answers":{"el_ln":"RealPerson"},"meta":{"hp":""}}'
+            FinalGuestTicketTestUtil.withTicket(
+                f.Id,
+                '{"answers":{"el_ln":"RealPerson"},"meta":{"hp":""}}'
+            )
         );
         Assert.areEqual(
             1,

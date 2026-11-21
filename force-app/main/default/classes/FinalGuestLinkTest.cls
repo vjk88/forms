@@ -288,7 +288,10 @@ private class FinalGuestLinkTest {
             }
         );
         Test.startTest();
-        FinalGuestController.submitGuest(form.Id, payload);
+        FinalGuestController.submitGuest(
+            form.Id,
+            FinalGuestTicketTestUtil.withTicket(form.Id, payload)
+        );
         Test.stopTest();
         Form_Response__c resp = [
             SELECT Related_Record_Id__c, Related_Record_Type__c
@@ -319,7 +322,10 @@ private class FinalGuestLinkTest {
             }
         );
         Test.startTest();
-        FinalGuestController.submitGuest(form.Id, payload);
+        FinalGuestController.submitGuest(
+            form.Id,
+            FinalGuestTicketTestUtil.withTicket(form.Id, payload)
+        );
         Test.stopTest();
         Form_Response__c resp = [
             SELECT Related_Record_Id__c
@@ -563,7 +569,10 @@ private class FinalGuestLinkTest {
             'loads never burn the invitation'
         );
         // first submit burns it
-        FinalGuestController.submitGuest(form.Id, subPayload(token));
+        FinalGuestController.submitGuest(
+            form.Id,
+            FinalGuestTicketTestUtil.withTicket(form.Id, subPayload(token))
+        );
         Survey_Invitation__c afterSubmit = [
             SELECT Responded_On__c
             FROM Survey_Invitation__c
@@ -577,7 +586,10 @@ private class FinalGuestLinkTest {
         // second submit is refused
         Boolean refused = false;
         try {
-            FinalGuestController.submitGuest(form.Id, subPayload(token));
+            FinalGuestController.submitGuest(
+                form.Id,
+                FinalGuestTicketTestUtil.withTicket(form.Id, subPayload(token))
+            );
         } catch (Exception e) {
             refused = true;
         }
@@ -612,7 +624,10 @@ private class FinalGuestLinkTest {
         Boolean refused = false;
         Test.startTest();
         try {
-            FinalGuestController.submitGuest(form.Id, subPayload(token));
+            FinalGuestController.submitGuest(
+                form.Id,
+                FinalGuestTicketTestUtil.withTicket(form.Id, subPayload(token))
+            );
         } catch (Exception e) {
             refused = true;
         }
@@ -851,7 +866,7 @@ private class FinalGuestLinkTest {
         String p1 = subPayloadWithVersion(token, activeVer.Id);
         FinalGuestController.GuestSubmitResult r1 = FinalGuestController.submitGuest(
             form.Id,
-            p1
+            FinalGuestTicketTestUtil.withTicket(form.Id, p1)
         );
         System.assertEquals(true, r1.success, 'first submit succeeds');
 
@@ -870,7 +885,10 @@ private class FinalGuestLinkTest {
         // Second submit with burned token is refused
         Boolean refused = false;
         try {
-            FinalGuestController.submitGuest(form.Id, p1);
+            FinalGuestController.submitGuest(
+                form.Id,
+                FinalGuestTicketTestUtil.withTicket(form.Id, p1)
+            );
         } catch (Exception e) {
             refused = true;
         }
@@ -920,7 +938,10 @@ private class FinalGuestLinkTest {
         Test.startTest();
         Boolean caught = false;
         try {
-            FinalGuestController.submitGuest(form.Id, p);
+            FinalGuestController.submitGuest(
+                form.Id,
+                FinalGuestTicketTestUtil.withTicket(form.Id, p)
+            );
         } catch (AuraHandledException e) {
             caught = true;
             // NOTE: do NOT assert the message text here. An

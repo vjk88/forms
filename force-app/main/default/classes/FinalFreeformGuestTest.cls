@@ -122,7 +122,10 @@ private class FinalFreeformGuestTest {
         try {
             FinalGuestController.submitGuest(
                 form.Id,
-                payload('typed against v1', 'guest-drift', oldVersionId)
+                FinalGuestTicketTestUtil.withTicket(
+                    form.Id,
+                    payload('typed against v1', 'guest-drift', oldVersionId)
+                )
             );
         } catch (AuraHandledException e) {
             refused = true;
@@ -143,7 +146,10 @@ private class FinalFreeformGuestTest {
         publish(1);
         FinalGuestController.GuestSubmitResult first = FinalGuestController.submitGuest(
             form.Id,
-            payload('first and last', 'guest-cap', activeVersion.Id)
+            FinalGuestTicketTestUtil.withTicket(
+                form.Id,
+                payload('first and last', 'guest-cap', activeVersion.Id)
+            )
         );
         Assert.isTrue(first.success, 'the last slot is taken');
         Assert.areEqual(1, submissionCount(), 'one submission');
@@ -151,7 +157,10 @@ private class FinalFreeformGuestTest {
         // the browser never saw the confirmation and sends the same key again
         FinalGuestController.GuestSubmitResult retry = FinalGuestController.submitGuest(
             form.Id,
-            payload('first and last', 'guest-cap', activeVersion.Id)
+            FinalGuestTicketTestUtil.withTicket(
+                form.Id,
+                payload('first and last', 'guest-cap', activeVersion.Id)
+            )
         );
 
         Assert.isTrue(retry.success, 'the retry is told what really happened');
@@ -169,13 +178,19 @@ private class FinalFreeformGuestTest {
         publish(1);
         FinalGuestController.submitGuest(
             form.Id,
-            payload('mine', 'guest-cap-a', activeVersion.Id)
+            FinalGuestTicketTestUtil.withTicket(
+                form.Id,
+                payload('mine', 'guest-cap-a', activeVersion.Id)
+            )
         );
         Boolean refused = false;
         try {
             FinalGuestController.submitGuest(
                 form.Id,
-                payload('too late', 'guest-cap-b', activeVersion.Id)
+                FinalGuestTicketTestUtil.withTicket(
+                    form.Id,
+                    payload('too late', 'guest-cap-b', activeVersion.Id)
+                )
             );
         } catch (AuraHandledException e) {
             refused = true;
@@ -190,7 +205,10 @@ private class FinalFreeformGuestTest {
         publish(null);
         FinalGuestController.GuestSubmitResult res = FinalGuestController.submitGuest(
             form.Id,
-            payload('hello', 'guest-plain', activeVersion.Id)
+            FinalGuestTicketTestUtil.withTicket(
+                form.Id,
+                payload('hello', 'guest-plain', activeVersion.Id)
+            )
         );
         Assert.isTrue(res.success, 'it saved');
         Assert.areEqual(1, submissionCount(), 'one submission');
@@ -217,7 +235,10 @@ private class FinalFreeformGuestTest {
         publish(null);
         FinalGuestController.GuestSubmitResult res = FinalGuestController.submitGuest(
             form.Id,
-            payload('no version claimed', 'guest-silent', null)
+            FinalGuestTicketTestUtil.withTicket(
+                form.Id,
+                payload('no version claimed', 'guest-silent', null)
+            )
         );
         Assert.isTrue(res.success, 'no claim, no contradiction');
         Assert.areEqual(1, submissionCount(), 'stored normally');

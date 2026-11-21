@@ -244,6 +244,9 @@ function splitOnePerScreen(pages) {
  *  questions (Part 2: "no longer exists", "changed in two lists"). */
 const ROW_ERROR = '__row';
 
+/** How long a submit may be in flight before the bar says "Still sending...". */
+const STILL_SENDING_MS = 5000;
+
 /**
  * finalFormViewer — P0 minimal viewer: fetches one published Spec_JSON__c blob,
  * parses it (FORM_SPEC_SCHEMA v1), resolves tokens, lazy-loads the nav primitive
@@ -460,7 +463,37 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             : undefined;
     }
     submittedRecordId = null;
-    _submitting = false;
+    _submittingFlag = false;
+    /** True once a submit has been in flight for STILL_SENDING_MS: the submit
+     *  bar then swaps "Sending..." for "Still sending..." (a slow connection
+     *  or the guest bot check still working). Cleared with the flag. */
+    _stillSending = false;
+    _stillSendingTimer = null;
+    /** The host said this page's response is already in: Submit stays off for
+     *  the rest of the visit (failSubmit(message, { locked: true })). */
+    _submitLocked = false;
+    get _submitting() {
+        return this._submittingFlag;
+    }
+    set _submitting(value) {
+        const on = Boolean(value);
+        if (on === this._submittingFlag) {
+            return;
+        }
+        this._submittingFlag = on;
+        clearTimeout(this._stillSendingTimer);
+        this._stillSendingTimer = null;
+        this._stillSending = false;
+        if (on) {
+            // eslint-disable-next-line @lwc/lwc/no-async-operation
+            this._stillSendingTimer = setTimeout(() => {
+                this._stillSendingTimer = null;
+                if (this._submittingFlag) {
+                    this._stillSending = true;
+                }
+            }, STILL_SENDING_MS);
+        }
+    }
     _startedAt = null;
     _redirectTimer = null;
 
@@ -1313,7 +1346,13 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         }
         this._revealed = [];
         this._focusTarget = null;
-        this._submitError = undefined;
+        // A locked Submit (this page's response was already received: the only
+        // reason the host locks it) keeps its explanation across a re-apply,
+        // e.g. a language switch, now in the new language. Otherwise the
+        // respondent would face a greyed Submit with no message.
+        this._submitError = this._submitLocked
+            ? t('Final_Run_AlreadySent')
+            : undefined;
         this._autofillError = undefined;
         this.submittedRecordId = null;
         this._startedAt =
@@ -2302,7 +2341,8 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             this.isEditBlocked ||
             this._surveyLoading ||
             this.isAutofillPending ||
-            this._submitting
+            this._submitting ||
+            this._submitLocked
         );
     }
 
@@ -3975,10 +4015,14 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     }
 
     /** Host's delegated submit failed: surface the message and allow retry
-     *  (the submit guard is released). */
+     *  (the submit guard is released). `{ locked: true }` keeps Submit off for
+     *  the rest of the visit (this page's response was already sent). */
     @api
-    failSubmit(message) {
+    failSubmit(message, options) {
         this._submitting = false;
+        if (options && options.locked) {
+            this._submitLocked = true;
+        }
         this._submitError = message || t('Final_Run_SaveFailed');
     }
 

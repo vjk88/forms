@@ -512,7 +512,10 @@ private class FinalSurveySubmitTest {
         Test.startTest();
         FinalGuestController.GuestSubmitResult res = FinalGuestController.submitGuest(
             formId,
-            payload(new Map<String, Object>{ 'el_rate' => 3 }, null)
+            FinalGuestTicketTestUtil.withTicket(
+                formId,
+                payload(new Map<String, Object>{ 'el_rate' => 3 }, null)
+            )
         );
         Test.stopTest();
 
@@ -608,13 +611,19 @@ private class FinalSurveySubmitTest {
         Test.startTest();
         FinalGuestController.submitGuest(
             formId,
-            payload(new Map<String, Object>{ 'el_rate' => 4 }, null)
+            FinalGuestTicketTestUtil.withTicket(
+                formId,
+                payload(new Map<String, Object>{ 'el_rate' => 4 }, null)
+            )
         );
         Boolean threw = false;
         try {
             FinalGuestController.submitGuest(
                 formId,
-                payload(new Map<String, Object>{ 'el_rate' => 2 }, null)
+                FinalGuestTicketTestUtil.withTicket(
+                    formId,
+                    payload(new Map<String, Object>{ 'el_rate' => 2 }, null)
+                )
             );
         } catch (Exception e) {
             threw = true;

@@ -236,6 +236,10 @@ public with sharing class FinalSpecController {
                 formUpdate.Links_Invalidated_On__c = Datetime.now();
             }
             update as user formUpdate;
+            // A guest-loadable form needs the ticket signing keys. Publish is
+            // the one authenticated moment every such form passes through
+            // (guests only read keys). Creates when missing, never rotates.
+            FinalLinkKeys.load(true);
             return published.Id;
         } catch (FinalSpecStore.TooLargeException e) {
             Database.rollback(sp);

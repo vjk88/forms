@@ -19,7 +19,11 @@
  *    update (a saveMode='update' spec is refused).
  *
  * Availability windows (status/opensAt/closesAt) + honeypot spam check are
- * enforced here (A3). Response caps + per-window rate limiting are deferred.
+ * enforced here (A3). Invisible bot checks (FinalGuestTicket): every submit
+ * must carry a signed load ticket (meta.tk) with its proof-of-work nonce
+ * (meta.pow), old enough and not already used by a saved submit. These are
+ * friction, not a rate limiter: Apex cannot see a guest's IP, so there is no
+ * per-visitor limit. Refusals use the stable FINAL_BOT:* codes.
  */
 public without sharing class FinalGuestController {
     private static final String UNAVAILABLE = 'This form is not available.';
@@ -155,7 +159,10 @@ public without sharing class FinalGuestController {
         'Final_Run_NoMatches',
         'Final_Run_ResultOne',
         'Final_Run_ResultsMany',
-        'Final_Run_Language'
+        'Final_Run_Language',
+        'Final_Run_TooFast',
+        'Final_Run_StillSending',
+        'Final_Run_AlreadySent'
     };
     // END RUNTIME_LABEL_NAMES
 
@@ -280,8 +287,46 @@ public without sharing class FinalGuestController {
         rewriteImageUrls(spec);
         return new Map<String, Object>{
             'versionId' => version.Id,
-            'spec' => spec
+            'spec' => spec,
+            'ticket' => newTicket(f.Id)
         };
+    }
+
+    /**
+     * A fresh bot-check ticket for the host's automatic refresh (an expired
+     * ticket on Submit). Same gates as the spec endpoint: a form a guest can
+     * not load, or one that is closed or full, hands out nothing.
+     */
+    @AuraEnabled
+    public static String guestTicket(Id formId) {
+        Form__c f = gate(formId);
+        Form_Version__c version = activeVersion(f.Id);
+        Map<String, Object> spec = parseSpec(FinalSpecStore.read(version));
+        if (
+            FinalSubmitService.isClosed(spec) ||
+            FinalSubmitService.responseCapReached(spec, version.Id)
+        ) {
+            throw refuse(FinalSubmitService.closedMessage(spec));
+        }
+        return newTicket(f.Id);
+    }
+
+    /** Mint a ticket; missing signing keys read as the normal "unavailable"
+     *  message, never an unsigned ticket (guests never provision keys). */
+    private static String newTicket(Id formId) {
+        try {
+            return FinalGuestTicket.mint(formId);
+        } catch (FinalGuestTicket.NoKeysException e) {
+            throw refuse(UNAVAILABLE);
+        }
+    }
+
+    /** An AuraHandledException whose getMessage() carries the text (tests and
+     *  the browser both read it). */
+    private static AuraHandledException refuse(String message) {
+        AuraHandledException e = new AuraHandledException(message);
+        e.setMessage(message);
+        return e;
     }
 
     public class GuestSubmitResult {
@@ -327,6 +372,13 @@ public without sharing class FinalGuestController {
             again.childCount = stored.childCount;
             return again;
         }
+
+        // Invisible bot checks (FinalGuestTicket): signed load ticket,
+        // proof-of-work, minimum age, replay marker. After the Freeform retry
+        // answer above (a resend of a saved attempt keeps its thank-you) and
+        // before anything is judged or written. Refusals throw FINAL_BOT:*.
+        String ticket = getStr(meta, 'tk');
+        FinalGuestTicket.verify(ticket, getStr(meta, 'pow'), f.Id);
 
         // Availability (A3 + S1 cap): a closed/expired/capped form rejects
         // even a replayed POST server-side (the closed-screen client can't
@@ -408,6 +460,14 @@ public without sharing class FinalGuestController {
             link.finish(outcome.recordId);
         } catch (FinalLinkService.LinkException e) {
             throw new AuraHandledException(UNAVAILABLE);
+        }
+
+        // The ticket is spent only by a SAVED submit: a rejected outcome
+        // (non-empty errors) keeps it so the person can fix and resend. (That
+        // submitGuest still answers success for a rejected outcome is the
+        // separate DEFERRED #68.) The cache call fails open.
+        if (outcome.errors == null || outcome.errors.isEmpty()) {
+            FinalGuestTicket.markUsed(ticket);
         }
 
         GuestSubmitResult res = new GuestSubmitResult();
