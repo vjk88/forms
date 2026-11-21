@@ -19,7 +19,7 @@ public inherited sharing class FinalFormActionsSelector {
                 Form_Type__c,
                 Status__c,
                 Primary_Context_Object__c,
-                Allowed_Adapters__c,
+                Is_Public__c,
                 Links_Invalidated_On__c
             FROM Form__c
             WHERE Id = :formId

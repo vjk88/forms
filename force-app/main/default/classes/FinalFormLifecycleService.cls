@@ -3,7 +3,6 @@
  * for FinalDesign form roots.
  */
 public with sharing class FinalFormLifecycleService {
-    private static final String PUBLIC_ADAPTER = 'Public_Guest';
     private static final Integer DOCUMENT_LINK_QUERY_BOUND = 2001;
 
     /** Read-only destructive-action preflight shown before confirmation. */
@@ -64,9 +63,7 @@ public with sharing class FinalFormLifecycleService {
         Savepoint savepoint = Database.setSavepoint();
         try {
             form.Status__c = 'Archived';
-            form.Allowed_Adapters__c = removePublicAdapter(
-                form.Allowed_Adapters__c
-            );
+            form.Is_Public__c = false;
             form.Links_Invalidated_On__c = System.now();
             update as user form;
         } catch (DmlException e) {
@@ -86,9 +83,7 @@ public with sharing class FinalFormLifecycleService {
         Savepoint savepoint = Database.setSavepoint();
         try {
             form.Status__c = 'Draft';
-            form.Allowed_Adapters__c = removePublicAdapter(
-                form.Allowed_Adapters__c
-            );
+            form.Is_Public__c = false;
             update as user form;
         } catch (DmlException e) {
             Database.rollback(savepoint);
@@ -191,19 +186,6 @@ public with sharing class FinalFormLifecycleService {
             throw new LifecycleException('The form is unavailable.');
         }
         return form;
-    }
-
-    private static String removePublicAdapter(String adapters) {
-        if (String.isBlank(adapters)) {
-            return null;
-        }
-        List<String> retained = new List<String>();
-        for (String adapter : adapters.split(';')) {
-            if (String.isNotBlank(adapter) && adapter != PUBLIC_ADAPTER) {
-                retained.add(adapter);
-            }
-        }
-        return retained.isEmpty() ? null : String.join(retained, ';');
     }
 
     private class FileCleanup {

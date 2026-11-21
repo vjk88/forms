@@ -57,6 +57,296 @@ private class FinalAutofillValidatorTest {
         };
     }
 
+    /** A public form with a REQUIRED lookup question is refused for an
+     *  anonymous audience (the switch is Form__c.Is_Public__c). */
+    @isTest
+    static void aRequiredLookupOnAPublicFormIsRefused() {
+        Form__c f = new Form__c(
+            Name = 'Public lookup',
+            Primary_Context_Object__c = 'Contact',
+            Form_Type__c = 'Form',
+            Is_Public__c = true
+        );
+        insert f;
+        Map<String, Object> spec = createBaseSpec();
+        Map<String, Object> lookup = (Map<String, Object>) ((List<Object>) ((Map<String, Object>) ((List<Object>) ((Map<String, Object>) ((List<Object>) spec.get(
+                    'pages'
+                ))[0])
+                .get('sections'))[0])
+            .get('elements'))[2];
+        lookup.put('required', true);
+        // the validator only runs for a form that has Autofill rules
+        ((Map<String, Object>) ((Map<String, Object>) spec.get('settings'))
+                .get('prefill'))
+            .put(
+                'autofillRules',
+                new List<Object>{
+                    rule(
+                        'r_user',
+                        new Map<String, Object>{ 'type' => 'user' },
+                        'preserveEdits',
+                        new List<Object>{ mapping('m1', 'Email', 'el_email') }
+                    )
+                }
+            );
+
+        Test.startTest();
+        List<FinalAutofillValidator.Diagnostic> onPublic = FinalAutofillValidator.validate(
+            spec,
+            f.Id
+        );
+        f.Is_Public__c = false;
+        update f;
+        List<FinalAutofillValidator.Diagnostic> onPrivate = FinalAutofillValidator.validate(
+            spec,
+            f.Id
+        );
+        Test.stopTest();
+
+        Boolean refused = false;
+        for (FinalAutofillValidator.Diagnostic d : onPublic) {
+            refused = refused || d.code == 'AUTOFILL_REQUIRED_LOOKUP_ANONYMOUS';
+        }
+        System.assert(refused, 'public + required lookup is refused');
+        for (FinalAutofillValidator.Diagnostic d : onPrivate) {
+            System.assertNotEquals(
+                'AUTOFILL_REQUIRED_LOOKUP_ANONYMOUS',
+                d.code,
+                'a form that is not public is not refused'
+            );
+        }
+    }
+
+    private static Map<String, Object> rule(
+        String id,
+        Map<String, Object> source,
+        String policy,
+        List<Object> mappings
+    ) {
+        return new Map<String, Object>{
+            'id' => id,
+            'name' => id,
+            'enabled' => true,
+            'source' => source,
+            'policy' => policy,
+            'mappings' => mappings
+        };
+    }
+
+    private static Map<String, Object> mapping(
+        String id,
+        String fromField,
+        String toElement
+    ) {
+        return new Map<String, Object>{
+            'id' => id,
+            'from' => fromField,
+            'to' => toElement,
+            'guestAllowed' => false
+        };
+    }
+
+    /** One rule set full of mistakes: each mistake is named by its own code
+     *  (exercises the refusal paths the narrower tests above don't reach). */
+    @isTest
+    static void everyKindOfMistakeIsNamed() {
+        Form__c f = new Form__c(
+            Name = 'Mistakes survey',
+            Form_Type__c = 'Survey',
+            Primary_Context_Object__c = 'Contact'
+        );
+        insert f;
+        Map<String, Object> spec = createBaseSpec();
+        List<Object> elements = (List<Object>) ((Map<String, Object>) ((List<Object>) ((Map<String, Object>) ((List<Object>) spec.get(
+                    'pages'
+                ))[0])
+                .get('sections'))[0])
+            .get('elements');
+        elements.add(
+            new Map<String, Object>{
+                'id' => 'el_locked',
+                'type' => 'field',
+                'readOnly' => true,
+                'config' => new Map<String, Object>{ 'inputType' => 'text' }
+            }
+        );
+        Map<String, Object> link = new Map<String, Object>{
+            'type' => 'link',
+            'objectApiName' => 'Contact'
+        };
+        List<Object> rules = new List<Object>{
+            // a valid link rule, then a second one (only one allowed)
+            rule(
+                'r_link1',
+                link,
+                'preserveEdits',
+                new List<Object>{ mapping('m1', 'FirstName', 'el_first_name') }
+            ),
+            rule(
+                'r_link2',
+                new Map<String, Object>{ 'type' => 'link' }, // no object
+                'preserveEdits',
+                new List<Object>{ mapping('m2', 'Email', 'el_email') }
+            ),
+            // a link rule for another object than the survey's own
+            rule(
+                'r_link3',
+                new Map<String, Object>{
+                    'type' => 'link',
+                    'objectApiName' => 'Account'
+                },
+                'preserveEdits',
+                new List<Object>{ mapping('m3', 'Name', 'el_phone') }
+            ),
+            // lookup rules: no question, a missing question, not a lookup
+            rule(
+                'r_lk1',
+                new Map<String, Object>{ 'type' => 'lookup' },
+                'preserveEdits',
+                new List<Object>{ mapping('m4', 'Name', 'el_phone') }
+            ),
+            rule(
+                'r_lk2',
+                new Map<String, Object>{
+                    'type' => 'lookup',
+                    'elementId' => 'el_nowhere'
+                },
+                'preserveEdits',
+                new List<Object>{ mapping('m5', 'Name', 'el_phone') }
+            ),
+            rule(
+                'r_lk3',
+                new Map<String, Object>{
+                    'type' => 'lookup',
+                    'elementId' => 'el_first_name'
+                },
+                'preserveEdits',
+                new List<Object>{ mapping('m6', 'Name', 'el_phone') }
+            ),
+            // an object nobody can read, a bad policy, no mappings
+            rule(
+                'r_obj',
+                new Map<String, Object>{
+                    'type' => 'user',
+                    'objectApiName' => 'No_Such_Object__c'
+                },
+                'whenever',
+                new List<Object>()
+            ),
+            // mappings: no from, no to, a question that doesn't exist, a
+            // read-only question
+            rule(
+                'r_user',
+                new Map<String, Object>{ 'type' => 'user' },
+                'preserveEdits',
+                new List<Object>{
+                    mapping('m7', '', 'el_email'),
+                    mapping('m8', 'Email', ''),
+                    mapping('m9', 'Email', 'el_ghost'),
+                    mapping('m10', 'Email', 'el_locked')
+                }
+            )
+        };
+        // too many rules
+        for (Integer i = 0; i < FinalAutofillValidator.MAX_ENABLED_RULES; i++) {
+            rules.add(
+                rule(
+                    'r_bulk' + i,
+                    new Map<String, Object>{ 'type' => 'user' },
+                    'preserveEdits',
+                    new List<Object>{
+                        mapping('mb' + i + 'a', 'Email', 'el_email'),
+                        mapping('mb' + i + 'b', 'Phone', 'el_phone'),
+                        mapping('mb' + i + 'c', 'Title', 'el_first_name')
+                    }
+                )
+            );
+        }
+        ((Map<String, Object>) ((Map<String, Object>) spec.get('settings'))
+                .get('prefill'))
+            .put('autofillRules', rules);
+
+        Test.startTest();
+        List<FinalAutofillValidator.Diagnostic> diags = FinalAutofillValidator.validate(
+            spec,
+            f.Id
+        );
+        Test.stopTest();
+
+        Set<String> codes = new Set<String>();
+        for (FinalAutofillValidator.Diagnostic d : diags) {
+            codes.add(d.code);
+        }
+        for (
+            String expected : new List<String>{
+                'AUTOFILL_MULTIPLE_LINK_RULES',
+                'AUTOFILL_MISSING_SOURCE_OBJECT',
+                'AUTOFILL_MISSING_LOOKUP_ELEMENT',
+                'AUTOFILL_LOOKUP_ELEMENT_NOT_FOUND',
+                'AUTOFILL_INVALID_POLICY',
+                'AUTOFILL_EMPTY_MAPPINGS',
+                'AUTOFILL_MISSING_FROM_FIELD',
+                'AUTOFILL_MISSING_TO_ELEMENT',
+                'AUTOFILL_DESTINATION_NOT_FOUND',
+                'AUTOFILL_EXCEEDED_MAX_RULES',
+                'AUTOFILL_EXCEEDED_MAX_MAPPINGS'
+            }
+        ) {
+            System.assert(
+                codes.contains(expected),
+                expected + ' missing from ' + codes
+            );
+        }
+    }
+
+    /** A connected survey's own context object is read from the form. */
+    @isTest
+    static void aConnectedSurveyIsValidatedAgainstItsContextObject() {
+        Form__c f = new Form__c(
+            Name = 'Connected survey',
+            Form_Type__c = 'Survey',
+            Primary_Context_Object__c = 'Contact'
+        );
+        insert f;
+        Map<String, Object> spec = createBaseSpec();
+        Map<String, Object> prefill = (Map<String, Object>) ((Map<String, Object>) spec.get(
+                'settings'
+            ))
+            .get('prefill');
+        prefill.put(
+            'autofillRules',
+            new List<Object>{
+                new Map<String, Object>{
+                    'id' => 'rule_ctx',
+                    'name' => 'Context',
+                    'enabled' => true,
+                    'source' => new Map<String, Object>{
+                        'type' => 'link',
+                        'objectApiName' => 'Contact'
+                    },
+                    'policy' => 'preserveEdits',
+                    'mappings' => new List<Object>{
+                        new Map<String, Object>{
+                            'id' => 'm1',
+                            'from' => 'FirstName',
+                            'to' => 'el_first_name',
+                            'guestAllowed' => true
+                        }
+                    }
+                }
+            }
+        );
+
+        Test.startTest();
+        List<FinalAutofillValidator.Diagnostic> diags = FinalAutofillValidator.validate(
+            spec,
+            f.Id
+        );
+        Test.stopTest();
+
+        System.assertNotEquals(null, diags, 'validated against the form');
+    }
+
     @isTest
     static void testValidRulesPass() {
         Map<String, Object> spec = createBaseSpec();

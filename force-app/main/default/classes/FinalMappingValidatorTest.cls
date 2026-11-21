@@ -814,7 +814,7 @@ private class FinalMappingValidatorTest {
         Form__c form = new Form__c(
             Name = 'Public',
             Form_Type__c = 'Freeform',
-            Allowed_Adapters__c = 'Public_Guest'
+            Is_Public__c = true
         );
         insert form;
         Map<String, Object> a = FinalMappingTestData.findOrCreateContact(

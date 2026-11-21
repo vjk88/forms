@@ -625,7 +625,7 @@ private class FinalLookupServiceTest {
             Name = 'Lookup Form',
             Form_Type__c = 'Form',
             Status__c = 'Published',
-            Allowed_Adapters__c = 'Public_Guest',
+            Is_Public__c = true,
             // VR_Primary_Object_Required (ACTIVE): a Form-typed record must
             // carry its primary object or the insert is rejected.
             Primary_Context_Object__c = 'Job_Application__c'

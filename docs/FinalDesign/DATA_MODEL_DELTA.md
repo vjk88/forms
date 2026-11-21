@@ -58,11 +58,15 @@
 > form displayed "Single Page"). Defaults removed; `FinalFormCreateControllerTest` now asserts the
 > deprecated fields stay null on created records.
 >
-> **`Allowed_Adapters__c` verdict (owner 2026-07-05): KEEP.** It is the hosting-surface matrix —
-> which surfaces a form may render on (record page, Flow screen, guest, iFrame, embedded), with
-> type-derived constraints (Survey ≠ Record Page). Unread by final\* until the adapter layer builds;
-> value set + defaults get reshaped then. Spec: [HOSTING_ADAPTERS_SPEC.md](./specs/HOSTING_ADAPTERS_SPEC.md),
-> parked as [DEFERRED.md](./DEFERRED.md) #14.
+> **`Form__c.Is_Public__c` (Checkbox, default false, added 2026-11-21).** The public switch: anyone with the
+> public link can open and submit the form (guest users). Read by the guest gate, Studio Public toggle,
+> asset links, Autofill / mapping / publish checks; duplicate, archive and restore set it false. Replaces the
+> `Public_Guest` value of `Allowed_Adapters__c` (one-time backfill: `scripts/apex/backfillIsPublic.apex`).
+> Spec: [IMPL_PLAN_FLOW_AND_PUBLIC.md](./IMPL_PLAN_FLOW_AND_PUBLIC.md) Part 2.
+>
+> **`Allowed_Adapters__c`: legacy only; final\* no longer reads it; delete with the legacy purge
+> ([DEFERRED.md](./DEFERRED.md) #52).** (Earlier verdict 2026-07-05 "KEEP as hosting-surface matrix" is superseded;
+> see [HOSTING_ADAPTERS_SPEC.md](./specs/HOSTING_ADAPTERS_SPEC.md), kept for history.)
 
 ### `Form_Section__c` — one addition
 

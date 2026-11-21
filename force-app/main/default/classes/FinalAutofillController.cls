@@ -438,7 +438,7 @@ public with sharing class FinalAutofillController {
         Id versionId
     ) {
         List<Form__c> forms = [
-            SELECT Id, Status__c, Allowed_Adapters__c
+            SELECT Id, Status__c, Is_Public__c
             FROM Form__c
             WHERE Id = :formId
             LIMIT 1

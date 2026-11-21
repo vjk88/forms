@@ -71,7 +71,7 @@ private class FinalSurveySubmitTest {
             Name = 'Pulse',
             Form_Type__c = 'Survey',
             Status__c = 'Published',
-            Allowed_Adapters__c = 'Public_Guest'
+            Is_Public__c = true
         );
         insert form;
         Form_Version__c version = new Form_Version__c(

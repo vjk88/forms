@@ -4,7 +4,7 @@
  * The proven FormAssetController contract, rebuilt under the final* namespace:
  * images live as Salesforce Files (ContentVersion) linked to the parent Form so
  * they travel with it and clean up with it. Public exposure is DERIVED from the
- * form's Allowed_Adapters__c (Public_Guest → public ContentDistribution link;
+ * form's Is_Public__c (checked → public ContentDistribution link;
  * otherwise an authenticated shepherd URL). Only url + contentVersionId are
  * stored in Spec_JSON__c — never base64.
  *
@@ -193,15 +193,13 @@ public with sharing class FinalAssetController {
             return false;
         }
         List<Form__c> forms = [
-            SELECT Allowed_Adapters__c
+            SELECT Is_Public__c
             FROM Form__c
             WHERE Id = :formId
             WITH USER_MODE
             LIMIT 1
         ];
-        return !forms.isEmpty() &&
-            String.isNotBlank(forms[0].Allowed_Adapters__c) &&
-            forms[0].Allowed_Adapters__c.contains('Public_Guest');
+        return !forms.isEmpty() && forms[0].Is_Public__c == true;
     }
 
     private static String sanitizeName(String fileName, String ext) {

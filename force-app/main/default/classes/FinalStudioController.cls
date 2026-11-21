@@ -25,7 +25,7 @@ public with sharing class FinalStudioController {
                     Name,
                     Primary_Context_Object__c,
                     Status__c,
-                    Allowed_Adapters__c
+                    Is_Public__c
                 FROM Form__c
                 WHERE Id = :formId
                 WITH USER_MODE
@@ -70,9 +70,7 @@ public with sharing class FinalStudioController {
                     'This form has no specification to edit.'
                 );
             }
-            Boolean isPublic =
-                String.isNotBlank(forms[0].Allowed_Adapters__c) &&
-                forms[0].Allowed_Adapters__c.contains('Public_Guest');
+            Boolean isPublic = forms[0].Is_Public__c == true;
             return new Map<String, Object>{
                 'formId' => forms[0].Id,
                 'name' => forms[0].Name,
@@ -222,8 +220,8 @@ public with sharing class FinalStudioController {
     }
 
     /**
-     * Guest access toggle (Phase A1.5 gate writer). Adds or removes the
-     * `Public_Guest` adapter on the form — the guest gate's SECOND condition
+     * Guest access toggle (Phase A1.5 gate writer). Sets or clears
+     * `Is_Public__c` on the form — the guest gate's SECOND condition
      * (FinalGuestController). Default posture is OFF: publishing alone never
      * exposes a form; a builder must deliberately turn this on.
      *
@@ -242,7 +240,7 @@ public with sharing class FinalStudioController {
         }
         try {
             List<Form__c> forms = [
-                SELECT Id, Allowed_Adapters__c
+                SELECT Id, Is_Public__c
                 FROM Form__c
                 WHERE Id = :formId
                 WITH USER_MODE
@@ -252,27 +250,15 @@ public with sharing class FinalStudioController {
                 throw new AuraHandledException('FORM_NOT_FOUND');
             }
             Form__c f = forms[0];
-            Set<String> adapters = new Set<String>();
-            if (String.isNotBlank(f.Allowed_Adapters__c)) {
-                for (String a : f.Allowed_Adapters__c.split(';')) {
-                    if (String.isNotBlank(a)) {
-                        adapters.add(a.trim());
-                    }
-                }
-            }
-            Boolean changed = enabled
-                ? adapters.add('Public_Guest')
-                : adapters.remove('Public_Guest');
-            if (changed) {
-                f.Allowed_Adapters__c = adapters.isEmpty()
-                    ? null
-                    : String.join(new List<String>(adapters), ';');
+            Boolean target = enabled == true;
+            if (f.Is_Public__c != target) {
+                f.Is_Public__c = target;
                 update as user f;
             }
-            if (enabled) {
+            if (target) {
                 remintPublicImages(formId);
             }
-            return adapters.contains('Public_Guest');
+            return target;
         } catch (AuraHandledException e) {
             throw e;
         } catch (Exception e) {

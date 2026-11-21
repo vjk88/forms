@@ -4,7 +4,7 @@ private class FinalGuestControllerTest {
 
     private static Form__c makeForm(
         String status,
-        String adapters,
+        Boolean isPublic,
         Boolean withActiveVersion,
         String specJson
     ) {
@@ -12,7 +12,7 @@ private class FinalGuestControllerTest {
             Name = 'Guest test',
             Primary_Context_Object__c = 'Contact',
             Status__c = status,
-            Allowed_Adapters__c = adapters,
+            Is_Public__c = isPublic,
             // org validation rules: published forms require both a layout
             // config and a schema snapshot (VR_Layout_Config_Required,
             // VR_Schema_Snapshot_Required)
@@ -45,7 +45,7 @@ private class FinalGuestControllerTest {
     }
 
     private static Form__c publishedForm() {
-        return makeForm('Published', 'Public_Guest', true, contactSpec());
+        return makeForm('Published', true, true, contactSpec());
     }
 
     // ----- getGuestSpec: gate -----
@@ -93,20 +93,20 @@ private class FinalGuestControllerTest {
 
     @IsTest
     static void gateRejectsDraft() {
-        Form__c f = makeForm('Draft', 'Public_Guest', true, contactSpec());
+        Form__c f = makeForm('Draft', true, true, contactSpec());
         assertUnavailable(f.Id);
     }
 
     @IsTest
-    static void gateRejectsNonPublicAdapter() {
-        // published + active, but no Public_Guest in the adapter set
-        Form__c f = makeForm('Published', null, true, contactSpec());
+    static void gateRejectsNotPublic() {
+        // published + active, but Is_Public__c is unchecked
+        Form__c f = makeForm('Published', false, true, contactSpec());
         assertUnavailable(f.Id);
     }
 
     @IsTest
     static void gateRejectsNoActiveVersion() {
-        Form__c f = makeForm('Published', 'Public_Guest', false, null);
+        Form__c f = makeForm('Published', true, false, null);
         assertUnavailable(f.Id);
     }
 
@@ -159,7 +159,7 @@ private class FinalGuestControllerTest {
             '","contentVersionId":"' +
             cv.Id +
             '"}},"pages":[]}';
-        Form__c f = makeForm('Published', 'Public_Guest', true, spec);
+        Form__c f = makeForm('Published', true, true, spec);
 
         Test.startTest();
         String json = FinalGuestController.getGuestSpec(f.Id);
@@ -183,7 +183,7 @@ private class FinalGuestControllerTest {
             '"header":{"logo":{"url":"' +
             internalUrl +
             '","contentVersionId":"068000000000000AAA"}},"pages":[]}';
-        Form__c f = makeForm('Published', 'Public_Guest', true, spec);
+        Form__c f = makeForm('Published', true, true, spec);
 
         String json = FinalGuestController.getGuestSpec(f.Id);
         Assert.isTrue(
@@ -237,7 +237,7 @@ private class FinalGuestControllerTest {
             '{"specVersion":1,"form":{"targetObject":"Contact","saveMode":"update"},' +
             '"pages":[{"id":"pg_1","sections":[{"id":"sec_1","elements":[' +
             '{"id":"el_ln","type":"field","binding":{"object":"Contact","field":"LastName"}}]}]}]}';
-        Form__c f = makeForm('Published', 'Public_Guest', true, spec);
+        Form__c f = makeForm('Published', true, true, spec);
 
         try {
             FinalGuestController.submitGuest(
@@ -262,7 +262,7 @@ private class FinalGuestControllerTest {
             '{"id":"el_an","type":"field","binding":{"object":"Asset","field":"Name"}},' +
             '{"id":"el_dt","type":"field","binding":{"object":"Asset","field":"InstallDate"}}]}' +
             ']}]}';
-        Form__c f = makeForm('Published', 'Public_Guest', true, spec);
+        Form__c f = makeForm('Published', true, true, spec);
         String payload = JSON.serialize(
             new Map<String, Object>{
                 'answers' => new Map<String, Object>{
@@ -297,7 +297,7 @@ private class FinalGuestControllerTest {
 
     @IsTest
     static void submitGateRejectsUnpublished() {
-        Form__c f = makeForm('Draft', 'Public_Guest', true, contactSpec());
+        Form__c f = makeForm('Draft', true, true, contactSpec());
         try {
             FinalGuestController.submitGuest(
                 f.Id,
@@ -346,7 +346,7 @@ private class FinalGuestControllerTest {
     static void closedStatusReturnsFlagNotStructure() {
         Form__c f = makeForm(
             'Published',
-            'Public_Guest',
+            true,
             true,
             settingsSpec(
                 '"availability":{"status":"closed","closedMessage":"Done for now."}'
@@ -366,7 +366,7 @@ private class FinalGuestControllerTest {
             spec.substring(0, spec.length() - 1) +
             ',"languages":{"default":"en_US","available":["en_US","fr"]},' +
             '"translations":{"fr":{"closed.message":"Termine pour le moment."}}}';
-        return makeForm('Published', 'Public_Guest', true, spec);
+        return makeForm('Published', true, true, spec);
     }
 
     @IsTest
@@ -402,7 +402,7 @@ private class FinalGuestControllerTest {
     static void beforeOpensAtIsClosed() {
         Form__c f = makeForm(
             'Published',
-            'Public_Guest',
+            true,
             true,
             settingsSpec(
                 '"availability":{"opensAt":"' +
@@ -420,7 +420,7 @@ private class FinalGuestControllerTest {
     static void afterClosesAtIsClosed() {
         Form__c f = makeForm(
             'Published',
-            'Public_Guest',
+            true,
             true,
             settingsSpec(
                 '"availability":{"closesAt":"' +
@@ -438,7 +438,7 @@ private class FinalGuestControllerTest {
     static void openWindowServesFormAndStripsAvailability() {
         Form__c f = makeForm(
             'Published',
-            'Public_Guest',
+            true,
             true,
             settingsSpec(
                 '"availability":{"opensAt":"' +
@@ -465,7 +465,7 @@ private class FinalGuestControllerTest {
     static void submitOnClosedFormRejected() {
         Form__c f = makeForm(
             'Published',
-            'Public_Guest',
+            true,
             true,
             settingsSpec('"availability":{"status":"closed"}')
         );
@@ -489,7 +489,7 @@ private class FinalGuestControllerTest {
     static void honeypotFilledFakeSuccessNoRecord() {
         Form__c f = makeForm(
             'Published',
-            'Public_Guest',
+            true,
             true,
             settingsSpec('"spamProtection":"honeypot"')
         );
@@ -512,7 +512,7 @@ private class FinalGuestControllerTest {
     static void honeypotEmptyInsertsNormally() {
         Form__c f = makeForm(
             'Published',
-            'Public_Guest',
+            true,
             true,
             settingsSpec('"spamProtection":"honeypot"')
         );
@@ -537,7 +537,7 @@ private class FinalGuestControllerTest {
             contactSpec().removeEnd('}') +
             ',"mapping":{"actions":[{"id":"act_secret","object":"Contact",' +
             '"operation":"create","fields":[]}]}}';
-        Form__c f = makeForm('Published', 'Public_Guest', true, spec);
+        Form__c f = makeForm('Published', true, true, spec);
 
         String json = FinalGuestController.getGuestSpec(f.Id);
 
@@ -624,12 +624,7 @@ private class FinalGuestControllerTest {
 
     @IsTest
     static void submitMissingRequiredAnswerIsRefusedNotSuccess() {
-        Form__c f = makeForm(
-            'Published',
-            'Public_Guest',
-            true,
-            requiredNameSpec()
-        );
+        Form__c f = makeForm('Published', true, true, requiredNameSpec());
         FinalGuestTicket.memoryCache = new Map<String, Integer>();
         String ticket = FinalGuestTicketTestUtil.agedTicket(f.Id);
         String payload = FinalGuestTicketTestUtil.withTicket(
@@ -669,12 +664,7 @@ private class FinalGuestControllerTest {
 
     @IsTest
     static void submitAfterRefusalWithSameTicketSucceeds() {
-        Form__c f = makeForm(
-            'Published',
-            'Public_Guest',
-            true,
-            requiredNameSpec()
-        );
+        Form__c f = makeForm('Published', true, true, requiredNameSpec());
         FinalGuestTicket.memoryCache = new Map<String, Integer>();
         String ticket = FinalGuestTicketTestUtil.agedTicket(f.Id);
 

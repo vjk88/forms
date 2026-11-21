@@ -5,7 +5,7 @@
  * Runs `without sharing` so an unauthenticated visitor can read a published
  * form and file a response — but EVERY method opens with the same HARD GATE
  * (legacy FormViewerGuest pattern, proven): the form must exist, be
- * `Status__c = 'Published'`, AND explicitly allow the `Public_Guest` adapter,
+ * `Status__c = 'Published'`, AND have `Is_Public__c` checked,
  * with an active version carrying a spec. Any failure returns ONE generic
  * message — never which gate failed (RUNTIME_NOTES: no gate oracle).
  *
@@ -611,7 +611,7 @@ public without sharing class FinalGuestController {
             SELECT
                 Id,
                 Status__c,
-                Allowed_Adapters__c,
+                Is_Public__c,
                 Form_Type__c,
                 Primary_Context_Object__c
             FROM Form__c
@@ -622,9 +622,7 @@ public without sharing class FinalGuestController {
             throw new AuraHandledException(UNAVAILABLE);
         }
         Form__c f = forms[0];
-        Boolean isPublic =
-            String.isNotBlank(f.Allowed_Adapters__c) &&
-            f.Allowed_Adapters__c.contains('Public_Guest');
+        Boolean isPublic = f.Is_Public__c == true;
         if (f.Status__c != 'Published' || !isPublic) {
             throw new AuraHandledException(UNAVAILABLE);
         }

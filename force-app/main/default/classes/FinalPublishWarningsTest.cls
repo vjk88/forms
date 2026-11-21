@@ -49,9 +49,7 @@ private class FinalPublishWarningsTest {
         form = new Form__c(
             Name = 'Warnings test',
             Form_Type__c = 'Freeform',
-            Allowed_Adapters__c = isPublic
-                ? 'Internal_Record_Page;Public_Guest'
-                : 'Internal_Record_Page'
+            Is_Public__c = isPublic
         );
         insert form;
         Form_Version__c live = new Form_Version__c(

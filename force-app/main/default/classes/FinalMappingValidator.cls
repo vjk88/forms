@@ -1222,14 +1222,12 @@ public with sharing class FinalMappingValidator {
             return false;
         }
         List<Form__c> forms = [
-            SELECT Allowed_Adapters__c
+            SELECT Is_Public__c
             FROM Form__c
             WHERE Id = :formId
             WITH USER_MODE
         ];
-        return !forms.isEmpty() &&
-            forms[0].Allowed_Adapters__c != null &&
-            forms[0].Allowed_Adapters__c.contains('Public_Guest');
+        return !forms.isEmpty() && forms[0].Is_Public__c == true;
     }
 
     private static String str(Object o) {
