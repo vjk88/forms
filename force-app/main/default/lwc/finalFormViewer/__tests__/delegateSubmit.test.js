@@ -220,6 +220,26 @@ describe('c-final-form-viewer delegated submit (guest host, A2)', () => {
             expect(handler).toHaveBeenCalledTimes(1); // nothing new goes out
         });
 
+        it('a locked Submit keeps its explanation when the form re-applies (e.g. a language switch)', async () => {
+            const el = mount();
+            await flush();
+            await flush();
+            bar(el).dispatchEvent(new CustomEvent('submit'));
+            await flush();
+            el.failSubmit('Already sent.', { locked: true });
+            await flush();
+
+            // a re-apply clears ordinary errors; the lock's message comes back
+            // from the label (in whatever language is active now)
+            el.spec = JSON.parse(JSON.stringify(SPEC));
+            await flush();
+            await flush();
+            expect(bar(el).disabled).toBe(true);
+            expect(bar(el).blockedMessage).toBe(
+                "Your response was already received. Changes made after that weren't saved."
+            );
+        });
+
         it('a plain failSubmit still allows another try', async () => {
             const el = mount();
             const handler = jest.fn();

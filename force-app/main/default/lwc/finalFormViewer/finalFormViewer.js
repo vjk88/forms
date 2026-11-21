@@ -1346,7 +1346,13 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         }
         this._revealed = [];
         this._focusTarget = null;
-        this._submitError = undefined;
+        // A locked Submit (this page's response was already received: the only
+        // reason the host locks it) keeps its explanation across a re-apply,
+        // e.g. a language switch, now in the new language. Otherwise the
+        // respondent would face a greyed Submit with no message.
+        this._submitError = this._submitLocked
+            ? t('Final_Run_AlreadySent')
+            : undefined;
         this._autofillError = undefined;
         this.submittedRecordId = null;
         this._startedAt =

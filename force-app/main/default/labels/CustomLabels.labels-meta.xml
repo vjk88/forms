@@ -1100,8 +1100,7 @@
         <protected>false</protected>
         <shortDescription
         >Respondent submitted before the minimum wait</shortDescription>
-        <value
-        >That was quick! Please check your answers and submit again.</value>
+        <value>Please check your answers, then submit again.</value>
     </labels>
     <labels>
         <fullName>Final_Run_StillSending</fullName>
@@ -1120,6 +1119,6 @@
         <shortDescription
         >Shown when this page already sent a response</shortDescription>
         <value
-        >This page already sent a response. If you changed answers after that, those changes weren't saved.</value>
+        >Your response was already received. Changes made after that weren't saved.</value>
     </labels>
 </CustomLabels>

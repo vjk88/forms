@@ -50,4 +50,20 @@ describe('c-final-submit-bar: sending text', () => {
         await flush();
         expect(text()).toBe('Still sending…');
     });
+
+    it('announces "Still sending" in a polite live region screen readers hear', async () => {
+        const el = mount({ showSubmit: true, submitting: true });
+        await flush();
+        const live = () => el.shadowRoot.querySelector('span.sr-only');
+        expect(live().getAttribute('aria-live')).toBe('polite');
+        expect(live().textContent).toBe('');
+
+        el.slow = true;
+        await flush();
+        expect(live().textContent).toBe('Still sending…');
+
+        el.submitting = false;
+        await flush();
+        expect(live().textContent).toBe('');
+    });
 });

@@ -65,6 +65,11 @@ export default class FinalSubmitBar extends LightningElement {
         return this.cfg.backLabel || t('Final_Run_Back');
     }
 
+    /** "Still sending…" for screen readers, only while a send is slow. */
+    get slowAnnouncement() {
+        return this.submitting && this.slow ? t('Final_Run_StillSending') : '';
+    }
+
     get submittingText() {
         return this.slow
             ? t('Final_Run_StillSending')

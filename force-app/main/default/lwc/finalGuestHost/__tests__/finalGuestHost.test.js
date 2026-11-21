@@ -488,14 +488,36 @@ describe('c-final-guest-host bot checks and submit', () => {
         expect(doneSpy).not.toHaveBeenCalled();
     });
 
-    it('EXPIRED but the refresh fails: "could not save", answers kept', async () => {
+    it('EXPIRED but the form closed meanwhile: the server says so, not "try again"', async () => {
         submitGuest.mockRejectedValue(botError('EXPIRED'));
-        guestTicket.mockRejectedValue({ body: { message: 'closed' } });
+        guestTicket.mockRejectedValue({
+            body: { message: 'This form is closed.' }
+        });
         const { viewer, failSpy } = await mountReady();
         request(viewer);
         await advance(2000);
 
         expect(submitGuest).toHaveBeenCalledTimes(1);
+        expect(failSpy).toHaveBeenCalledWith('This form is closed.');
+    });
+
+    it('EXPIRED and the refresh fails with no message: "could not save"', async () => {
+        submitGuest.mockRejectedValue(botError('EXPIRED'));
+        guestTicket.mockRejectedValue(new Error('network'));
+        const { viewer, failSpy } = await mountReady();
+        request(viewer);
+        await advance(2000);
+
+        expect(failSpy).toHaveBeenCalledWith(t('Final_Run_SaveFailed'));
+    });
+
+    it('no ticket and the fetch returns none: Submit is released, never left spinning', async () => {
+        guestTicket.mockResolvedValue('');
+        const { viewer, failSpy } = await mountReady({ ticket: undefined });
+        request(viewer);
+        await advance(2000);
+
+        expect(submitGuest).not.toHaveBeenCalled();
         expect(failSpy).toHaveBeenCalledWith(t('Final_Run_SaveFailed'));
     });
 
@@ -509,7 +531,7 @@ describe('c-final-guest-host bot checks and submit', () => {
         expect(failSpy).toHaveBeenCalledWith(t('Final_Run_AlreadySent'), {
             locked: true
         });
-        expect(t('Final_Run_AlreadySent')).toContain('already sent');
+        expect(t('Final_Run_AlreadySent')).toContain('already received');
         expect(guestTicket).not.toHaveBeenCalled();
     });
 
@@ -523,7 +545,7 @@ describe('c-final-guest-host bot checks and submit', () => {
 
         expect(failSpy).toHaveBeenCalledWith(t('Final_Run_TooFast'));
         expect(failSpy.mock.calls[0][1]).toBeUndefined(); // not locked
-        expect(t('Final_Run_TooFast')).toContain('quick');
+        expect(t('Final_Run_TooFast')).toContain('submit again');
 
         request(viewer);
         await advance(0);

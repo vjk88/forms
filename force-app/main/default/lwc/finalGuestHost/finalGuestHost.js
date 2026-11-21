@@ -407,7 +407,12 @@ export default class FinalGuestHost extends LightningElement {
                     // landed): ask for one once, then carry on as normal
                     // eslint-disable-next-line no-await-in-loop
                     entry = await this._refreshTicket(formId, gen);
-                    if (!live() || !entry) {
+                    if (!live()) {
+                        return;
+                    }
+                    if (!entry) {
+                        // never leave Submit spinning: no ticket, no send
+                        fail(t('Final_Run_SaveFailed'));
                         return;
                     }
                 }
@@ -440,8 +445,15 @@ export default class FinalGuestHost extends LightningElement {
                         try {
                             // eslint-disable-next-line no-await-in-loop
                             await this._refreshTicket(formId, gen);
-                        } catch {
-                            fail(t('Final_Run_SaveFailed'));
+                        } catch (refreshError) {
+                            // a form that closed or filled up meanwhile says
+                            // so (the server's own message), not "try again"
+                            fail(
+                                ...this._failureFor(
+                                    refreshError,
+                                    botCode(refreshError)
+                                )
+                            );
                             return;
                         }
                         if (!live()) {
