@@ -67,3 +67,53 @@ describe('c-final-submit-bar: sending text', () => {
         expect(live().textContent).toBe('');
     });
 });
+
+describe('c-final-submit-bar: the list of questions to fix', () => {
+    it('renders the heading in the live region, the bullets as buttons outside it, and "and N more"', async () => {
+        const el = mount({
+            showSubmit: true,
+            blockedMessage: 'Please fix these to submit:',
+            blockedItems: [
+                { key: 'c:a', text: 'Email' },
+                { key: 'c:b', text: 'Phone' }
+            ],
+            blockedMore: 'and 3 more'
+        });
+        await flush();
+        const root = el.shadowRoot;
+        const live = root.querySelector('[aria-live="polite"].blocked');
+        expect(live.textContent).toBe('Please fix these to submit:');
+        expect(live.querySelector('button')).toBeNull();
+        const buttons = [...root.querySelectorAll('ul.blocked-list button')];
+        expect(buttons.map((b) => b.textContent.trim())).toEqual([
+            'Email',
+            'Phone'
+        ]);
+        expect(root.querySelector('.blocked-more').textContent).toBe(
+            'and 3 more'
+        );
+    });
+
+    it('a bullet fires blockedjump with its key', async () => {
+        const el = mount({
+            showSubmit: true,
+            blockedMessage: 'Please fix this to submit:',
+            blockedItems: [{ key: 'c:b', text: 'Phone' }]
+        });
+        const handler = jest.fn();
+        el.addEventListener('blockedjump', handler);
+        await flush();
+        el.shadowRoot.querySelector('.blocked-link').click();
+        expect(handler).toHaveBeenCalledTimes(1);
+        expect(handler.mock.calls[0][0].detail).toEqual({ key: 'c:b' });
+    });
+
+    it('draws no list when there are no items', async () => {
+        const el = mount({
+            showSubmit: true,
+            blockedMessage: 'Plain failure.'
+        });
+        await flush();
+        expect(el.shadowRoot.querySelector('ul.blocked-list')).toBeNull();
+    });
+});

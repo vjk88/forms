@@ -261,7 +261,11 @@ describe('repeating groups in the viewer', () => {
                 .focusRequest
         ).toBeUndefined();
         expect(entryEls(el, 'en_1').some((e) => e.errors)).toBe(false);
-        expect(bar(el).blockedMessage).toBe('Fix 1 field to submit');
+        expect(bar(el).blockedMessage).toBe('Please fix this to submit:');
+        // a group question is named with its entry
+        expect(bar(el).blockedItems.map((i) => i.text)).toEqual([
+            'Cases, entry 1: Subject'
+        ]);
 
         typeIn(el, 'el_subj::en_0', 'Fixed');
         await flush();
@@ -278,7 +282,9 @@ describe('repeating groups in the viewer', () => {
         expect(deepQuery(el.shadowRoot, '.rep-min').textContent).toBe(
             'Fill in at least 2 entries.'
         );
-        expect(bar(el).blockedMessage).toBe('Fix 1 field to submit');
+        expect(bar(el).blockedMessage).toBe('Please fix this to submit:');
+        // an unmet minimum is named by the section itself
+        expect(bar(el).blockedItems.map((i) => i.text)).toEqual(['Cases']);
         expect(
             entryEls(el, 'en_1').find((e) => e.id === 'el_prio::en_1')
                 .focusRequest
@@ -466,9 +472,10 @@ describe('repeating groups in the viewer', () => {
         expect(sec.entries[0].errors.__row).toEqual([
             'This Case is changed in two lists with different values. Change it in one of them.'
         ]);
-        expect(bar(el).blockedMessage).toBe(
-            'Some answers were not accepted. See the highlighted fields.'
-        );
+        expect(bar(el).blockedMessage).toBe('Please fix this to submit:');
+        expect(bar(el).blockedItems.map((i) => i.text)).toEqual([
+            expect.stringMatching(/entry 1: This Case is changed in two lists/)
+        ]);
     });
 
     it('removing the refused entry clears its message; the next Submit clears everything', async () => {

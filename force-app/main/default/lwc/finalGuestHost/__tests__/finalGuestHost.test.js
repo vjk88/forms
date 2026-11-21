@@ -444,6 +444,17 @@ describe('c-final-guest-host bot checks and submit', () => {
         expect(failSpy).toHaveBeenCalledWith('Closed.');
     });
 
+    it('a refused submit (success:false + errors) never completes the viewer: the errors go to it', async () => {
+        const errors = [{ message: 'Last name is required.', fields: [] }];
+        submitGuest.mockResolvedValue({ success: false, errors });
+        const { viewer, doneSpy, failSpy } = await mountReady();
+        request(viewer);
+        await advance(2000);
+
+        expect(doneSpy).not.toHaveBeenCalled();
+        expect(failSpy).toHaveBeenCalledWith(null, { errors });
+    });
+
     it('EXPIRED: fetches a fresh ticket, waits its two seconds and resends ONCE with the same payload', async () => {
         submitGuest
             .mockRejectedValueOnce(botError('EXPIRED'))

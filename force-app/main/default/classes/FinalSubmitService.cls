@@ -103,6 +103,12 @@ public inherited sharing class FinalSubmitService {
         public String message;
         @AuraEnabled
         public List<String> fields;
+        /** The question a refusal is about, when our own checks know it (answer
+         *  validation, lookups). The browser routes on it directly; a guest
+         *  gets ONLY this, never `fields` (field API names are withheld from
+         *  guests, FinalGuestController.projectForGuest). */
+        @AuraEnabled
+        public String elementId;
         /** The repeating group a refused related record came from; blank
          *  for the main record (IMPL_PLAN_RELATED_RECORDS §4). */
         @AuraEnabled
@@ -201,6 +207,7 @@ public inherited sharing class FinalSubmitService {
         String reason
     ) {
         FieldError fe = new FieldError();
+        fe.elementId = (String) el.get('id');
         String label = (String) el.get('label');
         if (mode == Posture.GUEST) {
             fe.message = 'One of your answers could not be accepted.';

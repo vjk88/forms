@@ -75,14 +75,14 @@ describe('tn()', () => {
                 'Final_Run_FixFieldsContinueMany',
                 1
             )
-        ).toBe('Fix 1 field to continue');
+        ).toBe('Please fix this to continue:');
         expect(
             tn(
                 'Final_Run_FixFieldsContinueOne',
                 'Final_Run_FixFieldsContinueMany',
                 3
             )
-        ).toBe('Fix 3 fields to continue');
+        ).toBe('Please fix these to continue:');
         expect(
             tn('Final_Run_MinEntriesOne', 'Final_Run_MinEntriesMany', 2)
         ).toBe('Fill in at least 2 entries.');

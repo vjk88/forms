@@ -69,9 +69,33 @@
                             {autofillError}
                         </div>
                     </template>
-                    <template lwc:if={topSubmitError}>
+                    <template lwc:if={topBanner}>
                         <div class="viewer-submit-error" role="alert">
-                            {topSubmitError}
+                            {topBanner.text}
+                            <template lwc:if={topBanner.items.length}>
+                                <ul class="viewer-blocked-list">
+                                    <template
+                                        for:each={topBanner.items}
+                                        for:item="item"
+                                    >
+                                        <li key={item.key}>
+                                            <button
+                                                type="button"
+                                                class="viewer-blocked-link"
+                                                data-key={item.key}
+                                                onclick={handleBlockedJump}
+                                            >
+                                                {item.text}
+                                            </button>
+                                        </li>
+                                    </template>
+                                    <template lwc:if={topBanner.more}>
+                                        <li class="viewer-blocked-more">
+                                            {topBanner.more}
+                                        </li>
+                                    </template>
+                                </ul>
+                            </template>
                         </div>
                     </template>
                     <div
@@ -140,11 +164,14 @@
                                 submitting={_submitting}
                                 slow={_stillSending}
                                 disabled={isSubmitBlocked}
-                                blocked-message={blockedMessage}
+                                blocked-message={blockedView.message}
+                                blocked-items={blockedView.items}
+                                blocked-more={blockedView.more}
                                 arrangement={model.buttonArrangement}
                                 onback={handleBack}
                                 onnext={handleNext}
                                 onsubmit={handleSubmit}
+                                onblockedjump={handleBlockedJump}
                             ></c-final-submit-bar>
                         </lwc:component>
                     </div>

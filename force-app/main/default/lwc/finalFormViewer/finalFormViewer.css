@@ -74,6 +74,43 @@
     font-size: var(--c-fs-error);
 }
 
+/* The questions the server refused, listed inside the banner
+   (IMPL_PLAN_BLOCKED_LIST): quiet bullets, each a link-styled button. */
+.viewer-blocked-list {
+    margin: var(--c-space-2) 0 0;
+    padding-left: var(--c-space-5);
+    /* explicit: the site's SLDS reset sets ul { list-style: none } */
+    list-style: disc;
+}
+
+.viewer-blocked-list li {
+    display: list-item;
+}
+
+.viewer-blocked-more {
+    list-style: none;
+    margin-left: calc(var(--c-space-5) * -1);
+    padding-left: var(--c-space-5);
+}
+
+.viewer-blocked-link {
+    padding: 0;
+    border: none;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+}
+
+.viewer-blocked-link:focus-visible {
+    outline: 2px solid transparent;
+    box-shadow: var(--c-focus-ring);
+    border-radius: var(--c-radius);
+}
+
 /* The language chip's row (translations PR 4): flush right, above the header,
    in flow so it never overlaps a title, progress bar or stepper. On the
    bleed layouts the panel has no padding, so the row carries its own. */

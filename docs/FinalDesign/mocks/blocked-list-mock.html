@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Blocked list mock</title>
+        <style>
+            :root {
+                --page: #eef2f6;
+                --card: #ffffff;
+                --ink: #1f2937;
+                --weak: #526071;
+                --line: #dce2e9;
+                --accent: #1e3a8a;
+                --error: #b42318;
+                --error-bg: #fef3f2;
+                --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                background: #f8fafc;
+                color: var(--ink);
+                font: 14px/1.45 var(--font);
+            }
+            h1 {
+                font-size: 18px;
+                margin: 20px 24px 4px;
+            }
+            .lead {
+                margin: 0 24px 18px;
+                color: var(--weak);
+                font-size: 13px;
+                max-width: 900px;
+            }
+            .grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 24px;
+                padding: 0 24px 24px;
+            }
+            .tag {
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--weak);
+                margin: 0 0 6px;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+            }
+            .stage {
+                background: var(--page);
+                border: 1px solid var(--line);
+                border-radius: 10px;
+                padding: 18px;
+            }
+            .form {
+                background: var(--card);
+                border-radius: 10px;
+                box-shadow: 0 1px 3px rgb(0 0 0 / 8%);
+                padding: 20px 24px;
+            }
+            .q {
+                margin: 0 0 14px;
+            }
+            .q label {
+                display: block;
+                font-weight: 600;
+                margin-bottom: 5px;
+                font-size: 13px;
+            }
+            .in {
+                border: 1px solid #b9c3cf;
+                border-radius: 6px;
+                height: 32px;
+                padding: 6px 10px;
+                font-size: 13px;
+                color: var(--weak);
+            }
+            .q.bad .in {
+                border-color: var(--error);
+                outline: 1px solid var(--error);
+            }
+            .q .msg {
+                color: var(--error);
+                font-size: 12px;
+                margin-top: 4px;
+            }
+            .bar {
+                margin-top: 18px;
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+                gap: 10px;
+            }
+            .primary {
+                background: var(--accent);
+                color: #fff;
+                border-radius: 6px;
+                padding: 8px 20px;
+                font-weight: 600;
+                font-size: 13px;
+            }
+            .old {
+                color: var(--error);
+                font-size: 13px;
+            }
+            .blocked {
+                align-self: stretch;
+                background: var(--error-bg);
+                border: 1px solid #f3c9c4;
+                border-radius: 8px;
+                padding: 10px 14px;
+                color: var(--ink);
+                font-size: 13px;
+            }
+            .blocked p {
+                margin: 0 0 6px;
+                font-weight: 600;
+                color: var(--error);
+            }
+            .blocked ul {
+                margin: 0;
+                padding-left: 18px;
+            }
+            .blocked li {
+                margin: 3px 0;
+            }
+            .blocked a {
+                color: var(--ink);
+                font-weight: 600;
+                text-decoration: underline;
+                text-underline-offset: 2px;
+            }
+            .blocked .why {
+                color: var(--weak);
+            }
+            .blocked .more {
+                color: var(--weak);
+                list-style: none;
+                margin-left: -18px;
+            }
+            .notes {
+                padding: 0 24px 32px;
+                color: var(--weak);
+                font-size: 13px;
+                max-width: 960px;
+            }
+            .notes li {
+                margin: 5px 0;
+            }
+            .notes b {
+                color: var(--ink);
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Blocked list by Submit / Next (replaces "Fix N fields")</h1>
+        <p class="lead">
+            Every place that says "Fix 1 field to submit" today gets a bulleted
+            list instead: each question that needs correcting, and what is wrong
+            with it. Same list for the browser's own checks and for a refusal
+            from the server (DEFERRED #68: a guest no longer sees "Thank you").
+            Each question name jumps to the question.
+        </p>
+
+        <div class="grid">
+            <section>
+                <p class="tag">Today</p>
+                <div class="stage">
+                    <div class="form">
+                        <div class="q bad">
+                            <label>Work email</label>
+                            <div class="in">riley@</div>
+                            <div class="msg">Enter a valid email address.</div>
+                        </div>
+                        <div class="q bad">
+                            <label>Earliest start date</label>
+                            <div class="in">mm/dd/yyyy</div>
+                            <div class="msg">Complete this field.</div>
+                        </div>
+                        <div class="bar">
+                            <span class="old">Fix 2 fields to submit</span>
+                            <span class="primary">Submit</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <p class="tag">Proposed</p>
+                <div class="stage">
+                    <div class="form">
+                        <div class="q bad">
+                            <label>Work email</label>
+                            <div class="in">riley@</div>
+                            <div class="msg">Enter a valid email address.</div>
+                        </div>
+                        <div class="q bad">
+                            <label>Earliest start date</label>
+                            <div class="in">mm/dd/yyyy</div>
+                            <div class="msg">Complete this field.</div>
+                        </div>
+                        <div class="bar">
+                            <div class="blocked" role="alert">
+                                <p>Please fix these to submit:</p>
+                                <ul>
+                                    <li>
+                                        <a href="#">Work email</a>
+                                        <span class="why"
+                                            >: Enter a valid email
+                                            address.</span
+                                        >
+                                    </li>
+                                    <li>
+                                        <a href="#">Earliest start date</a>
+                                        <span class="why"
+                                            >: Complete this field.</span
+                                        >
+                                    </li>
+                                </ul>
+                            </div>
+                            <span class="primary">Submit</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <p class="tag">Proposed · a page with Next, many problems</p>
+                <div class="stage">
+                    <div class="form">
+                        <div class="bar">
+                            <div class="blocked" role="alert">
+                                <p>Please fix these to continue:</p>
+                                <ul>
+                                    <li>
+                                        <a href="#">First name</a
+                                        ><span class="why"
+                                            >: Complete this field.</span
+                                        >
+                                    </li>
+                                    <li>
+                                        <a href="#">Work email</a
+                                        ><span class="why"
+                                            >: Enter a valid email
+                                            address.</span
+                                        >
+                                    </li>
+                                    <li>
+                                        <a href="#">Which days work for you?</a
+                                        ><span class="why"
+                                            >: Choose at least one.</span
+                                        >
+                                    </li>
+                                    <li>
+                                        <a href="#"
+                                            >References, entry 2: Email</a
+                                        ><span class="why"
+                                            >: Enter a valid email
+                                            address.</span
+                                        >
+                                    </li>
+                                    <li>
+                                        <a href="#">Years of experience</a
+                                        ><span class="why"
+                                            >: Enter a number from 0 to
+                                            50.</span
+                                        >
+                                    </li>
+                                    <li class="more">and 3 more</li>
+                                </ul>
+                            </div>
+                            <span class="primary">Next</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <p class="tag">Proposed · server refused a guest (#68)</p>
+                <div class="stage">
+                    <div class="form">
+                        <div class="q bad">
+                            <label>Work email</label>
+                            <div class="in">riley@example</div>
+                            <div class="msg">Enter a valid email address.</div>
+                        </div>
+                        <div class="bar">
+                            <div class="blocked" role="alert">
+                                <p>Please fix these to submit:</p>
+                                <ul>
+                                    <li>
+                                        <a href="#">Work email</a
+                                        ><span class="why"
+                                            >: Enter a valid email
+                                            address.</span
+                                        >
+                                    </li>
+                                </ul>
+                            </div>
+                            <span class="primary">Submit</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <ul class="notes">
+            <li>
+                <b>Wording</b>: question name (a link) + the same message the
+                question shows in red. Heading "Please fix these to submit:" /
+                "…to continue:" depending on the button.
+            </li>
+            <li>
+                <b>Long lists</b>: first 5, then "and N more" (the rest are
+                still red on the page).
+            </li>
+            <li><b>Related lists</b>: "References, entry 2: Email".</li>
+            <li>
+                <b>Guests</b>: our own checks on their answers show the question
+                and message (it's what the browser already tells them). An org
+                validation rule or a lookup refusal stays one plain line: "Your
+                response could not be saved. Nothing was recorded." (a public
+                form must not reveal the org's rules).
+            </li>
+            <li>
+                <b>One at a time</b> layouts keep their top banner, but it lists
+                the same way.
+            </li>
+            <li>
+                Screen readers hear the heading and the list once (alert), not
+                every question's message at once.
+            </li>
+        </ul>
+    </body>
+</html>

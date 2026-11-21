@@ -213,6 +213,7 @@ public with sharing class FinalAnswerValidator {
     ) {
         FinalSubmitService.FieldError fe = new FinalSubmitService.FieldError();
         fe.message = message;
+        fe.elementId = (String) el.get('id');
         fe.fields = new List<String>();
         String key = fieldKey(asMap(el.get('binding')));
         if (key == null) {

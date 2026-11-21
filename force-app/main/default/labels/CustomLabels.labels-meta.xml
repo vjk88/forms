@@ -351,7 +351,7 @@
         <protected>false</protected>
         <shortDescription
         >Blocked Next button: one field needs fixing</shortDescription>
-        <value>Fix 1 field to continue</value>
+        <value>Please fix this to continue:</value>
     </labels>
     <labels>
         <fullName>Final_Run_FixFieldsContinueMany</fullName>
@@ -360,7 +360,7 @@
         <protected>false</protected>
         <shortDescription
         >Blocked Next button: several fields need fixing</shortDescription>
-        <value>Fix {0} fields to continue</value>
+        <value>Please fix these to continue:</value>
     </labels>
     <labels>
         <fullName>Final_Run_FixFieldsSubmitOne</fullName>
@@ -369,7 +369,7 @@
         <protected>false</protected>
         <shortDescription
         >Blocked Submit button: one field needs fixing</shortDescription>
-        <value>Fix 1 field to submit</value>
+        <value>Please fix this to submit:</value>
     </labels>
     <labels>
         <fullName>Final_Run_FixFieldsSubmitMany</fullName>
@@ -378,7 +378,34 @@
         <protected>false</protected>
         <shortDescription
         >Blocked Submit button: several fields need fixing</shortDescription>
-        <value>Fix {0} fields to submit</value>
+        <value>Please fix these to submit:</value>
+    </labels>
+    <labels>
+        <fullName>Final_Run_AndMore</fullName>
+        <categories>FinalRuntime</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+        >Blocked list: how many more items are not shown</shortDescription>
+        <value>and {0} more</value>
+    </labels>
+    <labels>
+        <fullName>Final_Run_EntryN</fullName>
+        <categories>FinalRuntime</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+        >Blocked list: a repeating section and its entry number</shortDescription>
+        <value>{0}, entry {1}</value>
+    </labels>
+    <labels>
+        <fullName>Final_Run_NameColon</fullName>
+        <categories>FinalRuntime</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+        >Blocked list: a question name, then its message</shortDescription>
+        <value>{0}: {1}</value>
     </labels>
     <labels>
         <fullName>Final_Run_ValueNotValid</fullName>
