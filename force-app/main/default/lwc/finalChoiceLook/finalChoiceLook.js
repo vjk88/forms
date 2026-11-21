@@ -106,3 +106,58 @@ export function toSchemaOptions(describeOptions) {
         .filter((o) => o && o.value !== undefined && o.value !== null)
         .map((o) => ({ value: o.value, label: o.label || o.value }));
 }
+
+/**
+ * The values a RULE on this question may compare with (DEFERRED 29): what
+ * the respondent can actually pick, so the condition editor can offer them
+ * as a dropdown. `liveOptions` is Salesforce's active list for a bound
+ * picklist (describe rows), when the Studio has it.
+ *
+ * Returns `{ options: [{ value, label }], live, multi }`, or null when this
+ * question has no fixed list (the rule keeps a plain value box).
+ *   live   true when the list is what the form really offers: Salesforce's
+ *          own list read just now, or the author's own rows. False for the
+ *          saved copy of Salesforce's list, which may be out of date, so a
+ *          value missing from it is not yet called "no longer a choice".
+ *   multi  the answer is a list, so Contains can pick one of its members.
+ */
+export function ruleChoicesFor(el, liveOptions, formDefault) {
+    if (!el) {
+        return null;
+    }
+    const cfg = el.config || {};
+    const clean = (rows) =>
+        (rows || [])
+            .filter(
+                (o) =>
+                    o &&
+                    o.value !== undefined &&
+                    o.value !== null &&
+                    String(o.value) !== ''
+            )
+            .map((o) => ({
+                value: String(o.value),
+                label: o.label || String(o.value)
+            }));
+    const result = (options, live, multi) => {
+        return options.length ? { options, live, multi } : null;
+    };
+    if (el.type === 'imageChoice') {
+        return result(clean(cfg.options), true, Boolean(cfg.multiple));
+    }
+    if (el.type !== 'field' || cfg.inputType !== 'picklist') {
+        return null;
+    }
+    const { look, multi } = lookOf(cfg, formDefault);
+    const bound = Boolean(el.binding && el.binding.field);
+    if (look === 'default' && bound) {
+        // The Default look draws Salesforce's list, so the rule offers
+        // Salesforce's list as it is today, not the copy saved when the
+        // question was added.
+        if (Array.isArray(liveOptions)) {
+            return result(clean(liveOptions), true, multi);
+        }
+        return result(clean(optionsFor(cfg, look)), false, multi);
+    }
+    return result(clean(optionsFor(cfg, look)), true, multi);
+}

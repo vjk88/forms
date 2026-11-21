@@ -521,6 +521,58 @@ export function validateElement(element, value, ctx) {
  * Build-time lint (§7: comparison typing + repeater scoping are SPEC errors).
  * `elementIndex` = Map(id → { type, repeatSectionId }) built by the caller.
  */
+/**
+ * Rules that compare with a value their question no longer offers (DEFERRED
+ * 29): [{ ruleIndex, source, operator, value }]. Needs the index entry to
+ * carry `options` ([{ value }]); an entry without them, or whose list is not
+ * known to be current (`optionsLive === false`), is never judged. Record and
+ * Current-user rows have no list here. Contains counts only for an answer that
+ * holds several values (`multi`): on a single answer it is a text search, so
+ * any fragment can match. Mirrored by the editor's own check (finalRuleEditor).
+ */
+export function goneValues(config, elementIndex) {
+    const out = [];
+    if (!config || !Array.isArray(config.rules) || !elementIndex) {
+        return out;
+    }
+    config.rules.forEach((rule, ruleIndex) => {
+        if (!rule || isRecordRule(rule) || isUserRule(rule)) {
+            return;
+        }
+        const meta = elementIndex.get(rule.source);
+        if (
+            !meta ||
+            !Array.isArray(meta.options) ||
+            !meta.options.length ||
+            meta.optionsLive === false ||
+            isBlank(rule.value)
+        ) {
+            return;
+        }
+        const judged =
+            rule.operator === 'equals' ||
+            rule.operator === 'notEquals' ||
+            (rule.operator === 'contains' && meta.multi);
+        if (
+            judged &&
+            !meta.options.some((o) => String(o.value) === String(rule.value))
+        ) {
+            out.push({
+                ruleIndex,
+                source: rule.source,
+                operator: rule.operator,
+                value: rule.value
+            });
+        }
+    });
+    return out;
+}
+
+/** What a gone value means for the rule, in plain words. */
+export function goneValueEffect(operator) {
+    return operator === 'notEquals' ? 'it is always met' : 'it can never match';
+}
+
 export function lintVisibility(config, elementIndex, hostRepeatSectionId) {
     const problems = [];
     if (!config || !Array.isArray(config.rules)) {
@@ -560,6 +612,13 @@ export function lintVisibility(config, elementIndex, hostRepeatSectionId) {
                 `${label}: greater/less-than needs a numeric value or a date source.`
             );
         }
+    });
+    // A value the question no longer offers is a warning, never an error:
+    // the runtime just compares, so nothing breaks, the rule only goes quiet.
+    goneValues(config, elementIndex).forEach((g) => {
+        problems.push(
+            `Rule ${g.ruleIndex + 1}: “${g.value}” is no longer one of this question’s choices, so ${goneValueEffect(g.operator)}.`
+        );
     });
     if (config.logic === 'custom') {
         const probe = evaluateCustomLogic(

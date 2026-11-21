@@ -1,5 +1,6 @@
 import { createElement } from 'lwc';
 import FinalFieldPicker, {
+    choicesForPath,
     labelForPath,
     typeForPath,
     resetFieldCache
@@ -236,5 +237,59 @@ describe('reading, not filtering (IMPL_PLAN_F2_AUTOFILL 6.3)', () => {
         const el = mount({ allowedRelationships: ['Owner'] });
         await flush();
         expect(box(el).items.some((i) => i.kind === 'group')).toBe(false);
+    });
+});
+
+describe('picklist values (DEFERRED 29)', () => {
+    const STATUS = {
+        path: 'Status',
+        label: 'Status',
+        type: 'picklist',
+        picklistValues: ['Open', 'Closed'],
+        inactivePicklistValues: ['Archived']
+    };
+
+    beforeEach(() => {
+        describeLookupFields.mockImplementation(() =>
+            Promise.resolve({
+                fields: [
+                    STATUS,
+                    { path: 'Title', label: 'Title', type: 'string' }
+                ],
+                relationships: []
+            })
+        );
+    });
+
+    it('a pick says the field’s active and inactive values apart', async () => {
+        const el = mount();
+        await flush();
+        const heard = [];
+        el.addEventListener('fieldchange', (e) => heard.push(e.detail));
+        box(el).dispatchEvent(
+            new CustomEvent('pick', {
+                detail: { value: 'Status', label: 'Status' }
+            })
+        );
+        expect(heard[0]).toMatchObject({
+            type: 'picklist',
+            picklistValues: ['Open', 'Closed'],
+            inactivePicklistValues: ['Archived']
+        });
+    });
+
+    it('choicesForPath reads a saved field’s values from the same describe', async () => {
+        expect(await choicesForPath('Contact', 'Status')).toEqual({
+            type: 'picklist',
+            values: ['Open', 'Closed'],
+            inactive: ['Archived']
+        });
+        expect(await choicesForPath('Contact', 'Title')).toEqual({
+            type: 'string',
+            values: [],
+            inactive: []
+        });
+        expect(await choicesForPath('Contact', 'Nope')).toBeNull();
+        expect(await choicesForPath('', 'Status')).toBeNull();
     });
 });

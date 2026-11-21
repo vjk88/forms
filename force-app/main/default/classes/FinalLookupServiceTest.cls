@@ -574,6 +574,78 @@ private class FinalLookupServiceTest {
     }
 
     @isTest
+    static void describeListsInactivePicklistValuesApart() {
+        // Both describes: every field answers with BOTH lists, a value is
+        // never in both, and only picklist fields have either.
+        List<Map<String, Object>> filterable = (List<Map<String, Object>>) FinalLookupController.describeLookupFields(
+                'Contact',
+                null
+            )
+            .get('fields');
+        List<Map<String, Object>> readable = (List<Map<String, Object>>) FinalLookupController.describeReadableFields(
+                'Contact',
+                null
+            )
+            .get('fields');
+        for (
+            List<Map<String, Object>> fields : new List<List<Map<String, Object>>>{
+                filterable,
+                readable
+            }
+        ) {
+            Boolean sawPicklist = false;
+            for (Map<String, Object> f : fields) {
+                System.assert(
+                    f.containsKey('inactivePicklistValues'),
+                    'inactive values are always listed, even when empty'
+                );
+                List<String> active = (List<String>) f.get('picklistValues');
+                List<String> inactive = (List<String>) f.get(
+                    'inactivePicklistValues'
+                );
+                String type = (String) f.get('type');
+                if (type != 'picklist' && type != 'multipicklist') {
+                    System.assert(
+                        active.isEmpty() && inactive.isEmpty(),
+                        'only picklists carry values: ' + f.get('path')
+                    );
+                } else if (!active.isEmpty()) {
+                    sawPicklist = true;
+                }
+                Set<String> live = new Set<String>(active);
+                for (String v : inactive) {
+                    System.assert(
+                        !live.contains(v),
+                        'an inactive value is never also active: ' + v
+                    );
+                }
+            }
+            System.assert(sawPicklist, 'Contact has a picklist with values');
+        }
+    }
+
+    @isTest
+    static void picklistOfSplitsActiveFromInactive() {
+        Schema.DescribeFieldResult d = Contact.LeadSource.getDescribe();
+        Set<String> active = new Set<String>(
+            FinalLookupController.picklistOf(d, true)
+        );
+        Set<String> inactive = new Set<String>(
+            FinalLookupController.picklistOf(d, false)
+        );
+        Integer all = d.getPicklistValues().size();
+        System.assertEquals(
+            all,
+            active.size() + inactive.size(),
+            'every value is in exactly one list'
+        );
+        // a non-picklist has neither
+        Schema.DescribeFieldResult name = Contact.LastName.getDescribe();
+        System.assert(FinalLookupController.picklistOf(name, true).isEmpty());
+        System.assert(FinalLookupController.picklistOf(name, false).isEmpty());
+    }
+
+    @isTest
     static void describeCanFollowOneRelationship() {
         Map<String, Object> out = FinalLookupController.describeLookupFields(
             'Contact',

@@ -612,3 +612,106 @@ describe('unavailable context is unknown, not false', () => {
         expect(UNKNOWN).toBe('unknown');
     });
 });
+
+// ---- DEFERRED 29: a value its question no longer offers ----
+import { goneValues, goneValueEffect } from 'c/finalExpressionEngine';
+
+describe('goneValues / lint: a value the question no longer offers', () => {
+    const OPTIONS = [{ value: 'Web' }, { value: 'Phone' }];
+    const index = (extra) =>
+        new Map([
+            [
+                'q',
+                {
+                    type: 'field',
+                    repeatSectionId: null,
+                    options: OPTIONS,
+                    optionsLive: true,
+                    ...extra
+                }
+            ]
+        ]);
+    const cfg = (rule) => ({ logic: 'all', rules: [rule] });
+
+    it('finds an equals / notEquals value that is not in the list', () => {
+        expect(
+            goneValues(
+                {
+                    rules: [
+                        { source: 'q', operator: 'equals', value: 'Fax' },
+                        { source: 'q', operator: 'notEquals', value: 'Fax' },
+                        { source: 'q', operator: 'equals', value: 'Web' }
+                    ]
+                },
+                index()
+            ).map((g) => [g.ruleIndex, g.operator, g.value])
+        ).toEqual([
+            [0, 'equals', 'Fax'],
+            [1, 'notEquals', 'Fax']
+        ]);
+    });
+
+    it('lint warns, in the usual style, and says what it means', () => {
+        const equals = lintVisibility(
+            cfg({ source: 'q', operator: 'equals', value: 'Fax' }),
+            index(),
+            null
+        );
+        expect(equals).toEqual([
+            'Rule 1: “Fax” is no longer one of this question’s choices, so it can never match.'
+        ]);
+        const not = lintVisibility(
+            cfg({ source: 'q', operator: 'notEquals', value: 'Fax' }),
+            index(),
+            null
+        );
+        expect(not[0]).toContain('so it is always met');
+        expect(goneValueEffect('contains')).toBe('it can never match');
+    });
+
+    it('is quiet when the value is offered, blank, or the list is not known', () => {
+        const q = { source: 'q', operator: 'equals' };
+        expect(goneValues(cfg({ ...q, value: 'Web' }), index())).toEqual([]);
+        expect(goneValues(cfg({ ...q, value: '' }), index())).toEqual([]);
+        // a saved copy of the list may be out of date: never judged
+        expect(
+            goneValues(
+                cfg({ ...q, value: 'Fax' }),
+                index({ optionsLive: false })
+            )
+        ).toEqual([]);
+        // no list at all (plain text question)
+        expect(
+            goneValues(
+                cfg({ ...q, value: 'Fax' }),
+                new Map([['q', { type: 'field' }]])
+            )
+        ).toEqual([]);
+        // isBlank carries no value
+        expect(
+            goneValues(
+                cfg({ source: 'q', operator: 'isBlank', value: 'Fax' }),
+                index()
+            )
+        ).toEqual([]);
+    });
+
+    it('Contains is judged only on an answer that holds several values', () => {
+        const rule = { source: 'q', operator: 'contains', value: 'Fa' };
+        expect(goneValues(cfg(rule), index())).toEqual([]); // text search
+        expect(goneValues(cfg(rule), index({ multi: true }))).toHaveLength(1);
+    });
+
+    it('record and current-user rows have no list here', () => {
+        expect(
+            goneValues(
+                cfg({
+                    source: 'record:Status',
+                    operator: 'equals',
+                    value: 'x'
+                }),
+                index()
+            )
+        ).toEqual([]);
+    });
+});

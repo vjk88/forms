@@ -188,6 +188,40 @@
                                         {recordValueHint}
                                     </p>
                                 </template>
+                                <template lwc:elseif={r.isChoice}>
+                                    <lightning-combobox
+                                        label={r.valueLabel}
+                                        variant="label-hidden"
+                                        placeholder="Choose a value"
+                                        options={r.choiceOptions}
+                                        value={r.value}
+                                        data-index={r.index}
+                                        data-control="value"
+                                        onchange={handleRuleField}
+                                    ></lightning-combobox>
+                                </template>
+                                <template lwc:elseif={r.isChoiceList}>
+                                    <template lwc:if={r.hasChoicePills}>
+                                        <div class="re-pills">
+                                            <lightning-pill-container
+                                                label={r.pillsLabel}
+                                                items={r.choicePills}
+                                                data-index={r.index}
+                                                onitemremove={handleChoiceListRemove}
+                                            ></lightning-pill-container>
+                                        </div>
+                                    </template>
+                                    <lightning-combobox
+                                        label={r.valueLabel}
+                                        variant="label-hidden"
+                                        placeholder="Add a value"
+                                        options={r.choiceAddOptions}
+                                        value=""
+                                        data-index={r.index}
+                                        data-control="value"
+                                        onchange={handleChoiceListAdd}
+                                    ></lightning-combobox>
+                                </template>
                                 <template lwc:elseif={r.isBool}>
                                     <lightning-combobox
                                         label={r.valueLabel}

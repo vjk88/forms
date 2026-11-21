@@ -14,8 +14,11 @@ import describeReadableFields from '@salesforce/apex/FinalLookupController.descr
  * included). `max-depth` 0 hides related fields; `allowed-types` and
  * `allowed-relationships` narrow what is offered (IMPL_PLAN_F2_AUTOFILL 6.3).
  *
- * Emits `fieldchange` { value, label, type } where value is `prefix + path`
- * (`Industry`, `Account.Industry`, `record:Account.Industry`, …).
+ * Emits `fieldchange` { value, label, type, picklistValues,
+ * inactivePicklistValues } where value is `prefix + path` (`Industry`,
+ * `Account.Industry`, `record:Account.Industry`, …). The two lists are a
+ * picklist's active and inactive values (empty for any other field), so the
+ * condition editor can offer them as a dropdown.
  * Also forwards the lightning-* error API (setCustomValidity,
  * reportValidity, focus) so the condition editor treats it like any other
  * control. fp- prefixed classes (LEX leak rule).
@@ -116,6 +119,35 @@ export async function typeForPath(objectApi, path, purpose = 'filter') {
         );
         const hit = (list.fields || []).find((f) => f.path === path);
         return hit ? hit.type : null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * A field's Salesforce type and, for a picklist, its values — active and
+ * inactive apart — from the session's describes. Null when it isn't there.
+ * DEFERRED 29: the condition editor offers these in the Value dropdown.
+ */
+export async function choicesForPath(objectApi, path, purpose = 'filter') {
+    if (!objectApi || !path) {
+        return null;
+    }
+    try {
+        const dot = path.indexOf('.');
+        const list = await describe(
+            objectApi,
+            dot < 0 ? null : path.slice(0, dot),
+            purpose
+        );
+        const hit = (list.fields || []).find((f) => f.path === path);
+        return hit
+            ? {
+                  type: hit.type,
+                  values: hit.picklistValues || [],
+                  inactive: hit.inactivePicklistValues || []
+              }
+            : null;
     } catch {
         return null;
     }
@@ -338,6 +370,8 @@ export default class FinalFieldPicker extends LightningElement {
                 label: `${group.label} › ${f.label}`,
                 meta: f.path,
                 type: f.type,
+                picklistValues: f.picklistValues,
+                inactivePicklistValues: f.inactivePicklistValues,
                 searchOnly
             }));
     }
@@ -357,7 +391,9 @@ export default class FinalFieldPicker extends LightningElement {
                 value: this.prefix + f.path,
                 label: f.label,
                 meta: f.path,
-                type: f.type
+                type: f.type,
+                picklistValues: f.picklistValues,
+                inactivePicklistValues: f.inactivePicklistValues
             }));
         const groups = ((this.root && this.root.relationships) || [])
             .filter((r) => relOk(r.name))
@@ -402,7 +438,9 @@ export default class FinalFieldPicker extends LightningElement {
         const own = ((this.root && this.root.fields) || []).map((f) => ({
             value: this.prefix + f.path,
             label: f.label,
-            type: f.type
+            type: f.type,
+            picklistValues: f.picklistValues,
+            inactivePicklistValues: f.inactivePicklistValues
         }));
         const opened = Object.keys(this.related).flatMap((rel) =>
             this._relatedItems(rel, false)
@@ -456,7 +494,11 @@ export default class FinalFieldPicker extends LightningElement {
                 detail: {
                     value: event.detail.value,
                     label: event.detail.label,
-                    type: hit ? hit.type : undefined
+                    type: hit ? hit.type : undefined,
+                    picklistValues: hit ? hit.picklistValues : undefined,
+                    inactivePicklistValues: hit
+                        ? hit.inactivePicklistValues
+                        : undefined
                 }
             })
         );

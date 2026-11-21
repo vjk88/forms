@@ -1,7 +1,11 @@
 import { LightningElement, api, wire } from 'lwc';
 import { getObjectInfo } from 'lightning/uiObjectInfoApi';
-import { lintVisibility, validateCustomLogic } from 'c/finalExpressionEngine';
-import { typeForPath } from 'c/finalFieldPicker';
+import {
+    lintVisibility,
+    validateCustomLogic,
+    goneValueEffect
+} from 'c/finalExpressionEngine';
+import { typeForPath, choicesForPath } from 'c/finalFieldPicker';
 
 /**
  * finalRuleEditor — the condition editor, laid out the way the Form
@@ -85,9 +89,11 @@ const OPERATORS_BY_TYPE = {
     url: TEXTUAL
 };
 
-/** Value control per subtype. Picklist deliberately stays 'text' — the option
- *  dropdown is DEFERRED (ledger #29) because a control cannot represent a
- *  stored value that is missing from its options. */
+/** Value control per subtype. A source with a fixed value list (a picklist
+ *  field, a choice question) gets 'choice' / 'choiceList' instead, decided
+ *  per row by `_choiceMode` (DEFERRED 29). That dropdown never hides a saved
+ *  value it can't offer: a missing one stays selected, labelled, with a
+ *  warning (`_goneValues`), and is only ever replaced by the author. */
 const VALUE_KIND = {
     checkbox: 'bool',
     number: 'number',
@@ -96,6 +102,26 @@ const VALUE_KIND = {
 };
 
 const BOOL_VALUES = new Set(['true', 'false']);
+
+/**
+ * Comparisons that take SEVERAL values (a lookup filter's "is one of", "is
+ * not one of", "includes", "excludes"). The editor holds them as one text
+ * value, "A, B" — the lookup filter splits it on commas — and the choice
+ * picker writes exactly that, so what is saved is byte-for-byte what typing
+ * the same values would have saved.
+ */
+const LIST_OPERATORS = new Set(['in', 'nin', 'includes', 'excludes']);
+
+const GONE_SUFFIX = ' (no longer a choice)';
+const INACTIVE_SUFFIX = ' (inactive)';
+
+/** "A, B" → ['A', 'B'] (blank entries dropped, as the lookup filter does). */
+function parseList(value) {
+    return String(value === null || value === undefined ? '' : value)
+        .split(',')
+        .map((v) => v.trim())
+        .filter((v) => v.length > 0);
+}
 
 /** Can the typed control for `kind` actually DISPLAY `value`? A number/date
  *  input and a Yes/No choice cannot represent values outside their domain,
@@ -343,6 +369,13 @@ export default class FinalRuleEditor extends LightningElement {
 
     /** Field types learned from picks and describes, by source path. */
     _fieldTypes = {};
+
+    /**
+     * What a record field's picklist holds, by source: { type, values,
+     * inactive }. Learned from the field picker's pick and from the object's
+     * describe (the same one the picker uses), never guessed.
+     */
+    _fieldChoices = {};
 
     _fieldType(source) {
         if (!source) {
@@ -693,6 +726,197 @@ export default class FinalRuleEditor extends LightningElement {
                   'with a record. Without one, this stays hidden.';
     }
 
+    /** Saved rows learn their record field's picklist values from the same
+     *  describe the field picker reads (DEFERRED 29). */
+    _resolveFieldChoices() {
+        this._askedChoices = this._askedChoices || new Set();
+        this.rules.forEach((rule) => {
+            const source = rule.source;
+            if (
+                !source ||
+                typeof source !== 'string' ||
+                source.startsWith('user:') ||
+                this._fieldChoices[source] ||
+                this._askedChoices.has(source)
+            ) {
+                return;
+            }
+            let objectApi = this.fieldObject;
+            let path = source;
+            if (this.isVisibility) {
+                if (!source.startsWith('record:')) {
+                    return;
+                }
+                objectApi = this.recordObject;
+                path = source.slice(7);
+            }
+            if (!objectApi) {
+                return;
+            }
+            this._askedChoices.add(source);
+            choicesForPath(objectApi, path).then((found) => {
+                if (found) {
+                    this._fieldChoices = {
+                        ...this._fieldChoices,
+                        [source]: found
+                    };
+                }
+            });
+        });
+    }
+
+    /**
+     * The fixed list of values a row's source offers, or null when it has
+     * none. { options: [{value, label}], inactive: [{value, label}], live,
+     * multi, record }:
+     *  - a question's answer: the list the Studio put on its index entry
+     *    (live from Salesforce, or the form's own choices); never inactive.
+     *  - a record field: the field's active values, and its inactive ones
+     *    apart (old records may still hold them).
+     * `live` false = the list is a saved copy that may be out of date, so a
+     * value missing from it is kept as typed, not called "no longer a choice".
+     */
+    _choicesOf(rule) {
+        const source = rule && rule.source;
+        if (
+            !source ||
+            typeof source !== 'string' ||
+            source.startsWith('user:')
+        ) {
+            return null;
+        }
+        const plain = (v) => ({
+            value: String(v.value),
+            label: v.label || String(v.value)
+        });
+        if (this.isVisibility && !source.startsWith('record:')) {
+            const meta =
+                this.sourceIndex && this.sourceIndex.get
+                    ? this.sourceIndex.get(source)
+                    : null;
+            if (!meta || !Array.isArray(meta.options) || !meta.options.length) {
+                return null;
+            }
+            return {
+                options: meta.options.map(plain),
+                inactive: [],
+                live: meta.optionsLive !== false,
+                multi: Boolean(meta.multi),
+                record: false
+            };
+        }
+        const known = this._fieldChoices[source];
+        if (!known || !(known.values.length || known.inactive.length)) {
+            return null;
+        }
+        return {
+            options: known.values.map((v) => plain({ value: v })),
+            inactive: known.inactive.map((v) => plain({ value: v })),
+            live: true,
+            multi: known.type === 'multipicklist',
+            record: true
+        };
+    }
+
+    /** A value that points at another thing (user field, record field, answer). */
+    _isReference(rule) {
+        const v = rule.value;
+        return (
+            typeof v === 'string' &&
+            (v.startsWith('$User.') ||
+                v.startsWith(RECORD_PREFIX) ||
+                (this.answersOn && v.startsWith(ANSWER_PREFIX)))
+        );
+    }
+
+    /**
+     * How a row's Value is picked from the list: 'one' (a dropdown), 'list'
+     * (several, for the list operators) or null (a plain box). Contains is a
+     * text search on a single answer or a record field, so it keeps the box;
+     * only an answer that holds several values uses it to pick one member.
+     */
+    _choiceMode(rule) {
+        const choices = this._choicesOf(rule);
+        if (!choices || this._isReference(rule)) {
+            return null;
+        }
+        const op = rule.operator;
+        if (LIST_OPERATORS.has(op)) {
+            // "A, B" can't hold a value that has a comma in it.
+            const all = [...choices.options, ...choices.inactive];
+            return all.some((o) => o.value.includes(',')) ? null : 'list';
+        }
+        if (op === 'equals' || op === 'notEquals') {
+            return 'one';
+        }
+        if (op === 'contains' && choices.multi && !choices.record) {
+            return 'one';
+        }
+        return null;
+    }
+
+    _selectedValues(rule, mode) {
+        if (mode === 'list') {
+            return parseList(rule.value);
+        }
+        return isBlankValue(rule.value) ? [] : [String(rule.value)];
+    }
+
+    /** The saved values that are not on the list (inactive ones still are). */
+    _goneValues(rule) {
+        const mode = this._choiceMode(rule);
+        if (!mode || NO_VALUE.has(rule.operator)) {
+            return [];
+        }
+        const choices = this._choicesOf(rule);
+        if (!choices.live) {
+            return [];
+        }
+        const known = new Set(
+            [...choices.options, ...choices.inactive].map((o) => o.value)
+        );
+        return this._selectedValues(rule, mode).filter((v) => !known.has(v));
+    }
+
+    _goneMessage(rule) {
+        const gone = this._goneValues(rule);
+        const choices = this._choicesOf(rule);
+        const subject =
+            choices.record || !this.isVisibility ? 'field' : 'question';
+        // Name the value (the box truncates it) and say the way out.
+        if (this._choiceMode(rule) === 'list') {
+            return gone.length === 1
+                ? `This condition lists a value the ${subject} no longer offers: ${gone[0]}. Remove it to continue.`
+                : `This condition lists values the ${subject} no longer offers: ${gone.join(', ')}. Remove them to continue.`;
+        }
+        return `“${gone[0]}” is no longer one of the ${subject}’s choices, so ${goneValueEffect(rule.operator)}. Choose another value.`;
+    }
+
+    /**
+     * Every choice the dropdown shows: the live list, then the inactive
+     * values (marked), then each saved value that is on neither — kept and
+     * selected, so opening a rule never rewrites it.
+     */
+    _choiceOptions(rule) {
+        const choices = this._choicesOf(rule);
+        const options = choices.options.map((o) => ({
+            value: o.value,
+            label: o.label
+        }));
+        choices.inactive.forEach((o) =>
+            options.push({ value: o.value, label: o.label + INACTIVE_SUFFIX })
+        );
+        this._selectedValues(rule, this._choiceMode(rule)).forEach((v) => {
+            if (!options.some((o) => o.value === v)) {
+                options.push({
+                    value: v,
+                    label: choices.live ? v + GONE_SUFFIX : v
+                });
+            }
+        });
+        return options;
+    }
+
     /** The source's granular subtype, or null when it has none we can type on
      *  (a `record:` row, or an element the index doesn't carry). */
     _subtype(source) {
@@ -726,6 +950,10 @@ export default class FinalRuleEditor extends LightningElement {
      * value must stay visible, never an empty picker over a kept value.
      */
     _rowValueKind(rule) {
+        const mode = this._choiceMode(rule);
+        if (mode) {
+            return mode === 'list' ? 'choiceList' : 'choice';
+        }
         const kind = this._valueKind(rule.source);
         if (this.isVisibility || kind === 'text') {
             return kind;
@@ -835,7 +1063,22 @@ export default class FinalRuleEditor extends LightningElement {
                                 ? 'Choose a user field.'
                                 : this._compareOf(rule, i) === 'record'
                                   ? `Choose a ${this.compareRecordLabel} field.`
-                                  : 'Enter a value, or use “Is blank”.'
+                                  : this._choiceMode(rule)
+                                    ? 'Choose a value, or use “Is blank”.'
+                                    : 'Enter a value, or use “Is blank”.'
+                });
+            } else if (
+                !NO_VALUE.has(rule.operator) &&
+                this._goneValues(rule).length
+            ) {
+                // Shown from the moment the rule opens: a value that has gone
+                // is the first thing the author should see, not something
+                // found by clicking around. Fixed by picking a real value.
+                out.push({
+                    rowIndex: i,
+                    control: 'value',
+                    message: this._goneMessage(rule),
+                    immediate: true
                 });
             } else if (
                 !NO_VALUE.has(rule.operator) &&
@@ -937,7 +1180,7 @@ export default class FinalRuleEditor extends LightningElement {
     }
 
     _visible(problem) {
-        if (this._showAll) {
+        if (this._showAll || problem.immediate) {
             return true;
         }
         // Per control, not per row: picking a field must not turn the value
@@ -995,6 +1238,7 @@ export default class FinalRuleEditor extends LightningElement {
     renderedCallback() {
         this._resolveUserTypes();
         this._resolveFieldTypes();
+        this._resolveFieldChoices();
         this.template.querySelectorAll('[data-control]').forEach((node) => {
             if (
                 typeof node.setCustomValidity !== 'function' ||
@@ -1032,6 +1276,26 @@ export default class FinalRuleEditor extends LightningElement {
             (x) => x.control === 'logic' && this._visible(x)
         );
         return p ? p.message : '';
+    }
+
+    /** What the choice controls need for one row (empty for any other kind). */
+    _choiceView(rule, i, valueKind) {
+        if (valueKind !== 'choice' && valueKind !== 'choiceList') {
+            return {};
+        }
+        const options = this._choiceOptions(rule);
+        if (valueKind === 'choice') {
+            return { choiceOptions: options };
+        }
+        const chosen = parseList(rule.value);
+        const labelOf = (v) =>
+            (options.find((o) => o.value === v) || {}).label || v;
+        return {
+            choicePills: chosen.map((v) => ({ label: labelOf(v), name: v })),
+            hasChoicePills: chosen.length > 0,
+            pillsLabel: `Condition ${i + 1}: chosen values`,
+            choiceAddOptions: options.filter((o) => !chosen.includes(o.value))
+        };
     }
 
     get rows() {
@@ -1082,6 +1346,9 @@ export default class FinalRuleEditor extends LightningElement {
                 isDate: valueKind === 'date',
                 isDateTime: valueKind === 'datetime',
                 isText: valueKind === 'text',
+                isChoice: valueKind === 'choice',
+                isChoiceList: valueKind === 'choiceList',
+                ...this._choiceView(rule, i, valueKind),
                 boolOptions: this._boolOptions(rule.value),
                 sourceKindOptions: this._kindOptions(kind),
                 fieldOptions: this._fieldOptions(rule, kind),
@@ -1096,7 +1363,10 @@ export default class FinalRuleEditor extends LightningElement {
                     this.isVisibility ? 'question or field' : 'field'
                 }`,
                 operatorLabel: `Condition ${i + 1}: operator`,
-                valueLabel: `Condition ${i + 1}: value`,
+                valueLabel:
+                    valueKind === 'choiceList'
+                        ? `Condition ${i + 1}: add a value`
+                        : `Condition ${i + 1}: value`,
                 removeLabel: `Remove condition ${i + 1}`,
                 valueInvalid: messageFor(i, 'value') ? 'true' : undefined
             };
@@ -1134,6 +1404,10 @@ export default class FinalRuleEditor extends LightningElement {
                 }
                 if (message.includes('needs a numeric value')) {
                     return !isBlankValue(rule.value);
+                }
+                if (message.includes('is no longer one of')) {
+                    // the row itself says so, beside its value
+                    return false;
                 }
                 return true;
             })
@@ -1259,6 +1533,45 @@ export default class FinalRuleEditor extends LightningElement {
         this._emit(next);
     }
 
+    /** Add one more value to a list operator's choices (DEFERRED 29). */
+    handleChoiceListAdd(event) {
+        const i = Number(event.currentTarget.dataset.index);
+        const picked = this._eventValue(event);
+        const next = this._next();
+        const rule = next.rules[i];
+        if (!rule || isBlankValue(picked)) {
+            return;
+        }
+        this._touched.add(`${i}:value`);
+        const list = parseList(rule.value);
+        if (!list.includes(picked)) {
+            list.push(picked);
+        }
+        rule.value = list.join(', ');
+        // ready for the next one
+        event.currentTarget.value = '';
+        this._emit(next);
+    }
+
+    handleChoiceListRemove(event) {
+        const i = Number(event.currentTarget.dataset.index);
+        const next = this._next();
+        const rule = next.rules[i];
+        if (!rule) {
+            return;
+        }
+        this._touched.add(`${i}:value`);
+        const list = parseList(rule.value);
+        list.splice(event.detail.index, 1);
+        rule.value = list.join(', ');
+        if (!list.length) {
+            // the pill list disappears with its last pill: keep focus on
+            // the row instead of losing it to the page
+            this._focusNext = `[data-index="${i}"][data-control="value"]`;
+        }
+        this._emit(next);
+    }
+
     handleRuleField(event) {
         const { index, control } = event.currentTarget.dataset;
         const i = Number(index);
@@ -1267,6 +1580,7 @@ export default class FinalRuleEditor extends LightningElement {
         if (!rule) {
             return;
         }
+        const before = { source: rule.source, operator: rule.operator };
         this._touched.add(`${i}:${control}`);
         const prop = control === 'field' ? 'source' : control;
         rule[prop] = this._eventValue(event);
@@ -1293,6 +1607,31 @@ export default class FinalRuleEditor extends LightningElement {
         if (prop === 'operator' && NO_VALUE.has(rule.operator)) {
             rule.value = null;
         }
+        if (
+            prop === 'operator' &&
+            LIST_OPERATORS.has(before.operator) &&
+            !LIST_OPERATORS.has(rule.operator) &&
+            this._choicesOf(rule) &&
+            parseList(rule.value).length > 1
+        ) {
+            // Several values can't sit in a one-value dropdown; the author
+            // picks the one they mean rather than the editor choosing.
+            rule.value = '';
+        }
+        if (
+            prop === 'source' &&
+            event.detail &&
+            Array.isArray(event.detail.picklistValues)
+        ) {
+            this._fieldChoices = {
+                ...this._fieldChoices,
+                [rule.source]: {
+                    type: event.detail.type,
+                    values: event.detail.picklistValues,
+                    inactive: event.detail.inactivePicklistValues || []
+                }
+            };
+        }
         if (prop === 'source') {
             // Repointing a rule can strand both halves against the new
             // subtype. Fix them HERE, where the author can see it happen,
@@ -1306,6 +1645,13 @@ export default class FinalRuleEditor extends LightningElement {
                 rule.value = null;
             } else if (this._answerKey(rule)) {
                 // A chosen answer is kept and, if it no longer fits, marked.
+            } else if (
+                before.source !== rule.source &&
+                (this._choicesOf(before) || this._choicesOf(rule))
+            ) {
+                // A value picked from one list means nothing on another:
+                // the author picks again, nothing is carried over.
+                rule.value = '';
             } else if (!canDisplay(this._valueKind(rule.source), rule.value)) {
                 rule.value = '';
             }
