@@ -134,4 +134,108 @@ describe('c-final-form-viewer delegated submit (guest host, A2)', () => {
         await flush();
         expect(deepQuery(el.shadowRoot, 'c-final-after-submit')).not.toBeNull();
     });
+
+    describe('slow sends and a locked Submit', () => {
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
+        const bar = (el) => deepQuery(el.shadowRoot, 'c-final-submit-bar');
+        const settle = async () => {
+            for (let i = 0; i < 10; i++) {
+                // eslint-disable-next-line no-await-in-loop
+                await Promise.resolve();
+            }
+        };
+
+        it('says "Still sending" once a send has taken five seconds, and stops when it fails', async () => {
+            const el = mount();
+            await flush();
+            await flush();
+            jest.useFakeTimers();
+
+            bar(el).dispatchEvent(new CustomEvent('submit'));
+            await settle();
+            expect(bar(el).submitting).toBe(true);
+            expect(bar(el).slow).toBe(false);
+
+            jest.advanceTimersByTime(4900);
+            await settle();
+            expect(bar(el).slow).toBe(false);
+
+            jest.advanceTimersByTime(100);
+            await settle();
+            expect(bar(el).slow).toBe(true);
+
+            el.failSubmit('Server said no.');
+            await settle();
+            expect(bar(el).submitting).toBe(false);
+            expect(bar(el).slow).toBe(false);
+
+            // a later send starts its own five seconds
+            bar(el).dispatchEvent(new CustomEvent('submit'));
+            await settle();
+            jest.advanceTimersByTime(1000);
+            await settle();
+            expect(bar(el).slow).toBe(false);
+        });
+
+        it('a send that completes in time never shows "Still sending"', async () => {
+            const el = mount();
+            await flush();
+            await flush();
+            jest.useFakeTimers();
+
+            bar(el).dispatchEvent(new CustomEvent('submit'));
+            await settle();
+            jest.advanceTimersByTime(3000);
+            el.completeSubmit();
+            await settle();
+            jest.advanceTimersByTime(10000);
+            await settle();
+
+            expect(
+                deepQuery(el.shadowRoot, 'c-final-after-submit')
+            ).not.toBeNull();
+        });
+
+        it('failSubmit(message, { locked: true }) keeps Submit off for the rest of the visit', async () => {
+            const el = mount();
+            const handler = jest.fn();
+            el.addEventListener('submitrequest', handler);
+            await flush();
+            await flush();
+
+            bar(el).dispatchEvent(new CustomEvent('submit'));
+            await flush();
+            expect(handler).toHaveBeenCalledTimes(1);
+
+            el.failSubmit('Already sent.', { locked: true });
+            await flush();
+            expect(bar(el).blockedMessage).toBe('Already sent.');
+            expect(bar(el).disabled).toBe(true);
+
+            bar(el).dispatchEvent(new CustomEvent('submit'));
+            await flush();
+            expect(handler).toHaveBeenCalledTimes(1); // nothing new goes out
+        });
+
+        it('a plain failSubmit still allows another try', async () => {
+            const el = mount();
+            const handler = jest.fn();
+            el.addEventListener('submitrequest', handler);
+            await flush();
+            await flush();
+
+            bar(el).dispatchEvent(new CustomEvent('submit'));
+            await flush();
+            el.failSubmit('Try again.');
+            await flush();
+            expect(bar(el).disabled).toBe(false);
+
+            bar(el).dispatchEvent(new CustomEvent('submit'));
+            await flush();
+            expect(handler).toHaveBeenCalledTimes(2);
+        });
+    });
 });

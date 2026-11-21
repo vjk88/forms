@@ -122,6 +122,7 @@ const NOT_TEXT = [
     'labelPosition',
     'labelStyle',
     'link', // related-list link target
+    'locked', // failSubmit(message, { locked }): keeps Submit off, not words
     'logo', // image address
     'lookup',
     'lookupConfig',

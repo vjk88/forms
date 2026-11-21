@@ -1093,4 +1093,33 @@
         >Language menu on the form (screen reader name)</shortDescription>
         <value>Language</value>
     </labels>
+    <labels>
+        <fullName>Final_Run_TooFast</fullName>
+        <categories>FinalRuntime</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+        >Respondent submitted before the minimum wait</shortDescription>
+        <value
+        >That was quick! Please check your answers and submit again.</value>
+    </labels>
+    <labels>
+        <fullName>Final_Run_StillSending</fullName>
+        <categories>FinalRuntime</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+        >Shown when sending is taking a while</shortDescription>
+        <value>Still sending…</value>
+    </labels>
+    <labels>
+        <fullName>Final_Run_AlreadySent</fullName>
+        <categories>FinalRuntime</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+        >Shown when this page already sent a response</shortDescription>
+        <value
+        >This page already sent a response. If you changed answers after that, those changes weren't saved.</value>
+    </labels>
 </CustomLabels>

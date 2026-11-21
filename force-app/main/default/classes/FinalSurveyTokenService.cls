@@ -25,11 +25,6 @@ public with sharing class FinalSurveyTokenService {
     private static final String AES = 'AES256';
     private static final String HMAC = 'hmacSHA256';
 
-    @TestVisible
-    private static Blob encKeyCache;
-    @TestVisible
-    private static Blob macKeyCache;
-
     /** Resolved token payload, or null when a token is absent/forged/garbled. */
     public class Claims {
         public Id formId;
@@ -123,13 +118,13 @@ public with sharing class FinalSurveyTokenService {
             },
             '|'
         );
-        loadKeys(true);
+        FinalLinkKeys.load(true);
         Blob ct = Crypto.encryptWithManagedIV(
             AES,
-            encKeyCache,
+            FinalLinkKeys.encKey(),
             Blob.valueOf(payload)
         );
-        Blob mac = Crypto.generateMac(HMAC, ct, macKeyCache);
+        Blob mac = Crypto.generateMac(HMAC, ct, FinalLinkKeys.macKey());
         return urlB64(mac) + '.' + urlB64(ct);
     }
 
@@ -142,8 +137,8 @@ public with sharing class FinalSurveyTokenService {
         if (String.isBlank(token) || !token.contains('.')) {
             return null;
         }
-        loadKeys(false);
-        if (encKeyCache == null || macKeyCache == null) {
+        FinalLinkKeys.load(false);
+        if (FinalLinkKeys.encKey() == null || FinalLinkKeys.macKey() == null) {
             return null; // never provisioned — nothing was ever minted
         }
         try {
@@ -153,11 +148,19 @@ public with sharing class FinalSurveyTokenService {
             }
             Blob mac = urlB64Decode(segs[0]);
             Blob ct = urlB64Decode(segs[1]);
-            Blob expected = Crypto.generateMac(HMAC, ct, macKeyCache);
+            Blob expected = Crypto.generateMac(
+                HMAC,
+                ct,
+                FinalLinkKeys.macKey()
+            );
             if (!macEquals(mac, expected)) {
                 return null; // tampered / wrong key
             }
-            Blob pt = Crypto.decryptWithManagedIV(AES, encKeyCache, ct);
+            Blob pt = Crypto.decryptWithManagedIV(
+                AES,
+                FinalLinkKeys.encKey(),
+                ct
+            );
             List<String> parts = pt.toString().split('\\|');
             // 5 = legacy/stateless (or an untracked Tier 2 token, whose empty
             // trailing nonce String.split drops); 6 = a tracked invitation.
@@ -177,37 +180,6 @@ public with sharing class FinalSurveyTokenService {
         } catch (Exception e) {
             return null;
         }
-    }
-
-    // --------------------------------------------------------------- keys
-
-    /** Read (and, when minting, provision) the AES + MAC keys. Resolve never
-     *  provisions — a guest must never write the secret; if it's missing,
-     *  resolve simply yields null. */
-    private static void loadKeys(Boolean provision) {
-        if (encKeyCache != null && macKeyCache != null) {
-            return;
-        }
-        FinalLinkSecret__c s = FinalLinkSecret__c.getInstance('keys');
-        if (
-            s == null ||
-            String.isBlank(s.Enc_Key__c) ||
-            String.isBlank(s.Mac_Key__c)
-        ) {
-            if (!provision) {
-                return;
-            }
-            Blob enc = Crypto.generateAesKey(256);
-            Blob mac = Crypto.generateAesKey(256);
-            s = new FinalLinkSecret__c(
-                Name = 'keys',
-                Enc_Key__c = EncodingUtil.base64Encode(enc),
-                Mac_Key__c = EncodingUtil.base64Encode(mac)
-            );
-            insert s;
-        }
-        encKeyCache = EncodingUtil.base64Decode(s.Enc_Key__c);
-        macKeyCache = EncodingUtil.base64Decode(s.Mac_Key__c);
     }
 
     // ------------------------------------------------------------- helpers
