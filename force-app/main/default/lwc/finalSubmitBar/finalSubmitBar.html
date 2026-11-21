@@ -3,6 +3,28 @@
         <!-- Persistent aria-live row: present even when empty so screen readers
              announce the blocked message the moment the engine sets it. -->
         <p class="blocked" aria-live="polite">{blockedMessage}</p>
+        <!-- The bullets sit OUTSIDE the live region on purpose: the heading is
+             announced once, not every question's message. Each bullet is a
+             button (keyboard reachable) that jumps to its question. -->
+        <template lwc:if={hasBlockedItems}>
+            <ul class="blocked-list">
+                <template for:each={blockedItems} for:item="item">
+                    <li key={item.key}>
+                        <button
+                            type="button"
+                            class="blocked-link"
+                            data-key={item.key}
+                            onclick={handleBlockedJump}
+                        >
+                            {item.text}
+                        </button>
+                    </li>
+                </template>
+                <template lwc:if={blockedMore}>
+                    <li class="blocked-more">{blockedMore}</li>
+                </template>
+            </ul>
+        </template>
         <!-- Same idea for a slow send: the button text changes inside a
              disabled button, which screen readers do not re-read. -->
         <span class="sr-only" aria-live="polite">{slowAnnouncement}</span>

@@ -632,15 +632,15 @@ private class FinalGuestTicketTest {
     @IsTest
     static void aRejectedOutcomeDoesNotSpendTheTicket() {
         // the answer is required and sent blank: FinalSubmitService returns
-        // outcome.errors instead of throwing (the separate DEFERRED #68 is
-        // that submitGuest still answers success for it).
+        // outcome.errors instead of throwing; submitGuest answers
+        // success = false with those errors (DEFERRED #68).
         Form__c f = makeForm(
             specJson('"validation":[{"type":"required"}],', '')
         );
         FinalGuestTicket.memoryCache = new Map<String, Integer>();
         String ticket = FinalGuestTicketTestUtil.agedTicket(f.Id);
 
-        FinalGuestController.submitGuest(
+        FinalGuestController.GuestSubmitResult refused = FinalGuestController.submitGuest(
             f.Id,
             FinalGuestTicketTestUtil.withTicket(
                 '{"answers":{"el_ln":""}}',
@@ -649,6 +649,7 @@ private class FinalGuestTicketTest {
             )
         );
 
+        Assert.areEqual(false, refused.success, 'a refusal is not a success');
         Assert.areEqual(
             0,
             [SELECT COUNT() FROM Contact],

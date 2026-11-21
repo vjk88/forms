@@ -39,6 +39,11 @@ export default class FinalSubmitBar extends LightningElement {
     @api slow = false;
     /** Engine-set while Next/Submit is blocked by invalid fields; '' when clear. */
     @api blockedMessage = '';
+    /** The questions that need fixing: `{ key, text }` each, already capped
+     *  by the engine, and the "and N more" line after them ('' for none).
+     *  Each bullet fires `blockedjump` ({ key }) for the engine to act on. */
+    @api blockedItems = [];
+    @api blockedMore = '';
     /** Disables the submit button without entering the submitting spinner state. */
     @api disabled = false;
     /** Resolved by the viewer: submit.buttonArrangement ?? layout default. */
@@ -82,6 +87,18 @@ export default class FinalSubmitBar extends LightningElement {
 
     get isSubmitDisabled() {
         return this.submitting || this.disabled;
+    }
+
+    get hasBlockedItems() {
+        return Array.isArray(this.blockedItems) && this.blockedItems.length > 0;
+    }
+
+    handleBlockedJump(event) {
+        this.dispatchEvent(
+            new CustomEvent('blockedjump', {
+                detail: { key: event.currentTarget.dataset.key }
+            })
+        );
     }
 
     handleBack() {

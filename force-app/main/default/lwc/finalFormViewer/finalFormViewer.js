@@ -244,6 +244,9 @@ function splitOnePerScreen(pages) {
  *  questions (Part 2: "no longer exists", "changed in two lists"). */
 const ROW_ERROR = '__row';
 
+/** The list by Submit shows this many questions, then "and N more". */
+const BLOCKED_LIST_MAX = 5;
+
 /** How long a submit may be in flight before the bar says "Still sending...". */
 const STILL_SENDING_MS = 5000;
 
@@ -458,9 +461,8 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
      *  have no line by the button, so their Submit failure keeps the top
      *  banner it always had (IMPL_PLAN_BLOCKED_MESSAGE §3a). */
     get topSubmitError() {
-        return this.model && this.model.ownsAdvance
-            ? this._submitError
-            : undefined;
+        const banner = this.topBanner;
+        return banner ? banner.text : undefined;
     }
     submittedRecordId = null;
     _submittingFlag = false;
@@ -682,6 +684,11 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
      *  refusal of one related record, kept by KEY so removing an earlier
      *  entry can't slide it onto a neighbour (§4). */
     _serverEntryErrors = {};
+    /** What the server refused, as the list by Submit shows it (DEFERRED
+     *  #68): `{ key, text, elementIds, group, target }` per refusal, built
+     *  by _applyServerErrors. Empty for any other failure. An item leaves
+     *  the list when the respondent edits the question it names. */
+    _serverItems = [];
     /** sectionId -> the key order as it was sent, to turn the server's
      *  zero-based entryIndex back into an entry key. */
     _submitEntryKeys = {};
@@ -1307,6 +1314,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
               ? kept.repeatKeys
               : {};
         this._serverEntryErrors = {};
+        this._serverItems = [];
         this._submitEntryKeys = {};
         // R6 — preservation mode must still CREATE a session when there is not
         // one yet. Studio sets preserve-session, so on the first mount this took
@@ -3283,15 +3291,6 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         };
     }
 
-    /** Red questions in a decorated group, counted once each. */
-    _groupRedCount(sec) {
-        let count = sec.minMessage ? 1 : 0;
-        for (const e of sec.entries || []) {
-            count += Object.keys(e.errors || {}).length;
-        }
-        return count;
-    }
-
     /** Where a blocked click lands inside a decorated group (§4): a red
      *  question in a started entry; else, for an unmet minimum, the first
      *  question of the first untouched entry; else its Add button. */
@@ -3594,52 +3593,253 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             : null;
     }
 
-    /**
-     * The line above the buttons (COMPONENT_CATALOG §1 "Blocked Message",
-     * IMPL_PLAN_BLOCKED_MESSAGE §2). A Submit the server refused speaks
-     * first; otherwise the count of red questions in view, which is only
-     * ever non-zero after a blocked click (failures show on revealed pages
-     * only), so a half-filled page stays quiet.
-     */
-    get blockedMessage() {
-        if (!this.model || this.model.ownsAdvance) {
-            return '';
-        }
-        if (this._submitError) {
-            return this._submitError;
-        }
-        if (!this._revealed.length) {
-            return ''; // nothing blocked yet: skip the validation pass
-        }
-        let count = 0;
+    /** "References, entry 2": a repeat section's entry, by its place on
+     *  the screen (the server's entryIndex is the fallback). */
+    _entryName(sectionId, title, key, entryIndex) {
+        const keys = (this._repeatKeys[sectionId] || {}).keys || [];
+        const at = keys.indexOf(key);
+        const n =
+            at >= 0
+                ? at + 1
+                : Number.isInteger(entryIndex)
+                  ? entryIndex + 1
+                  : 0;
+        const name = title || t('Final_Run_RecordNoun');
+        return n ? t('Final_Run_EntryN', name, n) : name;
+    }
+
+    /** A question's name for the list; a label-less question falls back to
+     *  its own red message so the bullet is never empty. */
+    _questionName(el) {
+        return (
+            el.label ||
+            el.title ||
+            (el.errors && el.errors[0]) ||
+            this._lookupStale[el.id] ||
+            ''
+        );
+    }
+
+    /** One bullet per red question in view (names only: each question
+     *  already shows its own message). Same walk as _requestFocus. */
+    _clientBlockedItems() {
+        const items = [];
         this._pagesInView(this.visiblePages).forEach((page) => {
             (page.sections || []).forEach((sec) => {
                 if (sec.repeat) {
-                    count += this._groupRedCount(sec);
+                    this._groupBlockedItems(sec, items);
                     return;
                 }
                 (sec.elements || []).forEach((el) => {
                     if (this._isRed(el)) {
-                        count += 1;
+                        items.push({
+                            key: `c:${el.id}`,
+                            text: this._questionName(el),
+                            target: { elementId: el.id, sectionId: sec.id }
+                        });
                     }
                 });
             });
         });
-        if (!count) {
-            return '';
+        return items;
+    }
+
+    _groupBlockedItems(sec, items) {
+        const els = sec.elements || [];
+        (sec.entries || []).forEach((e) => {
+            const name = this._entryName(sec.id, sec.title, e.key);
+            const errors = e.errors || {};
+            els.forEach((el) => {
+                if (errors[el.id]) {
+                    items.push({
+                        key: `c:${sec.id}:${e.key}:${el.id}`,
+                        text: t(
+                            'Final_Run_NameColon',
+                            name,
+                            this._questionName(el)
+                        ),
+                        target: {
+                            key: e.key,
+                            elementId: el.id,
+                            groupId: sec.id,
+                            sectionId: sec.id
+                        }
+                    });
+                }
+            });
+            if (errors[ROW_ERROR]) {
+                // a row-level message: named by its entry, and the cursor
+                // goes to the first question the row can take
+                const hidden = new Set(e.hidden || []);
+                const first = els.find(
+                    (el) => !hidden.has(el.id) && isAnswerable(el)
+                );
+                items.push({
+                    key: `c:${sec.id}:${e.key}:row`,
+                    text: name,
+                    target: first
+                        ? {
+                              key: e.key,
+                              elementId: first.id,
+                              groupId: sec.id,
+                              sectionId: sec.id
+                          }
+                        : { add: true, groupId: sec.id, sectionId: sec.id }
+                });
+            }
+        });
+        if (sec.minMessage) {
+            items.push({
+                key: `c:${sec.id}:min`,
+                text: sec.title || t('Final_Run_RecordNoun'),
+                target: {
+                    ...(this._groupFocusTarget(sec) || { add: true }),
+                    groupId: sec.id,
+                    sectionId: sec.id
+                }
+            });
         }
-        if (this.showNext) {
-            return tn(
-                'Final_Run_FixFieldsContinueOne',
-                'Final_Run_FixFieldsContinueMany',
-                count
+    }
+
+    /** The server's refusals that are still true: an item drops out once
+     *  the respondent has changed the question it named. */
+    _liveServerItems() {
+        return this._serverItems.filter((item) => {
+            if (item.group) {
+                const entry =
+                    (this._serverEntryErrors[item.group.sectionId] || {})[
+                        item.group.key
+                    ] || {};
+                return item.elementIds.some((id) => entry[id]);
+            }
+            if (!item.elementIds.length) {
+                return true; // names no question: stays until the next try
+            }
+            return item.elementIds.some((id) => this._serverFieldErrors[id]);
+        });
+    }
+
+    /** Heading + bullets: first five, then "and N more". */
+    _listView(items, headingNext) {
+        const shown = items.slice(0, BLOCKED_LIST_MAX);
+        return {
+            message: headingNext
+                ? tn(
+                      'Final_Run_FixFieldsContinueOne',
+                      'Final_Run_FixFieldsContinueMany',
+                      items.length
+                  )
+                : tn(
+                      'Final_Run_FixFieldsSubmitOne',
+                      'Final_Run_FixFieldsSubmitMany',
+                      items.length
+                  ),
+            items: shown,
+            more:
+                items.length > shown.length
+                    ? t('Final_Run_AndMore', items.length - shown.length)
+                    : ''
+        };
+    }
+
+    /**
+     * The block above the buttons (COMPONENT_CATALOG §1 "Blocked Message",
+     * IMPL_PLAN_BLOCKED_LIST). `message` is the one live-region line (the
+     * heading, or a plain failure); `items` are the bullets, each a link
+     * that jumps to its question. A refusal from the server lists
+     * "Question: message"; the browser's own checks list names only, and
+     * only after a blocked click (failures show on revealed pages only, so
+     * a half-filled page stays quiet).
+     */
+    get blockedView() {
+        const none = { message: '', items: [], more: '' };
+        if (!this.model || this.model.ownsAdvance) {
+            return none;
+        }
+        if (this._submitError) {
+            const live = this._liveServerItems();
+            if (live.length) {
+                return this._listView(live, false);
+            }
+            if (!this._serverItems.length) {
+                return { ...none, message: this._submitError };
+            }
+        }
+        if (!this._revealed.length) {
+            return none; // nothing blocked yet: skip the validation pass
+        }
+        const items = this._clientBlockedItems();
+        return items.length ? this._listView(items, this.showNext) : none;
+    }
+
+    get blockedMessage() {
+        return this.blockedView.message;
+    }
+
+    /** Step-flow layouts: the same list, in the banner at the top. */
+    get topBanner() {
+        if (!this.model || !this.model.ownsAdvance || !this._submitError) {
+            return null;
+        }
+        const live = this._liveServerItems();
+        if (live.length) {
+            const view = this._listView(live, false);
+            return { text: view.message, items: view.items, more: view.more };
+        }
+        return this._serverItems.length
+            ? null
+            : { text: this._submitError, items: [], more: '' };
+    }
+
+    /** A bullet was clicked: go to its question (the page first, where the
+     *  layout shows one at a time) and put the cursor there. */
+    handleBlockedJump(event) {
+        const key =
+            (event.detail && event.detail.key) ||
+            (event.currentTarget && event.currentTarget.dataset.key);
+        const view =
+            this.model && this.model.ownsAdvance
+                ? this.topBanner
+                : this.blockedView;
+        const item = ((view && view.items) || []).find((i) => i.key === key);
+        if (!item || !item.target) {
+            return;
+        }
+        const target = item.target;
+        // Find the page by the QUESTION first: one-per-screen surveys rename
+        // their screen sections (secId~elKey), so the spec's section id
+        // matches no page there. The section id is the fallback (a group
+        // target with no question, e.g. "add an entry").
+        let sectionId = target.sectionId;
+        let at = -1;
+        if (target.elementId) {
+            at = this.visiblePages.findIndex((page) =>
+                (page.sections || []).some((sec) => {
+                    const hit = (sec.elements || []).some(
+                        (el) => el && el.id === target.elementId
+                    );
+                    if (hit) {
+                        sectionId = sec.id;
+                    }
+                    return hit;
+                })
             );
         }
-        return tn(
-            'Final_Run_FixFieldsSubmitOne',
-            'Final_Run_FixFieldsSubmitMany',
-            count
-        );
+        if (at < 0) {
+            at = this.visiblePages.findIndex((page) =>
+                (page.sections || []).some((sec) => sec.id === target.sectionId)
+            );
+        }
+        if (at >= 0 && at !== this.pageIndex) {
+            this.pageIndex = at;
+            this._reveal(at);
+        }
+        focusSeq += 1;
+        this._focusTarget = {
+            n: focusSeq,
+            ...target,
+            sectionIds: sectionId ? [sectionId] : []
+        };
     }
 
     handleNext() {
@@ -3717,6 +3917,10 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         // group reaches only that group, one that names none reaches only
         // questions outside groups (IMPL_PLAN_RELATED_RECORDS §4).
         const groupFields = {};
+        // for the list by Submit: each question's name, and where it lives
+        const labelOf = {};
+        const sectionOf = {};
+        const groupInfo = {};
         const groupIndex = (sectionId, key, id) => {
             if (!key) {
                 return;
@@ -3730,7 +3934,14 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         for (const page of (this._editSpec && this._editSpec.pages) || []) {
             for (const section of page.sections || []) {
                 if (section.repeat) {
+                    groupInfo[section.id] = {
+                        title: section.title,
+                        first: ((section.elements || [])[0] || {}).id
+                    };
                     for (const el of section.elements || []) {
+                        if (el && el.id) {
+                            labelOf[el.id] = el.label || el.title || '';
+                        }
                         const f = el && el.binding && el.binding.field;
                         if (!el || !el.id || !f) {
                             continue;
@@ -3752,6 +3963,8 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                     if (!el || !el.id) {
                         continue;
                     }
+                    labelOf[el.id] = el.label || el.title || '';
+                    sectionOf[el.id] = section.id;
                     // A classic form BINDS a field; a survey question MAPS one
                     // (`el.mapping`) for writeback onto the connected record.
                     // Both reach real Salesforce fields and both can be
@@ -3776,6 +3989,18 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         const mapped = {};
         const unmapped = [];
         const entryMapped = {};
+        const items = [];
+        const addItem = (label, message, elementIds, group, target) => {
+            items.push({
+                key: `s:${items.length}`,
+                text: label
+                    ? t('Final_Run_NameColon', label, message)
+                    : message,
+                elementIds,
+                group,
+                target
+            });
+        };
         for (const err of errors) {
             const message =
                 (err && err.message) || t('Final_Run_AnswerRejected');
@@ -3799,6 +4024,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 }
                 if (!key) {
                     unmapped.push(message);
+                    addItem('', message, [], null, null);
                     continue;
                 }
                 if (!ids.length) {
@@ -3806,6 +4032,39 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                     // two lists"): it shows on that row
                     ids.push(ROW_ERROR);
                 }
+                const info = groupInfo[err.sectionId] || {};
+                const named = ids.find((id) => id !== ROW_ERROR);
+                const entryName = this._entryName(
+                    err.sectionId,
+                    info.title,
+                    key,
+                    err.entryIndex
+                );
+                const elementId = named || info.first;
+                addItem(
+                    named
+                        ? t(
+                              'Final_Run_NameColon',
+                              entryName,
+                              labelOf[named] || ''
+                          )
+                        : entryName,
+                    message,
+                    [...ids],
+                    { sectionId: err.sectionId, key },
+                    elementId
+                        ? {
+                              key,
+                              elementId,
+                              groupId: err.sectionId,
+                              sectionId: err.sectionId
+                          }
+                        : {
+                              add: true,
+                              groupId: err.sectionId,
+                              sectionId: err.sectionId
+                          }
+                );
                 const group = (entryMapped[err.sectionId] =
                     entryMapped[err.sectionId] || {});
                 const entry = (group[key] = group[key] || {});
@@ -3815,16 +4074,28 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 continue;
             }
             const targets = [];
+            // Our own checks name the question itself (the only key a guest
+            // gets: field API names are withheld from guests).
+            if (err && err.elementId && labelOf[err.elementId] !== undefined) {
+                targets.push(err.elementId);
+            }
             for (const field of (err && err.fields) || []) {
                 for (const id of byField.get(this._normalizeFieldKey(field)) ||
                     []) {
-                    targets.push(id);
+                    if (!targets.includes(id)) {
+                        targets.push(id);
+                    }
                 }
             }
             if (!targets.length) {
                 unmapped.push(message);
+                addItem('', message, [], null, null);
                 continue;
             }
+            addItem(labelOf[targets[0]] || '', message, [...targets], null, {
+                elementId: targets[0],
+                sectionId: sectionOf[targets[0]]
+            });
             for (const id of targets) {
                 if (!mapped[id]) {
                     mapped[id] = [];
@@ -3835,6 +4106,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
 
         this._serverFieldErrors = mapped;
         this._serverEntryErrors = entryMapped;
+        this._serverItems = items;
         const anyField =
             Object.keys(mapped).length > 0 ||
             Object.keys(entryMapped).length > 0;
@@ -3920,6 +4192,12 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             (this.model.paginates ? bad.slice(0, 1) : bad).forEach((i) =>
                 this._reveal(i)
             );
+            // This click was blocked by the browser's own checks: an older
+            // server list must not stand in for it (it would hide the newly
+            // red question). Server-refused questions that are still red
+            // stay in the list by name.
+            this._submitError = undefined;
+            this._serverItems = [];
             this._requestFocus();
             return;
         }
@@ -3938,9 +4216,15 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             this._submitting = true;
             this._submitError = undefined;
             this._autofillError = undefined;
+            this._serverFieldErrors = {};
+            this._serverEntryErrors = {};
+            this._serverItems = [];
+            const delegated = this._payload();
+            // the server names a refused entry by its position in this list
+            this._submitEntryKeys = this._entryKeySnapshot();
             this.dispatchEvent(
                 new CustomEvent('submitrequest', {
-                    detail: { payload: this._payload() }
+                    detail: { payload: delegated }
                 })
             );
             return;
@@ -3956,6 +4240,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         this._autofillError = undefined;
         this._serverFieldErrors = {};
         this._serverEntryErrors = {};
+        this._serverItems = [];
         const submitGeneration = ++this._submitGeneration;
         try {
             const payload = this._payload();
@@ -4023,6 +4308,13 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         if (options && options.locked) {
             this._submitLocked = true;
         }
+        // The host's server refusals (a guest submit the server would not
+        // save): routed to the questions exactly like the signed-in path.
+        if (options && Array.isArray(options.errors) && options.errors.length) {
+            this._applyServerErrors(options.errors);
+            return;
+        }
+        this._serverItems = [];
         this._submitError = message || t('Final_Run_SaveFailed');
     }
 

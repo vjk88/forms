@@ -426,9 +426,10 @@ export default class FinalGuestHost extends LightningElement {
                 if (!live()) {
                     return;
                 }
+                let result;
                 try {
                     // eslint-disable-next-line no-await-in-loop
-                    await submitGuest({
+                    result = await submitGuest({
                         formId,
                         payloadJson: JSON.stringify({
                             ...payload,
@@ -465,7 +466,16 @@ export default class FinalGuestHost extends LightningElement {
                     return;
                 }
                 if (live() && viewer) {
-                    viewer.completeSubmit();
+                    if (result && result.success === false) {
+                        // The server refused (nothing saved, ticket unspent):
+                        // never the thank-you. Answers stay, the list by
+                        // Submit names what to fix (DEFERRED #68).
+                        viewer.failSubmit(null, {
+                            errors: result.errors || []
+                        });
+                    } else {
+                        viewer.completeSubmit();
+                    }
                 }
                 return;
             }

@@ -77,6 +77,9 @@ public without sharing class FinalGuestController {
         'Final_Run_FixFieldsContinueMany',
         'Final_Run_FixFieldsSubmitOne',
         'Final_Run_FixFieldsSubmitMany',
+        'Final_Run_AndMore',
+        'Final_Run_EntryN',
+        'Final_Run_NameColon',
         'Final_Run_ValueNotValid',
         'Final_Run_PleaseAnswer',
         'Final_Run_MinEntriesOne',
@@ -334,6 +337,12 @@ public without sharing class FinalGuestController {
         public Boolean success;
         @AuraEnabled
         public Integer childCount;
+        /** Set only when success is false: the refusals the form can show
+         *  (our own answer checks keep the author's message and question;
+         *  lookup refusals are already the generic guest message). Same shape
+         *  the signed-in result carries, so the browser routes both alike. */
+        @AuraEnabled
+        public List<FinalSubmitService.FieldError> errors;
         // deliberately NO recordId — a guest gets no record access, so the
         // client is never handed the created Id (data-oracle avoidance).
     }
@@ -456,19 +465,33 @@ public without sharing class FinalGuestController {
             link.rollback();
             throw e;
         }
+        // A refused submit saved nothing (DEFERRED #68): it is NOT a success.
+        // Undo any link work (a single-use link must not burn), keep the bot
+        // ticket unspent so the person can fix and resend, and hand the
+        // refusals back so the form can list them by the Submit button.
+        if (outcome.errors != null && !outcome.errors.isEmpty()) {
+            link.rollback();
+            GuestSubmitResult refused = new GuestSubmitResult();
+            refused.success = false;
+            refused.childCount = outcome.childCount;
+            // A guest never learns field API names (projectForGuest strips
+            // them from the spec): each refusal names its QUESTION by id and
+            // nothing else. One without a question stays a plain message.
+            for (FinalSubmitService.FieldError fe : outcome.errors) {
+                fe.fields = new List<String>();
+            }
+            refused.errors = outcome.errors;
+            return refused;
+        }
         try {
             link.finish(outcome.recordId);
         } catch (FinalLinkService.LinkException e) {
             throw new AuraHandledException(UNAVAILABLE);
         }
 
-        // The ticket is spent only by a SAVED submit: a rejected outcome
-        // (non-empty errors) keeps it so the person can fix and resend. (That
-        // submitGuest still answers success for a rejected outcome is the
-        // separate DEFERRED #68.) The cache call fails open.
-        if (outcome.errors == null || outcome.errors.isEmpty()) {
-            FinalGuestTicket.markUsed(ticket);
-        }
+        // The ticket is spent only by a SAVED submit (the refused case
+        // returned above). The cache call fails open.
+        FinalGuestTicket.markUsed(ticket);
 
         GuestSubmitResult res = new GuestSubmitResult();
         res.success = true;

@@ -610,4 +610,97 @@ private class FinalGuestControllerTest {
             Assert.isTrue(seen.add(name), 'duplicate ' + name);
         }
     }
+
+    // ----- a refused guest submit is not a success (DEFERRED #68) -----
+
+    private static String requiredNameSpec() {
+        return '{"specVersion":1,' +
+            '"form":{"name":"C","targetObject":"Contact"},' +
+            '"pages":[{"id":"pg_1","sections":[{"id":"sec_1","elements":[' +
+            '{"id":"el_ln","type":"field","label":"Last name",' +
+            '"binding":{"object":"Contact","field":"LastName"},' +
+            '"validation":[{"type":"required","message":"Tell us your last name."}]}]}]}]}';
+    }
+
+    @IsTest
+    static void submitMissingRequiredAnswerIsRefusedNotSuccess() {
+        Form__c f = makeForm(
+            'Published',
+            'Public_Guest',
+            true,
+            requiredNameSpec()
+        );
+        FinalGuestTicket.memoryCache = new Map<String, Integer>();
+        String ticket = FinalGuestTicketTestUtil.agedTicket(f.Id);
+        String payload = FinalGuestTicketTestUtil.withTicket(
+            '{"answers":{"el_ln":""}}',
+            ticket,
+            '0'
+        );
+
+        FinalGuestController.GuestSubmitResult res = FinalGuestController.submitGuest(
+            f.Id,
+            payload
+        );
+
+        Assert.areEqual(false, res.success, 'a refusal is not a success');
+        Assert.isNotNull(res.errors, 'the refusals come back');
+        Assert.areEqual(1, res.errors.size());
+        Assert.areEqual('Tell us your last name.', res.errors[0].message);
+        // the question by id, never a field API name (withheld from guests)
+        Assert.isTrue(
+            String.isNotBlank(res.errors[0].elementId),
+            'names the question'
+        );
+        Assert.isTrue(
+            res.errors[0].fields == null || res.errors[0].fields.isEmpty(),
+            'no field API names for a guest'
+        );
+        Assert.areEqual(
+            0,
+            [SELECT COUNT() FROM Contact WHERE LastName = ''],
+            'nothing saved'
+        );
+        Assert.isFalse(
+            FinalGuestTicket.isUsed(ticket),
+            'a refusal leaves the ticket unspent so the person can resend'
+        );
+    }
+
+    @IsTest
+    static void submitAfterRefusalWithSameTicketSucceeds() {
+        Form__c f = makeForm(
+            'Published',
+            'Public_Guest',
+            true,
+            requiredNameSpec()
+        );
+        FinalGuestTicket.memoryCache = new Map<String, Integer>();
+        String ticket = FinalGuestTicketTestUtil.agedTicket(f.Id);
+
+        FinalGuestController.GuestSubmitResult refused = FinalGuestController.submitGuest(
+            f.Id,
+            FinalGuestTicketTestUtil.withTicket(
+                '{"answers":{"el_ln":""}}',
+                ticket,
+                '0'
+            )
+        );
+        Assert.areEqual(false, refused.success);
+
+        FinalGuestController.GuestSubmitResult saved = FinalGuestController.submitGuest(
+            f.Id,
+            FinalGuestTicketTestUtil.withTicket(
+                '{"answers":{"el_ln":"FixedName"}}',
+                ticket,
+                '0'
+            )
+        );
+        Assert.areEqual(true, saved.success);
+        Assert.isTrue(FinalGuestTicket.isUsed(ticket), 'a save spends it');
+        Assert.areEqual(
+            1,
+            [SELECT COUNT() FROM Contact WHERE LastName = 'FixedName']
+        );
+    }
 }
