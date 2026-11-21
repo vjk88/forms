@@ -337,15 +337,14 @@ private class FinalStudioControllerTest {
     // ----- guest access toggle (A1.5) -----
 
     @IsTest
-    static void guestAccessEnableAddsAdapterThenDisableRemoves() {
+    static void guestAccessEnableSetsIsPublicThenDisableClears() {
         Form__c f = makeForm('Guest toggle');
 
         Boolean isPublic = FinalStudioController.setGuestAccess(f.Id, true);
         Assert.isTrue(isPublic, 'enable returns the public state');
         Assert.isTrue(
-            [SELECT Allowed_Adapters__c FROM Form__c WHERE Id = :f.Id]
-                .Allowed_Adapters__c.contains('Public_Guest'),
-            'Public_Guest added'
+            [SELECT Is_Public__c FROM Form__c WHERE Id = :f.Id].Is_Public__c,
+            'Is_Public__c set'
         );
         // idempotent — enabling again keeps exactly one value
         Assert.isTrue(
@@ -355,15 +354,9 @@ private class FinalStudioControllerTest {
 
         Boolean stillPublic = FinalStudioController.setGuestAccess(f.Id, false);
         Assert.isFalse(stillPublic, 'disable returns not-public');
-        String adapters = [
-            SELECT Allowed_Adapters__c
-            FROM Form__c
-            WHERE Id = :f.Id
-        ]
-        .Allowed_Adapters__c;
-        Assert.isTrue(
-            String.isBlank(adapters) || !adapters.contains('Public_Guest'),
-            'Public_Guest removed'
+        Assert.isFalse(
+            [SELECT Is_Public__c FROM Form__c WHERE Id = :f.Id].Is_Public__c,
+            'Is_Public__c cleared'
         );
     }
 
@@ -417,7 +410,7 @@ private class FinalStudioControllerTest {
     @IsTest
     static void loadStudioReportsPublicState() {
         Form__c pub = makeForm('Public load');
-        pub.Allowed_Adapters__c = 'Public_Guest';
+        pub.Is_Public__c = true;
         update pub;
         makeVersion(pub.Id, 1, true, '{"specVersion":1}');
         Map<String, Object> outPub = FinalStudioController.loadStudio(pub.Id);

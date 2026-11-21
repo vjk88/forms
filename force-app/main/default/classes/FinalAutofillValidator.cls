@@ -140,17 +140,13 @@ public with sharing class FinalAutofillValidator {
         // Check anonymous audience restriction on required lookups
         if (formId != null && hasRequiredLookup) {
             List<Form__c> forms = [
-                SELECT Allowed_Adapters__c
+                SELECT Is_Public__c
                 FROM Form__c
                 WHERE Id = :formId
                 WITH USER_MODE
                 LIMIT 1
             ];
-            if (
-                !forms.isEmpty() &&
-                String.isNotBlank(forms[0].Allowed_Adapters__c) &&
-                forms[0].Allowed_Adapters__c.contains('Public_Guest')
-            ) {
+            if (!forms.isEmpty() && forms[0].Is_Public__c == true) {
                 diagnostics.add(
                     new Diagnostic(
                         'AUTOFILL_REQUIRED_LOOKUP_ANONYMOUS',

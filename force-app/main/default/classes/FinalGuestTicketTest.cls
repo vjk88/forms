@@ -29,7 +29,7 @@ private class FinalGuestTicketTest {
             Name = 'Ticket test',
             Primary_Context_Object__c = 'Contact',
             Status__c = 'Published',
-            Allowed_Adapters__c = 'Public_Guest',
+            Is_Public__c = true,
             Layout_Config__c = '{}',
             Schema_Snapshot__c = '{}'
         );
@@ -58,7 +58,7 @@ private class FinalGuestTicketTest {
             Name = 'Ticket freeform',
             Form_Type__c = 'Freeform',
             Status__c = 'Published',
-            Allowed_Adapters__c = 'Public_Guest',
+            Is_Public__c = true,
             Layout_Config__c = '{}',
             Schema_Snapshot__c = '{}'
         );

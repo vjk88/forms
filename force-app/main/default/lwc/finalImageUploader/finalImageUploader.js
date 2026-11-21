@@ -9,7 +9,7 @@ const DEFAULT_ACCEPT = 'image/png,image/jpeg,image/gif,image/webp';
  *
  * Owns the WHOLE image-storage contract so logo / backdrop / banner never
  * reinvent it: pick file → validate → upload as ContentVersion (public iff the
- * form's Allowed_Adapters has Public_Guest — the server decides), then delete
+ * form's Is_Public__c is checked — the server decides), then delete
  * the replaced version. Hands the parent url + contentVersionId via `change`;
  * never base64 in the spec.
  *

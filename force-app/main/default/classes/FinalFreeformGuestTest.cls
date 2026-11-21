@@ -60,7 +60,7 @@ private class FinalFreeformGuestTest {
             Name = 'Guest freeform',
             Form_Type__c = 'Freeform',
             Status__c = 'Published',
-            Allowed_Adapters__c = 'Public_Guest',
+            Is_Public__c = true,
             Layout_Config__c = '{}',
             Schema_Snapshot__c = '{}'
         );

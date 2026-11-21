@@ -2,8 +2,6 @@
  * Coordinates atomic Studio actions across form roots, versions, and files.
  */
 public with sharing class FinalFormActionsService {
-    private static final String PUBLIC_ADAPTER = 'Public_Guest';
-
     @TestVisible
     private static Boolean failAfterRootInsert = false;
 
@@ -82,7 +80,7 @@ public with sharing class FinalFormActionsService {
                 Form_Type__c = FinalFormTypes.toPicklist(plan.formType),
                 Status__c = 'Draft',
                 Primary_Context_Object__c = plan.prepared.targetObject,
-                Allowed_Adapters__c = 'Internal_Record_Page'
+                Is_Public__c = false
             );
             insert as user imported;
 
@@ -174,9 +172,8 @@ public with sharing class FinalFormActionsService {
                 Form_Type__c = source.Form_Type__c,
                 Status__c = 'Draft',
                 Primary_Context_Object__c = prepared.targetObject,
-                Allowed_Adapters__c = removePublicAdapter(
-                    source.Allowed_Adapters__c
-                )
+                // a copy is never public, whatever the source was
+                Is_Public__c = false
             );
             insert as user clone;
 
@@ -230,19 +227,6 @@ public with sharing class FinalFormActionsService {
             Database.rollback(savepoint);
             throw new ActionException('The form could not be cloned.');
         }
-    }
-
-    private static String removePublicAdapter(String adapters) {
-        if (String.isBlank(adapters)) {
-            return null;
-        }
-        List<String> retained = new List<String>();
-        for (String adapter : adapters.split(';')) {
-            if (String.isNotBlank(adapter) && adapter != PUBLIC_ADAPTER) {
-                retained.add(adapter);
-            }
-        }
-        return retained.isEmpty() ? null : String.join(retained, ';');
     }
 
     /** Returns the response-aware Delete form preflight. */

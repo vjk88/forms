@@ -1,5 +1,7 @@
 # Hosting Adapters — one form, many surfaces (spec'd 2026-07-05, PARKED)
 
+> **SUPERSEDED 2026-11-21** by [../IMPL_PLAN_FLOW_AND_PUBLIC.md](../IMPL_PLAN_FLOW_AND_PUBLIC.md): owner ruled there are no "adapters"; any form goes on a record page, a Lightning page or a Flow screen, and the only placement setting is Public. Kept for history.
+
 > Owner intent: the FinalDesign runtime must be reusable across a wide variety of use cases —
 > a form declares **where it may render**, and every surface adapter validates that declaration
 > **server-side** before serving the spec. Deferred ledger item; see [DEFERRED.md](../DEFERRED.md).

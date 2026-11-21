@@ -4,7 +4,7 @@ private class FinalFormActionsControllerTest {
     static void shouldCloneCurrentFormSpec_WhenUnsavedChangesExist() {
         Form__c source = createForm('Form', 'Contact', 'Clone source');
         source.Description__c = 'Copied description';
-        source.Allowed_Adapters__c = 'Internal_Record_Page;Public_Guest';
+        source.Is_Public__c = true;
         update source;
         TestDataFactory.createFinalFormVersion(
             source.Id,
@@ -33,7 +33,7 @@ private class FinalFormActionsControllerTest {
                 Form_Type__c,
                 Status__c,
                 Primary_Context_Object__c,
-                Allowed_Adapters__c
+                Is_Public__c
             FROM Form__c
             WHERE Id = :cloneId
         ];
@@ -91,7 +91,7 @@ private class FinalFormActionsControllerTest {
             'Connected object should be retained.'
         );
         Assert.isFalse(
-            String.valueOf(clone.Allowed_Adapters__c).contains('Public_Guest'),
+            clone.Is_Public__c,
             'Guest access must not cross the clone boundary.'
         );
         Assert.areEqual(

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Is_Public__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description
+    >Anyone with the public link can open and submit this form (guest users). Replaces the Public_Guest value of Allowed_Adapters__c.</description>
+    <inlineHelpText
+    >Check to let anyone with the public link open and submit this form, without signing in.</inlineHelpText>
+    <label>Public</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

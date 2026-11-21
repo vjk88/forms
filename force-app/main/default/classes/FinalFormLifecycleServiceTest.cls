@@ -43,7 +43,7 @@ private class FinalFormLifecycleServiceTest {
     @IsTest
     static void shouldArchiveAndPreserveResponses_WhenResponsesExist() {
         Form__c form = createForm('Survey', 'Archive survey');
-        form.Allowed_Adapters__c = 'Internal_Record_Page;Public_Guest';
+        form.Is_Public__c = true;
         update as user form;
         Form_Version__c version = createVersion(form);
         insert as user new Form_Response__c(Form_Version__c = version.Id);
@@ -53,14 +53,13 @@ private class FinalFormLifecycleServiceTest {
         Test.stopTest();
 
         Form__c archived = [
-            SELECT Status__c, Allowed_Adapters__c, Links_Invalidated_On__c
+            SELECT Status__c, Is_Public__c, Links_Invalidated_On__c
             FROM Form__c
             WHERE Id = :form.Id
         ];
         Assert.areEqual('Archived', archived.Status__c, 'Root should archive.');
         Assert.isFalse(
-            String.valueOf(archived.Allowed_Adapters__c)
-                .contains('Public_Guest'),
+            archived.Is_Public__c,
             'Archive must turn off guest access.'
         );
         Assert.isNotNull(
@@ -193,7 +192,7 @@ private class FinalFormLifecycleServiceTest {
         Form__c form = createForm('Survey', 'Archived form');
         Datetime invalidated = System.now().addHours(-1);
         form.Status__c = 'Archived';
-        form.Allowed_Adapters__c = 'Internal_Record_Page;Public_Guest';
+        form.Is_Public__c = true;
         form.Links_Invalidated_On__c = invalidated;
         update as user form;
 
@@ -202,7 +201,7 @@ private class FinalFormLifecycleServiceTest {
         Test.stopTest();
 
         Form__c restored = [
-            SELECT Status__c, Allowed_Adapters__c, Links_Invalidated_On__c
+            SELECT Status__c, Is_Public__c, Links_Invalidated_On__c
             FROM Form__c
             WHERE Id = :form.Id
         ];
@@ -211,11 +210,7 @@ private class FinalFormLifecycleServiceTest {
             restored.Status__c,
             'Restore returns to Draft.'
         );
-        Assert.isFalse(
-            String.valueOf(restored.Allowed_Adapters__c)
-                .contains('Public_Guest'),
-            'Restore must remain private.'
-        );
+        Assert.isFalse(restored.Is_Public__c, 'Restore must remain private.');
         Assert.areEqual(
             invalidated,
             restored.Links_Invalidated_On__c,

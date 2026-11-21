@@ -15,7 +15,7 @@ private class FinalAssetControllerTest {
         );
         forms[0].Name = 'Private Form';
         forms[1].Name = 'Public Form';
-        forms[1].Allowed_Adapters__c = 'Public_Guest';
+        forms[1].Is_Public__c = true;
         insert as user forms;
     }
 

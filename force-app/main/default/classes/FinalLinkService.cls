@@ -4,7 +4,7 @@
  * A link works the same for a guest on the public site and a signed-in user
  * inside Salesforce (owner 2026-09-15). The TOKEN is the permission: it fills
  * the same values for everyone, and it works on forms that are not public.
- * Guest-only gates (Published + Public_Guest) stay in FinalGuestController;
+ * Guest-only gates (Published + Is_Public__c) stay in FinalGuestController;
  * this class holds only the link logic both hosts need.
  *
  * `without sharing`: a verified token authorizes reading its form, record and
