@@ -883,12 +883,13 @@ export default class FinalRuleEditor extends LightningElement {
         const choices = this._choicesOf(rule);
         const subject =
             choices.record || !this.isVisibility ? 'field' : 'question';
+        // Name the value (the box truncates it) and say the way out.
         if (this._choiceMode(rule) === 'list') {
             return gone.length === 1
-                ? `This condition lists a value the ${subject} no longer offers: ${gone[0]}.`
-                : `This condition lists values the ${subject} no longer offers: ${gone.join(', ')}.`;
+                ? `This condition lists a value the ${subject} no longer offers: ${gone[0]}. Remove it to continue.`
+                : `This condition lists values the ${subject} no longer offers: ${gone.join(', ')}. Remove them to continue.`;
         }
-        return `This rule checks for a value the ${subject} no longer offers, so ${goneValueEffect(rule.operator)}.`;
+        return `“${gone[0]}” is no longer one of the ${subject}’s choices, so ${goneValueEffect(rule.operator)}. Choose another value.`;
     }
 
     /**
@@ -1362,7 +1363,10 @@ export default class FinalRuleEditor extends LightningElement {
                     this.isVisibility ? 'question or field' : 'field'
                 }`,
                 operatorLabel: `Condition ${i + 1}: operator`,
-                valueLabel: `Condition ${i + 1}: value`,
+                valueLabel:
+                    valueKind === 'choiceList'
+                        ? `Condition ${i + 1}: add a value`
+                        : `Condition ${i + 1}: value`,
                 removeLabel: `Remove condition ${i + 1}`,
                 valueInvalid: messageFor(i, 'value') ? 'true' : undefined
             };
@@ -1560,6 +1564,11 @@ export default class FinalRuleEditor extends LightningElement {
         const list = parseList(rule.value);
         list.splice(event.detail.index, 1);
         rule.value = list.join(', ');
+        if (!list.length) {
+            // the pill list disappears with its last pill: keep focus on
+            // the row instead of losing it to the page
+            this._focusNext = `[data-index="${i}"][data-control="value"]`;
+        }
         this._emit(next);
     }
 

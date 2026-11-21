@@ -202,12 +202,9 @@
                                 </template>
                                 <template lwc:elseif={r.isChoiceList}>
                                     <template lwc:if={r.hasChoicePills}>
-                                        <div
-                                            class="re-pills"
-                                            role="group"
-                                            aria-label={r.pillsLabel}
-                                        >
+                                        <div class="re-pills">
                                             <lightning-pill-container
+                                                label={r.pillsLabel}
                                                 items={r.choicePills}
                                                 data-index={r.index}
                                                 onitemremove={handleChoiceListRemove}

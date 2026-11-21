@@ -1182,7 +1182,7 @@ describe('choice dropdown on a question (DEFERRED 29)', () => {
         ]);
         // shown from the moment the rule opens, not after a click
         expect(problemOn(el, 0, 'value')).toBe(
-            'This rule checks for a value the question no longer offers, so it can never match.'
+            '“Bronze” is no longer one of the question’s choices, so it can never match. Choose another value.'
         );
         expect(el.problems).toHaveLength(1);
         // and the row's own message is not repeated in the warnings list
@@ -1371,7 +1371,7 @@ describe('choice dropdown on a record field (DEFERRED 29)', () => {
         expect(dropdown.value).toBe('Gone');
         expect(labels(dropdown)).toContain('Gone (no longer a choice)');
         expect(problemOn(el, 0, 'value')).toBe(
-            'This rule checks for a value the field no longer offers, so it can never match.'
+            '“Gone” is no longer one of the field’s choices, so it can never match. Choose another value.'
         );
         expect(changes).toEqual([]);
     });
@@ -1488,7 +1488,7 @@ describe('choice dropdown on a record field (DEFERRED 29)', () => {
                 name: 'Gone'
             });
             expect(problemOn(el, 0, 'value')).toBe(
-                'This condition lists a value the field no longer offers: Gone.'
+                'This condition lists a value the field no longer offers: Gone. Remove it to continue.'
             );
         });
 
