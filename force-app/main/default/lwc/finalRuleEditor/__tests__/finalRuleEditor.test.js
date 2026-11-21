@@ -1089,3 +1089,451 @@ describe('object labels, not API names (DEFERRED 62)', () => {
         });
     });
 });
+
+// ---- DEFERRED 29: a dropdown when the source has a list of values ----
+import { resetFieldCache } from 'c/finalFieldPicker';
+import describeLookupFields from '@salesforce/apex/FinalLookupController.describeLookupFields';
+
+jest.mock(
+    '@salesforce/apex/FinalLookupController.describeLookupFields',
+    () => ({
+        default: jest.fn(() =>
+            Promise.resolve({ fields: [], relationships: [] })
+        )
+    }),
+    { virtual: true }
+);
+
+/** Let the field describe (and the re-render it causes) finish. */
+async function settle() {
+    for (let n = 0; n < 4; n++) {
+        // each turn lets one more promise hop (describe, then re-render) land
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise((r) => setTimeout(r, 0));
+    }
+}
+
+const TIER = [
+    { value: 'Gold', label: 'Gold tier' },
+    { value: 'Silver', label: 'Silver tier' }
+];
+
+/** el_1 has a list of values (a picklist question); el_2 is plain text. */
+const choiceIndex = (extra = {}) =>
+    makeIndex([
+        [
+            'el_1',
+            {
+                type: 'field',
+                inputType: 'picklist',
+                repeatSectionId: null,
+                options: TIER,
+                optionsLive: true,
+                ...extra
+            }
+        ],
+        ['el_2', { type: 'field', inputType: 'text', repeatSectionId: null }]
+    ]);
+
+const labels = (node) => node.options.map((o) => o.label);
+
+describe('choice dropdown on a question (DEFERRED 29)', () => {
+    it('offers the question’s values as a dropdown, and leaves text questions as a box', async () => {
+        const el = mount({
+            sourceIndex: choiceIndex(),
+            value: config([
+                rule('el_1', 'equals', 'Gold'),
+                rule('el_2', 'equals', 'x')
+            ])
+        });
+        await flush();
+        const dropdown = control(el, 0, 'value');
+        expect(dropdown.tagName).toBe('LIGHTNING-COMBOBOX');
+        expect(labels(dropdown)).toEqual(['Gold tier', 'Silver tier']);
+        expect(dropdown.value).toBe('Gold');
+        expect(control(el, 1, 'value').tagName).toBe('LIGHTNING-INPUT');
+        expect(el.problems).toEqual([]);
+    });
+
+    it('picking a value saves that value (the choice’s value, not its label)', async () => {
+        const el = mount({
+            sourceIndex: choiceIndex(),
+            value: config([rule('el_1', 'equals', '')])
+        });
+        await flush();
+        const changes = listen(el);
+        change(control(el, 0, 'value'), 'Silver');
+        expect(changes[0].rules[0]).toEqual(rule('el_1', 'equals', 'Silver'));
+    });
+
+    it('a saved value that is gone stays selected, says so, and is never rewritten', async () => {
+        const el = mount({
+            sourceIndex: choiceIndex(),
+            value: config([rule('el_1', 'equals', 'Bronze')])
+        });
+        const changes = listen(el);
+        await flush();
+        const dropdown = control(el, 0, 'value');
+        expect(dropdown.value).toBe('Bronze');
+        expect(labels(dropdown)).toEqual([
+            'Gold tier',
+            'Silver tier',
+            'Bronze (no longer a choice)'
+        ]);
+        // shown from the moment the rule opens, not after a click
+        expect(problemOn(el, 0, 'value')).toBe(
+            'This rule checks for a value the question no longer offers, so it can never match.'
+        );
+        expect(el.problems).toHaveLength(1);
+        // and the row's own message is not repeated in the warnings list
+        expect(el.shadowRoot.querySelector('.re-lint')).toBeNull();
+        // opening changed nothing
+        expect(changes).toEqual([]);
+    });
+
+    it('Does not equal with a gone value says it is always met instead', async () => {
+        const el = mount({
+            sourceIndex: choiceIndex(),
+            value: config([rule('el_1', 'notEquals', 'Bronze')])
+        });
+        await flush();
+        expect(problemOn(el, 0, 'value')).toContain('so it is always met');
+    });
+
+    it('picking a real value clears the warning', async () => {
+        const el = mount({
+            sourceIndex: choiceIndex(),
+            value: config([rule('el_1', 'equals', 'Bronze')])
+        });
+        await flush();
+        const changes = listen(el);
+        change(control(el, 0, 'value'), 'Gold');
+        el.value = changes[0];
+        await flush();
+        expect(problemOn(el, 0, 'value')).toBe('');
+        expect(el.problems).toEqual([]);
+    });
+
+    it('a list that may be out of date never calls a value gone', async () => {
+        const el = mount({
+            sourceIndex: choiceIndex({ optionsLive: false }),
+            value: config([rule('el_1', 'equals', 'Bronze')])
+        });
+        await flush();
+        const dropdown = control(el, 0, 'value');
+        expect(dropdown.value).toBe('Bronze');
+        expect(labels(dropdown)).toContain('Bronze');
+        expect(problemOn(el, 0, 'value')).toBe('');
+        expect(el.problems).toEqual([]);
+    });
+
+    it('never offers an inactive value for a question’s answer', async () => {
+        const el = mount({
+            sourceIndex: choiceIndex(),
+            value: config([rule('el_1', 'equals', 'Gold')])
+        });
+        await flush();
+        expect(
+            labels(control(el, 0, 'value')).some((l) => /inactive/.test(l))
+        ).toBe(false);
+    });
+
+    it('an empty value says to choose one', async () => {
+        const el = mount({
+            sourceIndex: choiceIndex(),
+            value: config([rule('el_1', 'equals', '')])
+        });
+        await flush();
+        expect(el.problems[0].message).toBe(
+            'Choose a value, or use “Is blank”.'
+        );
+    });
+
+    it('Contains stays a text box on a single answer, a dropdown on a multi-select', async () => {
+        const single = mount({
+            sourceIndex: choiceIndex(),
+            value: config([rule('el_1', 'contains', 'Gol')])
+        });
+        await flush();
+        expect(control(single, 0, 'value').tagName).toBe('LIGHTNING-INPUT');
+        expect(single.problems).toEqual([]);
+
+        const multi = mount({
+            sourceIndex: choiceIndex({ multi: true }),
+            value: config([rule('el_1', 'contains', 'Gold')])
+        });
+        await flush();
+        expect(control(multi, 0, 'value').tagName).toBe('LIGHTNING-COMBOBOX');
+    });
+
+    it('changing the source clears the value, both ways', async () => {
+        const el = mount({
+            sourceIndex: choiceIndex(),
+            value: config([rule('el_1', 'equals', 'Gold')])
+        });
+        await flush();
+        const changes = listen(el);
+        // a list to a text question
+        change(control(el, 0, 'field'), 'el_2');
+        expect(changes[0].rules[0]).toEqual(rule('el_2', 'equals', ''));
+
+        // a text question to a list
+        const back = mount({
+            sourceIndex: choiceIndex(),
+            value: config([rule('el_2', 'equals', 'Gold')])
+        });
+        await flush();
+        const heard = listen(back);
+        change(control(back, 0, 'field'), 'el_1');
+        expect(heard[0].rules[0]).toEqual(rule('el_1', 'equals', ''));
+    });
+
+    it('a value that points at another thing is left alone', async () => {
+        const el = mount({
+            sourceIndex: choiceIndex(),
+            value: config([rule('el_1', 'equals', '$User.Name')])
+        });
+        await flush();
+        // the user-field picker, not a dropdown of this question's choices
+        expect(control(el, 0, 'value').tagName).toBe('C-FINAL-FIELD-PICKER');
+        expect(el.problems).toEqual([]);
+    });
+});
+
+describe('choice dropdown on a record field (DEFERRED 29)', () => {
+    const STATUS = {
+        path: 'Status',
+        label: 'Status',
+        type: 'picklist',
+        picklistValues: ['Open', 'Closed'],
+        inactivePicklistValues: ['Archived']
+    };
+    const TAGS = {
+        path: 'Tags',
+        label: 'Tags',
+        type: 'multipicklist',
+        picklistValues: ['a', 'b'],
+        inactivePicklistValues: []
+    };
+    const WITH_COMMA = {
+        path: 'Region',
+        label: 'Region',
+        type: 'picklist',
+        picklistValues: ['East, North', 'West'],
+        inactivePicklistValues: []
+    };
+
+    beforeEach(() => {
+        resetFieldCache();
+        describeLookupFields.mockImplementation(() =>
+            Promise.resolve({
+                fields: [
+                    STATUS,
+                    TAGS,
+                    WITH_COMMA,
+                    { path: 'Title', label: 'Title', type: 'string' }
+                ],
+                relationships: []
+            })
+        );
+    });
+
+    const lookup = (rules, props = {}) =>
+        mount({
+            columns: 'lookup',
+            sourceIndex: undefined,
+            fieldObject: 'Contact',
+            sources: [],
+            value: config(rules),
+            ...props
+        });
+
+    it('offers the field’s values, and its inactive ones marked, for a saved rule', async () => {
+        const el = lookup([rule('Status', 'equals', 'Archived')]);
+        await settle();
+        const dropdown = control(el, 0, 'value');
+        expect(dropdown.tagName).toBe('LIGHTNING-COMBOBOX');
+        expect(labels(dropdown)).toEqual([
+            'Open',
+            'Closed',
+            'Archived (inactive)'
+        ]);
+        expect(dropdown.value).toBe('Archived');
+        // old records can hold it: nothing to warn about
+        expect(el.problems).toEqual([]);
+    });
+
+    it('a value the field has dropped altogether is kept and flagged as a field problem', async () => {
+        const el = lookup([rule('Status', 'equals', 'Gone')]);
+        const changes = listen(el);
+        await settle();
+        const dropdown = control(el, 0, 'value');
+        expect(dropdown.value).toBe('Gone');
+        expect(labels(dropdown)).toContain('Gone (no longer a choice)');
+        expect(problemOn(el, 0, 'value')).toBe(
+            'This rule checks for a value the field no longer offers, so it can never match.'
+        );
+        expect(changes).toEqual([]);
+    });
+
+    it('a text field keeps its text box', async () => {
+        const el = lookup([rule('Title', 'equals', 'Boss')]);
+        await settle();
+        expect(control(el, 0, 'value').tagName).toBe('LIGHTNING-INPUT');
+    });
+
+    it('Contains on a record field is a text search, so it keeps the box', async () => {
+        const el = lookup([rule('Status', 'contains', 'Op')]);
+        await settle();
+        expect(control(el, 0, 'value').tagName).toBe('LIGHTNING-INPUT');
+        expect(el.problems).toEqual([]);
+    });
+
+    it('picking a field brings its values with it, and starts the value over', async () => {
+        const el = lookup([rule('Title', 'equals', 'Boss')]);
+        await settle();
+        const changes = listen(el);
+        control(el, 0, 'field').dispatchEvent(
+            new CustomEvent('fieldchange', {
+                detail: {
+                    value: 'Status',
+                    label: 'Status',
+                    type: 'picklist',
+                    picklistValues: ['Open', 'Closed'],
+                    inactivePicklistValues: ['Archived']
+                }
+            })
+        );
+        expect(changes[0].rules[0]).toEqual(rule('Status', 'equals', ''));
+        el.value = changes[0];
+        await flush();
+        expect(labels(control(el, 0, 'value'))).toEqual([
+            'Open',
+            'Closed',
+            'Archived (inactive)'
+        ]);
+    });
+
+    it('leaving a list field for a text one clears the value too', async () => {
+        const el = lookup([rule('Status', 'equals', 'Open')]);
+        await settle();
+        const changes = listen(el);
+        control(el, 0, 'field').dispatchEvent(
+            new CustomEvent('fieldchange', {
+                detail: { value: 'Title', label: 'Title', type: 'string' }
+            })
+        );
+        expect(changes[0].rules[0]).toEqual(rule('Title', 'equals', ''));
+    });
+
+    describe('list operators pick several values', () => {
+        const EXTRA = [
+            { value: 'in', label: 'Is one of' },
+            { value: 'includes', label: 'Includes any of' }
+        ];
+
+        it('shows what is chosen as pills and offers the rest', async () => {
+            const el = lookup([rule('Status', 'in', 'Open, Archived')], {
+                extraOperators: EXTRA
+            });
+            await settle();
+            const pills = el.shadowRoot.querySelector(
+                'lightning-pill-container'
+            );
+            expect(pills.items).toEqual([
+                { label: 'Open', name: 'Open' },
+                { label: 'Archived (inactive)', name: 'Archived' }
+            ]);
+            expect(labels(control(el, 0, 'value'))).toEqual(['Closed']);
+        });
+
+        it('adding a value saves "A, B" exactly as typing it would have', async () => {
+            const el = lookup([rule('Status', 'in', 'Open')], {
+                extraOperators: EXTRA
+            });
+            await settle();
+            const changes = listen(el);
+            change(control(el, 0, 'value'), 'Closed');
+            expect(changes[0].rules[0]).toEqual(
+                rule('Status', 'in', 'Open, Closed')
+            );
+        });
+
+        it('removing a pill saves what is left', async () => {
+            const el = lookup([rule('Status', 'in', 'Open, Closed')], {
+                extraOperators: EXTRA
+            });
+            await settle();
+            const changes = listen(el);
+            el.shadowRoot
+                .querySelector('lightning-pill-container')
+                .dispatchEvent(
+                    new CustomEvent('itemremove', {
+                        detail: { index: 0, item: { name: 'Open' } }
+                    })
+                );
+            expect(changes[0].rules[0]).toEqual(rule('Status', 'in', 'Closed'));
+        });
+
+        it('a gone value among them is named, kept, and flagged', async () => {
+            const el = lookup([rule('Status', 'in', 'Open, Gone')], {
+                extraOperators: EXTRA
+            });
+            await settle();
+            const pills = el.shadowRoot.querySelector(
+                'lightning-pill-container'
+            );
+            expect(pills.items[1]).toEqual({
+                label: 'Gone (no longer a choice)',
+                name: 'Gone'
+            });
+            expect(problemOn(el, 0, 'value')).toBe(
+                'This condition lists a value the field no longer offers: Gone.'
+            );
+        });
+
+        it('a list whose values hold a comma keeps the plain box (the comma is the divider)', async () => {
+            const el = lookup([rule('Region', 'in', 'West')], {
+                extraOperators: EXTRA
+            });
+            await settle();
+            expect(control(el, 0, 'value').tagName).toBe('LIGHTNING-INPUT');
+        });
+
+        it('switching to a one-value comparison empties several values rather than choosing one', async () => {
+            const el = lookup([rule('Status', 'in', 'Open, Closed')], {
+                extraOperators: EXTRA
+            });
+            await settle();
+            const changes = listen(el);
+            change(control(el, 0, 'operator'), 'equals');
+            expect(changes[0].rules[0]).toEqual(rule('Status', 'equals', ''));
+
+            // one value is still one value
+            const one = lookup([rule('Status', 'in', 'Open')], {
+                extraOperators: EXTRA
+            });
+            await settle();
+            const heard = listen(one);
+            change(control(one, 0, 'operator'), 'equals');
+            expect(heard[0].rules[0]).toEqual(rule('Status', 'equals', 'Open'));
+        });
+    });
+
+    it('the linked record on a Show condition gets the same dropdown', async () => {
+        const el = mount({
+            recordObject: 'Contact',
+            sourceIndex: choiceIndex(),
+            value: config([rule('record:Status', 'equals', 'Archived')])
+        });
+        await settle();
+        const dropdown = control(el, 0, 'value');
+        expect(labels(dropdown)).toEqual([
+            'Open',
+            'Closed',
+            'Archived (inactive)'
+        ]);
+        expect(dropdown.value).toBe('Archived');
+        expect(el.problems).toEqual([]);
+    });
+});

@@ -39,7 +39,8 @@ import {
     layoutNamesPages
 } from 'c/finalLayoutRegistry';
 import { repeatsPageName } from 'c/finalPageName';
-import { toSchemaOptions } from 'c/finalChoiceLook';
+import { toSchemaOptions, ruleChoicesFor } from 'c/finalChoiceLook';
+import { goneValues, goneValueEffect } from 'c/finalExpressionEngine';
 import { ensureRuleIds, mintRuleId, pruneTranslations } from 'c/finalTranslate';
 import listLanguages from '@salesforce/apex/FinalStudioController.listLanguages';
 
@@ -363,6 +364,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
      *  user touches the select, the live value must be forced back in sync
      *  (e.g. "Back to draft" from the notice). */
     renderedCallback() {
+        this._ensureLiveChoices();
         // The current LWC template compiler does not recognize inert yet.
         // Apply it to our own DOM so publishing blocks both pointer and keyboard edits.
         this.template
@@ -1667,22 +1669,167 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
      *  so widening it here can't drift the two apart. */
     get ruleIndexMap() {
         const map = new Map();
+        const defaults = this.fieldDefaults;
         for (const page of (this.spec && this.spec.pages) || []) {
             for (const section of page.sections || []) {
                 for (const el of section.elements || []) {
                     const input = el.config && el.config.inputType;
+                    // DEFERRED 29: a question with a fixed list of values
+                    // tells the rule editor what they are. Also additive and
+                    // editor-only (the engine's lint reads `options` only to
+                    // warn about a value that has gone).
+                    const live =
+                        el.binding && el.binding.field && el.binding.object
+                            ? (this._liveChoices[el.binding.object] || {})[
+                                  el.binding.field
+                              ]
+                            : undefined;
+                    const choices = ruleChoicesFor(el, live, defaults[input]);
                     map.set(el.id, {
                         type:
                             input === 'date' || input === 'datetime'
                                 ? input
                                 : el.type,
                         inputType: input || null,
-                        repeatSectionId: section.repeat ? section.id : null
+                        repeatSectionId: section.repeat ? section.id : null,
+                        ...(choices
+                            ? {
+                                  options: choices.options,
+                                  optionsLive: choices.live,
+                                  multi: choices.multi
+                              }
+                            : {})
                     });
                 }
             }
         }
         return map;
+    }
+
+    /**
+     * Salesforce's active picklist values, read live for every picklist-bound
+     * question (DEFERRED 29): { [objectApi]: { [fieldApi]: [{value, label}] } }.
+     * One describeFields per object for the whole session (the call is
+     * cacheable, so the palette's own read shares it); a survey's connected
+     * object reuses the list it already holds.
+     */
+    _liveChoices = {};
+    _liveAsked = new Set();
+    _liveScannedSpec = null;
+
+    _ensureLiveChoices() {
+        const spec = this.spec;
+        if (!spec || spec === this._liveScannedSpec) {
+            return;
+        }
+        this._liveScannedSpec = spec;
+        const wanted = new Set();
+        for (const page of spec.pages || []) {
+            for (const section of page.sections || []) {
+                for (const el of section.elements || []) {
+                    const b = el.binding;
+                    if (
+                        b &&
+                        b.object &&
+                        b.field &&
+                        el.config &&
+                        el.config.inputType === 'picklist'
+                    ) {
+                        wanted.add(b.object);
+                    }
+                }
+            }
+        }
+        wanted.forEach((objectApi) => {
+            if (this._liveAsked.has(objectApi)) {
+                return;
+            }
+            this._liveAsked.add(objectApi);
+            const held =
+                objectApi === this.objectApi &&
+                Array.isArray(this.mappingFields)
+                    ? Promise.resolve(this.mappingFields)
+                    : Promise.resolve(describeFields({ objectApi }));
+            held.then((fields) => {
+                const byField = {};
+                (fields || []).forEach((f) => {
+                    if (f && Array.isArray(f.options)) {
+                        byField[f.apiName] = f.options;
+                    }
+                });
+                this._liveChoices = {
+                    ...this._liveChoices,
+                    [objectApi]: byField
+                };
+            }).catch(() => {
+                // The saved copy of the list keeps working, marked as such;
+                // nothing is called "no longer a choice" on a guess.
+            });
+        });
+    }
+
+    /**
+     * Rules that compare with a choice their question no longer offers, as
+     * publish warnings (never blockers: the runtime just never matches).
+     * Computed here because only the Studio holds Salesforce's list as it is
+     * now; the server-side check cannot see it. [{ text, item }].
+     */
+    _goneValueWarnings() {
+        const index = this.ruleIndexMap;
+        const found = [];
+        const labelOf = new Map();
+        for (const page of (this.spec && this.spec.pages) || []) {
+            for (const section of page.sections || []) {
+                for (const el of section.elements || []) {
+                    labelOf.set(el.id, el.label || el.id);
+                }
+            }
+        }
+        const scan = (visibility, owner) => {
+            goneValues(visibility, index).forEach((g) => {
+                const sentence = `condition ${g.ruleIndex + 1} checks for “${g.value}”, which “${labelOf.get(g.source)}” no longer offers, so ${goneValueEffect(g.operator)}.`;
+                found.push({ owner, sentence });
+            });
+        };
+        for (const page of (this.spec && this.spec.pages) || []) {
+            scan(page.visibility, {
+                kind: 'page',
+                name: page.name || 'Page'
+            });
+            for (const section of page.sections || []) {
+                scan(section.visibility, {
+                    kind: 'section',
+                    name: section.title || 'Section'
+                });
+                for (const el of section.elements || []) {
+                    scan(el.visibility, {
+                        kind: 'element',
+                        id: el.id,
+                        name: el.label || el.type
+                    });
+                }
+            }
+        }
+        return found.map(({ owner, sentence }) => {
+            const where =
+                owner.kind === 'element'
+                    ? 'Its visibility rule:'
+                    : `The visibility rule on the ${owner.kind} “${owner.name}”:`;
+            const text = `${where} ${sentence}`;
+            return {
+                text:
+                    owner.kind === 'element'
+                        ? `“${owner.name}”: ${text}`
+                        : text,
+                item: {
+                    severity: 'warning',
+                    area: 'build',
+                    elementId: owner.kind === 'element' ? owner.id : null,
+                    elementLabel: owner.kind === 'element' ? owner.name : null,
+                    text
+                }
+            };
+        });
     }
 
     get selectionHostRepeat() {
@@ -3208,12 +3355,13 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
      * place that difference can show without nagging the author.
      */
     async _publishCheck() {
+        let check;
         try {
             const found = await publishWarnings({
                 formId: this.formId,
                 specJson: JSON.stringify(this.spec)
             });
-            return {
+            check = {
                 blockers: (found && found.blockers) || [],
                 warnings: (found && found.warnings) || [],
                 items: (found && found.items) || []
@@ -3223,8 +3371,33 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
             // the author the preview of what publish would refuse.
             // eslint-disable-next-line no-console
             console.error('Publish warnings unavailable:', e);
-            return { blockers: [], warnings: [], items: [] };
+            check = { blockers: [], warnings: [], items: [] };
         }
+        // Choices a rule still checks for but the question dropped (DEFERRED
+        // 29): warnings only, worked out here where the live list is held.
+        const gone = this._goneValueWarnings();
+        if (gone.length) {
+            // The dialog shows the placed items when there are any, so the
+            // server's plain sentences must go in with them, not vanish.
+            const items = check.items.length
+                ? check.items
+                : [
+                      ...check.blockers.map((text) => ({
+                          severity: 'blocker',
+                          text
+                      })),
+                      ...check.warnings.map((text) => ({
+                          severity: 'warning',
+                          text
+                      }))
+                  ];
+            check = {
+                blockers: check.blockers,
+                warnings: [...check.warnings, ...gone.map((g) => g.text)],
+                items: [...items, ...gone.map((g) => g.item)]
+            };
+        }
+        return check;
     }
 
     /** "Go there" from the publish dialog: the tab, then the thing on it. */

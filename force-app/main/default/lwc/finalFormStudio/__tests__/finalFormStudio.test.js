@@ -3919,3 +3919,276 @@ describe('c-final-form-studio Translate mode', () => {
         ).not.toBeNull();
     });
 });
+
+// ---- DEFERRED 29: choice lists reach the rule editor, and gone values warn ----
+import describeFieldsForRules from '@salesforce/apex/FinalStudioController.describeFields';
+
+// Imperative AND wired: the palette wires it, the Studio calls it.
+jest.mock(
+    '@salesforce/apex/FinalStudioController.describeFields',
+    () => {
+        const {
+            createApexTestWireAdapter
+        } = require('@salesforce/sfdx-lwc-jest');
+        return {
+            default: createApexTestWireAdapter(
+                jest.fn(() => Promise.resolve([]))
+            )
+        };
+    },
+    { virtual: true }
+);
+
+describe('rule values: live choice lists (DEFERRED 29)', () => {
+    const FIELDS = [
+        {
+            apiName: 'Tier__c',
+            label: 'Tier',
+            inputType: 'picklist',
+            options: [
+                { value: 'Gold', label: 'Gold tier' },
+                { value: 'Silver', label: 'Silver tier' }
+            ]
+        }
+    ];
+
+    function specWith(extraRule) {
+        const s = JSON.parse(JSON.stringify(SPEC));
+        s.form.targetObject = 'Contact';
+        s.pages = [
+            {
+                id: 'pg_1',
+                name: 'One',
+                sections: [
+                    {
+                        id: 'sec_1',
+                        title: 'A',
+                        elements: [
+                            {
+                                id: 'el_tier',
+                                type: 'field',
+                                label: 'Tier',
+                                binding: {
+                                    object: 'Contact',
+                                    field: 'Tier__c'
+                                },
+                                config: {
+                                    inputType: 'picklist',
+                                    renderAs: 'Default',
+                                    // the copy saved when the question was added
+                                    schemaOptions: [
+                                        { value: 'Gold', label: 'Gold' },
+                                        { value: 'Bronze', label: 'Bronze' }
+                                    ]
+                                }
+                            },
+                            {
+                                id: 'el_note',
+                                type: 'field',
+                                label: 'Note',
+                                config: { inputType: 'text' },
+                                visibility: extraRule
+                                    ? {
+                                          action: 'show',
+                                          logic: 'all',
+                                          rules: [extraRule]
+                                      }
+                                    : null
+                            },
+                            {
+                                id: 'el_pick',
+                                type: 'imageChoice',
+                                label: 'Pick',
+                                config: {
+                                    options: [{ value: 'a', label: 'A' }]
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'pg_2',
+                name: 'Two',
+                visibility: {
+                    action: 'show',
+                    logic: 'all',
+                    rules: [
+                        {
+                            source: 'el_tier',
+                            operator: 'equals',
+                            value: 'Bronze'
+                        }
+                    ]
+                },
+                sections: []
+            }
+        ];
+        return s;
+    }
+
+    async function open(spec) {
+        loadStudio.mockResolvedValue({
+            name: 'Rules',
+            objectApi: 'Contact',
+            specJson: JSON.stringify(spec),
+            draftVersionId: 'a0V1',
+            versionNumber: 2,
+            activeVersionNumber: 1
+        });
+        saveDraft.mockResolvedValue('a0V1');
+        listVersions.mockResolvedValue(VERSIONS);
+        publishWarnings.mockResolvedValue({ blockers: [], warnings: [] });
+        const el = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await micro(12);
+        el.shadowRoot.querySelectorAll('.st-mode')[0].click(); // Build
+        await Promise.resolve();
+        return el;
+    }
+
+    const panelIndex = async (el) => {
+        el.shadowRoot.querySelector('c-final-field-palette').dispatchEvent(
+            new CustomEvent('logicjump', {
+                detail: { kind: 'page', id: 'pg_2' }
+            })
+        );
+        await Promise.resolve();
+        return el.shadowRoot.querySelector('c-final-property-panel').ruleIndex;
+    };
+
+    beforeEach(() => {
+        jest.useFakeTimers();
+        describeFieldsForRules.mockReset().mockResolvedValue(FIELDS);
+        FinalPublishDialog.open.mockReset().mockResolvedValue(false);
+    });
+
+    afterEach(async () => {
+        jest.useRealTimers();
+        await flush();
+        describeFieldsForRules.mockReset().mockResolvedValue([]);
+    });
+
+    it('a picklist question offers Salesforce’s values as they are now, not its saved copy', async () => {
+        const el = await open(specWith());
+        await micro(12);
+        const index = await panelIndex(el);
+        expect(index.get('el_tier')).toMatchObject({
+            inputType: 'picklist',
+            options: [
+                { value: 'Gold', label: 'Gold tier' },
+                { value: 'Silver', label: 'Silver tier' }
+            ],
+            optionsLive: true,
+            multi: false
+        });
+        // one describe for the object, however many questions
+        expect(
+            describeFieldsForRules.mock.calls.filter(
+                ([args]) => args && args.objectApi === 'Contact'
+            ).length
+        ).toBeGreaterThanOrEqual(1);
+    });
+
+    it('until Salesforce answers it offers the saved copy, marked not live', async () => {
+        describeFieldsForRules
+            .mockReset()
+            .mockReturnValue(new Promise(() => {}));
+        const el = await open(specWith());
+        await micro(12);
+        const index = await panelIndex(el);
+        expect(index.get('el_tier')).toMatchObject({
+            options: [
+                { value: 'Gold', label: 'Gold' },
+                { value: 'Bronze', label: 'Bronze' }
+            ],
+            optionsLive: false
+        });
+    });
+
+    it('a failed describe leaves the saved copy, still never called out of date', async () => {
+        describeFieldsForRules
+            .mockReset()
+            .mockRejectedValue(new Error('no access'));
+        const el = await open(specWith());
+        await micro(12);
+        const index = await panelIndex(el);
+        expect(index.get('el_tier').optionsLive).toBe(false);
+    });
+
+    it('a text question has no list; a choice question carries its own', async () => {
+        const el = await open(specWith());
+        await micro(12);
+        const index = await panelIndex(el);
+        expect(index.get('el_note').options).toBeUndefined();
+        expect(index.get('el_pick')).toMatchObject({
+            options: [{ value: 'a', label: 'A' }],
+            optionsLive: true
+        });
+    });
+
+    it('publish warns, without blocking, about a value its question no longer offers', async () => {
+        const el = await open(
+            specWith({ source: 'el_tier', operator: 'equals', value: 'Bronze' })
+        );
+        await micro(12);
+        el.shadowRoot.querySelector('.st-bar > .st-primary').click();
+        await micro(12);
+
+        const opened = FinalPublishDialog.open.mock.calls[0][0];
+        expect(opened.blockers).toEqual([]);
+        expect(opened.label).toBe('Publish anyway?');
+        const texts = opened.items.map((i) => i.text);
+        expect(texts).toContain(
+            'Its visibility rule: condition 1 checks for “Bronze”, which “Tier” no longer offers, so it can never match.'
+        );
+        expect(texts).toContain(
+            'The visibility rule on the page “Two”: condition 1 checks for “Bronze”, which “Tier” no longer offers, so it can never match.'
+        );
+        const onNote = opened.items.find((i) => i.elementId === 'el_note');
+        expect(onNote).toMatchObject({
+            severity: 'warning',
+            area: 'build',
+            elementLabel: 'Note'
+        });
+        // the plain sentences travel too
+        expect(opened.warnings).toHaveLength(2);
+    });
+
+    it('publish stays quiet when every rule value is still offered', async () => {
+        const spec = specWith({
+            source: 'el_tier',
+            operator: 'equals',
+            value: 'Gold'
+        });
+        spec.pages[1].visibility.rules[0].value = 'Silver';
+        const el = await open(spec);
+        await micro(12);
+        el.shadowRoot.querySelector('.st-bar > .st-primary').click();
+        await micro(12);
+        const opened = FinalPublishDialog.open.mock.calls[0][0];
+        expect(opened.warnings).toEqual([]);
+        expect(opened.label).toBe('Publish form');
+    });
+
+    it('the server’s own warnings stay alongside it', async () => {
+        publishWarnings.mockReset();
+        const el = await open(
+            specWith({ source: 'el_tier', operator: 'equals', value: 'Bronze' })
+        );
+        publishWarnings.mockResolvedValue({
+            blockers: [],
+            warnings: ['You are removing "Phone".']
+        });
+        await micro(12);
+        el.shadowRoot.querySelector('.st-bar > .st-primary').click();
+        await micro(12);
+        const opened = FinalPublishDialog.open.mock.calls[0][0];
+        expect(opened.warnings[0]).toBe('You are removing "Phone".');
+        expect(opened.items[0]).toMatchObject({
+            severity: 'warning',
+            text: 'You are removing "Phone".'
+        });
+        expect(opened.items).toHaveLength(3);
+    });
+});

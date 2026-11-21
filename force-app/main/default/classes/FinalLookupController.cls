@@ -217,7 +217,8 @@ public with sharing class FinalLookupController {
                         'path' => prefix + d.getName(),
                         'label' => d.getLabel(),
                         'type' => String.valueOf(d.getType()).toLowerCase(),
-                        'picklistValues' => picklistOf(d)
+                        'picklistValues' => picklistOf(d, true),
+                        'inactivePicklistValues' => picklistOf(d, false)
                     }
                 );
             }
@@ -269,14 +270,24 @@ public with sharing class FinalLookupController {
         return null;
     }
 
-    private static List<String> picklistOf(Schema.DescribeFieldResult d) {
+    /**
+     * A picklist's values: the active ones (`active` true) or the inactive
+     * ones (false). Inactive values are listed apart so the condition editor
+     * can offer them, marked, for a rule on a record field - old records can
+     * still hold them - and never mixes them in with the live choices.
+     */
+    @TestVisible
+    private static List<String> picklistOf(
+        Schema.DescribeFieldResult d,
+        Boolean active
+    ) {
         List<String> out = new List<String>();
         if (
             d.getType() == Schema.DisplayType.PICKLIST ||
             d.getType() == Schema.DisplayType.MULTIPICKLIST
         ) {
             for (Schema.PicklistEntry e : d.getPicklistValues()) {
-                if (e.isActive()) {
+                if (e.isActive() == active) {
                     out.add(e.getValue());
                 }
             }

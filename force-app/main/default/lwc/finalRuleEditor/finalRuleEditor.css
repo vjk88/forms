@@ -82,6 +82,12 @@
     width: 100%;
 }
 
+/* The values chosen for a list comparison (Is one of, Includes any of),
+   above the box that adds another. */
+.re-pills {
+    min-width: 0;
+}
+
 /* A column's name above its control — only when stacked (the header row is
    hidden there, so without it every box would be unlabelled). */
 .re-cell-label {
