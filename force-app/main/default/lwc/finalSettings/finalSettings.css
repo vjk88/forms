@@ -1,0 +1,183 @@
+@import 'c/finalStudioStyles';
+
+/* The org-wide Settings tab: page title, then rail + pane (DESIGN_SYSTEM 3).
+   Every class is prefixed fs- because LEX leaks global CSS for generic names
+   (DESIGN_SYSTEM 11). Studio tokens only. */
+:host {
+    display: block;
+}
+
+.fs-page {
+    padding: var(--c-studio-space-6);
+    background: var(--c-studio-surface);
+    font-family: var(--c-studio-font);
+    font-size: var(--c-studio-fs-body);
+    line-height: var(--c-studio-lh-body);
+    color: var(--c-studio-text);
+}
+
+.fs-head {
+    margin-bottom: var(--c-studio-space-5);
+}
+
+.fs-title {
+    margin: 0;
+    font-size: var(--c-studio-fs-display);
+    font-weight: var(--c-studio-fw-strong);
+    line-height: var(--c-studio-lh-tight);
+}
+
+.fs-subtitle {
+    margin: var(--c-studio-space-2) 0 0;
+    color: var(--c-studio-text-weak);
+    font-size: var(--c-studio-fs-small);
+}
+
+.fs-frame {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid var(--c-studio-border);
+    border-radius: var(--c-studio-radius-md);
+    overflow: hidden;
+}
+
+.fs-pane {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.fs-pane-head {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    box-sizing: border-box;
+    min-height: var(--c-studio-bar-h);
+    padding: var(--c-studio-space-2) var(--c-studio-space-5);
+    border-bottom: 1px solid var(--c-studio-border);
+}
+
+.fs-pane-title {
+    margin: 0;
+    font-size: var(--c-studio-fs-subhead);
+    font-weight: var(--c-studio-fw-strong);
+    line-height: var(--c-studio-lh-tight);
+}
+
+.fs-pane-meta {
+    margin: 0;
+    color: var(--c-studio-text-weak);
+    font-size: var(--c-studio-fs-small);
+}
+
+.fs-pane-body {
+    max-width: 42.5rem;
+    padding: var(--c-studio-space-5);
+}
+
+.fs-intro {
+    margin: 0 0 var(--c-studio-space-6);
+    color: var(--c-studio-text-weak);
+}
+
+.fs-group {
+    margin-bottom: var(--c-studio-space-6);
+}
+
+.fs-group-title {
+    display: flex;
+    align-items: center;
+    gap: var(--c-studio-space-3);
+    margin-bottom: var(--c-studio-space-4);
+}
+
+.fs-group-name {
+    font-size: var(--c-studio-fs-body);
+    font-weight: var(--c-studio-fw-strong);
+}
+
+.fs-group-rule {
+    flex: 1 1 auto;
+    height: 1px;
+    background: var(--c-studio-border);
+}
+
+.fs-row {
+    margin-bottom: var(--c-studio-space-5);
+}
+
+.fs-help {
+    margin: var(--c-studio-space-2) 0 0;
+    color: var(--c-studio-text-weak);
+    font-size: var(--c-studio-fs-small);
+}
+
+.fs-steps {
+    margin: 0;
+    padding-left: var(--c-studio-space-6);
+}
+
+.fs-steps li {
+    margin-bottom: var(--c-studio-space-3);
+}
+
+.fs-steps li:last-child {
+    margin-bottom: 0;
+}
+
+.fs-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--c-studio-space-3);
+}
+
+.fs-feedback {
+    margin-top: var(--c-studio-space-4);
+}
+
+.fs-notice {
+    margin: 0;
+    padding: var(--c-studio-space-4) var(--c-studio-space-5);
+    border: 1px solid transparent;
+    border-radius: var(--c-studio-radius-md);
+}
+
+.fs-notice-success {
+    background: var(--c-studio-success-surface);
+    color: var(--c-studio-success-text);
+}
+
+.fs-notice-error {
+    background: var(--c-studio-error-surface);
+    border-color: var(--c-studio-error-border);
+    color: var(--c-studio-error-text);
+}
+
+.fs-notice-warning {
+    margin-bottom: var(--c-studio-space-6);
+    background: var(--c-studio-warning-surface);
+    border-color: var(--c-studio-warning-border);
+    color: var(--c-studio-warning-text);
+}
+
+.fs-state {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--c-studio-space-4);
+}
+
+.fs-spin {
+    position: relative;
+    width: var(--c-studio-space-8);
+    height: var(--c-studio-space-8);
+}
+
+.fs-state-text {
+    margin: 0;
+    color: var(--c-studio-text-weak);
+}
+
+.fs-state-failed .fs-state-text {
+    color: var(--c-studio-error-text);
+}

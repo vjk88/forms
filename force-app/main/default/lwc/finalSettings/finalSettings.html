@@ -1,0 +1,217 @@
+<template>
+    <div class="fs-page">
+        <header class="fs-head">
+            <h2 class="fs-title">Settings</h2>
+            <p class="fs-subtitle">
+                These apply to every form and survey in your organisation.
+            </p>
+        </header>
+
+        <div class="fs-frame">
+            <c-final-studio-rail
+                tabs={railTabs}
+                value="address"
+                label="Settings sections"
+            ></c-final-studio-rail>
+
+            <section class="fs-pane" aria-labelledby="fs-pane-title">
+                <div class="fs-pane-head">
+                    <h3 id="fs-pane-title" class="fs-pane-title">
+                        Address search
+                    </h3>
+                    <p class="fs-pane-meta">
+                        Suggest addresses while people fill in Address
+                        questions.
+                    </p>
+                </div>
+
+                <div class="fs-pane-body">
+                    <template lwc:if={isLoading}>
+                        <div class="fs-state" data-id="loading">
+                            <div class="fs-spin">
+                                <lightning-spinner
+                                    alternative-text="Loading settings"
+                                    size="small"
+                                ></lightning-spinner>
+                            </div>
+                            <p class="fs-state-text">Loading settings…</p>
+                        </div>
+                    </template>
+
+                    <template lwc:elseif={isFailed}>
+                        <div class="fs-state fs-state-failed" data-id="failed">
+                            <p class="fs-state-text" role="alert">
+                                Settings couldn't be loaded.
+                            </p>
+                            <lightning-button
+                                class="fs-retry"
+                                label="Retry"
+                                onclick={handleRetry}
+                            ></lightning-button>
+                        </div>
+                    </template>
+
+                    <template lwc:else>
+                        <p class="fs-intro">
+                            You bring your own account with the provider. Your
+                            key stays in Salesforce and is never sent to anyone
+                            filling in a form.
+                        </p>
+
+                        <template lwc:if={isReadOnly}>
+                            <p
+                                class="fs-notice fs-notice-warning"
+                                data-id="readonly"
+                            >
+                                You can see these settings but not change them.
+                                Ask an admin for the Manage form settings
+                                permission.
+                            </p>
+                        </template>
+
+                        <div class="fs-group">
+                            <div class="fs-group-title">
+                                <span class="fs-group-name">Provider</span>
+                                <span class="fs-group-rule"></span>
+                            </div>
+                            <div class="fs-row">
+                                <lightning-combobox
+                                    class="fs-provider"
+                                    label="Provider"
+                                    options={providerOptions}
+                                    value={provider}
+                                    disabled={isReadOnly}
+                                    onchange={handleProvider}
+                                ></lightning-combobox>
+                            </div>
+                            <template lwc:if={isCustom}>
+                                <div class="fs-row">
+                                    <lightning-input
+                                        class="fs-class"
+                                        label="Apex class name"
+                                        field-level-help="A class that implements FinalAddressProvider."
+                                        value={apexClass}
+                                        disabled={isReadOnly}
+                                        onchange={handleClass}
+                                    ></lightning-input>
+                                </div>
+                            </template>
+                            <template lwc:if={isNone}>
+                                <p class="fs-help" data-id="none-help">
+                                    Address questions show plain address fields,
+                                    with no search.
+                                </p>
+                            </template>
+                        </div>
+
+                        <template lwc:if={isGoogle}>
+                            <div class="fs-group" data-id="steps-google">
+                                <div class="fs-group-title">
+                                    <span class="fs-group-name">
+                                        Connect your key
+                                    </span>
+                                    <span class="fs-group-rule"></span>
+                                </div>
+                                <ol class="fs-steps">
+                                    <li>
+                                        In Google Cloud, create an API key and
+                                        turn on
+                                        <strong>Places API (New)</strong> for
+                                        it.
+                                    </li>
+                                    <li>
+                                        In Setup, open
+                                        <strong>Named Credentials</strong>, then
+                                        the
+                                        <strong>External Credentials</strong>
+                                        tab, then
+                                        <strong>Final Address Google</strong>.
+                                        Under <strong>Principals</strong>, edit
+                                        <strong>Shared_Key</strong> and add an
+                                        authentication parameter named
+                                        <strong>Key</strong> whose value is your
+                                        API key.
+                                    </li>
+                                    <li>
+                                        Assign the
+                                        <strong>Final Address Search</strong>
+                                        permission set to your public site's
+                                        guest user and to the people who fill in
+                                        forms.
+                                    </li>
+                                </ol>
+                            </div>
+                        </template>
+
+                        <template lwc:if={isCustom}>
+                            <div class="fs-group" data-id="steps-custom">
+                                <div class="fs-group-title">
+                                    <span class="fs-group-name">
+                                        Connect your key
+                                    </span>
+                                    <span class="fs-group-rule"></span>
+                                </div>
+                                <ol class="fs-steps">
+                                    <li>
+                                        Write an Apex class that implements
+                                        <strong>FinalAddressProvider</strong>.
+                                        It makes its own callouts, usually
+                                        through its own Named Credential.
+                                    </li>
+                                    <li>
+                                        Enter the class name above, then save.
+                                    </li>
+                                    <li>
+                                        Give your public site's guest user and
+                                        the people who fill in forms access to
+                                        your class's credential, and assign them
+                                        the
+                                        <strong>Final Address Search</strong>
+                                        permission set.
+                                    </li>
+                                </ol>
+                            </div>
+                        </template>
+
+                        <template lwc:if={canAct}>
+                            <div class="fs-actions">
+                                <lightning-button
+                                    class="fs-test"
+                                    label={testLabel}
+                                    disabled={testDisabled}
+                                    onclick={handleTest}
+                                ></lightning-button>
+                                <lightning-button
+                                    class="fs-save"
+                                    variant="brand"
+                                    label={saveLabel}
+                                    disabled={saveDisabled}
+                                    onclick={handleSave}
+                                ></lightning-button>
+                            </div>
+                        </template>
+
+                        <div
+                            class="fs-feedback"
+                            role="status"
+                            aria-live="polite"
+                        >
+                            <template lwc:if={hasNotice}>
+                                <p class={noticeClass} data-id="notice">
+                                    {notice.text}
+                                </p>
+                                <template lwc:if={notice.showAccessNote}>
+                                    <p class="fs-help" data-id="access-note">
+                                        This tests your own access. Guests and
+                                        the people who fill in forms also need
+                                        step 3.
+                                    </p>
+                                </template>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </section>
+        </div>
+    </div>
+</template>

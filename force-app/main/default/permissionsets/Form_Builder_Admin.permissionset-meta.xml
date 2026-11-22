@@ -29,6 +29,10 @@
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
+        <apexClass>FinalSettingsController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>FinalSpecController</apexClass>
         <enabled>true</enabled>
     </classAccesses>
@@ -83,6 +87,10 @@
     <customPermissions>
         <enabled>true</enabled>
         <name>Create_Survey_Topics</name>
+    </customPermissions>
+    <customPermissions>
+        <enabled>true</enabled>
+        <name>Final_Manage_Settings</name>
     </customPermissions>
     <description
     >Permission set for Form Builder Administrators giving Modify All and Edit permissions to custom objects and fields.</description>
@@ -861,6 +869,10 @@
     </tabSettings>
     <tabSettings>
         <tab>Final_P0_Test</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>Final_Settings</tab>
         <visibility>Visible</visibility>
     </tabSettings>
     <tabSettings>
