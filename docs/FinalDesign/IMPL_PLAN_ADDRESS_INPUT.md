@@ -234,7 +234,7 @@ Settings refuses to save it.
    Verified in the Studio preview and a LEX page with a real Google key.
 4. **Guest search:** `addressSuggest` / `addressDetails` on `FinalGuestController`, `verifySigned`, caps. **BUILT (branch feat/address-guest-search).**
    Verified on the public site after a site publish.
-5. **Freeform mapping of parts.**
+5. **Freeform mapping of parts: BUILT (branch feat/address-mapping).** Source `{kind:'answer', elementKey, part}` (picker value `answer:<key>.<part>`); `describeQuestions` returns `parts`; validator, service and the mapping picker read it.
 6. **Loqate adapter** (groups included).
 
 Each UI slice runs the uiux-flow-reviewer gate and ships before/after photos.

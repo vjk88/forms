@@ -269,6 +269,16 @@ public without sharing class FinalMappingService {
             return null;
         }
         Map<String, Object> q = run.questions.get(key);
+        String part = FinalAddressAnswer.partOf(src);
+        if (part != null) {
+            // One part of an address reads as a plain Text or Number answer;
+            // a part nobody filled in is an unanswered question (D44).
+            Form_Submission_Answer__c pa = FinalAddressAnswer.partAnswer(
+                a,
+                part
+            );
+            return pa == null ? null : FinalMappingRules.answerValue(pa, q, fd);
+        }
         if (a.Value_Unparsed__c == true) {
             if (FinalMappingRules.isTextLike(fd.getType())) {
                 return String.isBlank(a.Text_Value__c) ? null : a.Text_Value__c;
@@ -558,6 +568,7 @@ public without sharing class FinalMappingService {
                 Answer_Type__c,
                 Value_Unparsed__c,
                 Text_Value__c,
+                Value_JSON__c,
                 Numeric_Value__c,
                 Boolean_Value__c,
                 Date_Value__c,

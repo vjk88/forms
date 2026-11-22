@@ -62,11 +62,28 @@ const QUESTIONS = [
 ];
 const COMPAT = {
     Email: ['EMAIL', 'STRING', 'TEXTAREA'],
-    Text: ['STRING', 'TEXTAREA']
+    Text: ['STRING', 'TEXTAREA'],
+    Number: ['DOUBLE', 'INTEGER']
+};
+const ADDRESS = {
+    elementKey: 'el_addr',
+    label: 'Your address',
+    answerType: 'Address',
+    mappable: false,
+    parts: [
+        { key: 'city', label: 'City', answerType: 'Text' },
+        { key: 'latitude', label: 'Latitude', answerType: 'Number' }
+    ]
+};
+const LATITUDE = {
+    apiName: 'MailingLatitude',
+    label: 'Mailing Latitude',
+    displayType: 'DOUBLE',
+    required: false
 };
 
-function mount(actions, actionId) {
-    describeFields.mockResolvedValue(FIELDS);
+function mount(actions, actionId, questions = QUESTIONS, fields = FIELDS) {
+    describeFields.mockResolvedValue(fields);
     const el = createElement('c-final-mapping-action', {
         is: FinalMappingAction
     });
@@ -74,7 +91,7 @@ function mount(actions, actionId) {
         spec: { mapping: { actions } },
         actionId,
         objects: [{ label: 'Contact', value: 'Contact' }],
-        questions: QUESTIONS,
+        questions,
         compatibility: COMPAT
     });
     document.body.appendChild(el);
@@ -109,6 +126,114 @@ describe('c-final-mapping-action', () => {
         expect(values).toContain('answer:el_e');
         expect(values).not.toContain('answer:el_n'); // text never goes into Email
         expect(values).toContain('literal');
+    });
+
+    it('offers each address part that fits, never the whole address', async () => {
+        const el = mount(
+            [
+                {
+                    id: 'act_1',
+                    object: 'Contact',
+                    operation: 'create',
+                    fields: [
+                        { field: 'LastName', source: null },
+                        { field: 'MailingLatitude', source: null }
+                    ]
+                }
+            ],
+            'act_1',
+            [...QUESTIONS, ADDRESS],
+            [...FIELDS, LATITUDE]
+        );
+        await flush();
+        const text = el.shadowRoot.querySelector(
+            'lightning-combobox[data-field="LastName"]'
+        );
+        expect(text.options.map((o) => o.value)).toEqual([
+            'answer:el_e',
+            'answer:el_n',
+            'answer:el_addr.city',
+            'literal'
+        ]);
+        expect(text.options[2].label).toBe('Answer: Your address \u2192 City');
+        const num = el.shadowRoot.querySelector(
+            'lightning-combobox[data-field="MailingLatitude"]'
+        );
+        expect(num.options.map((o) => o.value)).toEqual([
+            'answer:el_addr.latitude',
+            'literal'
+        ]);
+    });
+
+    it('choosing an address part saves it, and reads back as that part', async () => {
+        const el = mount(
+            [
+                {
+                    id: 'act_1',
+                    object: 'Contact',
+                    operation: 'create',
+                    fields: [{ field: 'LastName', source: null }]
+                }
+            ],
+            'act_1',
+            [...QUESTIONS, ADDRESS]
+        );
+        await flush();
+        const handler = jest.fn();
+        el.addEventListener('specchange', handler);
+        el.shadowRoot
+            .querySelector('lightning-combobox[data-field="LastName"]')
+            .dispatchEvent(
+                new CustomEvent('change', {
+                    detail: { value: 'answer:el_addr.city' }
+                })
+            );
+        const spec = handler.mock.calls[0][0].detail.spec;
+        expect(spec.mapping.actions[0].fields[0].source).toEqual({
+            kind: 'answer',
+            elementKey: 'el_addr',
+            part: 'city'
+        });
+        // saved, then re-opened: the picker shows the same part
+        const again = mount(spec.mapping.actions, 'act_1', [
+            ...QUESTIONS,
+            ADDRESS
+        ]);
+        await flush();
+        expect(
+            again.shadowRoot.querySelector(
+                'lightning-combobox[data-field="LastName"]'
+            ).value
+        ).toBe('answer:el_addr.city');
+    });
+
+    it('a saved part whose question is gone matches no option', async () => {
+        const el = mount(
+            [
+                {
+                    id: 'act_1',
+                    object: 'Contact',
+                    operation: 'create',
+                    fields: [
+                        {
+                            field: 'LastName',
+                            source: {
+                                kind: 'answer',
+                                elementKey: 'el_addr',
+                                part: 'city'
+                            }
+                        }
+                    ]
+                }
+            ],
+            'act_1',
+            QUESTIONS // no address question any more
+        );
+        await flush();
+        const picker = el.shadowRoot.querySelector(
+            'lightning-combobox[data-field="LastName"]'
+        );
+        expect(picker.options.map((o) => o.value)).not.toContain(picker.value);
     });
 
     it('explains why another record is not offered', async () => {

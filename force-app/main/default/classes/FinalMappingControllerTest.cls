@@ -201,4 +201,43 @@ private class FinalMappingControllerTest {
         Assert.areEqual(false, found[0].get('mappable'));
         Assert.areEqual(true, found[1].get('mappable'));
     }
+
+    @IsTest
+    static void anAddressQuestionListsItsPartsInsteadOfBeingMappable() {
+        List<Map<String, Object>> found = FinalMappingController.describeQuestions(
+            JSON.serialize(
+                FinalMappingTestData.spec(
+                    new List<Object>{
+                        FinalMappingTestData.question(
+                            'el_addr',
+                            'address',
+                            'Shipping address'
+                        ),
+                        FinalMappingTestData.question('el_name', 'text', 'Name')
+                    },
+                    null
+                )
+            )
+        );
+        List<Map<String, String>> parts = (List<Map<String, String>>) found[0]
+            .get('parts');
+        Assert.areEqual(9, parts.size());
+        Assert.areEqual('street', parts[0].get('key'));
+        Assert.areEqual('Street', parts[0].get('label'));
+        Assert.areEqual('Text', parts[0].get('answerType'));
+        Map<String, String> byKey = new Map<String, String>();
+        for (Map<String, String> p : parts) {
+            byKey.put(p.get('key'), p.get('label') + '|' + p.get('answerType'));
+        }
+        Assert.areEqual('State / Province|Text', byKey.get('province'));
+        Assert.areEqual(
+            'State / Province code|Choice',
+            byKey.get('provinceCode')
+        );
+        Assert.areEqual('Zip / Postal code|Text', byKey.get('postalCode'));
+        Assert.areEqual('Country code|Choice', byKey.get('countryCode'));
+        Assert.areEqual('Latitude|Number', byKey.get('latitude'));
+        Assert.areEqual('Longitude|Number', byKey.get('longitude'));
+        Assert.isNull(found[1].get('parts'), 'only an address has parts');
+    }
 }

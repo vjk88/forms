@@ -933,6 +933,135 @@ public with sharing class FinalMappingValidator {
         return raw instanceof String && ((String) raw).startsWith('$field.');
     }
 
+    /** A required field fed by a question that can be left blank. */
+    private static void warnIfSkippable(
+        String key,
+        Map<String, Object> q,
+        Schema.DescribeFieldResult fd,
+        String id,
+        Context ctx,
+        List<Diagnostic> out
+    ) {
+        String label = fd.getLabel();
+        if (isRequired(fd) && ctx.skippable.containsKey(key)) {
+            FinalMappingRules.Skippable why = ctx.skippable.get(key);
+            out.add(
+                at(
+                        WARNING,
+                        id,
+                        fd.getName(),
+                        ctx,
+                        ctx.create,
+                        '“' +
+                            q.get('label') +
+                            '” ' +
+                            why.why +
+                            ', but it fills ' +
+                            label +
+                            ', which Salesforce requires. When it’s left blank, this step fails. ' +
+                            why.fix
+                    )
+                    .about(
+                        key,
+                        String.valueOf(q.get('label')),
+                        'fills ' + label + ', which Salesforce requires',
+                        why
+                    )
+            );
+        }
+    }
+
+    /**
+     * A part of an Address answer (`{ kind: 'answer', elementKey, part }`):
+     * the question must be an address, the part one of the nine, and the
+     * part's own answer type (Text, or Number for latitude/longitude) must
+     * fit the field exactly as a plain answer of that type would.
+     */
+    private static void checkAddressPart(
+        String key,
+        Map<String, Object> q,
+        String part,
+        Schema.DescribeFieldResult fd,
+        String id,
+        Context ctx,
+        List<Diagnostic> out
+    ) {
+        String label = fd.getLabel();
+        String problem = null;
+        if (!FinalAddressAnswer.isAddress(q)) {
+            problem =
+                '“' +
+                q.get('label') +
+                '” isn’t an address question, so none of its parts can fill ' +
+                label +
+                '.';
+        } else if (!FinalAddressAnswer.isPart(part)) {
+            problem =
+                label +
+                ' is filled from a part of “' +
+                q.get('label') +
+                '” that doesn’t exist.';
+        } else if (
+            !FinalMappingRules.isCompatible(
+                FinalAddressAnswer.partAnswerType(part),
+                fd.getType()
+            )
+        ) {
+            problem =
+                'The ' +
+                FinalAddressAnswer.partLabel(part).toLowerCase() +
+                ' of “' +
+                q.get('label') +
+                '” can’t go into ' +
+                label +
+                '.';
+        }
+        if (problem != null) {
+            out.add(at(BLOCKER, id, fd.getName(), ctx, ctx.create, problem));
+            return;
+        }
+        // An optional part can be blank even on a required, always-shown
+        // address, so a required field fed by it gets its own warning.
+        if (
+            isRequired(fd) &&
+            !ctx.skippable.containsKey(key) &&
+            FinalAddressAnswer.isOptionalPart(part)
+        ) {
+            FinalMappingRules.Skippable partNote = new FinalMappingRules.Skippable();
+            partNote.why = 'has parts people can leave blank';
+            partNote.fix = 'Map Street, City or Country instead, or give the field another value.';
+            partNote.kind = 'element';
+            partNote.id = key;
+            out.add(
+                at(
+                        WARNING,
+                        id,
+                        fd.getName(),
+                        ctx,
+                        ctx.create,
+                        'The ' +
+                            FinalAddressAnswer.partLabel(part).toLowerCase() +
+                            ' of “' +
+                            q.get('label') +
+                            '” can be left blank, but it fills ' +
+                            fd.getLabel() +
+                            ', which Salesforce requires. When it’s blank, this step fails. ' +
+                            partNote.fix
+                    )
+                    .about(
+                        key,
+                        String.valueOf(q.get('label')),
+                        'fills ' +
+                            fd.getLabel() +
+                            ', which Salesforce requires',
+                        partNote
+                    )
+            );
+            return;
+        }
+        warnIfSkippable(key, q, fd, id, ctx, out);
+    }
+
     private static void checkSource(
         Map<String, Object> src,
         Schema.DescribeFieldResult fd,
@@ -957,6 +1086,11 @@ public with sharing class FinalMappingValidator {
                         ' is filled from a question that’s no longer on the form.'
                     )
                 );
+                return;
+            }
+            String part = FinalAddressAnswer.partOf(src);
+            if (part != null) {
+                checkAddressPart(key, q, part, fd, id, ctx, out);
                 return;
             }
             if (
@@ -1028,32 +1162,7 @@ public with sharing class FinalMappingValidator {
                     }
                 }
             }
-            if (isRequired(fd) && ctx.skippable.containsKey(key)) {
-                FinalMappingRules.Skippable why = ctx.skippable.get(key);
-                out.add(
-                    at(
-                            WARNING,
-                            id,
-                            fd.getName(),
-                            ctx,
-                            ctx.create,
-                            '“' +
-                                q.get('label') +
-                                '” ' +
-                                why.why +
-                                ', but it fills ' +
-                                label +
-                                ', which Salesforce requires. When it’s left blank, this step fails. ' +
-                                why.fix
-                        )
-                        .about(
-                            key,
-                            String.valueOf(q.get('label')),
-                            'fills ' + label + ', which Salesforce requires',
-                            why
-                        )
-                );
-            }
+            warnIfSkippable(key, q, fd, id, ctx, out);
         } else if (kind == 'literal') {
             if (fd.getType() == Schema.DisplayType.REFERENCE) {
                 out.add(

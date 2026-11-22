@@ -342,8 +342,12 @@ export function answerIndex(spec) {
 function sourceUsable(source, earlier) {
     if (!source) return false;
     if (source.kind === 'answer') {
+        // An address part, when named, must be named (`part: ''` is unfinished).
         return (
-            typeof source.elementKey === 'string' && source.elementKey !== ''
+            typeof source.elementKey === 'string' &&
+            source.elementKey !== '' &&
+            (source.part === undefined ||
+                (typeof source.part === 'string' && source.part !== ''))
         );
     }
     if (source.kind === 'literal') {

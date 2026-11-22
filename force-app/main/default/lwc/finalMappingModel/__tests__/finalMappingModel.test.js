@@ -210,6 +210,37 @@ describe('finalMappingModel', () => {
         expect(actionState(actionsOf(spec), 0)).toBe('incomplete');
     });
 
+    it('an address part counts as a use of the address question', () => {
+        const created = addAction(base(), 'Contact', 'create');
+        const spec = setFieldSource(
+            created.spec,
+            created.actionId,
+            'MailingCity',
+            { kind: 'answer', elementKey: 'el_addr', part: 'city' }
+        );
+        expect(answerIndex(spec).get('el_addr')).toEqual([
+            {
+                actionId: created.actionId,
+                object: 'Contact',
+                field: 'MailingCity',
+                use: 'value',
+                step: 1
+            }
+        ]);
+        expect(actionState(actionsOf(spec), 0)).toBe('ok');
+    });
+
+    it('an address part with no part named is unfinished', () => {
+        const created = addAction(base(), 'Contact', 'create');
+        const spec = setFieldSource(
+            created.spec,
+            created.actionId,
+            'MailingCity',
+            { kind: 'answer', elementKey: 'el_addr', part: '' }
+        );
+        expect(actionState(actionsOf(spec), 0)).toBe('incomplete');
+    });
+
     it('indexes the record picked in a lookup question as a link', () => {
         const created = addAction(base(), 'Contact', 'create');
         const spec = setFieldSource(

@@ -289,4 +289,93 @@ private class FinalAddressAnswerTest {
         Assert.areEqual('other', FinalAddressAnswer.partLabel('other'));
         Assert.isNull(FinalAddressAnswer.partLabel(null));
     }
+
+    @IsTest
+    static void partsListNineMappableKeysWithTheirTypes() {
+        List<Map<String, String>> parts = FinalAddressAnswer.parts();
+        Assert.areEqual(9, parts.size());
+        Assert.isTrue(FinalAddressAnswer.isPart('city'));
+        Assert.isFalse(FinalAddressAnswer.isPart('houseNumber'));
+        Assert.isFalse(FinalAddressAnswer.isPart(null));
+        Assert.areEqual(
+            'Number',
+            FinalAddressAnswer.partAnswerType('latitude')
+        );
+        Assert.areEqual(
+            'Choice',
+            FinalAddressAnswer.partAnswerType('countryCode')
+        );
+        Assert.areEqual(
+            'State / Province code',
+            FinalAddressAnswer.partLabel('provinceCode')
+        );
+        Assert.areEqual('Latitude', FinalAddressAnswer.partLabel('latitude'));
+    }
+
+    @IsTest
+    static void partOfReadsThePartAKeyedSourceNames() {
+        Assert.isNull(FinalAddressAnswer.partOf(null));
+        Assert.isNull(
+            FinalAddressAnswer.partOf(
+                new Map<String, Object>{ 'kind' => 'answer' }
+            )
+        );
+        Assert.areEqual(
+            'city',
+            FinalAddressAnswer.partOf(
+                new Map<String, Object>{ 'kind' => 'answer', 'part' => 'city' }
+            )
+        );
+    }
+
+    @IsTest
+    static void partAnswerReadsOnePartAsTextOrNumber() {
+        Form_Submission_Answer__c row = new Form_Submission_Answer__c(
+            Answer_Type__c = 'Address',
+            Value_JSON__c = '{"city":"Leeds","latitude":53.8008,"longitude":-1.5491}'
+        );
+        Form_Submission_Answer__c city = FinalAddressAnswer.partAnswer(
+            row,
+            'city'
+        );
+        Assert.areEqual('Text', city.Answer_Type__c);
+        Assert.areEqual('Leeds', city.Text_Value__c);
+        Assert.isNull(FinalAddressAnswer.partAnswer(row, 'nope'));
+        Assert.isNull(
+            FinalAddressAnswer.partAnswer(
+                new Form_Submission_Answer__c(
+                    Answer_Type__c = 'Text',
+                    Value_JSON__c = row.Value_JSON__c
+                ),
+                'city'
+            ),
+            'only an Address row has parts'
+        );
+        Assert.isNull(
+            FinalAddressAnswer.partAnswer(
+                new Form_Submission_Answer__c(
+                    Answer_Type__c = 'Address',
+                    Value_JSON__c = 'not json'
+                ),
+                'city'
+            )
+        );
+        Assert.isNull(FinalAddressAnswer.partAnswer(null, 'city'));
+        Form_Submission_Answer__c lat = FinalAddressAnswer.partAnswer(
+            row,
+            'latitude'
+        );
+        Assert.areEqual('Number', lat.Answer_Type__c);
+        Assert.areEqual(53.8008, lat.Numeric_Value__c);
+        Assert.isNull(
+            FinalAddressAnswer.partAnswer(
+                new Form_Submission_Answer__c(
+                    Answer_Type__c = 'Address',
+                    Value_JSON__c = '{"city":"Leeds"}'
+                ),
+                'latitude'
+            ),
+            'a part nobody filled in is blank'
+        );
+    }
 }
