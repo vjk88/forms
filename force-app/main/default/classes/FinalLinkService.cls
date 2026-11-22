@@ -1,9 +1,13 @@
 /**
  * FinalLinkService — personalized record links (?c__rt=), shared by every host.
  *
- * A link works the same for a guest on the public site and a signed-in user
- * inside Salesforce (owner 2026-09-15). The TOKEN is the permission: it fills
- * the same values for everyone, and it works on forms that are not public.
+ * A link works for a guest on the public site and for a signed-in user inside
+ * Salesforce (owner 2026-09-15). The TOKEN is the permission and decides WHICH
+ * record: it works on forms that are not public. What it fills differs by
+ * audience (owner 2026-11-22): everyone gets the rows ticked "Show to people
+ * who aren't signed in" (read by the server); a signed-in respondent ALSO gets
+ * the unticked rows, read with their own access (USER_MODE), so a field or
+ * record they can't see simply stays blank.
  * Guest-only gates (Published + Is_Public__c) stay in FinalGuestController;
  * this class holds only the link logic both hosts need.
  *
@@ -28,6 +32,21 @@ public without sharing class FinalLinkService {
         Id formId,
         Form_Version__c version,
         String token
+    ) {
+        return contextFor(formId, version, token, false);
+    }
+
+    /**
+     * @param signedIn true ONLY from FinalAutofillController.getLinkContext
+     *        (a signed-in respondent): adds the rule's unticked rows, read in
+     *        USER_MODE. The guest entry point uses the 3-argument overload,
+     *        which is always false.
+     */
+    public static Map<String, Object> contextFor(
+        Id formId,
+        Form_Version__c version,
+        String token,
+        Boolean signedIn
     ) {
         if (String.isBlank(token)) {
             return context(version.Id, 'empty');
@@ -72,7 +91,8 @@ public without sharing class FinalLinkService {
             Map<String, Object> computed = FinalGuestContextService.compute(
                 parseSpec(FinalSpecStore.read(version)),
                 targetObject,
-                c.recordId
+                c.recordId,
+                signedIn
             );
             if (computed.get('recordFound') == false) {
                 return context(version.Id, 'unavailable');

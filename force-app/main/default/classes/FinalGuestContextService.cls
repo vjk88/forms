@@ -16,6 +16,16 @@
  *
  * Rule scoring reuses FinalSurveyObjectController's shared helpers, so the
  * guest verdict for a row is byte-identical to the authenticated one.
+ *
+ * AUDIENCE (owner 2026-11-22): link mappings carry a "Show to people who
+ * aren't signed in" tick. A GUEST gets only the ticked rows, read here by the
+ * server. A SIGNED-IN respondent gets those same ticked rows PLUS every
+ * unticked row, but the unticked rows are read WITH THAT USER'S OWN ACCESS
+ * (AccessLevel.USER_MODE: their field security and sharing). A field they
+ * can't read, or a record they can't see, simply yields no value. The
+ * `signedIn` flag is set only by the signed-in entry point
+ * (FinalAutofillController.getLinkContext); the guest entry point never sets
+ * it, and a Guest-type running user is refused the user-mode branch outright.
  */
 public without sharing class FinalGuestContextService {
     /**
@@ -27,6 +37,24 @@ public without sharing class FinalGuestContextService {
         String targetObject,
         Id recordId
     ) {
+        return compute(spec, targetObject, recordId, false);
+    }
+
+    /**
+     * @param signedIn true ONLY from the signed-in entry point: also fills the
+     *        rule's UNTICKED link rows, read in USER_MODE. false (the guest
+     *        default) = ticked rows only, never any user-mode read.
+     */
+    public static Map<String, Object> compute(
+        Map<String, Object> spec,
+        String targetObject,
+        Id recordId,
+        Boolean signedIn
+    ) {
+        // Belt and braces: a Guest-type running user never reaches user mode.
+        Boolean viewerIsSignedIn =
+            signedIn == true &&
+            UserInfo.getUserType() != 'Guest';
         Map<String, Object> empty = new Map<String, Object>{
             'prefill' => new Map<String, Object>(),
             'ruleFacts' => new Map<String, Boolean>()
@@ -58,6 +86,8 @@ public without sharing class FinalGuestContextService {
 
         Map<String, Object> activeLinkRule = null;
         List<Map<String, Object>> guestLinkMappings = new List<Map<String, Object>>();
+        // Unticked rows: collected for a signed-in respondent ONLY.
+        List<Map<String, Object>> userLinkMappings = new List<Map<String, Object>>();
         if (rules != null) {
             for (Object rObj : rules) {
                 Map<String, Object> rule = asMap(rObj);
@@ -74,12 +104,16 @@ public without sharing class FinalGuestContextService {
                         for (Object mObj : asList(rule.get('mappings'))) {
                             Map<String, Object> m = asMap(mObj);
                             if (
-                                m != null &&
-                                m.get('guestAllowed') == true &&
-                                m.get('from') != null &&
-                                m.get('to') != null
+                                m == null ||
+                                m.get('from') == null ||
+                                m.get('to') == null
                             ) {
+                                continue;
+                            }
+                            if (m.get('guestAllowed') == true) {
                                 guestLinkMappings.add(m);
+                            } else if (viewerIsSignedIn) {
+                                userLinkMappings.add(m);
                             }
                         }
                         break;
@@ -91,7 +125,8 @@ public without sharing class FinalGuestContextService {
         if (
             ruleRows.isEmpty() &&
             prefillFields.isEmpty() &&
-            guestLinkMappings.isEmpty()
+            guestLinkMappings.isEmpty() &&
+            userLinkMappings.isEmpty()
         ) {
             return empty;
         }
@@ -125,6 +160,11 @@ public without sharing class FinalGuestContextService {
                 guestPaths.put(f, path);
                 fields.add(path);
             }
+        }
+        // Only unticked rows: still confirm the token's record exists (a
+        // system read of its Id alone), so the link reads as "applied".
+        if (fields.isEmpty() && !userLinkMappings.isEmpty()) {
+            fields.add('Id');
         }
         SObject rec = null;
         if (!fields.isEmpty()) {
@@ -196,7 +236,10 @@ public without sharing class FinalGuestContextService {
 
         // autofill — published guest-opted link mappings
         List<Map<String, Object>> autofillList = new List<Map<String, Object>>();
-        if (activeLinkRule != null && !guestLinkMappings.isEmpty()) {
+        if (
+            activeLinkRule != null &&
+            (!guestLinkMappings.isEmpty() || !userLinkMappings.isEmpty())
+        ) {
             Map<String, Object> ruleValues = new Map<String, Object>();
             for (Map<String, Object> m : guestLinkMappings) {
                 String fromField = (String) m.get('from');
@@ -212,6 +255,17 @@ public without sharing class FinalGuestContextService {
                     );
                 }
             }
+            // Signed-in only: the unticked rows, with the user's OWN access.
+            // A ticked row for the same question wins.
+            if (rec != null && !userLinkMappings.isEmpty()) {
+                addUserModeValues(
+                    targetObject,
+                    recordId,
+                    fieldMap,
+                    userLinkMappings,
+                    ruleValues
+                );
+            }
             autofillList.add(
                 new Map<String, Object>{
                     'ruleId' => (String) activeLinkRule.get('id'),
@@ -226,6 +280,104 @@ public without sharing class FinalGuestContextService {
             'autofill' => autofillList,
             'recordFound' => (rec != null)
         };
+    }
+
+    /**
+     * Reads the unticked link rows as the running user (USER_MODE: their
+     * field security + sharing) and adds `question => value` to `out`.
+     * Never throws and never leaks: a field the user can't read is dropped
+     * before the query, a record they can't see returns no row, and any
+     * failure fills nothing extra.
+     */
+    private static void addUserModeValues(
+        String targetObject,
+        Id recordId,
+        Map<String, Schema.SObjectField> fieldMap,
+        List<Map<String, Object>> mappings,
+        Map<String, Object> out
+    ) {
+        Map<String, String> pathByQuestion = new Map<String, String>();
+        Set<String> paths = new Set<String>();
+        for (Map<String, Object> m : mappings) {
+            String toEl = (String) m.get('to');
+            if (out.containsKey(toEl) || pathByQuestion.containsKey(toEl)) {
+                continue; // a ticked (or earlier) row already answers it
+            }
+            String path = FinalLookupService.canonicalPath(
+                targetObject,
+                (String) m.get('from')
+            );
+            if (
+                path != null &&
+                path.countMatches('.') <= 1 &&
+                userCanRead(targetObject, fieldMap, path)
+            ) {
+                pathByQuestion.put(toEl, path);
+                paths.add(path);
+            }
+        }
+        if (paths.isEmpty()) {
+            return;
+        }
+        SObject userRec = null;
+        try {
+            List<SObject> found = Database.queryWithBinds(
+                'SELECT ' +
+                    String.join(new List<String>(paths), ', ') +
+                    ' FROM ' +
+                    targetObject +
+                    ' WHERE Id = :recordId LIMIT 1',
+                new Map<String, Object>{ 'recordId' => recordId },
+                AccessLevel.USER_MODE
+            );
+            userRec = found.isEmpty() ? null : found[0];
+        } catch (Exception e) {
+            return; // no access to the object/field: fill nothing extra
+        }
+        if (userRec == null) {
+            return; // no sharing to the record
+        }
+        for (String toEl : pathByQuestion.keySet()) {
+            out.put(
+                toEl,
+                FinalSurveyObjectController.valueAt(
+                    userRec,
+                    pathByQuestion.get(toEl)
+                )
+            );
+        }
+    }
+
+    /** Can the running user read this field (and, for a hop, the lookup that
+     *  leads to it)? A describe pre-check so one unreadable field doesn't sink
+     *  the other rows' single query. */
+    private static Boolean userCanRead(
+        String targetObject,
+        Map<String, Schema.SObjectField> fieldMap,
+        String path
+    ) {
+        Schema.DescribeFieldResult last = FinalLookupService.fieldAt(
+            targetObject,
+            path
+        );
+        if (last == null || !last.isAccessible()) {
+            return false;
+        }
+        Integer dot = path.indexOf('.');
+        if (dot < 0) {
+            return true;
+        }
+        String rel = path.substring(0, dot);
+        for (Schema.SObjectField f : fieldMap.values()) {
+            Schema.DescribeFieldResult d = f.getDescribe();
+            if (
+                d.getType() == Schema.DisplayType.REFERENCE &&
+                rel.equalsIgnoreCase(d.getRelationshipName())
+            ) {
+                return d.isAccessible();
+            }
+        }
+        return false;
     }
 
     private static Map<String, Object> asMap(Object obj) {

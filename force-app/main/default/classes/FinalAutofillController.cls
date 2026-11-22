@@ -348,10 +348,13 @@ public with sharing class FinalAutofillController {
      * label, each with the key prefix its record ids start with.
      */
     /**
-     * Personalized link (?c__rt=) for a SIGNED-IN respondent: the same values a
-     * guest gets from FinalGuestController.getGuestAutofillContext, without the
-     * guest-only public-form gate (owner 2026-09-15 - links work for everyone,
-     * including forms that are not public). The token is the permission.
+     * Personalized link (?c__rt=) for a SIGNED-IN respondent: everything a
+     * guest gets from FinalGuestController.getGuestAutofillContext (the rows
+     * ticked "Show to people who aren't signed in", read by the server), without
+     * the guest-only public-form gate (owner 2026-09-15 - links work for
+     * everyone, including forms that are not public), PLUS the unticked rows
+     * read with THIS user's own access (owner 2026-11-22). The token decides
+     * which record.
      * Returns { versionId, status, prefill, ruleFacts, autofill }.
      */
     @AuraEnabled
@@ -376,7 +379,7 @@ public with sharing class FinalAutofillController {
         ) {
             throw new AuraHandledException(UNAVAILABLE);
         }
-        return FinalLinkService.contextFor(formId, versions[0], token);
+        return FinalLinkService.contextFor(formId, versions[0], token, true);
     }
 
     @AuraEnabled(cacheable=true)
