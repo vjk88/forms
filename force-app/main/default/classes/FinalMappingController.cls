@@ -70,18 +70,20 @@ public with sharing class FinalMappingController {
             Map<String, Object> config = FinalMappingRules.asMap(
                 q.get('config')
             );
+            Boolean address = FinalAddressAnswer.isAddress(q);
             out.add(
                 new Map<String, Object>{
                     'elementKey' => id,
                     'label' => q.get('label'),
                     'answerType' => FinalSubmitService.answerTypeOf(q),
                     'skippable' => skippable.contains(id),
-                    // An Address question is not mappable yet: mapping its parts
-                    // (street, city, ...) to fields is a later slice.
-                    'mappable' => !FinalAddressAnswer.isAddress(q) &&
+                    // An Address is never one value for one field: its PARTS are
+                    // the sources (`parts`), the whole answer is not.
+                    'mappable' => !address &&
                     !FinalMappingRules.UNMAPPABLE_ELEMENT_TYPES.contains(
                         String.valueOf(q.get('type'))
                     ),
+                    'parts' => address ? FinalAddressAnswer.parts() : null,
                     'referenceTo' => config == null
                         ? null
                         : config.get('referenceTo')

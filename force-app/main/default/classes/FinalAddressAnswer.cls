@@ -26,7 +26,28 @@ public inherited sharing class FinalAddressAnswer {
         'city' => 'City',
         'country' => 'Country',
         'province' => 'State / Province',
-        'postalCode' => 'Zip / Postal code'
+        'provinceCode' => 'State / Province code',
+        'postalCode' => 'Zip / Postal code',
+        'countryCode' => 'Country code',
+        'latitude' => 'Latitude',
+        'longitude' => 'Longitude'
+    };
+
+    /**
+     * The parts a Freeform mapping can read, in the order the author sees
+     * them, with the answer type each one is treated as (FinalMappingRules
+     * .COMPATIBLE decides which fields take it).
+     */
+    private static final List<String> MAPPABLE_PARTS = new List<String>{
+        'street',
+        'city',
+        'province',
+        'provinceCode',
+        'postalCode',
+        'country',
+        'countryCode',
+        'latitude',
+        'longitude'
     };
 
     /** An element that draws the Address question. */
@@ -132,6 +153,107 @@ public inherited sharing class FinalAddressAnswer {
     public static String partLabel(String part) {
         String label = part == null ? null : PART_LABELS.get(part);
         return label == null ? part : label;
+    }
+
+    // ------------------------------------------------------------ mapping
+
+    public static Boolean isPart(String part) {
+        return part != null && MAPPABLE_PARTS.contains(part);
+    }
+
+    /** 'Number' for latitude and longitude; 'Choice' for the two codes, so
+     *  they can fill State/Country code picklists (MailingCountryCode) as
+     *  well as text fields; 'Text' for every other part. */
+    public static String partAnswerType(String part) {
+        if (part == 'latitude' || part == 'longitude') {
+            return 'Number';
+        }
+        return part == 'provinceCode' ||
+            part == 'countryCode'
+            ? 'Choice'
+            : 'Text';
+    }
+
+    /** Parts a respondent may leave out even when the question is required:
+     *  only Street, City and Country are required, and the codes and
+     *  coordinates exist only when the address came from a search pick. */
+    public static Boolean isOptionalPart(String part) {
+        return part != 'street' && part != 'city' && part != 'country';
+    }
+
+    /** `[{ key, label, answerType }]` for describeQuestions. */
+    public static List<Map<String, String>> parts() {
+        List<Map<String, String>> out = new List<Map<String, String>>();
+        for (String part : MAPPABLE_PARTS) {
+            out.add(
+                new Map<String, String>{
+                    'key' => part,
+                    'label' => partLabel(part),
+                    'answerType' => partAnswerType(part)
+                }
+            );
+        }
+        return out;
+    }
+
+    /**
+     * The part a mapping source names, or null when it names none. A source
+     * is `{ kind: 'answer', elementKey, part }` (the Studio's picker value
+     * reads `answer:<elementKey>.<part>`; element ids never contain a dot).
+     * A part that is not one of the nine comes back as written so the
+     * validator can refuse it; callers test isPart().
+     */
+    public static String partOf(Map<String, Object> source) {
+        if (source == null || source.get('part') == null) {
+            return null;
+        }
+        return String.valueOf(source.get('part'));
+    }
+
+    /**
+     * One part of a stored Address answer, as the plain Text or Number answer
+     * the rest of the mapping pipeline already understands. Null when the
+     * answer is not an address, the part is unknown, or nothing was entered
+     * for it, which a mapping treats as an unanswered question.
+     */
+    public static Form_Submission_Answer__c partAnswer(
+        Form_Submission_Answer__c a,
+        String part
+    ) {
+        if (
+            a == null ||
+            a.Answer_Type__c != 'Address' ||
+            !isPart(part) ||
+            String.isBlank(a.Value_JSON__c)
+        ) {
+            return null;
+        }
+        Object v;
+        try {
+            v = ((Map<String, Object>) JSON.deserializeUntyped(a.Value_JSON__c))
+                .get(part);
+        } catch (Exception e) {
+            return null;
+        }
+        if (v == null) {
+            return null;
+        }
+        if (partAnswerType(part) == 'Number') {
+            Decimal n = asNumber(v);
+            return n == null
+                ? null
+                : new Form_Submission_Answer__c(
+                      Answer_Type__c = 'Number',
+                      Numeric_Value__c = n
+                  );
+        }
+        String s = String.valueOf(v);
+        return String.isBlank(s)
+            ? null
+            : new Form_Submission_Answer__c(
+                  Answer_Type__c = 'Text',
+                  Text_Value__c = s
+              );
     }
 
     // ------------------------------------------------------------ helpers

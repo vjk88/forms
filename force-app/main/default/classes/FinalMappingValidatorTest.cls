@@ -1275,4 +1275,180 @@ private class FinalMappingValidatorTest {
             }
         };
     }
+
+    // ---------------------------------------------------- address parts
+
+    private static List<Object> addressQuestions() {
+        List<Object> qs = FinalMappingTestData.standardQuestions();
+        qs.add(
+            FinalMappingTestData.question('el_addr', 'address', 'Your address')
+        );
+        return qs;
+    }
+
+    private static List<String> partBlockers(
+        String field,
+        String elementKey,
+        Object part
+    ) {
+        Map<String, Object> source = FinalMappingTestData.answer(elementKey);
+        source.put('part', part);
+        Map<String, Object> action = FinalMappingTestData.createContact(
+            'act_a'
+        );
+        ((List<Object>) action.get('fields'))
+            .add(FinalMappingTestData.field(field, source));
+        return blockers(
+            FinalMappingValidator.validate(
+                FinalMappingTestData.spec(
+                    addressQuestions(),
+                    new List<Object>{ action }
+                ),
+                null
+            )
+        );
+    }
+
+    @IsTest
+    static void anAddressPartFillsAFieldItFits() {
+        Assert.areEqual(
+            new List<String>(),
+            partBlockers('MailingCity', 'el_addr', 'city')
+        );
+        Assert.areEqual(
+            new List<String>(),
+            partBlockers('MailingLatitude', 'el_addr', 'latitude')
+        );
+    }
+
+    @IsTest
+    static void anAddressPartThatDoesNotExistBlocks() {
+        List<String> found = partBlockers('MailingCity', 'el_addr', 'suburb');
+        Assert.isTrue(
+            anyContains(found, 'a part of “Your address” that doesn’t exist'),
+            String.join(found, ' | ')
+        );
+    }
+
+    @IsTest
+    static void aPartOfAQuestionThatIsNotAnAddressBlocks() {
+        List<String> found = partBlockers('MailingCity', 'el_title', 'city');
+        Assert.isTrue(
+            anyContains(found, 'isn’t an address question'),
+            String.join(found, ' | ')
+        );
+    }
+
+    @IsTest
+    static void aPartOfAQuestionThatIsGoneBlocks() {
+        List<String> found = partBlockers('MailingCity', 'el_gone', 'city');
+        Assert.isTrue(
+            anyContains(found, 'no longer on the form'),
+            String.join(found, ' | ')
+        );
+    }
+
+    @IsTest
+    static void anAddressPartMustFitTheFieldItsTypeNeeds() {
+        // Text into a number field, and a number into a date field.
+        Assert.isTrue(
+            anyContains(
+                partBlockers('MailingLatitude', 'el_addr', 'city'),
+                'can’t go into'
+            )
+        );
+        Assert.isTrue(
+            anyContains(
+                partBlockers('Birthdate', 'el_addr', 'latitude'),
+                'can’t go into'
+            )
+        );
+    }
+
+    private static List<FinalMappingValidator.Diagnostic> partOnly(
+        String field,
+        String part
+    ) {
+        Map<String, Object> source = FinalMappingTestData.answer('el_addr');
+        source.put('part', part);
+        Map<String, Object> action = FinalMappingTestData.createContact(
+            'act_a'
+        );
+        action.put(
+            'fields',
+            new List<Object>{ FinalMappingTestData.field(field, source) }
+        );
+        return FinalMappingValidator.validate(
+            FinalMappingTestData.spec(
+                addressQuestions(),
+                new List<Object>{ action }
+            ),
+            null
+        );
+    }
+
+    @IsTest
+    static void anOptionalPartFeedingARequiredFieldWarns() {
+        // Zip can be blank even on a required address; LastName can't be.
+        List<FinalMappingValidator.Diagnostic> found = partOnly(
+            'LastName',
+            'postalCode'
+        );
+        Assert.isTrue(
+            anyContains(warnings(found), 'can be left blank'),
+            String.join(warnings(found), ' | ')
+        );
+        // City is one of the required parts: no such warning.
+        Assert.isFalse(
+            anyContains(
+                warnings(partOnly('LastName', 'city')),
+                'can be left blank'
+            )
+        );
+    }
+
+    @IsTest
+    static void aCodePartIsAChoice() {
+        Assert.areEqual(
+            'Choice',
+            FinalAddressAnswer.partAnswerType('countryCode')
+        );
+        Assert.areEqual(
+            'Choice',
+            FinalAddressAnswer.partAnswerType('provinceCode')
+        );
+        Assert.areEqual('Text', FinalAddressAnswer.partAnswerType('city'));
+        // a Choice still fits a text field
+        Assert.areEqual(
+            new List<String>(),
+            partBlockers('MailingCity', 'el_addr', 'countryCode')
+        );
+    }
+
+    @IsTest
+    static void theWholeAddressStillCannotFillAField() {
+        Map<String, Object> action = FinalMappingTestData.createContact(
+            'act_a'
+        );
+        ((List<Object>) action.get('fields'))
+            .add(
+                FinalMappingTestData.field(
+                    'MailingCity',
+                    FinalMappingTestData.answer('el_addr')
+                )
+            );
+        List<String> found = blockers(
+            FinalMappingValidator.validate(
+                FinalMappingTestData.spec(
+                    addressQuestions(),
+                    new List<Object>{ action }
+                ),
+                null
+            )
+        );
+        Assert.isTrue(
+            anyContains(found, 'can’t go into'),
+            String.join(found, ' | ')
+        );
+    }
 }

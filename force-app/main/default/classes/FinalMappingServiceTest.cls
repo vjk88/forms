@@ -973,4 +973,109 @@ private class FinalMappingServiceTest {
             'Jane was found by the condition alone, nothing was created'
         );
     }
+
+    // ---------------------------------------------------- address parts
+
+    private static Map<String, Object> partSource(String part) {
+        Map<String, Object> s = FinalMappingTestData.answer('el_addr');
+        s.put('part', part);
+        return s;
+    }
+
+    /** A Freeform submission whose address answer holds `json` (or none). */
+    private static Id arrangeAddress(String json) {
+        List<Object> qs = FinalMappingTestData.standardQuestions();
+        qs.add(
+            FinalMappingTestData.question('el_addr', 'address', 'Your address')
+        );
+        Map<String, Object> action = FinalMappingTestData.createContact(
+            'act_a'
+        );
+        List<Object> fields = (List<Object>) action.get('fields');
+        fields.add(
+            FinalMappingTestData.field('MailingCity', partSource('city'))
+        );
+        fields.add(
+            FinalMappingTestData.field('MailingStreet', partSource('street'))
+        );
+        fields.add(
+            FinalMappingTestData.field(
+                'MailingLatitude',
+                partSource('latitude')
+            )
+        );
+        fields.add(
+            FinalMappingTestData.field(
+                'MailingLongitude',
+                partSource('longitude')
+            )
+        );
+        FinalMappingTestData.publish(
+            FinalMappingTestData.spec(qs, new List<Object>{ action })
+        );
+        Id subId = FinalMappingTestData.submit(jane());
+        if (json != null) {
+            insert new Form_Submission_Answer__c(
+                Form_Submission__c = subId,
+                Element_Key__c = 'el_addr',
+                Answer_Type__c = 'Address',
+                Value_JSON__c = json,
+                Text_Value__c = 'formatted text, not a part'
+            );
+        }
+        return subId;
+    }
+
+    @IsTest
+    static void eachAddressPartFillsItsOwnField() {
+        Id subId = arrangeAddress(
+            '{"street":"1 Main St","city":"Leeds","postalCode":"LS1","latitude":53.8008,"longitude":-1.5491}'
+        );
+
+        FinalMappingService.Result r = FinalMappingService.run(subId);
+
+        Assert.areEqual('Done', r.status, 'message: ' + r.message);
+        Contact c = [
+            SELECT MailingCity, MailingStreet, MailingLatitude, MailingLongitude
+            FROM Contact
+            WHERE Email = 'jane@example.com'
+        ];
+        Assert.areEqual('Leeds', c.MailingCity);
+        Assert.areEqual('1 Main St', c.MailingStreet);
+        Assert.areEqual(53.8008, c.MailingLatitude);
+        Assert.areEqual(-1.5491, c.MailingLongitude);
+    }
+
+    @IsTest
+    static void aPartNobodyFilledInLeavesTheFieldBlank() {
+        Id subId = arrangeAddress('{"street":"1 Main St","city":"Leeds"}');
+
+        FinalMappingService.Result r = FinalMappingService.run(subId);
+
+        Assert.areEqual('Done', r.status, 'message: ' + r.message);
+        Contact c = [
+            SELECT MailingCity, MailingLatitude, MailingLongitude
+            FROM Contact
+            WHERE Email = 'jane@example.com'
+        ];
+        Assert.areEqual('Leeds', c.MailingCity);
+        Assert.isNull(c.MailingLatitude);
+        Assert.isNull(c.MailingLongitude);
+    }
+
+    @IsTest
+    static void anUnansweredAddressLeavesEveryPartFieldBlank() {
+        Id subId = arrangeAddress(null);
+
+        FinalMappingService.Result r = FinalMappingService.run(subId);
+
+        Assert.areEqual('Done', r.status, 'message: ' + r.message);
+        Contact c = [
+            SELECT MailingCity, MailingStreet
+            FROM Contact
+            WHERE Email = 'jane@example.com'
+        ];
+        Assert.isNull(c.MailingCity);
+        Assert.isNull(c.MailingStreet);
+    }
 }

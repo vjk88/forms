@@ -212,11 +212,27 @@ export default class FinalMappingAction extends LightningElement {
         const fits = (q) =>
             q.mappable &&
             (this.compatibility[q.answerType] || []).includes(f.displayType);
-        (this.questions || []).filter(fits).forEach((q) => {
-            out.push({
-                label: `Answer: ${q.label}`,
-                value: `answer:${q.elementKey}`
-            });
+        (this.questions || []).forEach((q) => {
+            if (fits(q)) {
+                out.push({
+                    label: `Answer: ${q.label}`,
+                    value: `answer:${q.elementKey}`
+                });
+            }
+            // An address is never one value: each of its parts that fits is
+            // its own source ("Answer: Your address → City").
+            (q.parts || [])
+                .filter((p) =>
+                    (this.compatibility[p.answerType] || []).includes(
+                        f.displayType
+                    )
+                )
+                .forEach((p) => {
+                    out.push({
+                        label: `Answer: ${q.label} → ${p.label}`,
+                        value: `answer:${q.elementKey}.${p.key}`
+                    });
+                });
         });
         if (f.displayType !== 'REFERENCE') {
             out.push({ label: 'A fixed value', value: 'literal' });
@@ -249,7 +265,11 @@ export default class FinalMappingAction extends LightningElement {
 
     _sourceValue(source) {
         if (!source) return '';
-        if (source.kind === 'answer') return `answer:${source.elementKey}`;
+        if (source.kind === 'answer') {
+            return source.part
+                ? `answer:${source.elementKey}.${source.part}`
+                : `answer:${source.elementKey}`;
+        }
         if (source.kind === 'literal') return 'literal';
         if (source.kind === 'recordRef') {
             if (source.ref.startsWith('action:')) return source.ref;
@@ -278,14 +298,32 @@ export default class FinalMappingAction extends LightningElement {
         const field = event.target.dataset.field;
         const v = event.detail.value;
         let source = null;
-        if (v.startsWith('answer:'))
-            source = { kind: 'answer', elementKey: v.slice(7) };
+        if (v.startsWith('answer:')) source = this._answerSource(v.slice(7));
         else if (v === 'literal') source = { kind: 'literal', value: '' };
         else if (v.startsWith('action:'))
             source = { kind: 'recordRef', ref: v };
         else if (v.startsWith('pick:'))
             source = { kind: 'recordRef', ref: `answer:${v.slice(5)}` };
         this._emit(setFieldSource(this.spec, this.actionId, field, source));
+    }
+
+    /**
+     * `<elementKey>` or `<elementKey>.<part>` (an address part) as a saved
+     * source. Element ids hold no dot; a question that is itself named by the
+     * whole text wins, so an odd old id still reads as a plain answer.
+     */
+    _answerSource(rest) {
+        const dot = rest.lastIndexOf('.');
+        if (
+            dot <= 0 ||
+            (this.questions || []).some((q) => q.elementKey === rest)
+        )
+            return { kind: 'answer', elementKey: rest };
+        return {
+            kind: 'answer',
+            elementKey: rest.slice(0, dot),
+            part: rest.slice(dot + 1)
+        };
     }
 
     handleLiteral(event) {
