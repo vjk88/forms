@@ -11,7 +11,9 @@ import {
     setWriteOnMatch,
     setFilterMode,
     foldMatch,
-    searchAnswerIds
+    searchAnswerIds,
+    searchUsesLink,
+    linkObjectOf
 } from 'c/finalMappingModel';
 
 /** "a Contact", "an Account". */
@@ -92,10 +94,29 @@ export default class FinalMappingAction extends LightningElement {
         return `Record ${this.index + 1} of ${actionsOf(this.spec).length} · ${mode}`;
     }
 
+    /** The object the personalized link carries (its Autofill rule's), or null. */
+    get linkObjectApi() {
+        return linkObjectOf(this.spec);
+    }
+
+    /** "Contact": offered as "The record in the link (Contact)". */
+    get linkLabel() {
+        const objectApi = this.linkObjectApi;
+        return objectApi ? this.objectLabelFor(objectApi) : '';
+    }
+
+    /** The search compares with the record in the link: the step only updates. */
+    get usesLink() {
+        return this.isFindOrCreate && searchUsesLink(this.match);
+    }
+
     /** What this record will do, in one sentence (DESIGN_SYSTEM 5.25). */
     get plainSummary() {
         if (!this.isFindOrCreate) {
             return `Makes a new ${this.objectLabel} on every submission, filled from the fields below.`;
+        }
+        if (this.usesLink) {
+            return `Updates the ${this.objectLabel} in the personalized link. Skipped when there’s no link or no match.`;
         }
         const look = `Looks for ${withArticle(this.objectLabel)} that matches the conditions below.`;
         if (this.onMatch === 'reuse') {
@@ -392,14 +413,21 @@ export default class FinalMappingAction extends LightningElement {
                 : Boolean(m.filter && (m.filter.rows || []).length);
         // A question that can be skipped is said under its own row (or the
         // SOQL box), right where it's used.
-        return hasConditions && !searchAnswerIds(m).length
+        const notes = [];
+        if (searchUsesLink(m) && !this.linkObjectApi) {
+            notes.push({
+                key: 'no-link-rule',
+                text: 'This search uses the record in the link, but the form has no Autofill rule that fills from it. Add one, or compare with something else.'
+            });
+        }
+        return hasConditions && !searchAnswerIds(m).length && !searchUsesLink(m)
             ? [
                   {
                       key: 'no-answer',
                       text: 'At least one condition must compare with an answer, like Email equals the answer to “Your email”.'
                   }
               ]
-            : [];
+            : notes;
     }
 
     get hasSearchNotes() {
@@ -455,7 +483,8 @@ export default class FinalMappingAction extends LightningElement {
         return {
             spec: this.spec,
             actionId: this.actionId,
-            questions: this.questions || []
+            questions: this.questions || [],
+            linkLabel: this.linkLabel
         };
     }
 

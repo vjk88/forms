@@ -32,7 +32,12 @@ public without sharing class FinalMappingService {
 
     public static Result run(Id submissionId) {
         List<Form_Submission__c> rows = [
-            SELECT Id, Mapping_Status__c, Mapping_Attempts__c, Form_Version__c
+            SELECT
+                Id,
+                Mapping_Status__c,
+                Mapping_Attempts__c,
+                Form_Version__c,
+                Link_Record_Id__c
             FROM Form_Submission__c
             WHERE Id = :submissionId
             WITH SYSTEM_MODE
@@ -113,6 +118,15 @@ public without sharing class FinalMappingService {
         run.questions = FinalMappingRules.questionMap(spec);
         run.answers = answersOf(sub.Id);
         run.writer = new FinalMappingWriter(actions);
+        // The record a verified personalized link carried, stored by the
+        // submit service. Blank = no usable link; a link step is then skipped.
+        if (String.isNotBlank(sub.Link_Record_Id__c)) {
+            try {
+                run.linkRecordId = Id.valueOf(sub.Link_Record_Id__c);
+            } catch (Exception e) {
+                run.linkRecordId = null;
+            }
+        }
 
         Integer index = 0;
         for (Map<String, Object> action : actions) {
@@ -126,10 +140,12 @@ public without sharing class FinalMappingService {
                 );
             }
             try {
-                run.recordIds.put(
-                    (String) action.get('id'),
-                    runStep(action, t.getDescribe(), run)
-                );
+                // A skipped link step makes no record; a later step that points
+                // at it leaves that lookup blank.
+                Id made = runStep(action, t.getDescribe(), run);
+                if (made != null) {
+                    run.recordIds.put((String) action.get('id'), made);
+                }
             } catch (StepException e) {
                 throw new StepException(name + ': ' + e.getMessage());
             } catch (DmlException e) {
@@ -156,6 +172,7 @@ public without sharing class FinalMappingService {
         Map<String, Form_Submission_Answer__c> answers;
         FinalMappingWriter writer;
         Map<String, Id> recordIds = new Map<String, Id>();
+        Id linkRecordId;
     }
 
     private static Id runStep(
@@ -168,7 +185,16 @@ public without sharing class FinalMappingService {
             Map<String, Object> match = FinalMappingRules.asMap(
                 action.get('match')
             );
+            // "The record in the link" makes the step update-only: no link,
+            // or nothing found, skips it. It never creates from a link.
+            Boolean linkStep = usesLink(match);
+            if (linkStep && run.linkRecordId == null) {
+                return null;
+            }
             Id found = findOne(match, d, run);
+            if (found == null && linkStep) {
+                return null;
+            }
             if (found != null) {
                 if (match.get('onMatch') == FinalMappingRules.ON_MATCH_UPDATE) {
                     SObject rec = d.getSObjectType().newSObject(found);
@@ -423,6 +449,15 @@ public without sharing class FinalMappingService {
                         ' no longer exists.'
                 );
             }
+            if (t.elementId == FinalMappingSoql.LINK_TOKEN) {
+                if (run.linkRecordId == null) {
+                    throw new StepException(
+                        'its conditions can’t run: there is no record in the link.'
+                    );
+                }
+                binds.put(t.bindName, run.linkRecordId);
+                continue;
+            }
             Map<String, Object> q = run.questions.get(t.elementId);
             Object v = FinalMappingRules.answerValue(
                 run.answers.get(t.elementId),
@@ -521,6 +556,17 @@ public without sharing class FinalMappingService {
                 row.put('values', unresolved ? new List<Object>() : resolved);
                 continue;
             }
+            if (row.get('value') == FinalMappingSoql.LINK_TOKEN) {
+                // The link's record is bound like an answer: under a private
+                // key, so the compiler binds it and never splices it.
+                if (run.linkRecordId != null) {
+                    String linkKey = '__m' + out.answers.size();
+                    out.answers.put(linkKey, run.linkRecordId);
+                    row.put('value', '$field.' + linkKey);
+                }
+                // no link: left as the token, the compiler blocks the filter
+                continue;
+            }
             if (isToken(row.get('value'))) {
                 Object converted = answerFor(
                     (String) row.get('value'),
@@ -539,6 +585,33 @@ public without sharing class FinalMappingService {
             }
         }
         return out;
+    }
+
+    /** True when the search compares with the record in the link. */
+    private static Boolean usesLink(Map<String, Object> match) {
+        if (match.get('filterMode') == FinalMappingValidator.FILTER_MODE_SOQL) {
+            Object raw = match.get('soql');
+            FinalMappingSoql.Parsed p = FinalMappingSoql.parse(
+                raw instanceof String ? (String) raw : null
+            );
+            return p.problem == null && FinalMappingSoql.usesLink(p);
+        }
+        Map<String, Object> filter = FinalMappingRules.asMap(
+            match.get('filter')
+        );
+        if (filter == null) {
+            return false;
+        }
+        for (Object rowObj : FinalMappingRules.asList(filter.get('rows'))) {
+            Map<String, Object> row = FinalMappingRules.asMap(rowObj);
+            if (
+                row != null &&
+                row.get('value') == FinalMappingSoql.LINK_TOKEN
+            ) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static Boolean isToken(Object raw) {

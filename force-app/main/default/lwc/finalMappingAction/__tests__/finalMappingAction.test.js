@@ -100,6 +100,56 @@ function mount(actions, actionId, questions = QUESTIONS, fields = FIELDS) {
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
+describe('c-final-mapping-action: the record in the link', () => {
+    afterEach(() => {
+        while (document.body.firstChild)
+            document.body.removeChild(document.body.firstChild);
+    });
+
+    const linkStep = (rows) => ({
+        id: 'act_1',
+        object: 'Contact',
+        operation: 'findOrCreate',
+        fields: [],
+        match: { onMatch: 'update', filter: { logic: 'all', rows } }
+    });
+
+    it('says the step only updates, and when it is skipped', async () => {
+        const el = mount(
+            [
+                linkStep([
+                    { fieldPath: 'Id', operator: 'equals', value: '$link.Id' }
+                ])
+            ],
+            'act_1'
+        );
+        await flush();
+        expect(el.shadowRoot.textContent).toContain(
+            'Updates the Contact in the personalized link. Skipped when there\u2019s no link or no match.'
+        );
+    });
+
+    it('hands the link object label to the search editor', async () => {
+        const el = mount([linkStep([])], 'act_1');
+        el.spec = {
+            settings: {
+                prefill: {
+                    autofillRules: [
+                        {
+                            enabled: true,
+                            source: { type: 'link', objectApiName: 'Contact' }
+                        }
+                    ]
+                }
+            },
+            mapping: el.spec.mapping
+        };
+        await flush();
+        const filter = el.shadowRoot.querySelector('c-final-lookup-filter');
+        expect(filter.linkLabel).toBe('Contact');
+    });
+});
+
 describe('c-final-mapping-action', () => {
     afterEach(() => {
         while (document.body.firstChild)

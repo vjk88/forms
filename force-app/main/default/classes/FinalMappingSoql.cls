@@ -38,8 +38,15 @@ public with sharing class FinalMappingSoql {
 
     private static final String PLACEMENT_PROBLEM = 'Put each answer right after a field and a comparison, like Email = {Your email}.';
 
+    /**
+     * `{!$link.Id}`: the record a personalized link carries, in place of a
+     * question. It is a Token like any other (same placement, same bind) with
+     * this as its elementId; `$` can't be in a real element id.
+     */
+    public static final String LINK_TOKEN = '$link.Id';
+
     public class Token {
-        /** The question, from {!el_x}. */
+        /** The question, from {!el_x} - or LINK_TOKEN for the link's record. */
         public String elementId;
         /** The field before the comparison. */
         public String fieldPath;
@@ -55,6 +62,16 @@ public with sharing class FinalMappingSoql {
         public List<Token> tokens = new List<Token>();
         /** Why it can't be used, or null when it can. */
         public String problem;
+    }
+
+    /** True when the conditions compare with the record in the link. */
+    public static Boolean usesLink(Parsed p) {
+        for (Token t : p.tokens) {
+            if (t.elementId == LINK_TOKEN) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static Parsed parse(String clause) {
@@ -136,7 +153,9 @@ public with sharing class FinalMappingSoql {
                     ? clause.substring(i + 1)
                     : clause.substring(i + 1, close);
                 if (
-                    braced.startsWith('!') && isElementId(braced.substring(1))
+                    braced.startsWith('!') &&
+                    (isElementId(braced.substring(1)) ||
+                    braced.substring(1) == LINK_TOKEN)
                 ) {
                     Matcher m = FIELD_AND_COMPARISON.matcher(built);
                     if (!m.find()) {

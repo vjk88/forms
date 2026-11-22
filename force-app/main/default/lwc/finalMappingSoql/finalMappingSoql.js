@@ -58,7 +58,11 @@ function swapBraces(text, swap) {
     return out + s.slice(last);
 }
 
-const TOKEN = /^![A-Za-z0-9_]+$/;
+/** The stored token for "the record in the link" (DEFERRED 32). */
+export const LINK_ID = '$link.Id';
+const LINK_NAME = 'The record in the link';
+
+const TOKEN = /^!(?:[A-Za-z0-9_]+|\$link\.Id)$/;
 
 /**
  * One name per question, in form order: its label, unless another name
@@ -67,10 +71,16 @@ const TOKEN = /^![A-Za-z0-9_]+$/;
  * the stored text get "removed question 1", "2", … the same way. Each name
  * maps back to exactly one id, so a round trip keeps every id.
  */
-export function displayNames(questions, storedText) {
+export function displayNames(questions, storedText, linkLabel) {
     const names = new Map();
     const labels = new Set((questions || []).map((q) => q.label));
     const taken = new Set();
+    // The link's record goes first, so a question that shares its words is
+    // the one that gets the "(2)".
+    if (linkLabel || String(storedText || '').includes(`{!${LINK_ID}}`)) {
+        names.set(LINK_ID, LINK_NAME);
+        taken.add(LINK_NAME);
+    }
     (questions || []).forEach((q) => {
         const base = q.label || 'Question';
         let name = base;
@@ -158,7 +168,11 @@ export function boxProblems(display, names, questionIds) {
     const live = new Set(questionIds || []);
     const nameToId = new Map([...names].map(([id, name]) => [name, id]));
     eachBrace(display, (inner) => {
-        if (nameToId.has(inner) && !live.has(nameToId.get(inner))) {
+        if (
+            nameToId.has(inner) &&
+            nameToId.get(inner) !== LINK_ID &&
+            !live.has(nameToId.get(inner))
+        ) {
             out.push(
                 `The question for {${inner}} was deleted. Insert a different answer.`
             );
@@ -205,7 +219,28 @@ export default class FinalMappingSoql extends LightningElement {
         // They can arrive after the box is showing (a dialog sets its parts
         // in any order). Until the author edits, name answers afresh.
         if (this._names && !this._edited) {
-            this._names = displayNames(this._questions, this._stored);
+            this._names = displayNames(
+                this._questions,
+                this._stored,
+                this._linkLabel
+            );
+            this.display = toDisplay(this._stored, this._names);
+        }
+    }
+    _linkLabel = '';
+    /** The object the personalized link carries; '' = the form has none. */
+    @api
+    get linkLabel() {
+        return this._linkLabel;
+    }
+    set linkLabel(next) {
+        this._linkLabel = next || '';
+        if (this._names && !this._edited) {
+            this._names = displayNames(
+                this._questions,
+                this._stored,
+                this._linkLabel
+            );
             this.display = toDisplay(this._stored, this._names);
         }
     }
@@ -240,7 +275,11 @@ export default class FinalMappingSoql extends LightningElement {
 
     connectedCallback() {
         // One names map per dialog open, so a rename mid-edit can't shift it.
-        this._names = displayNames(this.questions, this._stored);
+        this._names = displayNames(
+            this.questions,
+            this._stored,
+            this._linkLabel
+        );
         this.display = toDisplay(this._stored, this._names);
     }
 
@@ -259,11 +298,17 @@ export default class FinalMappingSoql extends LightningElement {
     /** Problems the box can see itself (the server checks the rest). */
     @api
     get problems() {
-        return boxProblems(
+        const out = boxProblems(
             this.display,
             this._names || new Map(),
             (this._questions || []).map((q) => q.elementKey)
         );
+        if (!this._linkLabel && this._stored.includes(`{!${LINK_ID}}`)) {
+            out.push(
+                'The form has no Autofill rule that fills from the record in the link. Add one, or use something else.'
+            );
+        }
+        return out;
     }
 
     /** Show the box's own problems, and say whether there were none. */
@@ -350,12 +395,19 @@ export default class FinalMappingSoql extends LightningElement {
     }
 
     get answerOptions() {
-        return (this.questions || [])
+        const out = (this.questions || [])
             .filter((q) => q.mappable && q.answerType !== 'Options')
             .map((q) => ({
                 value: q.elementKey,
                 label: (this._names && this._names.get(q.elementKey)) || q.label
             }));
+        if (this._linkLabel) {
+            out.unshift({
+                value: LINK_ID,
+                label: `The record in the link (${this._linkLabel})`
+            });
+        }
+        return out;
     }
 
     get checkDisabled() {

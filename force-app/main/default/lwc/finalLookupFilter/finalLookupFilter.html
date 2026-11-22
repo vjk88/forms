@@ -54,6 +54,7 @@
                     <c-final-mapping-soql
                         value={typedSoql}
                         questions={typedQuestions}
+                        link-label={typedLinkLabel}
                         spec={typedSpec}
                         action-id={typedActionId}
                         onsoqlchange={handleSoql}
@@ -68,6 +69,7 @@
                         extra-operators={extraOperators}
                         field-object={targetObject}
                         answer-choices={answerChoices}
+                        link-label={linkLabel}
                         onrulechange={handleInlineRule}
                     ></c-final-rule-editor>
                 </template>
@@ -86,6 +88,7 @@
                     compare-record-object={compareRecordObject}
                     logic-heading={logicHeading}
                     answer-choices={answerChoices}
+                    link-label={linkLabel}
                     sources={sources}
                     noun="field"
                     extra-operators={extraOperators}

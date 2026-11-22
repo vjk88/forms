@@ -7,6 +7,43 @@
  */
 export const MAX_STEPS = 10;
 
+/**
+ * A search condition's value that means "the record in the personalized
+ * link" (DEFERRED 32). The server reads it from the verified link; the
+ * browser only ever names it.
+ */
+export const LINK_VALUE = '$link.Id';
+
+/** The object a form's link carries: its enabled link Autofill rule's. */
+export function linkObjectOf(spec) {
+    const rules =
+        (spec &&
+            spec.settings &&
+            spec.settings.prefill &&
+            spec.settings.prefill.autofillRules) ||
+        [];
+    const rule = rules.find(
+        (r) =>
+            r &&
+            r.enabled === true &&
+            r.source &&
+            r.source.type === 'link' &&
+            r.source.objectApiName
+    );
+    return rule ? rule.source.objectApiName : null;
+}
+
+/** True when a search compares with the record in the link. */
+export function searchUsesLink(match) {
+    const m = foldMatch(match) || {};
+    if (m.filterMode === 'soql') {
+        return String(m.soql || '').includes(`{!${LINK_VALUE}}`);
+    }
+    return ((m.filter && m.filter.rows) || []).some(
+        (row) => row && row.value === LINK_VALUE
+    );
+}
+
 export function actionsOf(spec) {
     return (spec && spec.mapping && spec.mapping.actions) || [];
 }
@@ -418,7 +455,11 @@ export function actionState(actions, index, skippable) {
             : Boolean(m.filter && (m.filter.rows || []).length) &&
               m.filter.rows.every(filterRowComplete);
         const answers = searchAnswerIds(m);
-        if (!m.onMatch || !filterDone || !answers.length) {
+        if (
+            !m.onMatch ||
+            !filterDone ||
+            !(answers.length || searchUsesLink(m))
+        ) {
             return 'incomplete';
         }
         if (skippable && answers.some((id) => skippable.has(id))) {

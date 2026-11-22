@@ -278,6 +278,22 @@ public inherited sharing class FinalSubmitService {
         Id versionId,
         Posture mode
     ) {
+        return run(spec, payload, versionId, mode, null);
+    }
+
+    /**
+     * 5-arg entry: `linkRecordId` is the record a personalized link carried,
+     * as FinalLinkService verified it (LinkSubmit.verifiedRecordId) - null
+     * when there was no usable link. Never read from the payload. Only a
+     * Freeform stores it, for its mapping steps to search by.
+     */
+    public static SubmitOutcome run(
+        Map<String, Object> spec,
+        Map<String, Object> payload,
+        Id versionId,
+        Posture mode,
+        Id linkRecordId
+    ) {
         // Three types, three paths, and NO fallback: an unrecognized type
         // used to land in the object path below and fail complaining about a
         // missing target object, which described the wrong problem.
@@ -289,7 +305,7 @@ public inherited sharing class FinalSubmitService {
             return runSurvey(spec, payload, versionId, mode);
         }
         if (formType == FinalFormTypes.FREEFORM) {
-            return runFreeform(spec, payload, versionId, mode);
+            return runFreeform(spec, payload, versionId, mode, linkRecordId);
         }
         Map<String, Object> answers = asMap(payload.get('answers'));
         Map<String, Object> repeats = asMap(payload.get('repeats'));
@@ -1440,7 +1456,8 @@ public inherited sharing class FinalSubmitService {
         Map<String, Object> spec,
         Map<String, Object> payload,
         Id versionId,
-        Posture mode
+        Posture mode,
+        Id linkRecordId
     ) {
         if (versionId == null) {
             throw new AuraHandledException(
@@ -1520,6 +1537,11 @@ public inherited sharing class FinalSubmitService {
         String sess = getStr(meta, 'sessionId');
         if (sess != null) {
             submission.Session_Id__c = sess.abbreviate(255);
+        }
+        if (linkRecordId != null) {
+            // Verified by FinalLinkService before this ran; the mapping job
+            // runs later, so it reads the Id from here (never the token).
+            submission.Link_Record_Id__c = String.valueOf(linkRecordId);
         }
 
         AnswerSink sink = freeformSink();

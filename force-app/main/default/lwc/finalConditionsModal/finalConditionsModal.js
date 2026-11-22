@@ -36,6 +36,8 @@ export default class FinalConditionsModal extends LightningModal {
     @api compareRecordObject;
     @api logicHeading;
     @api answerChoices = [];
+    /** Mapping: the object the link carries; "" = no link choice. */
+    @api linkLabel = '';
     @api recordObject;
 
     draft = null;

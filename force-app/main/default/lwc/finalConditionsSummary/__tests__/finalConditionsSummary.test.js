@@ -61,6 +61,20 @@ describe('a related list compares with the main record', () => {
     });
 });
 
+describe('the record in the link', () => {
+    it('reads in words on the mapping screen', () => {
+        expect(
+            describeCondition(
+                { source: 'Id', operator: 'equals', value: '$link.Id' },
+                new Map([['Id', 'Contact ID']]),
+                new Map(),
+                false,
+                true
+            )
+        ).toBe('Contact ID equals the record in the link');
+    });
+});
+
 describe('describeCondition', () => {
     it('names the answer a mapping row compares with, or says it is gone', () => {
         const labels = new Map([['$field.el_n', 'Your surname']]);

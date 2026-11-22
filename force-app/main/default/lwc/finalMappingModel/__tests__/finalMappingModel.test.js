@@ -15,11 +15,78 @@ import {
     setFilterMode,
     soqlTokenIds,
     foldMatch,
-    searchAnswerIds
+    searchAnswerIds,
+    searchUsesLink,
+    linkObjectOf,
+    LINK_VALUE
 } from 'c/finalMappingModel';
 
 const base = () => ({ specVersion: 1, pages: [] });
 const answer = (elementKey) => ({ kind: 'answer', elementKey });
+
+describe('the record in the link', () => {
+    const linkRule = (extra = {}) => ({
+        enabled: true,
+        source: { type: 'link', objectApiName: 'Contact' },
+        ...extra
+    });
+    const findStep = (rows) => ({
+        id: 'act_a',
+        object: 'Contact',
+        operation: 'findOrCreate',
+        fields: [
+            { field: 'Email', source: { kind: 'literal', value: 'a@b.c' } }
+        ],
+        match: { onMatch: 'update', filter: { logic: 'all', rows } }
+    });
+
+    it('reads the link object from the enabled link rule only', () => {
+        const withRules = (rules) => ({
+            settings: { prefill: { autofillRules: rules } }
+        });
+        expect(linkObjectOf(withRules([linkRule()]))).toBe('Contact');
+        expect(
+            linkObjectOf(withRules([linkRule({ enabled: false })]))
+        ).toBeNull();
+        expect(
+            linkObjectOf(
+                withRules([{ enabled: true, source: { type: 'user' } }])
+            )
+        ).toBeNull();
+        expect(linkObjectOf({})).toBeNull();
+    });
+
+    it('sees the link in built rows and in typed conditions', () => {
+        expect(
+            searchUsesLink({
+                filter: {
+                    rows: [
+                        {
+                            fieldPath: 'Id',
+                            operator: 'equals',
+                            value: LINK_VALUE
+                        }
+                    ]
+                }
+            })
+        ).toBe(true);
+        expect(
+            searchUsesLink({ filterMode: 'soql', soql: 'Id = {!$link.Id}' })
+        ).toBe(true);
+        expect(
+            searchUsesLink({ filterMode: 'soql', soql: 'Email = {!el_e}' })
+        ).toBe(false);
+        expect(searchUsesLink({ filter: { rows: [] } })).toBe(false);
+    });
+
+    it('counts as the search comparing with something, so the step can be finished', () => {
+        const rows = [
+            { fieldPath: 'Id', operator: 'equals', value: LINK_VALUE }
+        ];
+        expect(actionState([findStep(rows)], 0)).toBe('ok');
+        expect(searchAnswerIds(findStep(rows).match)).toEqual([]);
+    });
+});
 
 describe('finalMappingModel', () => {
     it('adds steps with fresh ids and never mutates its input', () => {

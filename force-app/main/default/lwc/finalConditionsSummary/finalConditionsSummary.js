@@ -79,6 +79,8 @@ export function describeCondition(
         shown = labels.has(raw)
             ? `the answer to “${labels.get(raw)}”`
             : 'the answer to a removed question';
+    } else if (answersOn && raw === '$link.Id') {
+        shown = 'the record in the link';
     } else if (typeof raw === 'string' && raw.startsWith('$User.')) {
         shown = labels.get(raw) || `Current user › ${raw.slice(6)}`;
     } else if (typeof raw === 'string' && raw.startsWith('$record.')) {
@@ -137,6 +139,8 @@ export default class FinalConditionsSummary extends LightningElement {
     @api logicHeading;
     /** Mapping screen: the questions a row may compare with (Task 7). */
     @api answerChoices = [];
+    /** Mapping: the object the link carries; "" = no link choice. */
+    @api linkLabel = '';
     @api recordObject;
     /** The dialog's title and sentence. */
     @api label;
@@ -417,6 +421,7 @@ export default class FinalConditionsSummary extends LightningElement {
                 compareRecordObject: this.compareRecordObject,
                 logicHeading: this.logicHeading,
                 answerChoices: this.answerChoices,
+                linkLabel: this.linkLabel,
                 recordObject: this.recordObject,
                 startWithRow: !this.hasRules
             });

@@ -160,6 +160,16 @@ public with sharing class FinalMappingValidator {
         ctx.questions = FinalMappingRules.questionMap(spec);
         ctx.skippable = FinalMappingRules.skippable(spec);
         ctx.isPublic = isPublic(formId);
+        // The object the form's link carries: from its enabled link Autofill
+        // rule (a non-survey form takes it from the rule's source object).
+        FinalAutofillService.LinkSourceContract linkContract = FinalAutofillService.resolveLinkSourceFromSpec(
+            spec,
+            'Freeform',
+            null
+        );
+        ctx.linkObject = linkContract == null
+            ? null
+            : linkContract.objectApiName;
         ctx.placeholders = new Map<String, Object>();
         for (String key : ctx.questions.keySet()) {
             ctx.placeholders.put(key, 'x');
@@ -218,6 +228,8 @@ public with sharing class FinalMappingValidator {
         String search;
         String found;
         String create;
+        /** API name of the object the personalized link carries, or null. */
+        String linkObject;
         /** Steps seen so far, id → object API name: the only legal action refs. */
         Map<String, String> earlier = new Map<String, String>();
     }
@@ -623,9 +635,53 @@ public with sharing class FinalMappingValidator {
                 );
             } else if (hasRows) {
                 answerKeys.addAll(checkRowAnswers(filter, d, id, ctx, out));
+                // "The record in the link": checked here, then compiled as a
+                // placeholder Id so the rest of the filter is still judged.
+                Map<String, Object> placeholders = new Map<String, Object>(
+                    ctx.placeholders
+                );
+                Map<String, Object> toCompile = filter;
+                if (
+                    JSON.serialize(filter).contains(FinalMappingSoql.LINK_TOKEN)
+                ) {
+                    toCompile = (Map<String, Object>) JSON.deserializeUntyped(
+                        JSON.serialize(filter)
+                    );
+                    for (
+                        Object rowObj : FinalMappingRules.asList(
+                            toCompile.get('rows')
+                        )
+                    ) {
+                        Map<String, Object> row = FinalMappingRules.asMap(
+                            rowObj
+                        );
+                        if (
+                            row == null ||
+                            row.get('value') != FinalMappingSoql.LINK_TOKEN
+                        ) {
+                            continue;
+                        }
+                        String path = str(row.get('fieldPath'));
+                        checkLink(
+                            path,
+                            path == null
+                                ? null
+                                : FinalMappingRules.fieldAt(d.getName(), path),
+                            (str(row.get('operator')) == 'eq' ||
+                            str(row.get('operator')) == 'equals'),
+                            id,
+                            d,
+                            ctx,
+                            out
+                        );
+                        answerKeys.add(FinalMappingSoql.LINK_TOKEN);
+                        row.put('value', '$field.__link');
+                        placeholders.put('__link', '000000000000000AAA');
+                    }
+                }
                 FinalLookupService.Compiled c = FinalLookupService.compile(
-                    new Map<String, Object>{ 'filter' => filter },
-                    ctx.placeholders,
+                    new Map<String, Object>{ 'filter' => toCompile },
+                    placeholders,
                     d.getName()
                 );
                 if (c.blocked) {
@@ -858,6 +914,11 @@ public with sharing class FinalMappingValidator {
                 d.getName(),
                 t.fieldPath
             );
+            if (t.elementId == FinalMappingSoql.LINK_TOKEN) {
+                checkLink(t.fieldPath, f, t.operator == '=', id, d, ctx, out);
+                binds.put(t.bindName, '000000000000000AAA');
+                continue;
+            }
             checkAnswer(
                 t.elementId,
                 f,
@@ -897,6 +958,74 @@ public with sharing class FinalMappingValidator {
             );
         }
         return seen;
+    }
+
+    /**
+     * "The record in the link" (DEFERRED 32): needs an enabled link Autofill
+     * rule (it says which object the link carries), "equals", and a field it
+     * can match: the Id of this step's object when that object IS the link's,
+     * or a lookup on it that can point at the link's object.
+     */
+    private static void checkLink(
+        String path,
+        Schema.DescribeFieldResult field,
+        Boolean equalsOnly,
+        String id,
+        Schema.DescribeSObjectResult step,
+        Context ctx,
+        List<Diagnostic> out
+    ) {
+        String diagnosticField = path;
+        if (String.isBlank(ctx.linkObject)) {
+            out.add(
+                at(
+                    BLOCKER,
+                    id,
+                    diagnosticField,
+                    ctx,
+                    ctx.search,
+                    'Add an Autofill rule that fills from the record in the link first; it sets which object the link carries.'
+                )
+            );
+            return;
+        }
+        Schema.SObjectType linkType = Schema.getGlobalDescribe()
+            .get(ctx.linkObject);
+        String linkLabel = linkType == null
+            ? ctx.linkObject
+            : linkType.getDescribe().getLabel();
+        Boolean fits = false;
+        if (field != null && path != null && !path.contains('.')) {
+            if (field.getName() == 'Id') {
+                fits = step.getName().equalsIgnoreCase(ctx.linkObject);
+            } else if (field.getType() == Schema.DisplayType.REFERENCE) {
+                for (Schema.SObjectType rt : field.getReferenceTo()) {
+                    if (rt == linkType) {
+                        fits = true;
+                    }
+                }
+            }
+        }
+        if (field != null && (!fits || !equalsOnly)) {
+            out.add(
+                at(
+                    BLOCKER,
+                    id,
+                    diagnosticField,
+                    ctx,
+                    ctx.search,
+                    'The record in the link can only be compared with the Id of ' +
+                        withArticle(linkLabel) +
+                        ' or a lookup to one, using “equals”.'
+                )
+            );
+        }
+    }
+
+    private static String withArticle(String label) {
+        return (label.left(1).toLowerCase().containsAny('aeiou')
+                ? 'an '
+                : 'a ') + label;
     }
 
     /** A value of the field's type, so a test run can bind it. */
