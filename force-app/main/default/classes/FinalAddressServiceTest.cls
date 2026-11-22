@@ -586,4 +586,72 @@ private class FinalAddressServiceTest {
             'empty spec'
         );
     }
+
+    @IsTest
+    static void isUsableClassChecksExistenceConstructorAndInterface() {
+        Assert.isTrue(
+            FinalAddressService.isUsableClass(
+                'FinalAddressServiceTest.FakeProvider'
+            )
+        );
+        Assert.isFalse(
+            FinalAddressService.isUsableClass(
+                'FinalAddressServiceTest.NotAProvider'
+            )
+        );
+        Assert.isFalse(
+            FinalAddressService.isUsableClass('NoSuchClassAnywhere')
+        );
+        Assert.isFalse(FinalAddressService.isUsableClass('  '));
+        Assert.isFalse(FinalAddressService.isUsableClass(null));
+    }
+
+    @IsTest
+    static void testProviderCountsSuggestionsForTheNamedProvider() {
+        canned = new List<FinalAddress.Suggestion>{
+            sug('c1', 'One'),
+            sug('c2', 'Two')
+        };
+        Integer n = FinalAddressService.testProvider(
+            'Custom',
+            'FinalAddressServiceTest.FakeProvider'
+        );
+        Assert.areEqual(2, n);
+        Assert.areEqual('1 Market St', lastQuery.text);
+        Assert.isNull(lastQuery.sessionToken);
+        Assert.isNull(lastQuery.container);
+    }
+
+    @IsTest
+    static void testProviderNoneAndBadClassAreNotSetUp() {
+        for (
+            String[] args : new List<String[]>{
+                new List<String>{ 'None', null },
+                new List<String>{ null, null },
+                new List<String>{ 'Loqate', null },
+                new List<String>{ 'Custom', 'NoSuchClassAnywhere' }
+            }
+        ) {
+            String code = 'NONE';
+            try {
+                FinalAddressService.testProvider(args[0], args[1]);
+            } catch (FinalAddressService.AddressException e) {
+                code = e.getMessage();
+            }
+            Assert.areEqual('NOT_SET_UP', code, String.valueOf(args));
+        }
+    }
+
+    @IsTest
+    static void testProviderMapsFailures() {
+        useFake('Google');
+        toThrow = FinalAddress.failed(403);
+        String code = 'NONE';
+        try {
+            FinalAddressService.testProvider('Google', null);
+        } catch (FinalAddressService.AddressException e) {
+            code = e.getMessage();
+        }
+        Assert.areEqual('KEY_REFUSED', code);
+    }
 }

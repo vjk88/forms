@@ -83,7 +83,7 @@ public inherited sharing class FinalAddressService {
             s.providerLabel = 'Loqate';
             s.attribution = 'Results by Loqate';
         } else if (name == 'Custom') {
-            s.configured = resolve(name) != null;
+            s.configured = resolve(name, settingClassName()) != null;
             s.providerLabel = 'Your own provider';
         }
         return s;
@@ -108,41 +108,25 @@ public inherited sharing class FinalAddressService {
         if (t.length() < MIN_CHARS && box == null) {
             return new List<FinalAddress.Suggestion>();
         }
-        String name = providerName();
-        FinalAddressProvider p = requireProvider(name);
-        FinalAddress.Query q = new FinalAddress.Query();
-        q.text = t;
-        q.sessionToken = token;
-        q.container = box;
+        return runSuggest(providerName(), settingClassName(), t, token, box);
+    }
 
-        List<FinalAddress.Suggestion> raw;
-        try {
-            raw = p.suggest(q);
-        } catch (AddressException e) {
-            throw e;
-        } catch (Exception e) {
-            throw failure(e, name);
+    /** Test connection: one real suggest for a fixed search, through the
+     *  provider the caller names (not necessarily the saved one). Returns how
+     *  many addresses came back; failures throw AddressException like suggest. */
+    public static Integer testProvider(String name, String className) {
+        String n = String.isBlank(name) ? 'None' : name;
+        if (n == 'None') {
+            log(NOT_SET_UP, n);
+            throw new AddressException(NOT_SET_UP);
         }
-        List<FinalAddress.Suggestion> out = new List<FinalAddress.Suggestion>();
-        for (
-            FinalAddress.Suggestion s : raw == null
-                ? new List<FinalAddress.Suggestion>()
-                : raw
-        ) {
-            if (out.size() >= MAX_SUGGESTIONS) {
-                break;
-            }
-            if (s == null || String.isBlank(s.id) || s.id.length() > MAX_ID) {
-                continue;
-            }
-            FinalAddress.Suggestion c = new FinalAddress.Suggestion();
-            c.id = s.id;
-            c.title = clean(s.title, 255);
-            c.subtitle = clean(s.subtitle, 255);
-            c.isGroup = s.isGroup == true;
-            out.add(c);
-        }
-        return out;
+        return runSuggest(n, className, '1 Market St', null, null).size();
+    }
+
+    /** True when the class exists, has a public no-argument constructor and is
+     *  a FinalAddressProvider. */
+    public static Boolean isUsableClass(String className) {
+        return instantiate(className) != null;
     }
 
     public static FinalAddress.Result details(String id, String sessionToken) {
@@ -155,7 +139,7 @@ public inherited sharing class FinalAddressService {
         }
         String token = checkToken(sessionToken);
         String name = providerName();
-        FinalAddressProvider p = requireProvider(name);
+        FinalAddressProvider p = requireProvider(name, settingClassName());
         FinalAddress.Result raw;
         try {
             raw = p.details(id, token);
@@ -238,6 +222,49 @@ public inherited sharing class FinalAddressService {
 
     // --------------------------------------------------------------- private
 
+    private static List<FinalAddress.Suggestion> runSuggest(
+        String name,
+        String className,
+        String t,
+        String token,
+        String box
+    ) {
+        FinalAddressProvider p = requireProvider(name, className);
+        FinalAddress.Query q = new FinalAddress.Query();
+        q.text = t;
+        q.sessionToken = token;
+        q.container = box;
+
+        List<FinalAddress.Suggestion> raw;
+        try {
+            raw = p.suggest(q);
+        } catch (AddressException e) {
+            throw e;
+        } catch (Exception e) {
+            throw failure(e, name);
+        }
+        List<FinalAddress.Suggestion> out = new List<FinalAddress.Suggestion>();
+        for (
+            FinalAddress.Suggestion s : raw == null
+                ? new List<FinalAddress.Suggestion>()
+                : raw
+        ) {
+            if (out.size() >= MAX_SUGGESTIONS) {
+                break;
+            }
+            if (s == null || String.isBlank(s.id) || s.id.length() > MAX_ID) {
+                continue;
+            }
+            FinalAddress.Suggestion c = new FinalAddress.Suggestion();
+            c.id = s.id;
+            c.title = clean(s.title, 255);
+            c.subtitle = clean(s.subtitle, 255);
+            c.isGroup = s.isGroup == true;
+            out.add(c);
+        }
+        return out;
+    }
+
     private static String providerName() {
         String name = providerNameOverride;
         if (name == null) {
@@ -250,8 +277,32 @@ public inherited sharing class FinalAddressService {
         return name;
     }
 
-    /** The provider instance, or null when none is usable. */
-    private static FinalAddressProvider resolve(String name) {
+    private static String settingClassName() {
+        Final_Settings__c s = Final_Settings__c.getInstance(SETTINGS_NAME);
+        return s == null ? null : s.Address_Apex_Class__c;
+    }
+
+    /** An instance of the named class, or null when it is not a usable
+     *  FinalAddressProvider. */
+    private static FinalAddressProvider instantiate(String className) {
+        if (String.isBlank(className)) {
+            return null;
+        }
+        try {
+            Type t = Type.forName(className.trim());
+            Object o = t == null ? null : t.newInstance();
+            return o instanceof FinalAddressProvider
+                ? (FinalAddressProvider) o
+                : null;
+        } catch (Exception e) {
+            // no such class, or no public no-arg constructor
+            return null;
+        }
+    }
+
+    /** The provider instance, or null when none is usable. className is only
+     *  read for 'Custom'. */
+    private static FinalAddressProvider resolve(String name, String className) {
         if (providerOverride != null) {
             return providerOverride;
         }
@@ -260,27 +311,16 @@ public inherited sharing class FinalAddressService {
         }
         // 'Loqate': its adapter is a later slice, so it resolves to nothing yet
         if (name == 'Custom') {
-            Final_Settings__c s = Final_Settings__c.getInstance(SETTINGS_NAME);
-            String className = s == null ? null : s.Address_Apex_Class__c;
-            if (String.isBlank(className)) {
-                return null;
-            }
-            try {
-                Type t = Type.forName(className.trim());
-                Object o = t == null ? null : t.newInstance();
-                return o instanceof FinalAddressProvider
-                    ? (FinalAddressProvider) o
-                    : null;
-            } catch (Exception e) {
-                // no such class, or no public no-arg constructor
-                return null;
-            }
+            return instantiate(className);
         }
         return null;
     }
 
-    private static FinalAddressProvider requireProvider(String name) {
-        FinalAddressProvider p = resolve(name);
+    private static FinalAddressProvider requireProvider(
+        String name,
+        String className
+    ) {
+        FinalAddressProvider p = resolve(name, className);
         if (p == null) {
             log(NOT_SET_UP, name);
             throw new AddressException(NOT_SET_UP);

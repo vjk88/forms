@@ -1,0 +1,207 @@
+<template>
+    <div class="fs-page">
+        <header class="fs-head">
+            <p class="fs-subtitle">
+                These apply to every form and survey in your organization.
+            </p>
+        </header>
+
+        <div class="fs-frame">
+            <c-final-studio-rail
+                tabs={railTabs}
+                value="address"
+                label="Settings sections"
+            ></c-final-studio-rail>
+
+            <section class="fs-pane" aria-labelledby="fs-pane-title">
+                <div class="fs-pane-head">
+                    <h3 id="fs-pane-title" class="fs-pane-title">
+                        Address search
+                    </h3>
+                    <p class="fs-pane-meta">
+                        Suggest addresses while people fill in Address
+                        questions.
+                    </p>
+                </div>
+
+                <div class="fs-pane-body">
+                    <template lwc:if={isLoading}>
+                        <div class="fs-state" data-id="loading">
+                            <div class="fs-spin">
+                                <lightning-spinner
+                                    alternative-text="Loading settings"
+                                    size="small"
+                                ></lightning-spinner>
+                            </div>
+                            <p class="fs-state-text">Loading settings…</p>
+                        </div>
+                    </template>
+
+                    <template lwc:elseif={isFailed}>
+                        <div class="fs-state fs-state-failed" data-id="failed">
+                            <p class="fs-state-text" role="alert">
+                                Settings couldn't be loaded.
+                            </p>
+                            <lightning-button
+                                class="fs-retry"
+                                label="Retry"
+                                onclick={handleRetry}
+                            ></lightning-button>
+                        </div>
+                    </template>
+
+                    <template lwc:else>
+                        <p class="fs-intro">
+                            You bring your own account with the provider. Your
+                            key stays in Salesforce and is never sent to anyone
+                            filling in a form.
+                        </p>
+
+                        <template lwc:if={isReadOnly}>
+                            <p
+                                class="fs-notice fs-notice-info"
+                                data-id="readonly"
+                            >
+                                <lightning-icon
+                                    class="fs-notice-icon"
+                                    icon-name="utility:info"
+                                    size="x-small"
+                                    alternative-text=""
+                                ></lightning-icon>
+                                <span>
+                                    You can see these settings but not change
+                                    them. Ask an admin for the Manage form
+                                    settings permission.
+                                </span>
+                            </p>
+                        </template>
+
+                        <div class="fs-group">
+                            <div class="fs-group-title">
+                                <h4 class="fs-group-name">Provider</h4>
+                                <span class="fs-group-rule"></span>
+                            </div>
+                            <div class="fs-row">
+                                <lightning-combobox
+                                    class="fs-provider"
+                                    label="Provider"
+                                    variant="label-hidden"
+                                    options={providerOptions}
+                                    value={provider}
+                                    disabled={isReadOnly}
+                                    onchange={handleProvider}
+                                ></lightning-combobox>
+                                <template lwc:if={isNone}>
+                                    <p class="fs-help" data-id="none-help">
+                                        Address questions show plain address
+                                        fields, with no search.
+                                    </p>
+                                </template>
+                            </div>
+                        </div>
+
+                        <template lwc:if={hasSteps}>
+                            <div class="fs-group" data-id={stepsId}>
+                                <div class="fs-group-title">
+                                    <h4 class="fs-group-name">{stepsTitle}</h4>
+                                    <span class="fs-group-rule"></span>
+                                </div>
+                                <ol class="fs-steps" aria-label={stepsTitle}>
+                                    <template for:each={steps} for:item="s">
+                                        <li key={s.key}>
+                                            <template
+                                                for:each={s.parts}
+                                                for:item="p"
+                                            >
+                                                <template lwc:if={p.isLink}>
+                                                    <a
+                                                        key={p.key}
+                                                        class="fs-link"
+                                                        href={p.href}
+                                                        target="_blank"
+                                                        rel="noopener"
+                                                        >{p.t}<span
+                                                            class="slds-assistive-text"
+                                                            >{p.assist}</span
+                                                        ></a
+                                                    >
+                                                </template>
+                                                <template lwc:else>
+                                                    <span
+                                                        key={p.key}
+                                                        class={p.cls}
+                                                        >{p.t}</span
+                                                    >
+                                                </template>
+                                            </template>
+                                        </li>
+                                    </template>
+                                </ol>
+                                <template lwc:if={isCustom}>
+                                    <div class="fs-row fs-class-row">
+                                        <lightning-input
+                                            class="fs-class"
+                                            label="Apex class name"
+                                            value={apexClass}
+                                            disabled={isReadOnly}
+                                            onchange={handleClass}
+                                        ></lightning-input>
+                                        <p class="fs-help">
+                                            A class that implements
+                                            FinalAddressProvider.
+                                        </p>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <template lwc:if={canAct}>
+                            <div class="fs-actions">
+                                <template lwc:if={showTest}>
+                                    <lightning-button
+                                        class="fs-test"
+                                        label={testLabel}
+                                        disabled={testDisabled}
+                                        onclick={handleTest}
+                                    ></lightning-button>
+                                </template>
+                                <lightning-button
+                                    class="fs-save"
+                                    variant="brand"
+                                    label={saveLabel}
+                                    disabled={saveDisabled}
+                                    onclick={handleSave}
+                                ></lightning-button>
+                            </div>
+                        </template>
+
+                        <div
+                            class="fs-feedback"
+                            role="status"
+                            aria-live="polite"
+                        >
+                            <template lwc:if={hasNotice}>
+                                <p class={noticeClass} data-id="notice">
+                                    <lightning-icon
+                                        class="fs-notice-icon"
+                                        icon-name={noticeIcon}
+                                        size="x-small"
+                                        alternative-text=""
+                                    ></lightning-icon>
+                                    <span>{notice.text}</span>
+                                </p>
+                                <template lwc:if={notice.showAccessNote}>
+                                    <p class="fs-help" data-id="access-note">
+                                        This tests your own access. Guests and
+                                        the people who fill in forms also need
+                                        the last step.
+                                    </p>
+                                </template>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </section>
+        </div>
+    </div>
+</template>

@@ -225,7 +225,7 @@ Settings refuses to save it.
    - credentials metadata, `Final_Settings__c`, permission set and custom permission
    - Apex tests with `HttpCalloutMock`, for each error code and the "question must have search on"
      check
-2. **Settings tab:** `finalSettings`, `FinalSettingsController`, Test connection. Verified on the LEX tab.
+2. **Settings tab: BUILT (branch feat/address-settings-tab).** `finalSettings`, `FinalSettingsController`, custom permission `Final_Manage_Settings`, tab `Final_Settings`. Google gets 4 steps after the UX review (billing on, no "Websites" key restriction, the parameter named exactly `Key`, the permission set). Verified on the LEX tab: NO_KEY message, Saved, field errors for a blank or unusable Apex class, 200% zoom.
 3. **The question:**
    - palette, mint, inspector, renderer and `finalAddressInput`
    - storage (`Value_JSON__c`, `Answer_Type__c`)
