@@ -20,15 +20,8 @@
     margin-bottom: var(--c-studio-space-5);
 }
 
-.fs-title {
-    margin: 0;
-    font-size: var(--c-studio-fs-display);
-    font-weight: var(--c-studio-fw-strong);
-    line-height: var(--c-studio-lh-tight);
-}
-
 .fs-subtitle {
-    margin: var(--c-studio-space-2) 0 0;
+    margin: 0;
     color: var(--c-studio-text-weak);
     font-size: var(--c-studio-fs-small);
 }
@@ -91,6 +84,7 @@
 }
 
 .fs-group-name {
+    margin: 0;
     font-size: var(--c-studio-fs-body);
     font-weight: var(--c-studio-fw-strong);
 }
@@ -103,6 +97,16 @@
 
 .fs-row {
     margin-bottom: var(--c-studio-space-5);
+}
+
+.fs-provider {
+    display: block;
+    max-width: 20rem;
+}
+
+.fs-class-row {
+    margin-top: var(--c-studio-space-5);
+    margin-bottom: 0;
 }
 
 .fs-help {
@@ -143,6 +147,9 @@
 }
 
 .fs-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--c-studio-space-3);
     margin: 0;
     padding: var(--c-studio-space-4) var(--c-studio-space-5);
     border: 1px solid transparent;
@@ -160,11 +167,16 @@
     color: var(--c-studio-error-text);
 }
 
-.fs-notice-warning {
+.fs-notice-info {
     margin-bottom: var(--c-studio-space-6);
-    background: var(--c-studio-warning-surface);
-    border-color: var(--c-studio-warning-border);
-    color: var(--c-studio-warning-text);
+    background: var(--c-studio-info-surface);
+    color: var(--c-studio-info-text);
+}
+
+/* the icon takes the notice's text colour, so it always matches its words */
+.fs-notice-icon {
+    flex: none;
+    --slds-c-icon-color-foreground-default: currentcolor;
 }
 
 .fs-state {

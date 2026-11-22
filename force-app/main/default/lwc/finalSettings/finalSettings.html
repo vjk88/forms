@@ -1,9 +1,8 @@
 <template>
     <div class="fs-page">
         <header class="fs-head">
-            <h2 class="fs-title">Settings</h2>
             <p class="fs-subtitle">
-                These apply to every form and survey in your organisation.
+                These apply to every form and survey in your organization.
             </p>
         </header>
 
@@ -60,18 +59,26 @@
 
                         <template lwc:if={isReadOnly}>
                             <p
-                                class="fs-notice fs-notice-warning"
+                                class="fs-notice fs-notice-info"
                                 data-id="readonly"
                             >
-                                You can see these settings but not change them.
-                                Ask an admin for the Manage form settings
-                                permission.
+                                <lightning-icon
+                                    class="fs-notice-icon"
+                                    icon-name="utility:info"
+                                    size="x-small"
+                                    alternative-text=""
+                                ></lightning-icon>
+                                <span>
+                                    You can see these settings but not change
+                                    them. Ask an admin for the Manage form
+                                    settings permission.
+                                </span>
                             </p>
                         </template>
 
                         <div class="fs-group">
                             <div class="fs-group-title">
-                                <span class="fs-group-name">Provider</span>
+                                <h4 class="fs-group-name">Provider</h4>
                                 <span class="fs-group-rule"></span>
                             </div>
                             <div class="fs-row">
@@ -84,85 +91,80 @@
                                     disabled={isReadOnly}
                                     onchange={handleProvider}
                                 ></lightning-combobox>
+                                <template lwc:if={isNone}>
+                                    <p class="fs-help" data-id="none-help">
+                                        Address questions show plain address
+                                        fields, with no search.
+                                    </p>
+                                </template>
                             </div>
-                            <template lwc:if={isCustom}>
-                                <div class="fs-row">
-                                    <lightning-input
-                                        class="fs-class"
-                                        label="Apex class name"
-                                        field-level-help="A class that implements FinalAddressProvider."
-                                        value={apexClass}
-                                        disabled={isReadOnly}
-                                        onchange={handleClass}
-                                    ></lightning-input>
-                                </div>
-                            </template>
-                            <template lwc:if={isNone}>
-                                <p class="fs-help" data-id="none-help">
-                                    Address questions show plain address fields,
-                                    with no search.
-                                </p>
-                            </template>
                         </div>
 
-                        <template lwc:if={isGoogle}>
-                            <div class="fs-group" data-id="steps-google">
+                        <template lwc:if={hasSteps}>
+                            <div class="fs-group" data-id={stepsId}>
                                 <div class="fs-group-title">
-                                    <span class="fs-group-name">
-                                        Connect your key
-                                    </span>
+                                    <h4 class="fs-group-name">{stepsTitle}</h4>
                                     <span class="fs-group-rule"></span>
                                 </div>
-                                <ol class="fs-steps">
+                                <ol class="fs-steps" aria-label={stepsTitle}>
                                     <template for:each={steps} for:item="s">
                                         <li key={s.key}>
                                             <template
                                                 for:each={s.parts}
                                                 for:item="p"
                                             >
-                                                <span key={p.key} class={p.cls}
-                                                    >{p.t}</span
-                                                >
+                                                <template lwc:if={p.isLink}>
+                                                    <a
+                                                        key={p.key}
+                                                        class="fs-link"
+                                                        href={p.href}
+                                                        target="_blank"
+                                                        rel="noopener"
+                                                        >{p.t}<span
+                                                            class="slds-assistive-text"
+                                                            >{p.assist}</span
+                                                        ></a
+                                                    >
+                                                </template>
+                                                <template lwc:else>
+                                                    <span
+                                                        key={p.key}
+                                                        class={p.cls}
+                                                        >{p.t}</span
+                                                    >
+                                                </template>
                                             </template>
                                         </li>
                                     </template>
                                 </ol>
-                            </div>
-                        </template>
-
-                        <template lwc:if={isCustom}>
-                            <div class="fs-group" data-id="steps-custom">
-                                <div class="fs-group-title">
-                                    <span class="fs-group-name">
-                                        Connect your key
-                                    </span>
-                                    <span class="fs-group-rule"></span>
-                                </div>
-                                <ol class="fs-steps">
-                                    <template for:each={steps} for:item="s">
-                                        <li key={s.key}>
-                                            <template
-                                                for:each={s.parts}
-                                                for:item="p"
-                                            >
-                                                <span key={p.key} class={p.cls}
-                                                    >{p.t}</span
-                                                >
-                                            </template>
-                                        </li>
-                                    </template>
-                                </ol>
+                                <template lwc:if={isCustom}>
+                                    <div class="fs-row fs-class-row">
+                                        <lightning-input
+                                            class="fs-class"
+                                            label="Apex class name"
+                                            value={apexClass}
+                                            disabled={isReadOnly}
+                                            onchange={handleClass}
+                                        ></lightning-input>
+                                        <p class="fs-help">
+                                            A class that implements
+                                            FinalAddressProvider.
+                                        </p>
+                                    </div>
+                                </template>
                             </div>
                         </template>
 
                         <template lwc:if={canAct}>
                             <div class="fs-actions">
-                                <lightning-button
-                                    class="fs-test"
-                                    label={testLabel}
-                                    disabled={testDisabled}
-                                    onclick={handleTest}
-                                ></lightning-button>
+                                <template lwc:if={showTest}>
+                                    <lightning-button
+                                        class="fs-test"
+                                        label={testLabel}
+                                        disabled={testDisabled}
+                                        onclick={handleTest}
+                                    ></lightning-button>
+                                </template>
                                 <lightning-button
                                     class="fs-save"
                                     variant="brand"
@@ -180,13 +182,19 @@
                         >
                             <template lwc:if={hasNotice}>
                                 <p class={noticeClass} data-id="notice">
-                                    {notice.text}
+                                    <lightning-icon
+                                        class="fs-notice-icon"
+                                        icon-name={noticeIcon}
+                                        size="x-small"
+                                        alternative-text=""
+                                    ></lightning-icon>
+                                    <span>{notice.text}</span>
                                 </p>
                                 <template lwc:if={notice.showAccessNote}>
                                     <p class="fs-help" data-id="access-note">
                                         This tests your own access. Guests and
                                         the people who fill in forms also need
-                                        step 3.
+                                        the last step.
                                     </p>
                                 </template>
                             </template>
