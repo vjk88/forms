@@ -207,16 +207,18 @@ describe('finalFontFamilies data', () => {
     });
 
     it('every pairing points at real families', () => {
-        Object.values(FONT_PAIRINGS).forEach((p) => {
-            [p.display, p.body].forEach((ref) => {
-                if (ref.source === 'bundled') {
-                    expect(bundledFont(ref.key)).toBeDefined();
-                }
-            });
-            if (p.body.source === 'bundled') {
-                expect(bundledFont(p.body.key).bodySafe).toBe(true);
-            }
+        const pairs = Object.values(FONT_PAIRINGS);
+        const bundled = pairs
+            .flatMap((p) => [p.display, p.body])
+            .filter((ref) => ref.source === 'bundled');
+        bundled.forEach((ref) => {
+            expect(bundledFont(ref.key)).toBeDefined();
         });
+        pairs
+            .filter((p) => p.body.source === 'bundled')
+            .forEach((p) => {
+                expect(bundledFont(p.body.key).bodySafe).toBe(true);
+            });
     });
 
     it('the owner list: 46 families in 7 groups, 33 usable as body text', () => {
@@ -345,10 +347,13 @@ describe('finalFontFamilies data', () => {
     });
 
     it('the notices name every family with its copyright and licence', () => {
-        const notices = fs.readFileSync(
-            path.join(RESOURCE, 'THIRD-PARTY-NOTICES.txt'),
-            'utf8'
-        );
+        // a Windows checkout (core.autocrlf) hands this file over with CRLF
+        const notices = fs
+            .readFileSync(
+                path.join(RESOURCE, 'THIRD-PARTY-NOTICES.txt'),
+                'utf8'
+            )
+            .replace(/\r\n/g, '\n');
         JSON_FILE.families.forEach((f) => {
             expect(f.copyright).toMatch(/copyright|©/i);
             expect(notices).toContain(`${f.name}\n  ${f.copyright}`);
