@@ -174,7 +174,11 @@ public without sharing class FinalGuestController {
         'Final_Run_AddressSearch',
         'Final_Run_AddressNoMatches',
         'Final_Run_AddressSearchDown',
-        'Final_Run_AddressPartRequired'
+        'Final_Run_AddressPartRequired',
+        'Final_Run_AddressSearchHint',
+        'Final_Run_AddressFilled',
+        'Final_Run_AddressGroupMore',
+        'Final_Run_AddressSearching'
     };
     // END RUNTIME_LABEL_NAMES
 

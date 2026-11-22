@@ -329,11 +329,11 @@ describe('c-final-element-renderer: address question', () => {
     describe('errors', () => {
         it('shows the question error the way other fields do', async () => {
             const cmp = await mount(
-                ADDRESS({ required: true, errors: ['City is required.'] })
+                ADDRESS({ required: true, errors: ['Check this address.'] })
             );
             expect(
                 cmp.shadowRoot.querySelector('.field-errors').textContent
-            ).toContain('City is required.');
+            ).toContain('Check this address.');
         });
 
         it('marks the part the error names, and clears the others', async () => {
@@ -359,6 +359,104 @@ describe('c-final-element-renderer: address question', () => {
             expect(street.setCustomValidity).toHaveBeenCalledWith('');
         });
 
+        it('marks EVERY empty required part, and clears one the moment it has a value', async () => {
+            const cmp = await mount(
+                ADDRESS({ required: true, errors: ['Street is required.'] })
+            );
+            const spies = {};
+            ['street', 'city', 'country', 'province'].forEach((k) => {
+                const n = part(cmp, k);
+                n.setCustomValidity = jest.fn();
+                n.reportValidity = jest.fn();
+                spies[k] = n;
+            });
+            cmp.element = ADDRESS({
+                required: true,
+                errors: ['Street is required.'],
+                value: {}
+            });
+            await Promise.resolve();
+            expect(spies.street.setCustomValidity).toHaveBeenCalledWith(
+                'Street is required.'
+            );
+            expect(spies.city.setCustomValidity).toHaveBeenCalledWith(
+                'City is required.'
+            );
+            expect(spies.country.setCustomValidity).toHaveBeenCalledWith(
+                'Country is required.'
+            );
+            expect(spies.city.reportValidity).toHaveBeenCalled();
+            expect(spies.province.reportValidity).not.toHaveBeenCalled();
+
+            // the person fills City: only City is cleared, and its text wiped
+            spies.city.setCustomValidity.mockClear();
+            spies.city.reportValidity.mockClear();
+            cmp.element = ADDRESS({
+                required: true,
+                errors: ['Street is required.'],
+                value: { city: 'Reno' }
+            });
+            await Promise.resolve();
+            expect(spies.city.setCustomValidity).toHaveBeenCalledWith('');
+            expect(spies.city.reportValidity).toHaveBeenCalled();
+            expect(spies.street.setCustomValidity).toHaveBeenLastCalledWith(
+                'Street is required.'
+            );
+        });
+
+        it('clears every marked part when the error goes away', async () => {
+            const cmp = await mount(
+                ADDRESS({ required: true, errors: ['City is required.'] })
+            );
+            const street = part(cmp, 'street');
+            street.setCustomValidity = jest.fn();
+            street.reportValidity = jest.fn();
+            cmp.element = ADDRESS({ required: true, errors: [] });
+            await Promise.resolve();
+            expect(street.setCustomValidity).toHaveBeenCalledWith('');
+            expect(street.reportValidity).toHaveBeenCalled();
+        });
+
+        it('gives the required parts the same words on blur as on submit', async () => {
+            const cmp = await mount(ADDRESS({ required: true }));
+            expect(part(cmp, 'street').messageWhenValueMissing).toBe(
+                'Street is required.'
+            );
+            expect(part(cmp, 'city').messageWhenValueMissing).toBe(
+                'City is required.'
+            );
+            expect(part(cmp, 'country').messageWhenValueMissing).toBe(
+                'Country is required.'
+            );
+            const optional = await mount(ADDRESS());
+            expect(part(optional, 'city').messageWhenValueMissing).toBeFalsy();
+        });
+
+        it('hides the question-level list when the parts already show the message', async () => {
+            const cmp = await mount(
+                ADDRESS({ required: true, errors: ['City is required.'] })
+            );
+            expect(cmp.shadowRoot.querySelector('.field-errors')).toBeNull();
+        });
+
+        it('keeps the question-level list for the all-blank message and server refusals', async () => {
+            const blank = await mount(
+                ADDRESS({ required: true, errors: ['This field is required'] })
+            );
+            expect(
+                blank.shadowRoot.querySelector('.field-errors').textContent
+            ).toContain('This field is required');
+            const server = await mount(
+                ADDRESS({
+                    required: true,
+                    errors: ['That address could not be saved.']
+                })
+            );
+            expect(
+                server.shadowRoot.querySelector('.field-errors').textContent
+            ).toContain('That address could not be saved.');
+        });
+
         it('a generic required message marks no part', async () => {
             const cmp = await mount(
                 ADDRESS({ required: true, errors: ['This field is required'] })
@@ -374,5 +472,47 @@ describe('c-final-element-renderer: address question', () => {
             await Promise.resolve();
             expect(city.reportValidity).not.toHaveBeenCalled();
         });
+    });
+
+    describe('search failure', () => {
+        const SEARCHABLE = { formId: 'a0F1', searchable: true };
+        const down = (cmp, term) =>
+            cmp.shadowRoot
+                .querySelector('c-final-address-search')
+                .dispatchEvent(
+                    new CustomEvent('searchdown', { detail: { term } })
+                );
+
+        it('focuses Street and carries the typed text into it when Street is empty', async () => {
+            const cmp = await mount(ADDRESS({ address: SEARCHABLE }));
+            const street = part(cmp, 'street');
+            street.focus = jest.fn();
+            const events = record(cmp);
+            down(cmp, '  1 Market St ');
+            expect(street.focus).toHaveBeenCalled();
+            expect(events[0].value).toEqual({ street: '1 Market St' });
+        });
+
+        it('focuses Street but keeps what is already there', async () => {
+            const cmp = await mount(
+                ADDRESS({ address: SEARCHABLE, value: { street: '5 Elm' } })
+            );
+            const street = part(cmp, 'street');
+            street.focus = jest.fn();
+            const events = record(cmp);
+            down(cmp, '1 Market');
+            expect(street.focus).toHaveBeenCalled();
+            expect(events).toHaveLength(0);
+        });
+    });
+
+    it('leaves space under the search box', () => {
+        const css = require('fs').readFileSync(
+            require('path').join(__dirname, '..', 'finalElementRenderer.css'),
+            'utf8'
+        );
+        expect(css).toMatch(
+            /\.addr-search\s*\{[^}]*margin-bottom:\s*var\(--c-space-2\)/
+        );
     });
 });

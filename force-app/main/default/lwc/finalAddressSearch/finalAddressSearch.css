@@ -110,10 +110,25 @@
 
 .fas-opt {
     display: flex;
-    flex-direction: column;
-    gap: 0.125rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
     padding: 0.5rem 0.75rem;
     cursor: pointer;
+}
+
+.fas-opt-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    min-width: 0;
+}
+
+/* The group's "more inside" cue; decorative, the hidden text says it. */
+.fas-opt-chevron {
+    flex: none;
+    line-height: 0;
+    --slds-c-icon-color-foreground-default: #5c5c5c;
 }
 
 /* A tint of the form's own focus colour, so the highlighted row belongs to the
@@ -157,7 +172,15 @@
     color: var(--c-text-weak, #5c5c5c);
 }
 
+/* The quiet line under the box that says typing below is fine too. */
+.fas-hint {
+    margin-top: 0.25rem;
+    font-size: var(--c-fs-secondary, 0.75rem);
+    color: var(--c-text-weak, #5c5c5c);
+}
+
 /* Visually hidden, still announced. */
+.fas-vh,
 .fas-status {
     position: absolute;
     width: 1px;

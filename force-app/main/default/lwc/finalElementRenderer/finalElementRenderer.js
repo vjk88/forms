@@ -329,6 +329,13 @@ export default class FinalElementRenderer extends LightningElement {
         return this.errors.length > 0;
     }
 
+    /** The question-level error list. An address question's part messages are
+     *  already drawn on the parts themselves, so the list stays for the
+     *  generic all-blank message and for server refusals. */
+    get showFieldErrors() {
+        return this.hasErrors && !(this.isAddress && this.addressInvalidPart);
+    }
+
     // ---- Display-as variants (BUILDER_SURFACES §2: config.renderAs) ----
 
     /**
@@ -636,6 +643,24 @@ export default class FinalElementRenderer extends LightningElement {
         );
     }
 
+    _partMissingMessage(label) {
+        return this.el.required
+            ? t('Final_Run_AddressPartRequired', t(label))
+            : undefined;
+    }
+
+    get streetMissingMessage() {
+        return this._partMissingMessage('Final_Run_AddressStreet');
+    }
+
+    get cityMissingMessage() {
+        return this._partMissingMessage('Final_Run_AddressCity');
+    }
+
+    get countryMissingMessage() {
+        return this._partMissingMessage('Final_Run_AddressCountry');
+    }
+
     handleAddressPartChange(event) {
         const part = event.target.dataset.part;
         if (!part) {
@@ -658,6 +683,27 @@ export default class FinalElementRenderer extends LightningElement {
         this.dispatchValue(normaliseAddress(r, true));
     }
 
+    /** The search gave up: put the cursor in Street rather than leave it on a
+     *  box that is about to disappear, and carry what was typed across if
+     *  Street is still empty. */
+    handleAddressSearchDown(event) {
+        const term = String((event.detail && event.detail.term) || '').trim();
+        if (term && !String(this.addressParts.street || '').trim()) {
+            const next = {};
+            ADDRESS_TEXT_KEYS.forEach((k) => {
+                next[k] = this.addressParts[k];
+            });
+            next.street = term;
+            this.dispatchValue(normaliseAddress(next));
+        }
+        const street = this.template.querySelector(
+            '[data-part="street"]:not(label)'
+        );
+        if (street && typeof street.focus === 'function') {
+            street.focus();
+        }
+    }
+
     handleAddressLabelClick(event) {
         const part = event.currentTarget.dataset.part;
         const target = this.template.querySelector(
@@ -668,27 +714,38 @@ export default class FinalElementRenderer extends LightningElement {
         }
     }
 
-    /** Mark the part the error names (and clear the others) on the native
-     *  control, so it reads as the one to fix. */
+    /** When the question shows a "<Part> is required." error, mark EVERY empty
+     *  required part on the native control (so each reads as one to fix, with
+     *  the same words blur uses), and clear a part the moment it has a value or
+     *  the error goes. reportValidity on a cleared part wipes stale text. */
     _syncAddressValidity() {
         if (!this.isAddress) {
             return;
         }
-        const named = this.addressInvalidPart;
-        ADDRESS_REQUIRED_PARTS.forEach(([key]) => {
+        const partMessage = Boolean(this.addressInvalidPart);
+        ADDRESS_REQUIRED_PARTS.forEach(([key, label]) => {
             const input = this.template.querySelector(
                 `[data-part="${key}"]:not(label)`
             );
             if (!input || typeof input.setCustomValidity !== 'function') {
                 return;
             }
-            if (named && named[0] === key) {
-                input.setCustomValidity(this.errors[0]);
-                if (typeof input.reportValidity === 'function') {
-                    input.reportValidity();
-                }
+            const empty = !String(this.addressParts[key] || '').trim();
+            if (partMessage && empty) {
+                input.setCustomValidity(
+                    t('Final_Run_AddressPartRequired', t(label))
+                );
+                this._addrMarked = this._addrMarked || new Set();
+                this._addrMarked.add(key);
+            } else if (this._addrMarked && this._addrMarked.has(key)) {
+                input.setCustomValidity('');
+                this._addrMarked.delete(key);
             } else {
                 input.setCustomValidity('');
+                return;
+            }
+            if (typeof input.reportValidity === 'function') {
+                input.reportValidity();
             }
         });
     }

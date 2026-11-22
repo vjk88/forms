@@ -1223,4 +1223,40 @@
         >Address part missing; {0} is the part name</shortDescription>
         <value>{0} is required.</value>
     </labels>
+    <labels>
+        <fullName>Final_Run_AddressSearchHint</fullName>
+        <categories>FinalRuntime</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+        >Address search: weak hint under the box</shortDescription>
+        <value>Pick an address, or fill it in below.</value>
+    </labels>
+    <labels>
+        <fullName>Final_Run_AddressFilled</fullName>
+        <categories>FinalRuntime</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+        >Address search: announced after a pick</shortDescription>
+        <value>Address filled in. Check the fields below.</value>
+    </labels>
+    <labels>
+        <fullName>Final_Run_AddressGroupMore</fullName>
+        <categories>FinalRuntime</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+        >Address search: hidden text on a group option</shortDescription>
+        <value>, shows more addresses</value>
+    </labels>
+    <labels>
+        <fullName>Final_Run_AddressSearching</fullName>
+        <categories>FinalRuntime</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+        >Address search: announced while searching</shortDescription>
+        <value>Searching…</value>
+    </labels>
 </CustomLabels>

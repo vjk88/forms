@@ -82,6 +82,45 @@ describe('address question inspector', () => {
             );
         });
 
+        it('words the hint for a Custom provider without a vendor name', async () => {
+            const el = mount(ADDRESS());
+            addressStatus.emit({
+                configured: true,
+                provider: 'Custom',
+                providerLabel: 'Your own provider'
+            });
+            await flush();
+            expect(hint(el)).toBe(
+                "Suggests addresses as people type, using your organization's own address provider. Each search counts against your organization's account with that provider."
+            );
+        });
+
+        it('hints what Required means for an address, and only for an address', async () => {
+            const el = mount(ADDRESS());
+            addressStatus.emit(CONFIGURED);
+            await flush();
+            const req = el.shadowRoot
+                .querySelector('lightning-input[data-rule="required"]')
+                .closest('.pp-rule');
+            expect(req.querySelector('.pp-rule-hint').textContent.trim()).toBe(
+                'People must fill in Street, City and Country.'
+            );
+
+            const text = mount({
+                id: 'el_t',
+                type: 'field',
+                label: 'Name',
+                binding: null,
+                validation: [],
+                config: { inputType: 'text' }
+            });
+            await flush();
+            const textReq = text.shadowRoot
+                .querySelector('lightning-input[data-rule="required"]')
+                .closest('.pp-rule');
+            expect(textReq.querySelector('.pp-rule-hint')).toBeNull();
+        });
+
         it('shows it off when the question has search off', async () => {
             const el = mount(ADDRESS({ addressSearch: false }));
             addressStatus.emit(CONFIGURED);

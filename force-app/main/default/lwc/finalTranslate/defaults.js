@@ -155,5 +155,9 @@ export const EN = {
     Final_Run_AddressNoMatches: 'No matching addresses',
     Final_Run_AddressSearchDown:
         "Address search isn't available right now. Type the address below.",
-    Final_Run_AddressPartRequired: '{0} is required.'
+    Final_Run_AddressPartRequired: '{0} is required.',
+    Final_Run_AddressSearchHint: 'Pick an address, or fill it in below.',
+    Final_Run_AddressFilled: 'Address filled in. Check the fields below.',
+    Final_Run_AddressGroupMore: ', shows more addresses',
+    Final_Run_AddressSearching: 'Searching…'
 };

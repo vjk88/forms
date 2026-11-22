@@ -67,6 +67,7 @@ export default class FinalAddressSearch extends LightningElement {
     loading = false;
     activeIndex = -1;
     searched = false;
+    filled = false;
 
     _token = null;
     _debounce;
@@ -139,7 +140,21 @@ export default class FinalAddressSearch extends LightningElement {
         return this.open ? 'true' : 'false';
     }
 
+    get hintText() {
+        return t('Final_Run_AddressSearchHint');
+    }
+
+    get groupMoreText() {
+        return t('Final_Run_AddressGroupMore');
+    }
+
     get statusText() {
+        if (this.loading) {
+            return t('Final_Run_AddressSearching');
+        }
+        if (this.filled) {
+            return t('Final_Run_AddressFilled');
+        }
         if (!this.open || this.loading || !this.searched) {
             return '';
         }
@@ -193,6 +208,7 @@ export default class FinalAddressSearch extends LightningElement {
 
     handleInput(event) {
         this.term = event.target.value || '';
+        this.filled = false;
         this.activeIndex = -1;
         this.searched = false;
         clearTimeout(this._debounce);
@@ -368,6 +384,7 @@ export default class FinalAddressSearch extends LightningElement {
             this.results = [];
             this.loading = false;
             this.searched = false;
+            this.filled = Boolean(result);
             this._close();
             if (result) {
                 this.dispatchEvent(
@@ -384,11 +401,18 @@ export default class FinalAddressSearch extends LightningElement {
     _fail() {
         clearTimeout(this._debounce);
         this._generation += 1;
+        // Tell the renderer first, while the box is still there to read: it
+        // moves the cursor to Street and carries the typed text across, so the
+        // person is not left with focus on something that is about to vanish.
+        this.dispatchEvent(
+            new CustomEvent('searchdown', { detail: { term: this.term } })
+        );
         this._down = true;
         this.loading = false;
         this.results = [];
         this.open = false;
         this.term = '';
+        this.filled = false;
     }
 
     _close() {

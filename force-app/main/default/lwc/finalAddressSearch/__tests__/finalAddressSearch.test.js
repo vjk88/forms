@@ -164,6 +164,88 @@ describe('c-final-address-search', () => {
         });
     });
 
+    describe('hint and status words', () => {
+        const statusOf = (el) =>
+            el.shadowRoot.querySelector('.fas-status').textContent.trim();
+
+        it('shows a weak hint under the box, tied to the input', async () => {
+            const el = await ready();
+            const hint = el.shadowRoot.querySelector('.fas-hint');
+            expect(hint.textContent.trim()).toBe(
+                'Pick an address, or fill it in below.'
+            );
+            const describedBy = input(el).getAttribute('aria-describedby');
+            expect(describedBy.split(' ')).toContain(hint.id);
+        });
+
+        it('shows no hint when the box does not render', async () => {
+            const el = mount();
+            status.emit({ configured: false });
+            await flush();
+            expect(el.shadowRoot.querySelector('.fas-hint')).toBeNull();
+        });
+
+        it('says Searching while a request is in flight', async () => {
+            let release;
+            suggest.mockImplementationOnce(
+                () =>
+                    new Promise((resolve) => {
+                        release = resolve;
+                    })
+            );
+            const el = await ready();
+            await type(el, '1 Market');
+            expect(statusOf(el)).toBe('Searching…');
+            release(ROWS);
+            await flush();
+            await flush();
+            expect(statusOf(el)).not.toBe('Searching…');
+        });
+
+        it('reads "Address filled in" after a pick until the person types again', async () => {
+            const el = await ready();
+            await type(el, '1 Market');
+            options(el)[0].dispatchEvent(new CustomEvent('mousedown'));
+            await flush();
+            await flush();
+            expect(statusOf(el)).toBe(
+                'Address filled in. Check the fields below.'
+            );
+            input(el).value = 'a';
+            input(el).dispatchEvent(new CustomEvent('input'));
+            await flush();
+            expect(statusOf(el)).not.toContain('Address filled in');
+        });
+    });
+
+    describe('group options', () => {
+        it('shows a decorative chevron and hidden "shows more" text on groups only', async () => {
+            const el = await ready();
+            await type(el, 'market');
+            const [plain, , group] = options(el);
+            expect(plain.querySelector('.fas-opt-chevron')).toBeNull();
+            expect(plain.textContent).not.toContain('shows more addresses');
+            const chev = group.querySelector('.fas-opt-chevron');
+            expect(chev.iconName).toBe('utility:chevronright');
+            expect(chev.size).toBe('x-small');
+            expect(chev.getAttribute('aria-hidden')).toBe('true');
+            const hidden = [...group.querySelectorAll('.fas-vh')].map(
+                (n) => n.textContent
+            );
+            expect(hidden).toContain(', shows more addresses');
+        });
+
+        it('separates title and subtitle with hidden text', async () => {
+            const el = await ready();
+            await type(el, 'market');
+            const first = options(el)[0];
+            expect(first.querySelector('.fas-vh').textContent).toBe(', ');
+            expect(first.textContent.replace(/\s+/g, ' ').trim()).toBe(
+                '1 Market St, San Francisco, CA'
+            );
+        });
+    });
+
     describe('searching', () => {
         it('waits 300 ms and 3 characters before asking the server', async () => {
             const el = await ready();
@@ -392,6 +474,32 @@ describe('c-final-address-search', () => {
     });
 
     describe('failure', () => {
+        it('fires searchdown, with what was typed, before the note replaces the box', async () => {
+            suggest.mockRejectedValue(new Error('down'));
+            const el = await ready();
+            const seen = [];
+            el.addEventListener('searchdown', (e) =>
+                seen.push({
+                    term: e.detail.term,
+                    bubbles: e.bubbles,
+                    composed: e.composed,
+                    boxStillThere: input(el) !== null
+                })
+            );
+            await type(el, '1 Market');
+            await flush();
+            expect(seen).toEqual([
+                {
+                    term: '1 Market',
+                    bubbles: false,
+                    composed: false,
+                    boxStillThere: true
+                }
+            ]);
+            expect(
+                el.shadowRoot.querySelector('.fas-note').getAttribute('role')
+            ).toBe('status');
+        });
         it('a failed search hides the box and leaves one quiet line', async () => {
             suggest.mockRejectedValue({
                 body: { message: 'FINAL_ADDR:DOWN' }

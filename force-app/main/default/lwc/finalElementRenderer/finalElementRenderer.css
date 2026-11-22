@@ -270,6 +270,11 @@
     container: addr / inline-size;
 }
 
+/* The search box sits apart from the five fields it fills. */
+.addr-search {
+    margin-bottom: var(--c-space-2);
+}
+
 .addr-part {
     display: flex;
     flex-direction: column;
@@ -599,6 +604,17 @@
 .has-errors lightning-textarea {
     --slds-c-textarea-color-border: var(--c-field-error, #b42318);
     --sds-c-textarea-color-border: var(--c-field-error, #b42318);
+}
+
+/* An address question has five boxes, and the error names some: the question's
+   red border must not paint them all. Each part draws red from its own invalid
+   state. Resets exactly the hooks the rules above set. */
+.has-errors .addr lightning-input,
+.has-errors .addr lightning-textarea {
+    --slds-c-input-color-border: unset;
+    --sds-c-input-color-border: unset;
+    --slds-c-textarea-color-border: unset;
+    --sds-c-textarea-color-border: unset;
 }
 
 /* Every control that has no border of its own gets the same 1px red line the

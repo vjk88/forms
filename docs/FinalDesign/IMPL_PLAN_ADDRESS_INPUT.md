@@ -226,7 +226,7 @@ Settings refuses to save it.
    - Apex tests with `HttpCalloutMock`, for each error code and the "question must have search on"
      check
 2. **Settings tab: BUILT (branch feat/address-settings-tab).** `finalSettings`, `FinalSettingsController`, custom permission `Final_Manage_Settings`, tab `Final_Settings`. Google gets 4 steps after the UX review (billing on, no "Websites" key restriction, the parameter named exactly `Key`, the permission set). Verified on the LEX tab: NO_KEY message, Saved, field errors for a blank or unusable Apex class, 200% zoom.
-3. **The question:**
+3. **The question: BUILT (branch feat/address-question).** Until slice 4 ships, public (guest) forms show the five fields with no search box and no note; the inspector switch doesn't say so yet. Verified in the Studio preview with a throwaway canned provider (deleted afterwards): search, keyboard pick, group drill-down, two-line street, required stars.
    - palette, mint, inspector, renderer and `finalAddressInput`
    - storage (`Value_JSON__c`, `Answer_Type__c`)
    - validation on both sides, rules, submission reader, labels

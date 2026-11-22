@@ -151,6 +151,10 @@ import Final_Run_AddressSearch from '@salesforce/label/c.Final_Run_AddressSearch
 import Final_Run_AddressNoMatches from '@salesforce/label/c.Final_Run_AddressNoMatches';
 import Final_Run_AddressSearchDown from '@salesforce/label/c.Final_Run_AddressSearchDown';
 import Final_Run_AddressPartRequired from '@salesforce/label/c.Final_Run_AddressPartRequired';
+import Final_Run_AddressSearchHint from '@salesforce/label/c.Final_Run_AddressSearchHint';
+import Final_Run_AddressFilled from '@salesforce/label/c.Final_Run_AddressFilled';
+import Final_Run_AddressGroupMore from '@salesforce/label/c.Final_Run_AddressGroupMore';
+import Final_Run_AddressSearching from '@salesforce/label/c.Final_Run_AddressSearching';
 
 const IMPORTED = {
     Final_Run_Submit,
@@ -292,7 +296,11 @@ const IMPORTED = {
     Final_Run_AddressSearch,
     Final_Run_AddressNoMatches,
     Final_Run_AddressSearchDown,
-    Final_Run_AddressPartRequired
+    Final_Run_AddressPartRequired,
+    Final_Run_AddressSearchHint,
+    Final_Run_AddressFilled,
+    Final_Run_AddressGroupMore,
+    Final_Run_AddressSearching
 };
 
 const LANG_PATTERN = /^[a-z]{2,3}([_-][A-Za-z]{2})?$/;

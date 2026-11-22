@@ -2144,6 +2144,9 @@ export default class FinalPropertyPanel extends LightningElement {
         if (!this.addressConfigured) {
             return 'No address search is set up for your organization, so people type the address. An admin can set it up on the Final Settings tab.';
         }
+        if (this._addressStatus.provider === 'Custom') {
+            return "Suggests addresses as people type, using your organization's own address provider. Each search counts against your organization's account with that provider.";
+        }
         const who = this._addressStatus.providerLabel || 'your provider';
         return `Suggests addresses as people type, using ${who}. Each search counts against your organization's account with that provider.`;
     }

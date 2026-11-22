@@ -27,7 +27,7 @@
                     aria-expanded={ariaExpanded}
                     aria-controls="listbox"
                     aria-autocomplete="list"
-                    aria-describedby="status"
+                    aria-describedby="hint status"
                     oninput={handleInput}
                     onkeydown={handleKeydown}
                     onfocus={handleFocus}
@@ -58,12 +58,28 @@
                                     onmousedown={handleOptionMouseDown}
                                     onmouseenter={handleOptionHover}
                                 >
-                                    <span class="fas-opt-title">{r.title}</span>
-                                    <span
-                                        class="fas-opt-sub"
-                                        if:true={r.subtitle}
-                                        >{r.subtitle}</span
-                                    >
+                                    <span class="fas-opt-text">
+                                        <span class="fas-opt-title"
+                                            >{r.title}</span
+                                        >
+                                        <template lwc:if={r.subtitle}>
+                                            <span class="fas-vh">, </span>
+                                            <span class="fas-opt-sub"
+                                                >{r.subtitle}</span
+                                            >
+                                        </template>
+                                        <span class="fas-vh" if:true={r.isGroup}
+                                            >{groupMoreText}</span
+                                        >
+                                    </span>
+                                    <lightning-icon
+                                        class="fas-opt-chevron"
+                                        if:true={r.isGroup}
+                                        icon-name="utility:chevronright"
+                                        size="x-small"
+                                        alternative-text=""
+                                        aria-hidden="true"
+                                    ></lightning-icon>
                                 </div>
                             </template>
                         </template>
@@ -76,6 +92,7 @@
                     </div>
                 </div>
             </div>
+            <div id="hint" class="fas-hint">{hintText}</div>
             <!-- Screen readers hear how many matches a pause produced. -->
             <div
                 id="status"

@@ -860,8 +860,13 @@
             <div class="pp-group pp-rules">
                 <h4 class="pp-grouptitle">Rules</h4>
                 <div class="pp-rule">
-                    <span class="pp-rule-text" aria-hidden="true">
-                        <span class="pp-rule-name">Required</span>
+                    <span class="pp-rule-text">
+                        <span class="pp-rule-name" aria-hidden="true"
+                            >Required</span
+                        >
+                        <span class="pp-rule-hint" if:true={isAddressQuestion}
+                            >People must fill in Street, City and Country.</span
+                        >
                     </span>
                     <lightning-input
                         type="toggle"

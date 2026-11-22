@@ -213,6 +213,7 @@
                                 label={addressSearchLabel}
                                 disabled={el.readOnly}
                                 onaddresspick={handleAddressPick}
+                                onsearchdown={handleAddressSearchDown}
                             ></c-final-address-search>
                         </div>
                     </template>
@@ -236,6 +237,7 @@
                             value={addressStreet}
                             maxlength="255"
                             required={el.required}
+                            message-when-value-missing={streetMissingMessage}
                             read-only={el.readOnly}
                             variant="label-hidden"
                             onchange={handleAddressPartChange}
@@ -262,6 +264,7 @@
                             value={addressCity}
                             maxlength="40"
                             required={el.required}
+                            message-when-value-missing={cityMissingMessage}
                             read-only={el.readOnly}
                             variant="label-hidden"
                             onchange={handleAddressPartChange}
@@ -328,6 +331,7 @@
                             value={addressCountry}
                             maxlength="80"
                             required={el.required}
+                            message-when-value-missing={countryMissingMessage}
                             read-only={el.readOnly}
                             variant="label-hidden"
                             onchange={handleAddressPartChange}
@@ -350,7 +354,7 @@
                 ></lightning-input>
             </template>
 
-            <template lwc:if={hasErrors}>
+            <template lwc:if={showFieldErrors}>
                 <div class="field-errors" role="alert">
                     <template for:each={errors} for:item="msg">
                         <p key={msg} class="field-error">{msg}</p>
