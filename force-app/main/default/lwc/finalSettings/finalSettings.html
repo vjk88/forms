@@ -78,6 +78,7 @@
                                 <lightning-combobox
                                     class="fs-provider"
                                     label="Provider"
+                                    variant="label-hidden"
                                     options={providerOptions}
                                     value={provider}
                                     disabled={isReadOnly}
@@ -113,32 +114,18 @@
                                     <span class="fs-group-rule"></span>
                                 </div>
                                 <ol class="fs-steps">
-                                    <li>
-                                        In Google Cloud, create an API key and
-                                        turn on
-                                        <strong>Places API (New)</strong> for
-                                        it.
-                                    </li>
-                                    <li>
-                                        In Setup, open
-                                        <strong>Named Credentials</strong>, then
-                                        the
-                                        <strong>External Credentials</strong>
-                                        tab, then
-                                        <strong>Final Address Google</strong>.
-                                        Under <strong>Principals</strong>, edit
-                                        <strong>Shared_Key</strong> and add an
-                                        authentication parameter named
-                                        <strong>Key</strong> whose value is your
-                                        API key.
-                                    </li>
-                                    <li>
-                                        Assign the
-                                        <strong>Final Address Search</strong>
-                                        permission set to your public site's
-                                        guest user and to the people who fill in
-                                        forms.
-                                    </li>
+                                    <template for:each={steps} for:item="s">
+                                        <li key={s.key}>
+                                            <template
+                                                for:each={s.parts}
+                                                for:item="p"
+                                            >
+                                                <span key={p.key} class={p.cls}
+                                                    >{p.t}</span
+                                                >
+                                            </template>
+                                        </li>
+                                    </template>
                                 </ol>
                             </div>
                         </template>
@@ -152,23 +139,18 @@
                                     <span class="fs-group-rule"></span>
                                 </div>
                                 <ol class="fs-steps">
-                                    <li>
-                                        Write an Apex class that implements
-                                        <strong>FinalAddressProvider</strong>.
-                                        It makes its own callouts, usually
-                                        through its own Named Credential.
-                                    </li>
-                                    <li>
-                                        Enter the class name above, then save.
-                                    </li>
-                                    <li>
-                                        Give your public site's guest user and
-                                        the people who fill in forms access to
-                                        your class's credential, and assign them
-                                        the
-                                        <strong>Final Address Search</strong>
-                                        permission set.
-                                    </li>
+                                    <template for:each={steps} for:item="s">
+                                        <li key={s.key}>
+                                            <template
+                                                for:each={s.parts}
+                                                for:item="p"
+                                            >
+                                                <span key={p.key} class={p.cls}
+                                                    >{p.t}</span
+                                                >
+                                            </template>
+                                        </li>
+                                    </template>
                                 </ol>
                             </div>
                         </template>

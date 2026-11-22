@@ -83,6 +83,13 @@ describe('c-final-settings', () => {
         const steps = q(el, '[data-id="steps-google"]').querySelectorAll('li');
         expect(steps).toHaveLength(3);
         expect(steps[0].textContent).toContain('Places API (New)');
+        // the org once rendered "turn onPlaces API": words keep their spaces
+        expect(steps[0].textContent).toBe(
+            'In Google Cloud, create an API key and turn on Places API (New) for it.'
+        );
+        expect(steps[0].querySelector('.fs-strong').textContent).toBe(
+            'Places API (New)'
+        );
         expect(steps[1].textContent).toContain('Final Address Google');
         expect(steps[2].textContent).toContain('Final Address Search');
         expect(q(el, 'lightning-input')).toBeNull();

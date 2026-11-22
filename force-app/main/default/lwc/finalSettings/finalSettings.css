@@ -111,13 +111,20 @@
     font-size: var(--c-studio-fs-small);
 }
 
+/* SLDS resets list markers, so the numbers are put back explicitly. */
 .fs-steps {
     margin: 0;
     padding-left: var(--c-studio-space-6);
+    list-style: decimal outside;
 }
 
 .fs-steps li {
+    display: list-item;
     margin-bottom: var(--c-studio-space-3);
+}
+
+.fs-strong {
+    font-weight: var(--c-studio-fw-strong);
 }
 
 .fs-steps li:last-child {

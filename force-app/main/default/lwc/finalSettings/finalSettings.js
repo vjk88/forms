@@ -49,7 +49,41 @@ export function testMessage(result, provider) {
     }
 }
 
+/**
+ * Setup steps as text runs. Written as data, not template markup, because
+ * the LWC compiler drops the whitespace between a line-wrapped text node and
+ * a <strong>, which rendered "turn onPlaces API" in the org. `**` marks the
+ * names people look for on screen.
+ */
+const STEPS = {
+    Google: [
+        'In Google Cloud, create an API key and turn on **Places API (New)** for it.',
+        'In Setup, open **Named Credentials**, then the **External Credentials** tab, then **Final Address Google**. Under **Principals**, edit **Shared_Key** and add an authentication parameter named **Key** whose value is your API key.',
+        "Assign the **Final Address Search** permission set to your public site's guest user and to the people who fill in forms."
+    ],
+    Custom: [
+        'Write an Apex class that implements **FinalAddressProvider**. It makes its own callouts, usually through its own Named Credential.',
+        'Enter the class name above, then save.',
+        "Give your public site's guest user and the people who fill in forms access to your class's credential, and assign them the **Final Address Search** permission set."
+    ]
+};
+
+function toRuns(step, stepIndex) {
+    return step.split('**').map((t, i) => ({
+        key: `${stepIndex}-${i}`,
+        t,
+        cls: i % 2 === 1 ? 'fs-strong' : ''
+    }));
+}
+
 export default class FinalSettings extends LightningElement {
+    get steps() {
+        return (STEPS[this.provider] || []).map((step, i) => ({
+            key: `step-${i}`,
+            parts: toRuns(step, i)
+        }));
+    }
+
     railTabs = [
         { key: 'address', label: 'Address search', icon: 'utility:location' }
     ];
