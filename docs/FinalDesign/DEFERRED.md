@@ -113,7 +113,7 @@ Owner 2026-11-14: worth doing when there is room, never ahead of the tables abov
 
 | # | Item | What it is | Spec lives at | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | **`formMap` — location/map element** | Address plotting / pin-drop widget | Catalog §3 · RUNTIME_NOTES embeds | **Owner call 2026-07-04: not needed now.** Registry key `map` stays reserved; revisit on demand |
+| 1 | **`formMap` — location/map element** | Address plotting / pin-drop widget | Catalog §3 · RUNTIME_NOTES embeds | **Owner call 2026-07-04: not needed now.** Registry key `map` stays reserved; revisit on demand. **2026-11-21: maps dropped for good; an Address question with bring-your-own-key address search replaces it, planned in [IMPL_PLAN_ADDRESS_INPUT.md](./IMPL_PLAN_ADDRESS_INPUT.md).** |
 | 7 | **Multi-object / grandchild records** | Nested repeaters, composite forms | [../redesign/](../redesign/) multi-object deep-dive | Needs its own submission-engine design round |
 | 11 | **Survey analytics (phases 2–3) + sentiment** | Aggregation dashboards, Agentforce sentiment | Form-vs-Survey model notes | After the runtime proves itself |
 | 13 | **Body `heroElement`** | Generic draggable hero content block in the form body | Catalog §3 (RETIRED stub) — element-type key `hero` reserved | **Owner call 2026-07-05: hero is splitHero's brand pane, exclusively.** Revisit only if a real body-hero need appears; ignore-unknown keeps it additive |

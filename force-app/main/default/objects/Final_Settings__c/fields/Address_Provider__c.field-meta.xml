@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Address_Provider__c</fullName>
+    <description
+    >Which service powers address search: Google, Loqate, Custom, or None/blank. Lives on the single Final Settings row named 'org'.</description>
+    <externalId>false</externalId>
+    <label>Address search provider</label>
+    <length>40</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Address_Apex_Class__c</fullName>
+    <description
+    >Name of the customer's own Apex class implementing FinalAddressProvider; used only when the provider is Custom. Lives on the single Final Settings row named 'org'.</description>
+    <externalId>false</externalId>
+    <label>Address search Apex class</label>
+    <length>255</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

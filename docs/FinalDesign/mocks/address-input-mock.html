@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Address input mock</title>
+        <style>
+            :root {
+                --c-studio-surface: #ffffff;
+                --c-studio-surface-subtle: #f8fafc;
+                --c-studio-workspace: #f1f5f9;
+                --c-studio-hover: #eef2f6;
+                --c-studio-text: #1f2937;
+                --c-studio-text-weak: #526071;
+                --c-studio-border-strong: #7c8999;
+                --c-studio-border: #dce2e9;
+                --c-studio-border-subtle: #e8edf2;
+                --c-studio-accent: #0f766e;
+                --c-studio-accent-text: #115e59;
+                --c-studio-accent-surface: #e8f5f2;
+                --c-studio-on-accent: #ffffff;
+                --c-studio-warning-text: #73510d;
+                --c-studio-warning-surface: #fff5df;
+                --c-studio-warning-border: #caa24c;
+                --c-studio-success-text: #21613f;
+                --c-studio-success-surface: #eaf6ee;
+                --c-studio-fs-caption: 11px;
+                --c-studio-fs-small: 12px;
+                --c-studio-fs-body: 13px;
+                --c-studio-fs-subhead: 14px;
+                --c-studio-fs-title: 16px;
+                --c-studio-fw-strong: 600;
+                --c-studio-font:
+                    'Salesforce Sans', system-ui, -apple-system, 'Segoe UI',
+                    sans-serif;
+                --r: 6px;
+                /* respondent theme (sample) */
+                --c-text: #18212b;
+                --c-text-weak: #56616e;
+                --c-field-bg: #ffffff;
+                --c-field-border: #8a96a3;
+                --c-accent: #2f5bd3;
+                --c-page: #eef1f6;
+                --c-card: #ffffff;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                background: var(--c-studio-workspace);
+                color: var(--c-studio-text);
+                font: var(--c-studio-fs-body) / 1.45 var(--c-studio-font);
+            }
+            h1 {
+                font-size: var(--c-studio-fs-title);
+                margin: 24px auto 4px;
+                max-width: 1200px;
+                padding: 0 16px;
+            }
+            .note {
+                max-width: 1200px;
+                margin: 0 auto 8px;
+                padding: 0 16px;
+                color: var(--c-studio-text-weak);
+                font-size: var(--c-studio-fs-small);
+            }
+            .grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 16px;
+                max-width: 1200px;
+                margin: 0 auto 32px;
+                padding: 0 16px;
+            }
+            .panel {
+                background: var(--c-studio-surface);
+                border: 1px solid var(--c-studio-border);
+                border-radius: 8px;
+                overflow: hidden;
+            }
+            .panel.wide {
+                grid-column: 1 / -1;
+            }
+            .ph {
+                padding: 10px 16px;
+                border-bottom: 1px solid var(--c-studio-border);
+                font-weight: var(--c-studio-fw-strong);
+                display: flex;
+                gap: 8px;
+                align-items: center;
+            }
+            .ph .tag {
+                font-weight: 400;
+                color: var(--c-studio-text-weak);
+                font-size: var(--c-studio-fs-small);
+            }
+            .pb {
+                padding: 16px;
+            }
+
+            /* respondent */
+            .resp {
+                background: var(--c-page);
+                padding: 24px;
+            }
+            .card {
+                background: var(--c-card);
+                border-radius: 10px;
+                padding: 24px;
+                color: var(--c-text);
+                font-size: 16px;
+                max-width: 560px;
+                margin: 0 auto;
+            }
+            .q {
+                font-weight: 600;
+                margin-bottom: 4px;
+            }
+            .q .req {
+                color: #b42318;
+            }
+            .help {
+                color: var(--c-text-weak);
+                font-size: 14px;
+                margin-bottom: 12px;
+            }
+            .lbl {
+                font-size: 14px;
+                color: var(--c-text);
+                margin: 10px 0 4px;
+            }
+            .lbl .req {
+                color: #b42318;
+            }
+            .inp {
+                border: 1px solid var(--c-field-border);
+                background: var(--c-field-bg);
+                border-radius: var(--r);
+                padding: 9px 12px;
+                min-height: 40px;
+                font-size: 16px;
+                color: var(--c-text);
+            }
+            .inp.ta {
+                min-height: 60px;
+            }
+            .inp.ph-text {
+                color: var(--c-text-weak);
+            }
+            .row2 {
+                display: grid;
+                grid-template-columns: 2fr 1fr;
+                gap: 12px;
+            }
+            .search {
+                position: relative;
+            }
+            .search .inp {
+                padding-left: 36px;
+                border-color: var(--c-accent);
+                box-shadow: 0 0 0 1px var(--c-accent);
+            }
+            .search .mag {
+                position: absolute;
+                left: 12px;
+                top: 10px;
+                color: var(--c-text-weak);
+            }
+            .list {
+                border: 1px solid var(--c-field-border);
+                border-radius: var(--r);
+                margin-top: 4px;
+                background: #fff;
+                box-shadow: 0 6px 18px rgb(0 0 0 / 0.12);
+                overflow: hidden;
+            }
+            .opt {
+                padding: 9px 12px;
+                font-size: 15px;
+            }
+            .opt small {
+                display: block;
+                color: var(--c-text-weak);
+                font-size: 13px;
+            }
+            .opt.on {
+                background: #eaf0fd;
+            }
+            .credit {
+                padding: 6px 12px;
+                font-size: 11px;
+                color: var(--c-text-weak);
+                text-align: right;
+                border-top: 1px solid #eee;
+            }
+            .or {
+                text-align: center;
+                color: var(--c-text-weak);
+                font-size: 13px;
+                margin: 14px 0 2px;
+            }
+            .filled {
+                background: #f6fbf8;
+            }
+
+            /* studio */
+            .sec {
+                font-weight: var(--c-studio-fw-strong);
+                font-size: var(--c-studio-fs-subhead);
+                margin: 0 0 8px;
+            }
+            .field {
+                margin-bottom: 14px;
+            }
+            .flabel {
+                font-size: var(--c-studio-fs-small);
+                color: var(--c-studio-text-weak);
+                margin-bottom: 4px;
+            }
+            .sinp {
+                border: 1px solid var(--c-studio-border-strong);
+                border-radius: 4px;
+                padding: 6px 10px;
+                min-height: 32px;
+                background: #fff;
+            }
+            .sinp.sel::after {
+                content: '▾';
+                float: right;
+                color: var(--c-studio-text-weak);
+            }
+            .toggle {
+                display: flex;
+                gap: 10px;
+                align-items: flex-start;
+            }
+            .sw {
+                width: 36px;
+                height: 20px;
+                border-radius: 10px;
+                background: var(--c-studio-accent);
+                position: relative;
+                flex: none;
+                margin-top: 1px;
+            }
+            .sw::after {
+                content: '';
+                position: absolute;
+                right: 2px;
+                top: 2px;
+                width: 16px;
+                height: 16px;
+                border-radius: 50%;
+                background: #fff;
+            }
+            .sw.off {
+                background: var(--c-studio-border-strong);
+            }
+            .sw.off::after {
+                left: 2px;
+                right: auto;
+            }
+            .hint {
+                font-size: var(--c-studio-fs-small);
+                color: var(--c-studio-text-weak);
+            }
+            .callout {
+                border: 1px solid var(--c-studio-warning-border);
+                background: var(--c-studio-warning-surface);
+                color: var(--c-studio-warning-text);
+                border-radius: 4px;
+                padding: 8px 10px;
+                font-size: var(--c-studio-fs-small);
+            }
+            .ok {
+                border: 1px solid #9fcfb0;
+                background: var(--c-studio-success-surface);
+                color: var(--c-studio-success-text);
+                border-radius: 4px;
+                padding: 8px 10px;
+                font-size: var(--c-studio-fs-small);
+            }
+            .btn {
+                display: inline-block;
+                border: 1px solid var(--c-studio-border-strong);
+                border-radius: 4px;
+                padding: 5px 14px;
+                background: #fff;
+                color: var(--c-studio-accent-text);
+            }
+            .btn.brand {
+                background: var(--c-studio-accent);
+                color: var(--c-studio-on-accent);
+                border-color: var(--c-studio-accent);
+            }
+            .chk {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+                margin-bottom: 14px;
+            }
+            .box {
+                width: 16px;
+                height: 16px;
+                border: 1px solid var(--c-studio-border-strong);
+                border-radius: 3px;
+                background: var(--c-studio-accent);
+            }
+            .steps {
+                margin: 0;
+                padding-left: 18px;
+            }
+            .steps li {
+                margin-bottom: 6px;
+            }
+            code {
+                background: var(--c-studio-surface-subtle);
+                border: 1px solid var(--c-studio-border-subtle);
+                border-radius: 3px;
+                padding: 0 4px;
+                font-size: 12px;
+            }
+            .settings {
+                display: grid;
+                grid-template-columns: 200px 1fr;
+                min-height: 380px;
+            }
+            .rail {
+                border-right: 1px solid var(--c-studio-border);
+                padding: 12px 8px;
+                background: var(--c-studio-surface-subtle);
+            }
+            .rail div {
+                padding: 7px 10px;
+                border-radius: 4px;
+                color: var(--c-studio-text-weak);
+            }
+            .rail .cur {
+                background: var(--c-studio-accent-surface);
+                color: var(--c-studio-accent-text);
+                font-weight: var(--c-studio-fw-strong);
+            }
+            .pane {
+                padding: 16px 24px;
+                max-width: 680px;
+            }
+            .two {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Address input: mock (desktop sketch)</h1>
+        <p class="note">
+            Survey + Freeform only. Search uses the provider the admin sets up
+            on the new Settings tab; the API key lives in a Salesforce Named
+            Credential. No provider or search off = the same five fields, no
+            search box.
+        </p>
+
+        <div class="grid">
+            <!-- A. respondent, searching -->
+            <div class="panel">
+                <div class="ph">
+                    A. Respondent: typing in the search
+                    <span class="tag"
+                        >public site, Studio preview, Lightning pages: same
+                        everywhere</span
+                    >
+                </div>
+                <div class="resp">
+                    <div class="card">
+                        <div class="q">
+                            Where should we send your welcome kit?
+                            <span class="req">*</span>
+                        </div>
+                        <div class="help">
+                            Start typing and pick your address, or fill it in
+                            below.
+                        </div>
+                        <div class="search">
+                            <span class="mag">⌕</span>
+                            <div class="inp">1 Market St</div>
+                        </div>
+                        <div class="list" role="listbox">
+                            <div class="opt on">
+                                1 Market Street<small
+                                    >San Francisco, CA 94105, USA</small
+                                >
+                            </div>
+                            <div class="opt">
+                                1 Market Street<small
+                                    >Camden, NJ 08102, USA</small
+                                >
+                            </div>
+                            <div class="opt">
+                                1 Market Square<small
+                                    >Pittsburgh, PA 15222, USA</small
+                                >
+                            </div>
+                            <div class="credit">Results by Google</div>
+                        </div>
+                        <div class="lbl">Street <span class="req">*</span></div>
+                        <div class="inp ta ph-text"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- B. respondent, after picking -->
+            <div class="panel">
+                <div class="ph">
+                    B. Respondent: after picking
+                    <span class="tag"
+                        >fields stay editable; State + Zip optional</span
+                    >
+                </div>
+                <div class="resp">
+                    <div class="card">
+                        <div class="q">
+                            Where should we send your welcome kit?
+                            <span class="req">*</span>
+                        </div>
+                        <div class="help">
+                            Start typing and pick your address, or fill it in
+                            below.
+                        </div>
+                        <div class="search">
+                            <span class="mag">⌕</span>
+                            <div
+                                class="inp ph-text"
+                                style="
+                                    border-color: var(--c-field-border);
+                                    box-shadow: none;
+                                "
+                            >
+                                Search for an address
+                            </div>
+                        </div>
+                        <div class="lbl">Street <span class="req">*</span></div>
+                        <div class="inp ta filled">
+                            1 Market Street<br />Suite 300
+                        </div>
+                        <div class="lbl">City <span class="req">*</span></div>
+                        <div class="inp filled">San Francisco</div>
+                        <div class="row2">
+                            <div>
+                                <div class="lbl">State / Province</div>
+                                <div class="inp filled">CA</div>
+                            </div>
+                            <div>
+                                <div class="lbl">Zip / Postal code</div>
+                                <div class="inp filled">94105</div>
+                            </div>
+                        </div>
+                        <div class="lbl">
+                            Country <span class="req">*</span>
+                        </div>
+                        <div class="inp filled">United States</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- C. inspector -->
+            <div class="panel">
+                <div class="ph">
+                    C. Studio: the Address question's inspector
+                </div>
+                <div class="pb">
+                    <div class="field">
+                        <div class="flabel">Question</div>
+                        <div class="sinp">
+                            Where should we send your welcome kit?
+                        </div>
+                    </div>
+                    <div class="field">
+                        <div class="flabel">Help text</div>
+                        <div class="sinp">
+                            Start typing and pick your address, or fill it in
+                            below.
+                        </div>
+                    </div>
+                    <div class="chk">
+                        <span class="box"></span> Required
+                        <span class="hint"
+                            >· Street, City and Country must be filled</span
+                        >
+                    </div>
+                    <div class="field toggle">
+                        <span class="sw"></span>
+                        <div>
+                            <div>Address search</div>
+                            <div class="hint">
+                                Suggests addresses as people type, using Google
+                                Places. Every search counts against your
+                                organisation's Google account. Public forms get
+                                a limited number of searches per visit.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="callout">
+                        If search isn't set up: “No address search is set up for
+                        your organisation, so people type the address. An admin
+                        can set it up on the Settings tab.” (switch shown off
+                        and disabled)
+                    </div>
+                </div>
+            </div>
+
+            <!-- D. canvas tile + palette -->
+            <div class="panel">
+                <div class="ph">
+                    D. Studio: palette item
+                    <span class="tag"
+                        >Freeform “Questions” group / Survey list</span
+                    >
+                </div>
+                <div class="pb">
+                    <p class="hint" style="margin-top: 0">
+                        New palette item <b>Address</b> (icon
+                        <code>utility:location</code>), title “A postal address,
+                        with optional address search”.
+                    </p>
+                    <p class="hint">
+                        Freeform mapping: the answer offers its parts as sources
+                        (Address → Street, City, State / Province, Zip / Postal
+                        code, Country, Country code, Latitude, Longitude) so
+                        each can be mapped to a field, e.g.
+                        <code>MailingCity</code>.
+                    </p>
+                    <p class="hint">
+                        Survey: the answer is kept as one row with the parts
+                        inside; the response viewer shows it as a formatted
+                        address.
+                    </p>
+                </div>
+            </div>
+
+            <!-- E. Settings tab -->
+            <div class="panel wide">
+                <div class="ph">
+                    E. New “Settings” tab (org-wide)
+                    <span class="tag">admins only (Form Builder Admin)</span>
+                </div>
+                <div class="settings">
+                    <div class="rail">
+                        <div class="cur">Address search</div>
+                        <div>(future org-wide settings)</div>
+                    </div>
+                    <div class="pane">
+                        <p class="sec">Address search</p>
+                        <p class="hint" style="margin-top: 0">
+                            Suggest addresses while people fill in Address
+                            questions. You bring your own account with the
+                            provider; your key stays in Salesforce and is never
+                            sent to anyone filling in a form.
+                        </p>
+                        <div class="two">
+                            <div class="field">
+                                <div class="flabel">Provider</div>
+                                <div class="sinp sel">Google Places</div>
+                                <div class="hint" style="margin-top: 4px">
+                                    None · Google Places · Loqate · Your own
+                                    (Apex class)
+                                </div>
+                            </div>
+                        </div>
+                        <p class="sec" style="margin-top: 8px">
+                            Connect your key
+                        </p>
+                        <ol class="steps">
+                            <li>
+                                In Setup, open
+                                <b
+                                    >Named Credentials → External Credentials →
+                                    Final Address Google</b
+                                >.
+                            </li>
+                            <li>
+                                Under <b>Principals</b>, edit <b>Key</b> and
+                                paste your Google API key.
+                            </li>
+                            <li>
+                                Give the <b>Form Builder Admin</b> and your
+                                public site's guest user permission set access
+                                to that principal (only needed for public
+                                forms).
+                            </li>
+                        </ol>
+                        <div
+                            style="
+                                display: flex;
+                                gap: 8px;
+                                align-items: center;
+                                margin: 12px 0;
+                            "
+                        >
+                            <span class="btn brand">Test connection</span>
+                            <span class="btn">Save</span>
+                        </div>
+                        <div class="ok">
+                            Connected. A test search for “1 Market St” returned
+                            5 addresses.
+                        </div>
+                        <p class="hint" style="margin-top: 12px">
+                            “Your own (Apex class)” shows one more box:
+                            <b>Apex class name</b>, a class that implements
+                            <code>FinalAddressProvider</code>.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
