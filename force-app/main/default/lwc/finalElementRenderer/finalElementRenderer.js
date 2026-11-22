@@ -616,8 +616,9 @@ export default class FinalElementRenderer extends LightningElement {
         return t('Final_Run_AddressSearch');
     }
 
-    /** The viewer stamps `address` ({ formId, searchable }) on the element:
-     *  search needs a form to ask the server about, and a provider. */
+    /** The viewer stamps `address` ({ formId, searchable, guest, ticket })
+     *  on the element: search needs a form to ask the server about, and a
+     *  provider; a guest also carries the page's ticket. */
     get addressCtx() {
         return (this.el && this.el.address) || {};
     }
@@ -628,6 +629,14 @@ export default class FinalElementRenderer extends LightningElement {
 
     get addressFormId() {
         return this.addressCtx.formId || null;
+    }
+
+    get addressGuest() {
+        return this.addressCtx.guest === true;
+    }
+
+    get addressTicket() {
+        return this.addressCtx.ticket || null;
     }
 
     /** Which required part the question's error names, or undefined. The

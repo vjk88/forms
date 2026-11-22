@@ -105,10 +105,19 @@ public inherited sharing class FinalAddressService {
         ) {
             throw new AddressException(BAD_INPUT);
         }
-        if (t.length() < MIN_CHARS && box == null) {
+        if (!willCallProvider(t, box)) {
             return new List<FinalAddress.Suggestion>();
         }
         return runSuggest(providerName(), settingClassName(), t, token, box);
+    }
+
+    /** Will suggest(text, ..., container) reach the provider (and so cost
+     *  money)? False for text shorter than three characters with no group to
+     *  open. Guest callers ask this before spending their cap, so the rule has
+     *  one owner. */
+    public static Boolean willCallProvider(String text, String container) {
+        String t = text == null ? '' : text.normalizeSpace();
+        return t.length() >= MIN_CHARS || !String.isBlank(container);
     }
 
     /** Test connection: one real suggest for a fixed search, through the

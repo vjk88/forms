@@ -178,6 +178,31 @@ describe('c-final-element-renderer: address question', () => {
             expect(box.label).toBe('Search for an address');
         });
 
+        it('hands a guest box the guest flag and the page ticket', async () => {
+            const cmp = await mount(
+                ADDRESS({
+                    address: {
+                        formId: 'a0F1',
+                        searchable: true,
+                        guest: true,
+                        ticket: 'tk.sig'
+                    }
+                })
+            );
+            const box = cmp.shadowRoot.querySelector('c-final-address-search');
+            expect(box.guest).toBe(true);
+            expect(box.ticket).toBe('tk.sig');
+        });
+
+        it('a signed-in box is not a guest and has no ticket', async () => {
+            const cmp = await mount(
+                ADDRESS({ address: { formId: 'a0F1', searchable: true } })
+            );
+            const box = cmp.shadowRoot.querySelector('c-final-address-search');
+            expect(box.guest).toBe(false);
+            expect(box.ticket).toBeFalsy();
+        });
+
         it('sits before the fields', async () => {
             const cmp = await mount(
                 ADDRESS({ address: { formId: 'a0F1', searchable: true } })

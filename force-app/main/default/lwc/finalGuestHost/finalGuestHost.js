@@ -76,6 +76,13 @@ export default class FinalGuestHost extends LightningElement {
     /** The one submit sequence in flight, or null. */
     _activeSend = null;
 
+    /** The live ticket string, handed to the viewer so address search can
+     *  prove the page is real. `_entry` is a class field, so reassigning it
+     *  (a refreshed ticket) re-renders and the viewer sees the new text. */
+    get currentTicket() {
+        return this._entry?.ticket || null;
+    }
+
     @wire(CurrentPageReference)
     wiredPageRef(ref) {
         if (ref && ref.state) {

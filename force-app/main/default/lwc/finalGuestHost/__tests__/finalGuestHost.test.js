@@ -337,6 +337,26 @@ describe('c-final-guest-host bot checks and submit', () => {
         expect(submitGuest).not.toHaveBeenCalled();
     });
 
+    it('hands the current ticket to the viewer for address search', async () => {
+        const { viewer } = await mountReady();
+        expect(viewer.guestTicket).toBe(ticketText('one'));
+    });
+
+    it('hands the viewer no ticket when the server sent none', async () => {
+        const { viewer } = await mountReady({ ticket: undefined });
+        expect(viewer.guestTicket).toBeNull();
+    });
+
+    it('the viewer sees the refreshed ticket after an expiry', async () => {
+        submitGuest
+            .mockRejectedValueOnce(botError('EXPIRED'))
+            .mockResolvedValueOnce({ success: true });
+        const { viewer } = await mountReady();
+        request(viewer);
+        await advance(2000);
+        expect(viewer.guestTicket).toBe(ticketText('two'));
+    });
+
     it('delegated submit: sends meta.tk, meta.pow, the other meta and the answers, then completes the viewer', async () => {
         const { viewer, doneSpy } = await mountReady();
         request(viewer);

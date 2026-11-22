@@ -290,6 +290,9 @@ export function lookupFilterKey(el, answers) {
 export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     @api formId;
     @api versionId;
+    /** Guest hosts only: the page's signed bot-check ticket, which address
+     *  search sends with every call. Ignored for signed-in users. */
+    @api guestTicket;
 
     /**
      * Builder-preview mode: clicks on rendered elements re-emit as
@@ -2868,7 +2871,8 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                                         // to ask the server's address search about.
                                         // The Studio preview has an inline spec and no
                                         // form id of its own, so it reads it off the
-                                        // spec; guests get search in a later slice.
+                                        // spec. A guest searches with the page's
+                                        // ticket, so with no ticket there is no box.
                                         if (
                                             base.config &&
                                             base.config.inputType === 'address'
@@ -2882,11 +2886,17 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                                                 address: {
                                                     formId: addressFormId,
                                                     searchable:
-                                                        !IS_GUEST &&
                                                         base.config
                                                             .addressSearch ===
                                                             true &&
-                                                        !!addressFormId
+                                                        !!addressFormId &&
+                                                        (!IS_GUEST ||
+                                                            !!this.guestTicket),
+                                                    guest: IS_GUEST === true,
+                                                    ticket: IS_GUEST
+                                                        ? this.guestTicket ||
+                                                          null
+                                                        : null
                                                 }
                                             };
                                         }

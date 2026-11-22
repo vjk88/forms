@@ -3,6 +3,9 @@ import FinalAddressSearch from 'c/finalAddressSearch';
 import status from '@salesforce/apex/FinalAddressController.status';
 import suggest from '@salesforce/apex/FinalAddressController.suggest';
 import details from '@salesforce/apex/FinalAddressController.details';
+import guestStatus from '@salesforce/apex/FinalGuestController.addressStatus';
+import guestSuggest from '@salesforce/apex/FinalGuestController.addressSuggest';
+import guestDetails from '@salesforce/apex/FinalGuestController.addressDetails';
 
 jest.mock(
     '@salesforce/apex/FinalAddressController.status',
@@ -21,6 +24,27 @@ jest.mock(
 );
 jest.mock(
     '@salesforce/apex/FinalAddressController.details',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
+
+jest.mock(
+    '@salesforce/apex/FinalGuestController.addressStatus',
+    () => {
+        const {
+            createApexTestWireAdapter
+        } = require('@salesforce/sfdx-lwc-jest');
+        return { default: createApexTestWireAdapter(jest.fn()) };
+    },
+    { virtual: true }
+);
+jest.mock(
+    '@salesforce/apex/FinalGuestController.addressSuggest',
+    () => ({ default: jest.fn() }),
+    { virtual: true }
+);
+jest.mock(
+    '@salesforce/apex/FinalGuestController.addressDetails',
     () => ({ default: jest.fn() }),
     { virtual: true }
 );
@@ -114,6 +138,10 @@ describe('c-final-address-search', () => {
         jest.useFakeTimers();
         suggest.mockReset();
         details.mockReset();
+        guestSuggest.mockReset();
+        guestDetails.mockReset();
+        guestSuggest.mockResolvedValue(ROWS);
+        guestDetails.mockResolvedValue(RESULT);
         suggest.mockResolvedValue(ROWS);
         details.mockResolvedValue(RESULT);
     });
@@ -516,6 +544,132 @@ describe('c-final-address-search', () => {
         it('a failed details call does the same, and emits nothing', async () => {
             details.mockRejectedValue(new Error('boom'));
             const el = await ready();
+            const picked = jest.fn();
+            el.addEventListener('addresspick', picked);
+            await type(el, '1 Market');
+            options(el)[0].dispatchEvent(new CustomEvent('mousedown'));
+            await flush();
+            await flush();
+            expect(picked).not.toHaveBeenCalled();
+            expect(input(el)).toBeNull();
+            expect(el.shadowRoot.querySelector('.fas-note')).not.toBeNull();
+        });
+    });
+
+    describe('guest (public site)', () => {
+        const TICKET = 'tk.sig';
+
+        async function guestReady(props = {}) {
+            const el = mount({ guest: true, ticket: TICKET, ...props });
+            guestStatus.emit(CONFIGURED);
+            await flush();
+            return el;
+        }
+
+        it('takes its status from the guest controller, not the signed-in one', async () => {
+            const el = mount({ guest: true, ticket: TICKET });
+            // the signed-in status is ignored for a guest
+            status.emit(CONFIGURED);
+            await flush();
+            expect(input(el)).toBeNull();
+            guestStatus.emit(CONFIGURED);
+            await flush();
+            expect(input(el)).not.toBeNull();
+        });
+
+        it('a signed-in box ignores the guest status', async () => {
+            const el = mount();
+            guestStatus.emit(CONFIGURED);
+            await flush();
+            expect(input(el)).toBeNull();
+        });
+
+        it('asks the guest controller for status with the form', async () => {
+            mount({ guest: true, ticket: TICKET });
+            await flush();
+            expect(guestStatus.getLastConfig()).toEqual({ formId: 'a0F1' });
+        });
+
+        it('says to type the address when the guest status call fails', async () => {
+            const el = mount({ guest: true, ticket: TICKET });
+            guestStatus.error({ message: 'nope' });
+            await flush();
+            expect(input(el)).toBeNull();
+            expect(el.shadowRoot.querySelector('.fas-note')).not.toBeNull();
+        });
+
+        it('suggest goes to the guest controller with the ticket', async () => {
+            const el = await guestReady();
+            await type(el, '1 Market');
+            expect(suggest).not.toHaveBeenCalled();
+            expect(guestSuggest).toHaveBeenCalledTimes(1);
+            const args = guestSuggest.mock.calls[0][0];
+            expect(args).toEqual({
+                formId: 'a0F1',
+                elementId: 'el_addr',
+                text: '1 Market',
+                sessionToken: expect.any(String),
+                container: null,
+                ticket: TICKET
+            });
+            expect(options(el)).toHaveLength(3);
+        });
+
+        it('details goes to the guest controller with the ticket and fills', async () => {
+            const el = await guestReady();
+            const picked = jest.fn();
+            el.addEventListener('addresspick', picked);
+            await type(el, '1 Market');
+            options(el)[0].dispatchEvent(new CustomEvent('mousedown'));
+            await flush();
+            await flush();
+            expect(details).not.toHaveBeenCalled();
+            expect(guestDetails).toHaveBeenCalledTimes(1);
+            expect(guestDetails.mock.calls[0][0]).toEqual({
+                formId: 'a0F1',
+                elementId: 'el_addr',
+                placeId: 'p1',
+                sessionToken: expect.any(String),
+                ticket: TICKET
+            });
+            expect(picked).toHaveBeenCalledTimes(1);
+            expect(picked.mock.calls[0][0].detail).toEqual(RESULT);
+        });
+
+        it('uses the refreshed ticket on the next search', async () => {
+            const el = await guestReady();
+            await type(el, '1 Market');
+            el.ticket = 'fresh.sig';
+            await flush();
+            await type(el, '1 Market S');
+            expect(guestSuggest.mock.calls[1][0].ticket).toBe('fresh.sig');
+        });
+
+        it.each(['FINAL_ADDR:LIMIT', 'FINAL_BOT:EXPIRED', 'FINAL_BOT:INVALID'])(
+            '%s on suggest shows the note and fires searchdown',
+            async (message) => {
+                guestSuggest.mockRejectedValue({ body: { message } });
+                const el = await guestReady();
+                const down = jest.fn();
+                el.addEventListener('searchdown', down);
+                await type(el, '1 Market');
+                await flush();
+                expect(down).toHaveBeenCalledTimes(1);
+                expect(down.mock.calls[0][0].detail.term).toBe('1 Market');
+                expect(input(el)).toBeNull();
+                expect(
+                    el.shadowRoot.querySelector('.fas-note').textContent
+                ).toBe(
+                    "Address search isn't available right now. Type the address below."
+                );
+            }
+        );
+
+        it('LIMIT on details shows the note and emits nothing', async () => {
+            guestDetails.mockRejectedValue({
+                body: { message: 'FINAL_ADDR:LIMIT' }
+            });
+            const el = await guestReady();
             const picked = jest.fn();
             el.addEventListener('addresspick', picked);
             await type(el, '1 Market');

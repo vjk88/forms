@@ -2,6 +2,9 @@ import { LightningElement, api, wire } from 'lwc';
 import status from '@salesforce/apex/FinalAddressController.status';
 import suggest from '@salesforce/apex/FinalAddressController.suggest';
 import details from '@salesforce/apex/FinalAddressController.details';
+import guestStatus from '@salesforce/apex/FinalGuestController.addressStatus';
+import guestSuggest from '@salesforce/apex/FinalGuestController.addressSuggest';
+import guestDetails from '@salesforce/apex/FinalGuestController.addressDetails';
 import { t } from 'c/finalTranslate';
 
 const DEBOUNCE_MS = 300;
@@ -43,6 +46,10 @@ function newSessionToken() {
  * shared: that one searches records, this one searches a provider through
  * FinalAddressController and fills five fields rather than holding a record.
  *
+ * A guest (public site) goes through FinalGuestController instead, with the
+ * page's bot-check ticket on every call; a refused or capped call (LIMIT, an
+ * expired ticket, ...) is treated like any other failure.
+ *
  * Never blocks the form. Any failure hides the box and leaves one quiet line
  * saying to type the address below.
  *
@@ -56,6 +63,12 @@ export default class FinalAddressSearch extends LightningElement {
     /** The box's accessible name; defaults to the placeholder words. */
     @api label;
     @api disabled = false;
+    /** True on the public site: status, suggest and details go through the
+     *  guest controller and carry `ticket`. */
+    @api guest = false;
+    /** The guest page's current bot-check ticket (read at call time, so a
+     *  refreshed ticket is used by the next search). */
+    @api ticket;
 
     _status = null;
     _statusFailed = false;
@@ -75,7 +88,26 @@ export default class FinalAddressSearch extends LightningElement {
     _pendingActive = false;
 
     @wire(status)
-    wiredStatus({ data, error }) {
+    wiredStatus(result) {
+        if (!this.guest) {
+            this._applyStatus(result);
+        }
+    }
+
+    @wire(guestStatus, { formId: '$guestStatusFormId' })
+    wiredGuestStatus(result) {
+        if (this.guest) {
+            this._applyStatus(result);
+        }
+    }
+
+    /** Wire parameter for the guest status call; undefined holds the wire
+     *  back, so a signed-in box never calls the guest controller. */
+    get guestStatusFormId() {
+        return this.guest && this.formId ? this.formId : undefined;
+    }
+
+    _applyStatus({ data, error }) {
         if (data) {
             this._status = data;
             this._statusFailed = false;
@@ -288,13 +320,16 @@ export default class FinalAddressSearch extends LightningElement {
         }
         this.loading = true;
         try {
-            const rows = await suggest({
+            const params = {
                 formId: this.formId || null,
                 elementId: this.elementId,
                 text: this.term.trim(),
                 sessionToken: this._token,
                 container: container || null
-            });
+            };
+            const rows = await (this.guest
+                ? guestSuggest({ ...params, ticket: this.ticket || null })
+                : suggest(params));
             if (generation !== this._generation) {
                 return; // a later keystroke or pick already owns the box
             }
@@ -369,12 +404,15 @@ export default class FinalAddressSearch extends LightningElement {
         clearTimeout(this._debounce);
         this.loading = true;
         try {
-            const result = await details({
+            const params = {
                 formId: this.formId || null,
                 elementId: this.elementId,
                 placeId: row.id,
                 sessionToken: this._token
-            });
+            };
+            const result = await (this.guest
+                ? guestDetails({ ...params, ticket: this.ticket || null })
+                : details(params));
             if (generation !== this._generation) {
                 return;
             }
