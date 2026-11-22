@@ -1,6 +1,6 @@
 # Address question with address search (replaces DEFERRED #1 Maps)
 
-Status: **PLAN, awaiting go-ahead** (2026-11-21). Mock: [mocks/address-input-mock.html](./mocks/address-input-mock.html)
+Status: **BUILT, slices 1–5 (PRs 479–484, 2026-11-22); slice 6 (Loqate) parked as DEFERRED #70.** Mock: [mocks/address-input-mock.html](./mocks/address-input-mock.html)
 (owner: "Looks good, plan it").
 
 ## Rulings (owner, 2026-11-21)
@@ -235,7 +235,7 @@ Settings refuses to save it.
 4. **Guest search:** `addressSuggest` / `addressDetails` on `FinalGuestController`, `verifySigned`, caps. **BUILT (branch feat/address-guest-search).**
    Verified on the public site after a site publish.
 5. **Freeform mapping of parts: BUILT (branch feat/address-mapping).** Source `{kind:'answer', elementKey, part}` (picker value `answer:<key>.<part>`); `describeQuestions` returns `parts`; validator, service and the mapping picker read it.
-6. **Loqate adapter** (groups included).
+6. **Loqate adapter: PARKED (owner 2026-11-22), DEFERRED #70.** Google Places and "Your own (Apex class)" ship; Loqate customers can plug theirs in as their own class meanwhile.
 
 Each UI slice runs the uiux-flow-reviewer gate and ships before/after photos.
 
