@@ -841,7 +841,7 @@ export default class FinalAutofillRuleEditor extends LightningElement {
     get fillsHelp() {
         const one = `Each row copies one ${this.sourceLabel} field into one answer.`;
         return this.showGuestColumn
-            ? `${one} Tick Guests to fill it for people who aren’t signed in.`
+            ? `${one} Signed-in people always get each row, limited to what they can see in Salesforce. Tick Guests to also fill it for people who aren’t signed in.`
             : one;
     }
 

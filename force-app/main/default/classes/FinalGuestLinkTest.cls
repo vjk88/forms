@@ -995,10 +995,17 @@ private class FinalGuestLinkTest {
             vals.get('el_name'),
             'the link fills the form for a signed-in user'
         );
+        // owner 2026-11-22: a signed-in user also gets the UNTICKED rows,
+        // read with their own access (the test user is an admin).
         System.assertEquals(
-            false,
+            true,
             vals.containsKey('el_salary'),
-            'a signed-in user gets exactly what a guest gets'
+            'a signed-in user also gets the unticked row'
+        );
+        System.assertEquals(
+            true,
+            ((Decimal) vals.get('el_salary')) == 250,
+            'the unticked row carries the record value'
         );
         System.assertEquals(
             'unavailable',
