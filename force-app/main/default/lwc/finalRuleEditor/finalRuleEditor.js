@@ -183,6 +183,8 @@ const ANSWER_OPERATORS = new Set([
 /** Field types Contains works on (matches FinalMappingRules.isTextLike). */
 const TEXT_LIKE = new Set(['string', 'textarea', 'email', 'phone', 'url']);
 const ANSWER_PREFIX = '$field.';
+/** Mapping: "the record in the personalized link" (read by the server). */
+const LINK_VALUE = '$link.Id';
 /** A related list's compare-with value: a field of the record being edited. */
 const RECORD_PREFIX = '$record.';
 
@@ -352,6 +354,13 @@ export default class FinalRuleEditor extends LightningElement {
      * [{ key, label, fits: [lower-case field types] }]. A question that holds
      * several values arrives with no fits (decision 9). Never null.
      */
+    /**
+     * Mapping screen: the object the personalized link carries ("Contact"),
+     * from the form's link Autofill rule. Set, "The record in the link
+     * (Contact)" is a Compare with choice. '' = the form has no such rule.
+     */
+    @api linkLabel = '';
+
     _answerChoices = [];
     @api
     get answerChoices() {
@@ -522,7 +531,21 @@ export default class FinalRuleEditor extends LightningElement {
 
     /** One row's choices: An answer only where a question fits (Task 7). */
     _compareOptionsFor(rule, i) {
-        const out = this.compareOptions;
+        let out = this.compareOptions;
+        if (
+            this.answersOn &&
+            (this.linkLabel || this._compareOf(rule, i) === 'link')
+        ) {
+            out = [
+                ...out,
+                {
+                    value: 'link',
+                    label: this.linkLabel
+                        ? `The record in the link (${this.linkLabel})`
+                        : 'The record in the link'
+                }
+            ];
+        }
         if (
             this.answersOn &&
             (this._fittingAnswers(rule).length ||
@@ -541,7 +564,10 @@ export default class FinalRuleEditor extends LightningElement {
         if (
             this.answersOn &&
             (this._answerChoices.some((a) => (a.fits || []).length) ||
-                this.rules.some((r) => this._answerKey(r)))
+                this.linkLabel ||
+                this.rules.some(
+                    (r) => this._answerKey(r) || r.value === LINK_VALUE
+                ))
         ) {
             return true;
         }
@@ -550,6 +576,9 @@ export default class FinalRuleEditor extends LightningElement {
 
     /** Where a row's value comes from; an unset row keeps its chosen kind. */
     _compareOf(rule, i) {
+        if (this.answersOn && rule.value === LINK_VALUE) {
+            return 'link';
+        }
         if (typeof rule.value === 'string' && rule.value.startsWith('$User.')) {
             return 'user';
         }
@@ -828,7 +857,8 @@ export default class FinalRuleEditor extends LightningElement {
             typeof v === 'string' &&
             (v.startsWith('$User.') ||
                 v.startsWith(RECORD_PREFIX) ||
-                (this.answersOn && v.startsWith(ANSWER_PREFIX)))
+                (this.answersOn &&
+                    (v.startsWith(ANSWER_PREFIX) || v === LINK_VALUE)))
         );
     }
 
@@ -1092,6 +1122,23 @@ export default class FinalRuleEditor extends LightningElement {
                     control: 'value',
                     message: ANSWER_REASONS[this._answerReason(rule)].problem
                 });
+            } else if (this._compareOf(rule, i) === 'link' && !this.linkLabel) {
+                out.push({
+                    rowIndex: i,
+                    control: 'value',
+                    message:
+                        'The form has no Autofill rule that fills from the record in the link. Add one, or choose another value.'
+                });
+            } else if (
+                this._compareOf(rule, i) === 'link' &&
+                rule.operator !== 'equals'
+            ) {
+                out.push({
+                    rowIndex: i,
+                    control: 'value',
+                    message:
+                        'The record in the link only works with “equals”. Change the operator.'
+                });
             } else if (
                 this.columns === 'lookup' &&
                 !this.allowCurrentUser &&
@@ -1329,6 +1376,10 @@ export default class FinalRuleEditor extends LightningElement {
                 compareKind: this._compareOf(rule, i),
                 compareOptions: this._compareOptionsFor(rule, i),
                 valueIsAnswer: this._compareOf(rule, i) === 'answer',
+                valueIsLink: this._compareOf(rule, i) === 'link',
+                linkText: this.linkLabel
+                    ? `The record in the link (${this.linkLabel})`
+                    : 'The record in the link',
                 answerOptions: this._answerOptions(rule),
                 answerNote: this._answerNote(rule),
                 compareLabel: `Condition ${i + 1}: compare with`,
@@ -1516,7 +1567,11 @@ export default class FinalRuleEditor extends LightningElement {
         }
         this._compare[i] = kind;
         // Nothing is chosen for the author: An answer asks for its question.
-        rule.value = '';
+        // The link's record has nothing to choose: it is the value.
+        rule.value = kind === 'link' ? LINK_VALUE : '';
+        if (kind === 'link') {
+            rule.operator = 'equals';
+        }
         this._focusNext = `[data-index="${i}"][data-control="value"]`;
         this._emit(next);
     }

@@ -541,7 +541,8 @@ public without sharing class FinalGuestController {
                 spec,
                 payload,
                 version.Id, // the SERVER-loaded version identity (never client-claimed)
-                FinalSubmitService.Posture.GUEST
+                FinalSubmitService.Posture.GUEST,
+                link.verifiedRecordId()
             );
         } catch (Exception e) {
             link.rollback();

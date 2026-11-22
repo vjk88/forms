@@ -33,13 +33,14 @@ const QUESTIONS = [
     }
 ];
 
-function mount(value = '') {
+function mount(value = '', extra = {}) {
     const el = createElement('c-final-mapping-soql', { is: FinalMappingSoql });
     Object.assign(el, {
         questions: QUESTIONS,
         spec: { form: {} },
         actionId: 'act_a',
-        value
+        value,
+        ...extra
     });
     document.body.appendChild(el);
     const changes = [];
@@ -62,6 +63,39 @@ afterEach(() => {
         document.body.removeChild(document.body.firstChild);
     }
     jest.clearAllMocks();
+});
+
+describe('the record in the link', () => {
+    it('is named first, and round-trips to {!$link.Id}', () => {
+        const names = displayNames(QUESTIONS, '', 'Contact');
+        expect(names.get('$link.Id')).toBe('The record in the link');
+        expect(toDisplay('Id = {!$link.Id}', names)).toBe(
+            'Id = {The record in the link}'
+        );
+        expect(toStored('Id = {The record in the link}', names)).toBe(
+            'Id = {!$link.Id}'
+        );
+    });
+
+    it('still reads when the rule is gone, and says so', async () => {
+        const { el } = mount('Id = {!$link.Id}');
+        await flush();
+        expect(box(el).value).toBe('Id = {The record in the link}');
+        expect(el.problems.join(' ')).toContain('no Autofill rule');
+    });
+
+    it('is offered in Insert answer only when the form has a link', async () => {
+        const withLink = mount('', { linkLabel: 'Contact' }).el;
+        const without = mount('').el;
+        await flush();
+        const options = (el) =>
+            el.shadowRoot.querySelector('lightning-combobox').options;
+        expect(options(withLink)[0]).toEqual({
+            value: '$link.Id',
+            label: 'The record in the link (Contact)'
+        });
+        expect(options(without).map((o) => o.value)).not.toContain('$link.Id');
+    });
 });
 
 describe('display names (decision 6)', () => {

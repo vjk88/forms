@@ -96,6 +96,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Form_Submission__c.Link_Record_Id__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Form_Submission__c.Mapping_Run_At__c</field>
         <readable>true</readable>
     </fieldPermissions>

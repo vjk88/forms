@@ -136,6 +136,14 @@ public without sharing class FinalLinkService {
         public Survey_Invitation__c lockedInv;
         public Savepoint sp;
 
+        /** The record the link carried, but ONLY when the token passed every
+         *  check (signature, form, expiry, invalidation, object, invitation).
+         *  null = no link, or a link that isn't usable. Freeform mapping's
+         *  "the record in the link" reads this, never a client-sent Id. */
+        public Id verifiedRecordId() {
+            return claims == null ? null : claims.recordId;
+        }
+
         public void rollback() {
             if (sp != null) {
                 Database.rollback(sp);

@@ -177,3 +177,12 @@
         grid-row: 2;
     }
 }
+
+/* Mapping: the value is the personalized link's record; nothing to pick */
+.re-link-value {
+    display: block;
+    font-size: var(--c-studio-fs-small);
+    line-height: 1.45;
+    color: var(--c-studio-text);
+    padding: 0.375rem 0.5rem;
+}

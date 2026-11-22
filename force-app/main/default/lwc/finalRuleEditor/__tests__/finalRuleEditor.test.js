@@ -903,6 +903,45 @@ describe('Compare with An answer (mapping screen, Task 7)', () => {
         expect(el.problems).toEqual([]);
     });
 
+    it('offers the record in the link only when the form has a link', async () => {
+        const without = mountMapping([rule('Id', 'equals', '')]);
+        const withLink = mountMapping([rule('Id', 'equals', '')], {
+            linkLabel: 'Contact'
+        });
+        await flush();
+        expect(compareValues(without, 0)).not.toContain('link');
+        expect(compareValues(withLink, 0)).toContain('link');
+        expect(
+            control(withLink, 0, 'compare').options.find(
+                (o) => o.value === 'link'
+            ).label
+        ).toBe('The record in the link (Contact)');
+    });
+
+    it('choosing it saves $link.Id with equals and needs no value picked', async () => {
+        const el = mountMapping([rule('Id', 'notEquals', '')], {
+            linkLabel: 'Contact'
+        });
+        const changes = listen(el);
+        await flush();
+        const compare = control(el, 0, 'compare');
+        compare.value = 'link';
+        compare.dispatchEvent(
+            new CustomEvent('change', { detail: { value: 'link' } })
+        );
+        await flush();
+        expect(changes[0].rules[0].value).toBe('$link.Id');
+        expect(changes[0].rules[0].operator).toBe('equals');
+    });
+
+    it('a saved link value on a form with no link rule is a problem, not a silent miss', async () => {
+        const el = mountMapping([rule('Id', 'equals', '$link.Id')]);
+        await flush();
+        expect(el.problems.map((p) => p.message).join(' ')).toContain(
+            'no Autofill rule'
+        );
+    });
+
     it('offers only fitting, single-value answers', async () => {
         const el = mountMapping([rule('LastName', 'equals', '$field.el_last')]);
         await flush();

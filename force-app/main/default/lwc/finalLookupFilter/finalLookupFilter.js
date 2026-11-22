@@ -80,6 +80,9 @@ export default class FinalLookupFilter extends LightningElement {
     @api filterOnly = false;
     /** Mapping screen: the questions a row may compare with (Task 7). */
     @api answerChoices = [];
+    /** Mapping screen: the object the personalized link carries ("Contact"),
+     *  which makes "The record in the link" a value choice. '' = not offered. */
+    @api linkLabel = '';
     /** Mapping step: offer SOQL beside the built conditions (D50). */
     @api allowTyped = false;
     /** The saved typed conditions: { mode: 'soql' | 'rows', soql }. */
@@ -250,6 +253,10 @@ export default class FinalLookupFilter extends LightningElement {
 
     get typedSoql() {
         return (this.typedValue && this.typedValue.soql) || '';
+    }
+
+    get typedLinkLabel() {
+        return (this.typedContext && this.typedContext.linkLabel) || '';
     }
 
     get typedQuestions() {

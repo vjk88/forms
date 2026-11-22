@@ -81,7 +81,8 @@ public with sharing class FinalSubmitController {
                 spec,
                 payload,
                 version.Id, // the SERVER-loaded version identity (never client-claimed)
-                FinalSubmitService.Posture.INTERNAL
+                FinalSubmitService.Posture.INTERNAL,
+                link.verifiedRecordId()
             );
         } catch (Exception e) {
             link.rollback();

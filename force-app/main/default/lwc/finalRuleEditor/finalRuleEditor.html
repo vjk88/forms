@@ -139,7 +139,16 @@
                                 <span class="re-cell-label" aria-hidden="true"
                                     >Value</span
                                 >
-                                <template lwc:if={r.valueIsAnswer}>
+                                <template lwc:if={r.valueIsLink}>
+                                    <span
+                                        class="re-link-value"
+                                        tabindex="0"
+                                        data-index={r.index}
+                                        data-control="value"
+                                        >{r.linkText}</span
+                                    >
+                                </template>
+                                <template lwc:elseif={r.valueIsAnswer}>
                                     <lightning-combobox
                                         label={r.valueLabel}
                                         variant="label-hidden"
