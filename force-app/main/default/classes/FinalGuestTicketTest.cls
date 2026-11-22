@@ -945,4 +945,67 @@ private class FinalGuestTicketTest {
         // and the freshly published form can hand out a verifiable ticket
         Assert.isNotNull(FinalGuestTicket.mint(form.Id));
     }
+
+    // ----- verifySigned (address search: no puzzle, no age, no marker) -----
+
+    private static void expectSignedRefusal(
+        String code,
+        Id formId,
+        String ticket
+    ) {
+        try {
+            FinalGuestTicket.verifySigned(ticket, formId);
+            Assert.fail('expected ' + code);
+        } catch (AuraHandledException e) {
+            Assert.areEqual(code, e.getMessage(), 'refusal code');
+        }
+    }
+
+    @IsTest
+    static void verifySignedAcceptsAFreshUnsolvedTicket() {
+        Form__c f = openForm();
+        // 0.5 s old (under the 2 s minimum) at the real difficulty, no nonce
+        String ticket = FinalGuestTicketTestUtil.ticketAged(f.Id, 500, 16);
+
+        FinalGuestTicket.verifySigned(ticket, f.Id);
+
+        Assert.isTrue(true, 'no refusal');
+        // and verify would still refuse the same ticket
+        expectRefusal('FINAL_BOT:PROOF', f.Id, ticket, null);
+    }
+
+    @IsTest
+    static void verifySignedIgnoresTheUsedMarker() {
+        Form__c f = openForm();
+        FinalGuestTicket.memoryCache = new Map<String, Integer>();
+        String ticket = FinalGuestTicketTestUtil.agedTicket(f.Id);
+        FinalGuestTicket.markUsed(ticket);
+
+        FinalGuestTicket.verifySigned(ticket, f.Id);
+
+        Assert.isTrue(true, 'a used ticket may still search');
+    }
+
+    @IsTest
+    static void verifySignedRefusesWrongFormExpiredAndTampered() {
+        Form__c f = openForm();
+        Form__c b = openForm();
+        String ticket = FinalGuestTicketTestUtil.agedTicket(f.Id);
+        expectSignedRefusal('FINAL_BOT:INVALID', b.Id, ticket);
+        String old = FinalGuestTicketTestUtil.ticketAged(
+            f.Id,
+            FinalGuestTicket.LIFETIME_MS + 5000L,
+            0
+        );
+        expectSignedRefusal('FINAL_BOT:EXPIRED', f.Id, old);
+        List<String> segs = ticket.split('\\.');
+        String flipped = segs[1].substring(0, 1) == 'A' ? 'B' : 'A';
+        expectSignedRefusal(
+            'FINAL_BOT:INVALID',
+            f.Id,
+            segs[0] + '.' + flipped + segs[1].substring(1)
+        );
+        expectSignedRefusal('FINAL_BOT:INVALID', f.Id, null);
+        expectSignedRefusal('FINAL_BOT:INVALID', f.Id, 'x'.repeat(401));
+    }
 }

@@ -114,12 +114,41 @@ public with sharing class FinalGuestTicket {
      * issue time, expiry, proof-of-work, minimum age, replay marker.
      */
     public static void verify(String ticket, String nonce, Id formId) {
-        if (
-            String.isBlank(ticket) ||
-            ticket.length() > MAX_TICKET_CHARS ||
-            (nonce != null &&
-            nonce.length() > MAX_NONCE_CHARS)
-        ) {
+        if (nonce != null && nonce.length() > MAX_NONCE_CHARS) {
+            throw refuse(INVALID);
+        }
+        Claims c = checkSigned(ticket, formId);
+        Long now = nowMs();
+        if (String.isBlank(nonce) || !Pattern.matches('[0-9]{1,20}', nonce)) {
+            throw refuse(PROOF);
+        }
+        String hex = sha256Hex(ticket + ':' + nonce);
+        if (leadingZeroBits(hex) < c.difficulty) {
+            throw refuse(PROOF);
+        }
+        if (now - c.issuedAt < MIN_AGE_MS) {
+            throw refuse(TOO_FAST);
+        }
+        if (isUsed(ticket)) {
+            throw refuse(USED);
+        }
+    }
+
+    /**
+     * The cheap check for address-search calls: size, signature, version,
+     * form, issue time and expiry exactly as verify does, but NO proof-of-work,
+     * NO minimum age and NO used-marker check (the ticket is not spent; that
+     * happens only on a saved submit). Throws the same INVALID / EXPIRED codes.
+     */
+    public static void verifySigned(String ticket, Id formId) {
+        checkSigned(ticket, formId);
+    }
+
+    /** The part verify and verifySigned share. Returns the claims of a ticket
+     *  that is well-formed, signed, for this form and neither from the future
+     *  nor expired; otherwise throws INVALID or EXPIRED. */
+    private static Claims checkSigned(String ticket, Id formId) {
+        if (String.isBlank(ticket) || ticket.length() > MAX_TICKET_CHARS) {
             throw refuse(INVALID);
         }
         Claims c = parse(ticket); // signature + canonical encoding
@@ -139,19 +168,7 @@ public with sharing class FinalGuestTicket {
         if (now - c.issuedAt > LIFETIME_MS) {
             throw refuse(EXPIRED);
         }
-        if (String.isBlank(nonce) || !Pattern.matches('[0-9]{1,20}', nonce)) {
-            throw refuse(PROOF);
-        }
-        String hex = sha256Hex(ticket + ':' + nonce);
-        if (leadingZeroBits(hex) < c.difficulty) {
-            throw refuse(PROOF);
-        }
-        if (now - c.issuedAt < MIN_AGE_MS) {
-            throw refuse(TOO_FAST);
-        }
-        if (isUsed(ticket)) {
-            throw refuse(USED);
-        }
+        return c;
     }
 
     // ------------------------------------------------------ replay marker

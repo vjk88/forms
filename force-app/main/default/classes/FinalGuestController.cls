@@ -327,6 +327,75 @@ public without sharing class FinalGuestController {
         return newTicket(f.Id);
     }
 
+    // ----- address search (guests): ticket-checked, capped -----
+
+    /** Whether the guest page should show the address search box. Gated like
+     *  every guest method; says nothing about any particular question. */
+    @AuraEnabled(cacheable=true)
+    public static FinalAddressService.Status addressStatus(Id formId) {
+        gate(formId);
+        return FinalAddressService.status();
+    }
+
+    /**
+     * Address suggestions for a guest. Order: gate, the question must have
+     * search switched on in the active spec, the page's ticket must be signed
+     * and current (no proof-of-work: this is not a submit), then the spend caps
+     * (FinalAddressGuestGuard, fail closed), then the provider. Text too short
+     * to reach the provider spends nothing. Failures: FINAL_ADDR:<code> for
+     * address problems, FINAL_BOT:<code> for a bad ticket.
+     */
+    @AuraEnabled
+    public static List<FinalAddress.Suggestion> addressSuggest(
+        Id formId,
+        String elementId,
+        String text,
+        String sessionToken,
+        String container,
+        String ticket
+    ) {
+        try {
+            Form__c f = gate(formId);
+            requireAddressQuestion(f.Id, elementId);
+            FinalGuestTicket.verifySigned(ticket, f.Id);
+            if (FinalAddressService.willCallProvider(text, container)) {
+                FinalAddressGuestGuard.spend(ticket, false);
+            }
+            return FinalAddressService.suggest(text, sessionToken, container);
+        } catch (FinalAddressService.AddressException e) {
+            throw FinalAddressService.toAura(e);
+        }
+    }
+
+    /** The picked address for a guest; same order of checks as addressSuggest,
+     *  counted against the (smaller) per-ticket details cap. */
+    @AuraEnabled
+    public static FinalAddress.Result addressDetails(
+        Id formId,
+        String elementId,
+        String placeId,
+        String sessionToken,
+        String ticket
+    ) {
+        try {
+            Form__c f = gate(formId);
+            requireAddressQuestion(f.Id, elementId);
+            FinalGuestTicket.verifySigned(ticket, f.Id);
+            FinalAddressGuestGuard.spend(ticket, true);
+            return FinalAddressService.details(placeId, sessionToken);
+        } catch (FinalAddressService.AddressException e) {
+            throw FinalAddressService.toAura(e);
+        }
+    }
+
+    /** NOT_ALLOWED unless the elementId is an address question with search on
+     *  in the form's active spec. */
+    private static void requireAddressQuestion(Id formId, String elementId) {
+        Form_Version__c version = activeVersion(formId);
+        Map<String, Object> spec = parseSpec(FinalSpecStore.read(version));
+        FinalAddressService.requireSearchQuestion(spec, elementId);
+    }
+
     /** Mint a ticket; missing signing keys read as the normal "unavailable"
      *  message, never an unsigned ticket (guests never provision keys). */
     private static String newTicket(Id formId) {
