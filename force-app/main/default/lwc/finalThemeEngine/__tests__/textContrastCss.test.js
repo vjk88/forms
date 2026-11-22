@@ -351,7 +351,8 @@ const SWAPS = [
     [
         'finalThemeCard',
         '.tc-card',
-        'background',
+        // split into colour + image by the theme gradients PR (06d0a392)
+        'background-color',
         'var(--c-card-backing, var(--c-content-bg, #ffffff))'
     ],
     [

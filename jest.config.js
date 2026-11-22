@@ -18,6 +18,11 @@ module.exports = {
     // copies of the tests must never run against this checkout's components.
     testPathIgnorePatterns: [
         ...(jestConfig.testPathIgnorePatterns || []),
-        '<rootDir>/.claude/'
+        '<rootDir>/.claude/',
+        // shared fixtures that test files import (familiesContract.js,
+        // focusContract.js, textContrastContract.js) are not suites
+        // (no \w: on Windows jest turns a backslash before a letter into a
+        // path separator)
+        '__tests__/[A-Za-z]+Contract[.]js$'
     ]
 };
