@@ -2864,6 +2864,32 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                                                 }
                                             };
                                         }
+                                        // An address question needs to know which form
+                                        // to ask the server's address search about.
+                                        // The Studio preview has an inline spec and no
+                                        // form id of its own, so it reads it off the
+                                        // spec; guests get search in a later slice.
+                                        if (
+                                            base.config &&
+                                            base.config.inputType === 'address'
+                                        ) {
+                                            const addressFormId =
+                                                this.effectiveFormId ||
+                                                this._inlineSpec?.form?.id ||
+                                                null;
+                                            base = {
+                                                ...base,
+                                                address: {
+                                                    formId: addressFormId,
+                                                    searchable:
+                                                        !IS_GUEST &&
+                                                        base.config
+                                                            .addressSearch ===
+                                                            true &&
+                                                        !!addressFormId
+                                                }
+                                            };
+                                        }
                                         if (this.preservePreview) {
                                             base = {
                                                 ...base,

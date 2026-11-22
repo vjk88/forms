@@ -112,6 +112,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Form_Submission_Answer__c.Value_JSON__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Form_Submission_Answer__c.Value_Unparsed__c</field>
         <readable>true</readable>
     </fieldPermissions>

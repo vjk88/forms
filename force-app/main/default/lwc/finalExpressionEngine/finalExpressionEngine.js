@@ -478,8 +478,53 @@ export function validateEntry(entry, value, ctx) {
     }
 }
 
+/** An address answer is an object of parts, so its rules are its own:
+ *  required = street, city AND country filled; pattern, range and custom
+ *  checks do not apply to it. The server (FinalAnswerValidator) says the same
+ *  words, so a respondent sees one message wherever it is caught. */
+const ADDRESS_REQUIRED_PARTS = [
+    ['street', 'Final_Run_AddressStreet'],
+    ['city', 'Final_Run_AddressCity'],
+    ['country', 'Final_Run_AddressCountry']
+];
+
+function addressFailures(element, value, ctx) {
+    const out = [];
+    for (const entry of element.validation || []) {
+        if (!entry || entry.type !== 'required') {
+            continue;
+        }
+        if (isBlank(value) || typeof value !== 'object') {
+            const failure = validateEntry(entry, value, ctx);
+            if (failure) {
+                out.push(failure);
+            }
+            continue;
+        }
+        if (!whenApplies(entry.when, ctx)) {
+            continue;
+        }
+        const missing = ADDRESS_REQUIRED_PARTS.find(([key]) => {
+            const v = value[key];
+            return v === null || v === undefined || String(v).trim() === '';
+        });
+        if (missing) {
+            out.push(tr('Final_Run_AddressPartRequired', tr(missing[1])));
+        }
+    }
+    return out;
+}
+
 /** All failures for one element's validation array. */
 export function validateElement(element, value, ctx) {
+    if (
+        element &&
+        element.type === 'field' &&
+        element.config &&
+        element.config.inputType === 'address'
+    ) {
+        return addressFailures(element, value, ctx);
+    }
     const out = [];
     const elType = element && element.type;
     for (const entry of (element && element.validation) || []) {

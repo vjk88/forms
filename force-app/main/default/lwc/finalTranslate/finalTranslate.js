@@ -142,6 +142,19 @@ import Final_Run_Language from '@salesforce/label/c.Final_Run_Language';
 import Final_Run_TooFast from '@salesforce/label/c.Final_Run_TooFast';
 import Final_Run_StillSending from '@salesforce/label/c.Final_Run_StillSending';
 import Final_Run_AlreadySent from '@salesforce/label/c.Final_Run_AlreadySent';
+import Final_Run_AddressStreet from '@salesforce/label/c.Final_Run_AddressStreet';
+import Final_Run_AddressCity from '@salesforce/label/c.Final_Run_AddressCity';
+import Final_Run_AddressProvince from '@salesforce/label/c.Final_Run_AddressProvince';
+import Final_Run_AddressPostalCode from '@salesforce/label/c.Final_Run_AddressPostalCode';
+import Final_Run_AddressCountry from '@salesforce/label/c.Final_Run_AddressCountry';
+import Final_Run_AddressSearch from '@salesforce/label/c.Final_Run_AddressSearch';
+import Final_Run_AddressNoMatches from '@salesforce/label/c.Final_Run_AddressNoMatches';
+import Final_Run_AddressSearchDown from '@salesforce/label/c.Final_Run_AddressSearchDown';
+import Final_Run_AddressPartRequired from '@salesforce/label/c.Final_Run_AddressPartRequired';
+import Final_Run_AddressSearchHint from '@salesforce/label/c.Final_Run_AddressSearchHint';
+import Final_Run_AddressFilled from '@salesforce/label/c.Final_Run_AddressFilled';
+import Final_Run_AddressGroupMore from '@salesforce/label/c.Final_Run_AddressGroupMore';
+import Final_Run_AddressSearching from '@salesforce/label/c.Final_Run_AddressSearching';
 
 const IMPORTED = {
     Final_Run_Submit,
@@ -274,7 +287,20 @@ const IMPORTED = {
     Final_Run_Language,
     Final_Run_TooFast,
     Final_Run_StillSending,
-    Final_Run_AlreadySent
+    Final_Run_AlreadySent,
+    Final_Run_AddressStreet,
+    Final_Run_AddressCity,
+    Final_Run_AddressProvince,
+    Final_Run_AddressPostalCode,
+    Final_Run_AddressCountry,
+    Final_Run_AddressSearch,
+    Final_Run_AddressNoMatches,
+    Final_Run_AddressSearchDown,
+    Final_Run_AddressPartRequired,
+    Final_Run_AddressSearchHint,
+    Final_Run_AddressFilled,
+    Final_Run_AddressGroupMore,
+    Final_Run_AddressSearching
 };
 
 const LANG_PATTERN = /^[a-z]{2,3}([_-][A-Za-z]{2})?$/;

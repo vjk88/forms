@@ -1537,3 +1537,37 @@ describe('choice dropdown on a record field (DEFERRED 29)', () => {
         expect(el.problems).toEqual([]);
     });
 });
+
+describe('address as a rule source', () => {
+    const addressMount = (rules) =>
+        mount({
+            sources: [
+                { id: 'f_addr', label: 'Home address' },
+                { id: 'f_text', label: 'First name' }
+            ],
+            sourceIndex: makeIndex([
+                ['f_addr', { type: 'field', inputType: 'address' }],
+                ['f_text', { type: 'field', inputType: 'text' }]
+            ]),
+            value: config(rules)
+        });
+
+    it('offers only is empty / is not empty, and no value box', async () => {
+        const el = addressMount([rule('f_addr', 'isBlank', null)]);
+        await flush();
+        expect(ops(el)).toEqual(['isBlank', 'isNotBlank']);
+        expect(control(el, 0, 'value')).toBeNull();
+    });
+
+    it('repointing a text rule to an address lands on a valid operator', async () => {
+        const el = addressMount([rule('f_text', 'equals', 'x')]);
+        const changes = listen(el);
+        await flush();
+        change(control(el, 0, 'field'), 'f_addr');
+        await flush();
+        const saved = changes[changes.length - 1];
+        expect(saved.rules[0].source).toBe('f_addr');
+        expect(saved.rules[0].operator).toBe('isBlank');
+        expect(saved.rules[0].value).toBeNull();
+    });
+});

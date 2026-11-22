@@ -39,6 +39,7 @@ const RESPONDENT = new Set([
     'finalAfterSubmit',
     'finalGuestHost',
     'finalLookup',
+    'finalAddressSearch',
     'finalLanguageMenu',
     'finalFormHighlight'
 ]);

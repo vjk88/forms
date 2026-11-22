@@ -102,6 +102,7 @@ describe('focus stays visible in Windows High Contrast', () => {
         'finalFormViewer',
         'finalLanguageMenu',
         'finalLookup',
+        'finalAddressSearch',
         'finalNavAccordion',
         'finalNavOneAtATime',
         'finalNavRail',

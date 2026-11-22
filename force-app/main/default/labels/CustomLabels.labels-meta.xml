@@ -1148,4 +1148,115 @@
         <value
         >Your response was already received. Changes made after that weren't saved.</value>
     </labels>
+    <labels>
+        <fullName>Final_Run_AddressStreet</fullName>
+        <categories>FinalRuntime</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Address part: street</shortDescription>
+        <value>Street</value>
+    </labels>
+    <labels>
+        <fullName>Final_Run_AddressCity</fullName>
+        <categories>FinalRuntime</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Address part: city</shortDescription>
+        <value>City</value>
+    </labels>
+    <labels>
+        <fullName>Final_Run_AddressProvince</fullName>
+        <categories>FinalRuntime</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Address part: state or province</shortDescription>
+        <value>State / Province</value>
+    </labels>
+    <labels>
+        <fullName>Final_Run_AddressPostalCode</fullName>
+        <categories>FinalRuntime</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Address part: zip or postal code</shortDescription>
+        <value>Zip / Postal code</value>
+    </labels>
+    <labels>
+        <fullName>Final_Run_AddressCountry</fullName>
+        <categories>FinalRuntime</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Address part: country</shortDescription>
+        <value>Country</value>
+    </labels>
+    <labels>
+        <fullName>Final_Run_AddressSearch</fullName>
+        <categories>FinalRuntime</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+        >Address search box placeholder and name</shortDescription>
+        <value>Search for an address</value>
+    </labels>
+    <labels>
+        <fullName>Final_Run_AddressNoMatches</fullName>
+        <categories>FinalRuntime</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Address search: nothing found</shortDescription>
+        <value>No matching addresses</value>
+    </labels>
+    <labels>
+        <fullName>Final_Run_AddressSearchDown</fullName>
+        <categories>FinalRuntime</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Address search: unavailable note</shortDescription>
+        <value
+        >Address search isn't available right now. Type the address below.</value>
+    </labels>
+    <labels>
+        <fullName>Final_Run_AddressPartRequired</fullName>
+        <categories>FinalRuntime</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+        >Address part missing; {0} is the part name</shortDescription>
+        <value>{0} is required.</value>
+    </labels>
+    <labels>
+        <fullName>Final_Run_AddressSearchHint</fullName>
+        <categories>FinalRuntime</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+        >Address search: weak hint under the box</shortDescription>
+        <value>Pick an address, or fill it in below.</value>
+    </labels>
+    <labels>
+        <fullName>Final_Run_AddressFilled</fullName>
+        <categories>FinalRuntime</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+        >Address search: announced after a pick</shortDescription>
+        <value>Address filled in. Check the fields below.</value>
+    </labels>
+    <labels>
+        <fullName>Final_Run_AddressGroupMore</fullName>
+        <categories>FinalRuntime</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+        >Address search: hidden text on a group option</shortDescription>
+        <value>, shows more addresses</value>
+    </labels>
+    <labels>
+        <fullName>Final_Run_AddressSearching</fullName>
+        <categories>FinalRuntime</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+        >Address search: announced while searching</shortDescription>
+        <value>Searching…</value>
+    </labels>
 </CustomLabels>

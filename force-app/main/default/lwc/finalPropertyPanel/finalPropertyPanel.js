@@ -1,6 +1,7 @@
 import { LightningElement, api, wire } from 'lwc';
 import { getObjectInfo } from 'lightning/uiObjectInfoApi';
 import describeFields from '@salesforce/apex/FinalStudioController.describeFields';
+import addressStatus from '@salesforce/apex/FinalAddressController.status';
 import listLookupObjects from '@salesforce/apex/FinalLookupController.listLookupObjects';
 import listSurveyTopics from '@salesforce/apex/FinalStudioController.listSurveyTopics';
 import createSurveyTopic from '@salesforce/apex/FinalStudioController.createSurveyTopic';
@@ -265,6 +266,16 @@ export default class FinalPropertyPanel extends LightningElement {
     wiredSchema({ data }) {
         if (data) {
             this.schemaFields = data;
+        }
+    }
+
+    /** Does this org have an address search provider? (cacheable) */
+    _addressStatus = null;
+
+    @wire(addressStatus)
+    wiredAddressStatus({ data }) {
+        if (data) {
+            this._addressStatus = data;
         }
     }
 
@@ -2096,9 +2107,52 @@ export default class FinalPropertyPanel extends LightningElement {
         return (this.ruleSources || []).filter((s) => s.id !== this.n.id);
     }
 
-    /** Checks are a FIELD affordance (schema: validation on elements). */
+    /** Checks are a FIELD affordance (schema: validation on elements). An
+     *  address has none of its own: its only rule is Required. */
     get showChecks() {
-        return this.isField;
+        return this.isField && !this.isAddressQuestion;
+    }
+
+    /** An address has no placeholder: it is five labelled boxes. */
+    get showPlaceholder() {
+        return !this.isAddressQuestion;
+    }
+
+    // ---- address question: the search switch ----
+
+    get isAddressQuestion() {
+        return this.isField && this.cfg.inputType === 'address';
+    }
+
+    get addressConfigured() {
+        return Boolean(this._addressStatus && this._addressStatus.configured);
+    }
+
+    /** Off and locked until the org has a provider, whatever the spec says. */
+    get addressSearchOn() {
+        return this.addressConfigured && this.cfg.addressSearch === true;
+    }
+
+    get addressSearchDisabled() {
+        return !this.addressConfigured;
+    }
+
+    get addressSearchHint() {
+        if (!this._addressStatus) {
+            return '';
+        }
+        if (!this.addressConfigured) {
+            return 'No address search is set up for your organization, so people type the address. An admin can set it up on the Final Settings tab.';
+        }
+        if (this._addressStatus.provider === 'Custom') {
+            return "Suggests addresses as people type, using your organization's own address provider. Each search counts against your organization's account with that provider.";
+        }
+        const who = this._addressStatus.providerLabel || 'your provider';
+        return `Suggests addresses as people type, using ${who}. Each search counts against your organization's account with that provider.`;
+    }
+
+    handleAddressSearch(event) {
+        this._config({ addressSearch: event.target.checked });
     }
 
     // ---- intents ----

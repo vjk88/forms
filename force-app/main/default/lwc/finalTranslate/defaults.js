@@ -145,5 +145,19 @@ export const EN = {
     Final_Run_TooFast: 'Please check your answers, then submit again.',
     Final_Run_StillSending: 'Still sending…',
     Final_Run_AlreadySent:
-        "Your response was already received. Changes made after that weren't saved."
+        "Your response was already received. Changes made after that weren't saved.",
+    Final_Run_AddressStreet: 'Street',
+    Final_Run_AddressCity: 'City',
+    Final_Run_AddressProvince: 'State / Province',
+    Final_Run_AddressPostalCode: 'Zip / Postal code',
+    Final_Run_AddressCountry: 'Country',
+    Final_Run_AddressSearch: 'Search for an address',
+    Final_Run_AddressNoMatches: 'No matching addresses',
+    Final_Run_AddressSearchDown:
+        "Address search isn't available right now. Type the address below.",
+    Final_Run_AddressPartRequired: '{0} is required.',
+    Final_Run_AddressSearchHint: 'Pick an address, or fill it in below.',
+    Final_Run_AddressFilled: 'Address filled in. Check the fields below.',
+    Final_Run_AddressGroupMore: ', shows more addresses',
+    Final_Run_AddressSearching: 'Searching…'
 };

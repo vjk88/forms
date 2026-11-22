@@ -199,6 +199,146 @@
                     onvaluechange={handleLookupChange}
                 ></c-final-lookup>
             </template>
+            <!-- Address: an optional search box above five fields. Same base
+                 components, label pattern and styling hooks as every other
+                 field, so the theme styles them identically. The question's own
+                 label sits above; the group is named by it for assistive tech. -->
+            <template lwc:elseif={isAddress}>
+                <div class="addr" role="group" aria-label={el.label}>
+                    <template lwc:if={addressSearchable}>
+                        <div class="addr-search">
+                            <c-final-address-search
+                                form-id={addressFormId}
+                                element-id={el.id}
+                                label={addressSearchLabel}
+                                disabled={el.readOnly}
+                                onaddresspick={handleAddressPick}
+                                onsearchdown={handleAddressSearchDown}
+                            ></c-final-address-search>
+                        </div>
+                    </template>
+                    <div class="addr-part">
+                        <label
+                            class="field-label addr-label"
+                            aria-hidden="true"
+                            data-part="street"
+                            onclick={handleAddressLabelClick}
+                        >
+                            <template lwc:if={el.required}>
+                                <abbr class="field-req" title={requiredTitle}
+                                    >*</abbr
+                                >
+                            </template>
+                            {streetLabel}
+                        </label>
+                        <lightning-textarea
+                            data-part="street"
+                            label={streetLabel}
+                            value={addressStreet}
+                            maxlength="255"
+                            required={el.required}
+                            message-when-value-missing={streetMissingMessage}
+                            read-only={el.readOnly}
+                            variant="label-hidden"
+                            onchange={handleAddressPartChange}
+                        ></lightning-textarea>
+                    </div>
+                    <div class="addr-part">
+                        <label
+                            class="field-label addr-label"
+                            aria-hidden="true"
+                            data-part="city"
+                            onclick={handleAddressLabelClick}
+                        >
+                            <template lwc:if={el.required}>
+                                <abbr class="field-req" title={requiredTitle}
+                                    >*</abbr
+                                >
+                            </template>
+                            {cityLabel}
+                        </label>
+                        <lightning-input
+                            type="text"
+                            data-part="city"
+                            label={cityLabel}
+                            value={addressCity}
+                            maxlength="40"
+                            required={el.required}
+                            message-when-value-missing={cityMissingMessage}
+                            read-only={el.readOnly}
+                            variant="label-hidden"
+                            onchange={handleAddressPartChange}
+                        ></lightning-input>
+                    </div>
+                    <div class="addr-row">
+                        <div class="addr-part addr-part-province">
+                            <label
+                                class="field-label addr-label"
+                                aria-hidden="true"
+                                data-part="province"
+                                onclick={handleAddressLabelClick}
+                                >{provinceLabel}</label
+                            >
+                            <lightning-input
+                                type="text"
+                                data-part="province"
+                                label={provinceLabel}
+                                value={addressProvince}
+                                maxlength="80"
+                                read-only={el.readOnly}
+                                variant="label-hidden"
+                                onchange={handleAddressPartChange}
+                            ></lightning-input>
+                        </div>
+                        <div class="addr-part addr-part-postal">
+                            <label
+                                class="field-label addr-label"
+                                aria-hidden="true"
+                                data-part="postalCode"
+                                onclick={handleAddressLabelClick}
+                                >{postalCodeLabel}</label
+                            >
+                            <lightning-input
+                                type="text"
+                                data-part="postalCode"
+                                label={postalCodeLabel}
+                                value={addressPostalCode}
+                                maxlength="20"
+                                read-only={el.readOnly}
+                                variant="label-hidden"
+                                onchange={handleAddressPartChange}
+                            ></lightning-input>
+                        </div>
+                    </div>
+                    <div class="addr-part">
+                        <label
+                            class="field-label addr-label"
+                            aria-hidden="true"
+                            data-part="country"
+                            onclick={handleAddressLabelClick}
+                        >
+                            <template lwc:if={el.required}>
+                                <abbr class="field-req" title={requiredTitle}
+                                    >*</abbr
+                                >
+                            </template>
+                            {countryLabel}
+                        </label>
+                        <lightning-input
+                            type="text"
+                            data-part="country"
+                            label={countryLabel}
+                            value={addressCountry}
+                            maxlength="80"
+                            required={el.required}
+                            message-when-value-missing={countryMissingMessage}
+                            read-only={el.readOnly}
+                            variant="label-hidden"
+                            onchange={handleAddressPartChange}
+                        ></lightning-input>
+                    </div>
+                </div>
+            </template>
             <template lwc:else>
                 <lightning-input
                     type={inputType}
@@ -214,7 +354,7 @@
                 ></lightning-input>
             </template>
 
-            <template lwc:if={hasErrors}>
+            <template lwc:if={showFieldErrors}>
                 <div class="field-errors" role="alert">
                     <template for:each={errors} for:item="msg">
                         <p key={msg} class="field-error">{msg}</p>

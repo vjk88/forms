@@ -831,11 +831,42 @@
                 </template>
             </div>
 
+            <template lwc:if={isAddressQuestion}>
+                <div class="pp-group">
+                    <div class="pp-rule">
+                        <span class="pp-rule-text">
+                            <span class="pp-rule-name" aria-hidden="true"
+                                >Address search</span
+                            >
+                            <span class="pp-rule-hint"
+                                >{addressSearchHint}</span
+                            >
+                        </span>
+                        <lightning-input
+                            type="toggle"
+                            variant="label-hidden"
+                            label="Address search"
+                            checked={addressSearchOn}
+                            disabled={addressSearchDisabled}
+                            message-toggle-active=""
+                            message-toggle-inactive=""
+                            data-rule="addressSearch"
+                            onchange={handleAddressSearch}
+                        ></lightning-input>
+                    </div>
+                </div>
+            </template>
+
             <div class="pp-group pp-rules">
                 <h4 class="pp-grouptitle">Rules</h4>
                 <div class="pp-rule">
-                    <span class="pp-rule-text" aria-hidden="true">
-                        <span class="pp-rule-name">Required</span>
+                    <span class="pp-rule-text">
+                        <span class="pp-rule-name" aria-hidden="true"
+                            >Required</span
+                        >
+                        <span class="pp-rule-hint" if:true={isAddressQuestion}
+                            >People must fill in Street, City and Country.</span
+                        >
                     </span>
                     <lightning-input
                         type="toggle"
@@ -899,22 +930,26 @@
                         onchange={handleCaptionDisplay}
                     ></c-final-button-group>
                 </div>
-                <lightning-input
-                    label="Placeholder"
-                    data-prop="placeholder"
-                    value={n.placeholder}
-                    onchange={handlePlaceholder}
-                ></lightning-input>
+                <template lwc:if={showPlaceholder}>
+                    <lightning-input
+                        label="Placeholder"
+                        data-prop="placeholder"
+                        value={n.placeholder}
+                        onchange={handlePlaceholder}
+                    ></lightning-input>
+                </template>
             </div>
 
-            <div class="pp-group">
-                <h4 class="pp-grouptitle">Checks</h4>
-                <c-final-validation-editor
-                    entries={extraValidation}
-                    sources={compareSources}
-                    onvalidationchange={handleValidationChange}
-                ></c-final-validation-editor>
-            </div>
+            <template lwc:if={showChecks}>
+                <div class="pp-group">
+                    <h4 class="pp-grouptitle">Checks</h4>
+                    <c-final-validation-editor
+                        entries={extraValidation}
+                        sources={compareSources}
+                        onvalidationchange={handleValidationChange}
+                    ></c-final-validation-editor>
+                </div>
+            </template>
         </template>
 
         <!-- DISPLAY TEXT -->

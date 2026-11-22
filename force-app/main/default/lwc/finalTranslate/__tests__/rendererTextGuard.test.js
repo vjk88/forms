@@ -97,6 +97,7 @@ const NOT_TEXT = [
     'allowDelete',
     'allowMultiple',
     'allowOther',
+    'address', // viewer-stamped context { formId, searchable }, not words
     'autoRedirect',
     'bgImage', // image address
     'binding',

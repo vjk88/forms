@@ -34,6 +34,11 @@
                 <label>URL</label>
             </value>
             <value>
+                <fullName>Address</fullName>
+                <default>false</default>
+                <label>Address</label>
+            </value>
+            <value>
                 <fullName>Choice</fullName>
                 <default>false</default>
                 <label>Choice</label>

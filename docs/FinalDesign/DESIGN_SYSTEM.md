@@ -59,7 +59,7 @@ and `mocks/STUDIO_FORMWORK_DIRECTION.md` (the proposal this adopts).
 | Type sizes | `--c-fs-*` roles in `finalPageFrame.css` | `--c-studio-fs-*` roles (§4.2) |
 | Full contract | [ARCHITECTURE_LAYOUTS_THEMES.md](./ARCHITECTURE_LAYOUTS_THEMES.md) §3 | This document |
 | Guard test | `finalPageFrame/__tests__/typeScale.test.js` | `finalStudioStyles/__tests__/studioScale.test.js` (§10) |
-| Components | `finalPageFrame`, `finalFormViewer`, `finalFormHeader`, `finalSubmitBar`, `finalLayoutZones`, `finalSectionRenderer`, `finalElementRenderer`, `finalAfterSubmit`, `finalGuestHost`, `finalLookup`, `finalFormHighlight`, `finalNav*` | Everything else under `final*` |
+| Components | `finalPageFrame`, `finalFormViewer`, `finalFormHeader`, `finalSubmitBar`, `finalLayoutZones`, `finalSectionRenderer`, `finalElementRenderer`, `finalAfterSubmit`, `finalGuestHost`, `finalLookup`, `finalAddressSearch`, `finalFormHighlight`, `finalNav*` | Everything else under `final*` |
 
 **How the wall holds** (verified in-org 2026-09-06, archive/STUDIO_COLOR_CONSISTENCY.md): the name sets don't overlap,
 and `finalPageFrame`'s wrapper resets `color` and `font-family` to theme tokens.

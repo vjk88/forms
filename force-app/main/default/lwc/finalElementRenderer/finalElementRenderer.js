@@ -41,6 +41,55 @@ const INPUT_TYPES = {
     checkbox: 'checkbox'
 };
 
+/** The five text parts of an address answer, and the three that "required"
+ *  demands (street, city, country) with their runtime labels. */
+const ADDRESS_TEXT_KEYS = [
+    'street',
+    'city',
+    'province',
+    'postalCode',
+    'country'
+];
+const ADDRESS_REQUIRED_PARTS = [
+    ['street', 'Final_Run_AddressStreet'],
+    ['city', 'Final_Run_AddressCity'],
+    ['country', 'Final_Run_AddressCountry']
+];
+
+/**
+ * The address answer: only the parts that hold something, or null when no
+ * text part is left (so every existing blank check keeps working). The two
+ * codes and the coordinates travel only with a search pick; a hand edit
+ * calls this without `fromPick`, which leaves them out.
+ */
+function normaliseAddress(parts, fromPick = false) {
+    const out = {};
+    ADDRESS_TEXT_KEYS.forEach((k) => {
+        const v = parts[k];
+        if (typeof v === 'string' && v.trim() !== '') {
+            out[k] = fromPick ? v.trim() : v;
+        }
+    });
+    if (Object.keys(out).length === 0) {
+        return null;
+    }
+    if (fromPick) {
+        ['provinceCode', 'countryCode'].forEach((k) => {
+            const v = parts[k];
+            if (typeof v === 'string' && v.trim() !== '') {
+                out[k] = v.trim();
+            }
+        });
+        ['latitude', 'longitude'].forEach((k) => {
+            const v = parts[k];
+            if (typeof v === 'number' && Number.isFinite(v)) {
+                out[k] = v;
+            }
+        });
+    }
+    return out;
+}
+
 /** Mirrors `FinalSubmitService.MAX_FILE_B64_CHARS` in raw-byte terms — base64
  *  inflates by 4/3, and the SERVER is the enforcement point. This copy exists
  *  only so a doomed file is refused before the user waits for an upload.
@@ -280,6 +329,13 @@ export default class FinalElementRenderer extends LightningElement {
         return this.errors.length > 0;
     }
 
+    /** The question-level error list. An address question's part messages are
+     *  already drawn on the parts themselves, so the list stays for the
+     *  generic all-blank message and for server refusals. */
+    get showFieldErrors() {
+        return this.hasErrors && !(this.isAddress && this.addressInvalidPart);
+    }
+
     // ---- Display-as variants (BUILDER_SURFACES §2: config.renderAs) ----
 
     /**
@@ -504,10 +560,201 @@ export default class FinalElementRenderer extends LightningElement {
         );
     }
 
+    // ---- address: an optional search box above five fields ----
+
+    get isAddress() {
+        return this.isField && this.cfg.inputType === 'address';
+    }
+
+    /** The current answer's parts ({} when none). */
+    get addressParts() {
+        const v = this.el.value;
+        return v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+    }
+
+    get addressStreet() {
+        return this.addressParts.street || '';
+    }
+
+    get addressCity() {
+        return this.addressParts.city || '';
+    }
+
+    get addressProvince() {
+        return this.addressParts.province || '';
+    }
+
+    get addressPostalCode() {
+        return this.addressParts.postalCode || '';
+    }
+
+    get addressCountry() {
+        return this.addressParts.country || '';
+    }
+
+    get streetLabel() {
+        return t('Final_Run_AddressStreet');
+    }
+
+    get cityLabel() {
+        return t('Final_Run_AddressCity');
+    }
+
+    get provinceLabel() {
+        return t('Final_Run_AddressProvince');
+    }
+
+    get postalCodeLabel() {
+        return t('Final_Run_AddressPostalCode');
+    }
+
+    get countryLabel() {
+        return t('Final_Run_AddressCountry');
+    }
+
+    get addressSearchLabel() {
+        return t('Final_Run_AddressSearch');
+    }
+
+    /** The viewer stamps `address` ({ formId, searchable }) on the element:
+     *  search needs a form to ask the server about, and a provider. */
+    get addressCtx() {
+        return (this.el && this.el.address) || {};
+    }
+
+    get addressSearchable() {
+        return this.addressCtx.searchable === true && !this.el.readOnly;
+    }
+
+    get addressFormId() {
+        return this.addressCtx.formId || null;
+    }
+
+    /** Which required part the question's error names, or undefined. The
+     *  message is built from the same label and sentence the engine uses. */
+    get addressInvalidPart() {
+        const first = this.errors[0];
+        if (!first) {
+            return undefined;
+        }
+        return ADDRESS_REQUIRED_PARTS.find(
+            ([, label]) =>
+                first === t('Final_Run_AddressPartRequired', t(label))
+        );
+    }
+
+    _partMissingMessage(label) {
+        return this.el.required
+            ? t('Final_Run_AddressPartRequired', t(label))
+            : undefined;
+    }
+
+    get streetMissingMessage() {
+        return this._partMissingMessage('Final_Run_AddressStreet');
+    }
+
+    get cityMissingMessage() {
+        return this._partMissingMessage('Final_Run_AddressCity');
+    }
+
+    get countryMissingMessage() {
+        return this._partMissingMessage('Final_Run_AddressCountry');
+    }
+
+    handleAddressPartChange(event) {
+        const part = event.target.dataset.part;
+        if (!part) {
+            return;
+        }
+        // Typing by hand means the parts no longer match what the search
+        // returned: keep the typed text, drop the codes and the coordinates.
+        const next = {};
+        ADDRESS_TEXT_KEYS.forEach((k) => {
+            next[k] = this.addressParts[k];
+        });
+        next[part] = event.target.value;
+        this.dispatchValue(normaliseAddress(next));
+    }
+
+    /** A picked search result replaces every part, codes and coordinates
+     *  included. */
+    handleAddressPick(event) {
+        const r = (event && event.detail) || {};
+        this.dispatchValue(normaliseAddress(r, true));
+    }
+
+    /** The search gave up: put the cursor in Street rather than leave it on a
+     *  box that is about to disappear, and carry what was typed across if
+     *  Street is still empty. */
+    handleAddressSearchDown(event) {
+        const term = String((event.detail && event.detail.term) || '').trim();
+        if (term && !String(this.addressParts.street || '').trim()) {
+            const next = {};
+            ADDRESS_TEXT_KEYS.forEach((k) => {
+                next[k] = this.addressParts[k];
+            });
+            next.street = term;
+            this.dispatchValue(normaliseAddress(next));
+        }
+        const street = this.template.querySelector(
+            '[data-part="street"]:not(label)'
+        );
+        if (street && typeof street.focus === 'function') {
+            street.focus();
+        }
+    }
+
+    handleAddressLabelClick(event) {
+        const part = event.currentTarget.dataset.part;
+        const target = this.template.querySelector(
+            `[data-part="${part}"]:not(label)`
+        );
+        if (target && typeof target.focus === 'function') {
+            target.focus();
+        }
+    }
+
+    /** When the question shows a "<Part> is required." error, mark EVERY empty
+     *  required part on the native control (so each reads as one to fix, with
+     *  the same words blur uses), and clear a part the moment it has a value or
+     *  the error goes. reportValidity on a cleared part wipes stale text. */
+    _syncAddressValidity() {
+        if (!this.isAddress) {
+            return;
+        }
+        const partMessage = Boolean(this.addressInvalidPart);
+        ADDRESS_REQUIRED_PARTS.forEach(([key, label]) => {
+            const input = this.template.querySelector(
+                `[data-part="${key}"]:not(label)`
+            );
+            if (!input || typeof input.setCustomValidity !== 'function') {
+                return;
+            }
+            const empty = !String(this.addressParts[key] || '').trim();
+            if (partMessage && empty) {
+                input.setCustomValidity(
+                    t('Final_Run_AddressPartRequired', t(label))
+                );
+                this._addrMarked = this._addrMarked || new Set();
+                this._addrMarked.add(key);
+            } else if (this._addrMarked && this._addrMarked.has(key)) {
+                input.setCustomValidity('');
+                this._addrMarked.delete(key);
+            } else {
+                input.setCustomValidity('');
+                return;
+            }
+            if (typeof input.reportValidity === 'function') {
+                input.reportValidity();
+            }
+        });
+    }
+
     get isInput() {
         return (
             this.isField &&
             !this.isLookup &&
+            !this.isAddress &&
             !this.isTextarea &&
             !this.isRadioGroup &&
             !this.isCheckboxGroup &&
@@ -1471,6 +1718,7 @@ export default class FinalElementRenderer extends LightningElement {
             this._commitRank(this.rankValues);
         }
         this._watchScaleField();
+        this._syncAddressValidity();
         this._takeFocusRequest();
     }
 

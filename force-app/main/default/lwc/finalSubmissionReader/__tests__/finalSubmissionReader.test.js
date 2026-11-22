@@ -449,6 +449,27 @@ describe('c/finalSubmissionReader', () => {
         expect(rows(el)).toEqual([{ label: 'Real question', value: 'answer' }]);
     });
 
+    it('shows an Address answer as its formatted lines, breaks kept', async () => {
+        const el = await mount({
+            ...base,
+            specJson: specWith([
+                { id: 'el_a', type: 'field', label: 'Home address' }
+            ]),
+            answers: [
+                answer({
+                    answerType: 'Address',
+                    text: '1 Market St\nSan Francisco\nCA 94105\nUnited States'
+                })
+            ]
+        });
+        const span = el.shadowRoot.querySelector('.sr-address');
+        expect(span).not.toBeNull();
+        expect(span.textContent).toBe(
+            '1 Market St\nSan Francisco\nCA 94105\nUnited States'
+        );
+        expect(rows(el)[0].label).toBe('Home address');
+    });
+
     it('reports a load failure instead of rendering nothing', async () => {
         const el = createElement('c-final-submission-reader', {
             is: FinalSubmissionReader
