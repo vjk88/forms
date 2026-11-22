@@ -2618,6 +2618,16 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                     label: 'Pick a date',
                     config: { inputType: 'date' }
                 };
+            // An address: five parts, with optional address search. Search is
+            // ON by default; it only runs when the org has a provider set up
+            // (the inspector says so when it does not).
+            case 'questionAddress':
+                return {
+                    ...base,
+                    type: 'field',
+                    label: 'Your address',
+                    config: { inputType: 'address', addressSearch: true }
+                };
             case 'questionUrl':
                 return {
                     ...base,

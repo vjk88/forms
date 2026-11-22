@@ -936,6 +936,45 @@ describe('c-final-form-studio', () => {
         jest.useRealTimers();
     });
 
+    it('an Address question mints a field with search on by default', async () => {
+        jest.useFakeTimers();
+        const survey = JSON.parse(JSON.stringify(SPEC));
+        survey.form = { id: 'a0F1', name: 'Survey', type: 'survey' };
+        loadStudio.mockResolvedValue({
+            name: 'Survey',
+            specJson: JSON.stringify(survey),
+            draftVersionId: 'a0V1',
+            versionNumber: 2,
+            activeVersionNumber: 1
+        });
+        saveDraft.mockResolvedValue('a0V1');
+        const el = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+
+        el.shadowRoot.querySelectorAll('.st-mode')[0].click(); // Build
+        await Promise.resolve();
+        el.shadowRoot.querySelector('c-final-field-palette').dispatchEvent(
+            new CustomEvent('addquestion', {
+                detail: { questionType: 'questionAddress' }
+            })
+        );
+        jest.advanceTimersByTime(1000);
+        const saved = JSON.parse(
+            saveDraft.mock.calls[saveDraft.mock.calls.length - 1][0].specJson
+        );
+        const added = saved.pages[0].sections[0].elements.slice(-1)[0];
+        expect(added).toMatchObject({
+            type: 'field',
+            label: 'Your address',
+            binding: null,
+            config: { inputType: 'address', addressSearch: true }
+        });
+        jest.useRealTimers();
+    });
+
     it('a new matrix question carries the balanced 5-point agree scale', async () => {
         // DEFERRED #27: the renderer fallback is 4 points with no "Strongly
         // disagree"; new matrices write the likert's agree-5 on themselves

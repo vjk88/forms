@@ -1947,6 +1947,13 @@ public inherited sharing class FinalSubmitService {
         if (value instanceof List<Object> && ((List<Object>) value).isEmpty()) {
             return null;
         }
+        // An address with every part empty (or nothing usable) is blank.
+        if (
+            FinalAddressAnswer.isAddress(el) &&
+            FinalAddressAnswer.clean(value) == null
+        ) {
+            return null;
+        }
         SObject row = sink.newRow(parentId);
         row.put('Element_Key__c', (String) el.get('id'));
         row.put('Entry_Index__c', entryIndex);
@@ -1987,6 +1994,10 @@ public inherited sharing class FinalSubmitService {
         }
         String answerType = answerTypeOf(el);
         row.put('Answer_Type__c', answerType);
+        if (answerType == 'Address') {
+            writeAddress(row, value);
+            return;
+        }
         if (answerType == 'Options') {
             List<Object> many = value instanceof List<Object>
                 ? (List<Object>) value
@@ -2076,6 +2087,9 @@ public inherited sharing class FinalSubmitService {
         String kind = input instanceof String
             ? ((String) input).toLowerCase()
             : 'text';
+        if (kind == 'address') {
+            return 'Address';
+        }
         if (kind == 'email') {
             return 'Email';
         }
@@ -2114,6 +2128,21 @@ public inherited sharing class FinalSubmitService {
         return 'Text';
     }
 
+    /** An Address answer: the cleaned parts as JSON, the readable form as text.
+     *  answerRow already dropped a blank address, so clean() is non-null here;
+     *  the null guard keeps a stray caller from writing 'null'. */
+    private static void writeAddress(SObject row, Object value) {
+        Map<String, Object> a = FinalAddressAnswer.clean(value);
+        if (a == null) {
+            return;
+        }
+        row.put('Value_JSON__c', JSON.serialize(a));
+        row.put(
+            'Text_Value__c',
+            FinalAddressAnswer.format(a).abbreviate(32768)
+        );
+    }
+
     /** The survey rule, unchanged: the JSON value's own shape picks the
      *  column, then the element's declared kind, then text. */
     // Failed typed parsing intentionally falls through to the text fallback.
@@ -2123,6 +2152,10 @@ public inherited sharing class FinalSubmitService {
         Map<String, Object> el,
         Object value
     ) {
+        if (FinalAddressAnswer.isAddress(el)) {
+            writeAddress(row, value);
+            return;
+        }
         if (value instanceof Boolean) {
             row.put('Boolean_Value__c', (Boolean) value);
             return;

@@ -96,3 +96,8 @@
     color: var(--c-studio-text-weak);
     font-size: var(--c-studio-fs-small);
 }
+
+/* An address answer arrives as one line per part: keep the breaks. */
+.sr-address {
+    white-space: pre-line;
+}

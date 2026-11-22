@@ -982,4 +982,168 @@ private class FinalSurveySubmitTest {
     static void responseLanguageBlankWithoutLanguagesBlock() {
         System.assertEquals(null, surveyLang(null, 'fr'));
     }
+
+    // ----- Address answers (IMPL_PLAN_ADDRESS_INPUT) -----
+
+    private static Map<String, Object> addressElement(String id) {
+        return element(
+            id,
+            'field',
+            'Where are you?',
+            new Map<String, Object>{ 'inputType' => 'address' },
+            null
+        );
+    }
+
+    @isTest
+    static void addressAnswerStoresJsonAndReadableText() {
+        Form_Version__c version = makeSurvey(
+            surveySpec(
+                new List<Object>{ addressElement('el_addr') },
+                null,
+                null
+            )
+        );
+        Test.startTest();
+        FinalSubmitController.SubmitResult res = FinalSubmitController.submitForm(
+            null,
+            version.Id,
+            payload(
+                new Map<String, Object>{
+                    'el_addr' => new Map<String, Object>{
+                        'street' => ' 1 Main St<b>!</b>',
+                        'city' => 'Springfield',
+                        'province' => 'IL',
+                        'postalCode' => '62701',
+                        'country' => 'United States',
+                        'bogus' => 'dropped'
+                    }
+                },
+                null
+            )
+        );
+        Test.stopTest();
+
+        List<Form_Response_Answer__c> rows = [
+            SELECT Text_Value__c, Value_JSON__c, Selected_Options_JSON__c
+            FROM Form_Response_Answer__c
+            WHERE Form_Response__c = :res.recordId
+        ];
+        Assert.areEqual(1, rows.size(), 'one row for the address');
+        Assert.areEqual(
+            '1 Main St!\nSpringfield, IL 62701\nUnited States',
+            rows[0].Text_Value__c
+        );
+        Assert.isNull(rows[0].Selected_Options_JSON__c);
+        Map<String, Object> stored = (Map<String, Object>) JSON.deserializeUntyped(
+            rows[0].Value_JSON__c
+        );
+        Assert.areEqual('1 Main St!', stored.get('street'));
+        Assert.areEqual('Springfield', stored.get('city'));
+        Assert.isFalse(stored.containsKey('bogus'));
+    }
+
+    @isTest
+    static void emptyAddressWritesNoRow() {
+        Form_Version__c version = makeSurvey(
+            surveySpec(
+                new List<Object>{
+                    addressElement('el_addr'),
+                    element(
+                        'el_text',
+                        'field',
+                        'Name',
+                        new Map<String, Object>{ 'inputType' => 'text' },
+                        null
+                    )
+                },
+                null,
+                null
+            )
+        );
+        Test.startTest();
+        FinalSubmitController.SubmitResult res = FinalSubmitController.submitForm(
+            null,
+            version.Id,
+            payload(
+                new Map<String, Object>{
+                    'el_addr' => new Map<String, Object>{
+                        'street' => '  ',
+                        'city' => ''
+                    },
+                    'el_text' => 'Ada'
+                },
+                null
+            )
+        );
+        Test.stopTest();
+
+        List<Form_Response_Answer__c> rows = [
+            SELECT Element_Key__c
+            FROM Form_Response_Answer__c
+            WHERE Form_Response__c = :res.recordId
+        ];
+        Assert.areEqual(1, rows.size(), 'only the text answer is stored');
+        Assert.areEqual('el_text', rows[0].Element_Key__c);
+    }
+
+    @isTest
+    static void addressInsideARepeatStoresPerEntry() {
+        Form_Version__c version = makeSurvey(
+            surveySpec(
+                new List<Object>{
+                    element(
+                        'el_text',
+                        'field',
+                        'Name',
+                        new Map<String, Object>{ 'inputType' => 'text' },
+                        null
+                    )
+                },
+                new List<Object>{ addressElement('el_addr') },
+                null
+            )
+        );
+        Test.startTest();
+        FinalSubmitController.SubmitResult res = FinalSubmitController.submitForm(
+            null,
+            version.Id,
+            payload(
+                new Map<String, Object>{ 'el_text' => 'Ada' },
+                new Map<String, Object>{
+                    'sec_rep' => new List<Object>{
+                        new Map<String, Object>{
+                            'el_addr' => new Map<String, Object>{
+                                'street' => '1 A St',
+                                'city' => 'Alpha',
+                                'country' => 'Canada'
+                            }
+                        },
+                        new Map<String, Object>{
+                            'el_addr' => new Map<String, Object>{
+                                'street' => '2 B St',
+                                'city' => 'Beta',
+                                'country' => 'Canada'
+                            }
+                        }
+                    }
+                }
+            )
+        );
+        Test.stopTest();
+
+        List<Form_Response_Answer__c> rows = [
+            SELECT Entry_Index__c, Value_JSON__c, Text_Value__c
+            FROM Form_Response_Answer__c
+            WHERE
+                Form_Response__c = :res.recordId
+                AND Element_Key__c = 'el_addr'
+            ORDER BY Entry_Index__c
+        ];
+        Assert.areEqual(2, rows.size(), 'one row per entry');
+        Assert.areEqual(0, rows[0].Entry_Index__c);
+        Assert.areEqual(1, rows[1].Entry_Index__c);
+        Assert.isTrue(rows[1].Text_Value__c.startsWith('2 B St'));
+        Assert.isTrue(rows[1].Value_JSON__c.contains('Beta'));
+    }
 }

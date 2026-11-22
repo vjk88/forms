@@ -98,6 +98,12 @@ public with sharing class FinalAnswerValidator {
                 if (!gated && (present || !editing)) {
                     failure = requiredFailure(el, entry, elType, value);
                 }
+            } else if (
+                (kind == 'pattern' || kind == 'range') &&
+                FinalAddressAnswer.isAddress(el)
+            ) {
+                // pattern and range do not apply to an address
+                failure = null;
             } else if (kind == 'pattern') {
                 failure = patternFailure(entry, value);
             } else if (kind == 'range') {
@@ -116,6 +122,19 @@ public with sharing class FinalAnswerValidator {
         String elType,
         Object value
     ) {
+        if (FinalAddressAnswer.isAddress(el)) {
+            // Required = street, city and country. Blank keeps the generic
+            // message; a partly filled address names the first missing part
+            // (browser parity: finalExpressionEngine.validateElement).
+            Map<String, Object> cleaned = FinalAddressAnswer.clean(value);
+            if (cleaned == null) {
+                return messageOf(entry, null);
+            }
+            String missing = FinalAddressAnswer.firstMissingRequired(cleaned);
+            return missing == null
+                ? null
+                : FinalAddressAnswer.partLabel(missing) + ' is required.';
+        }
         // yesNo: FALSE is a real answer
         if (elType == 'yesNo' && isFalse(value)) {
             return null;

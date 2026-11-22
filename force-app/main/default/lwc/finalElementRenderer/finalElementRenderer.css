@@ -255,6 +255,46 @@
     padding-top: var(--c-space-2);
 }
 
+/* Address question: an optional search box above five fields. The parts use
+   the same platform widgets and label look as every other field, so the
+   theme styles them identically. The group is its own width container (the
+   State / Postal code row stacks on the group's width, not the screen's), and
+   a container with a flex parent needs an explicit width or it collapses. */
+.addr {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: var(--c-space-3);
+    width: 100%;
+    min-width: 0;
+    container: addr / inline-size;
+}
+
+.addr-part {
+    display: flex;
+    flex-direction: column;
+    gap: var(--c-space-1);
+    min-width: 0;
+}
+
+/* The part names are quieter than the question's own label. */
+.addr-label {
+    font-weight: 500;
+    font-size: calc(var(--c-fs-label) * 0.875);
+}
+
+.addr-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--c-space-3);
+}
+
+@container addr (max-width: 480px) {
+    .addr-row {
+        grid-template-columns: 1fr;
+    }
+}
+
 .unsupported {
     display: flex;
     align-items: center;

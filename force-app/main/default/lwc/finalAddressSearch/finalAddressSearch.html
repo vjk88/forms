@@ -1,0 +1,90 @@
+<template>
+    <!-- Nothing at all until the org says a provider is set up: no flash of a
+         box that then disappears. -->
+    <template lwc:if={showNote}>
+        <p class="fas-note" role="status">{noteText}</p>
+    </template>
+    <template lwc:elseif={showBox}>
+        <div class="fas-field">
+            <div class="fas-combobox" role="none">
+                <lightning-icon
+                    class="fas-icon"
+                    icon-name="utility:search"
+                    size="x-small"
+                    alternative-text=""
+                ></lightning-icon>
+                <input
+                    id="input"
+                    class="fas-input"
+                    type="text"
+                    role="combobox"
+                    autocomplete="off"
+                    maxlength="100"
+                    placeholder={placeholder}
+                    aria-label={accessibleName}
+                    value={term}
+                    disabled={disabled}
+                    aria-expanded={ariaExpanded}
+                    aria-controls="listbox"
+                    aria-autocomplete="list"
+                    aria-describedby="status"
+                    oninput={handleInput}
+                    onkeydown={handleKeydown}
+                    onfocus={handleFocus}
+                    onblur={handleBlur}
+                />
+                <span
+                    class="fas-spinner"
+                    if:true={loading}
+                    aria-hidden="true"
+                ></span>
+
+                <div class="fas-pop" if:true={open}>
+                    <div
+                        id="listbox"
+                        class="fas-listbox"
+                        role="listbox"
+                        aria-label={accessibleName}
+                    >
+                        <template lwc:if={hasResults}>
+                            <template for:each={results} for:item="r">
+                                <div
+                                    key={r.key}
+                                    id={r.key}
+                                    class={r.optionClass}
+                                    role="option"
+                                    data-index={r.index}
+                                    aria-selected={r.selected}
+                                    onmousedown={handleOptionMouseDown}
+                                    onmouseenter={handleOptionHover}
+                                >
+                                    <span class="fas-opt-title">{r.title}</span>
+                                    <span
+                                        class="fas-opt-sub"
+                                        if:true={r.subtitle}
+                                        >{r.subtitle}</span
+                                    >
+                                </div>
+                            </template>
+                        </template>
+                    </div>
+                    <template lwc:if={showEmpty}>
+                        <div class="fas-empty">{emptyMessage}</div>
+                    </template>
+                    <div class="fas-attribution" if:true={attribution}>
+                        {attribution}
+                    </div>
+                </div>
+            </div>
+            <!-- Screen readers hear how many matches a pause produced. -->
+            <div
+                id="status"
+                class="fas-status"
+                role="status"
+                aria-live="polite"
+            >
+                {statusText}
+            </div>
+        </div>
+    </template>
+</template>

@@ -86,7 +86,10 @@ const OPERATORS_BY_TYPE = {
     textarea: TEXTUAL,
     email: TEXTUAL,
     phone: TEXTUAL,
-    url: TEXTUAL
+    url: TEXTUAL,
+    // An address is five parts, so only "is it filled?" means anything (v1:
+    // no rules on individual parts).
+    address: ['isBlank', 'isNotBlank']
 };
 
 /** Value control per subtype. A source with a fixed value list (a picklist
@@ -1639,7 +1642,9 @@ export default class FinalRuleEditor extends LightningElement {
             // stored rule still says something else.
             const allowed = OPERATORS_BY_TYPE[this._subtype(rule.source)];
             if (allowed && !allowed.includes(rule.operator)) {
-                rule.operator = 'equals';
+                rule.operator = allowed.includes('equals')
+                    ? 'equals'
+                    : allowed[0];
             }
             if (NO_VALUE.has(rule.operator)) {
                 rule.value = null;

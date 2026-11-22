@@ -715,3 +715,74 @@ describe('goneValues / lint: a value the question no longer offers', () => {
         ).toEqual([]);
     });
 });
+
+describe('address answers (required = street, city, country)', () => {
+    const el = (extra = []) => ({
+        type: 'field',
+        config: { inputType: 'address' },
+        validation: [{ type: 'required', message: 'Need an address' }, ...extra]
+    });
+    const full = { street: '1 Main St', city: 'Reno', country: 'USA' };
+
+    it("a blank address gets the entry's own required message", () => {
+        expect(validateElement(el(), null, ctx({}))).toEqual([
+            'Need an address'
+        ]);
+        expect(validateElement(el(), undefined, ctx({}))).toEqual([
+            'Need an address'
+        ]);
+    });
+
+    it('names the first missing part: street, then city, then country', () => {
+        expect(
+            validateElement(el(), { city: 'Reno', country: 'USA' }, ctx({}))
+        ).toEqual(['Street is required.']);
+        expect(
+            validateElement(el(), { street: '1 Main', country: 'USA' }, ctx({}))
+        ).toEqual(['City is required.']);
+        expect(
+            validateElement(el(), { street: '1 Main', city: 'Reno' }, ctx({}))
+        ).toEqual(['Country is required.']);
+        expect(validateElement(el(), { postalCode: '89501' }, ctx({}))).toEqual(
+            ['Street is required.']
+        );
+    });
+
+    it('treats a whitespace-only part as missing', () => {
+        expect(
+            validateElement(el(), { ...full, city: '   ' }, ctx({}))
+        ).toEqual(['City is required.']);
+    });
+
+    it('passes when street, city and country are filled; province and postal code stay optional', () => {
+        expect(validateElement(el(), full, ctx({}))).toEqual([]);
+    });
+
+    it('skips pattern, range and custom entries for an address', () => {
+        const e = el([
+            { type: 'pattern', pattern: '^zzz$', message: 'P' },
+            { type: 'range', min: 5, max: 6, message: 'R' },
+            { type: 'custom', compareTo: 'x', operator: 'equals', message: 'C' }
+        ]);
+        expect(validateElement(e, full, ctx({}))).toEqual([]);
+    });
+
+    it('an address with no required entry never fails', () => {
+        const e = { type: 'field', config: { inputType: 'address' } };
+        expect(validateElement(e, { city: 'Reno' }, ctx({}))).toEqual([]);
+    });
+
+    it('honours a when gate on the required entry', () => {
+        const e = el();
+        e.validation[0].when = {
+            logic: 'all',
+            rules: [{ source: 'q', operator: 'equals', value: 'yes' }]
+        };
+        expect(validateElement(e, { city: 'Reno' }, ctx({ q: 'no' }))).toEqual(
+            []
+        );
+        expect(validateElement(e, { city: 'Reno' }, ctx({ q: 'yes' }))).toEqual(
+            ['Street is required.']
+        );
+    });
+});

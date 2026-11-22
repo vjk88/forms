@@ -76,7 +76,10 @@ public with sharing class FinalMappingController {
                     'label' => q.get('label'),
                     'answerType' => FinalSubmitService.answerTypeOf(q),
                     'skippable' => skippable.contains(id),
-                    'mappable' => !FinalMappingRules.UNMAPPABLE_ELEMENT_TYPES.contains(
+                    // An Address question is not mappable yet: mapping its parts
+                    // (street, city, ...) to fields is a later slice.
+                    'mappable' => !FinalAddressAnswer.isAddress(q) &&
+                    !FinalMappingRules.UNMAPPABLE_ELEMENT_TYPES.contains(
                         String.valueOf(q.get('type'))
                     ),
                     'referenceTo' => config == null

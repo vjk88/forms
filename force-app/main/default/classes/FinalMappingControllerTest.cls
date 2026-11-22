@@ -179,4 +179,26 @@ private class FinalMappingControllerTest {
             }
         }
     }
+
+    @IsTest
+    static void addressQuestionsAreNotMappable() {
+        List<Map<String, Object>> found = FinalMappingController.describeQuestions(
+            JSON.serialize(
+                FinalMappingTestData.spec(
+                    new List<Object>{
+                        FinalMappingTestData.question(
+                            'el_addr',
+                            'address',
+                            'Shipping address'
+                        ),
+                        FinalMappingTestData.question('el_name', 'text', 'Name')
+                    },
+                    null
+                )
+            )
+        );
+        Assert.areEqual('Address', found[0].get('answerType'));
+        Assert.areEqual(false, found[0].get('mappable'));
+        Assert.areEqual(true, found[1].get('mappable'));
+    }
 }

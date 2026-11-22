@@ -165,7 +165,16 @@ public without sharing class FinalGuestController {
         'Final_Run_Language',
         'Final_Run_TooFast',
         'Final_Run_StillSending',
-        'Final_Run_AlreadySent'
+        'Final_Run_AlreadySent',
+        'Final_Run_AddressStreet',
+        'Final_Run_AddressCity',
+        'Final_Run_AddressProvince',
+        'Final_Run_AddressPostalCode',
+        'Final_Run_AddressCountry',
+        'Final_Run_AddressSearch',
+        'Final_Run_AddressNoMatches',
+        'Final_Run_AddressSearchDown',
+        'Final_Run_AddressPartRequired'
     };
     // END RUNTIME_LABEL_NAMES
 

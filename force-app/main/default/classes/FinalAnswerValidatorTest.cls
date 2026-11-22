@@ -760,4 +760,121 @@ private class FinalAnswerValidatorTest {
         System.assertNotEquals(null, ok.recordId);
         System.assertEquals(1, [SELECT COUNT() FROM Form_Submission__c]);
     }
+
+    // ------------------------------------------------------------ address
+
+    private static Map<String, Object> addressEl(List<Object> validation) {
+        Map<String, Object> e = el('addr', 'field', validation);
+        e.put('config', new Map<String, Object>{ 'inputType' => 'address' });
+        return e;
+    }
+
+    private static List<FinalSubmitService.FieldError> checkAddress(
+        List<Object> validation,
+        Object value
+    ) {
+        return check(
+            specOf(new List<Object>{ addressEl(validation) }),
+            new Map<String, Object>{ 'addr' => value },
+            false
+        );
+    }
+
+    @IsTest
+    static void requiredBlankAddressGetsTheGenericMessage() {
+        List<Object> rules = new List<Object>{ required() };
+        for (
+            Object blank : new List<Object>{
+                null,
+                new Map<String, Object>(),
+                new Map<String, Object>{ 'street' => '  ', 'city' => '' }
+            }
+        ) {
+            List<FinalSubmitService.FieldError> errs = checkAddress(
+                rules,
+                blank
+            );
+            Assert.areEqual(1, errs.size());
+            Assert.areEqual(
+                FinalAnswerValidator.DEFAULT_MESSAGE,
+                errs[0].message
+            );
+        }
+    }
+
+    @IsTest
+    static void requiredAddressNamesTheFirstMissingPart() {
+        List<Object> rules = new List<Object>{ required() };
+        List<FinalSubmitService.FieldError> noCity = checkAddress(
+            rules,
+            new Map<String, Object>{
+                'street' => '1 Main St',
+                'country' => 'Canada'
+            }
+        );
+        Assert.areEqual(1, noCity.size());
+        Assert.areEqual('City is required.', noCity[0].message);
+
+        List<FinalSubmitService.FieldError> noStreet = checkAddress(
+            rules,
+            new Map<String, Object>{ 'city' => 'Ottawa' }
+        );
+        Assert.areEqual('Street is required.', noStreet[0].message);
+
+        List<FinalSubmitService.FieldError> noCountry = checkAddress(
+            rules,
+            new Map<String, Object>{ 'street' => '1 Main', 'city' => 'Ottawa' }
+        );
+        Assert.areEqual('Country is required.', noCountry[0].message);
+    }
+
+    @IsTest
+    static void completeAddressPasses() {
+        Assert.areEqual(
+            0,
+            checkAddress(
+                    new List<Object>{ required() },
+                    new Map<String, Object>{
+                        'street' => '1 Main St',
+                        'city' => 'Ottawa',
+                        'country' => 'Canada'
+                    }
+                )
+                .size(),
+            'province and zip are optional'
+        );
+    }
+
+    @IsTest
+    static void optionalAddressAndPatternEntriesAreSkipped() {
+        // no required entry: a partly filled address is fine
+        Assert.areEqual(
+            0,
+            checkAddress(
+                    new List<Object>(),
+                    new Map<String, Object>{ 'city' => 'Ottawa' }
+                )
+                .size()
+        );
+        // pattern / range never apply to an address
+        List<Object> rules = new List<Object>{
+            new Map<String, Object>{
+                'type' => 'pattern',
+                'pattern' => '^zzz$'
+            },
+            new Map<String, Object>{ 'type' => 'range', 'min' => 1000 }
+        };
+        Assert.areEqual(
+            0,
+            checkAddress(
+                    rules,
+                    new Map<String, Object>{
+                        'street' => '1 Main St',
+                        'city' => 'Ottawa',
+                        'country' => 'Canada'
+                    }
+                )
+                .size()
+        );
+    }
 }

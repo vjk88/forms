@@ -84,6 +84,12 @@ const QUESTIONS = [
         label: 'Number',
         icon: 'utility:number_input',
         title: 'A typed number'
+    },
+    {
+        type: 'questionAddress',
+        label: 'Address',
+        icon: 'utility:location',
+        title: 'A postal address, with optional address search'
     }
 ];
 
@@ -201,12 +207,13 @@ const GENERAL_QUESTIONS = [
     }
 ];
 
-/** The three plain inputs Survey already had belong with the general ones
- *  when Freeform groups its 19 items. */
+/** The plain inputs Survey already had (plus Address) belong with the
+ *  general ones when Freeform groups its items. */
 const PLAIN_TYPES = new Set([
     'surveyShortText',
     'surveyLongText',
-    'surveyNumber'
+    'surveyNumber',
+    'questionAddress'
 ]);
 
 export default class FinalFieldPalette extends LightningElement {
@@ -225,8 +232,9 @@ export default class FinalFieldPalette extends LightningElement {
     /**
      * The question roster, grouped.
      *
-     * Survey keeps ONE ungrouped list of the same 12 items it always had
-     * (D4 - its palette must not move). Freeform serves 19, which reads as
+     * Survey keeps ONE ungrouped list: its original 12 items plus Address (owner
+     * ruling 2026-11-21)
+     * (D4 - its palette otherwise does not move). Freeform serves 20, which reads as
      * a wall in one column, so its plain inputs and its feedback widgets
      * are separated.
      */

@@ -103,6 +103,11 @@
                                                 class="sr-answer"
                                             ></lightning-formatted-url>
                                         </template>
+                                        <template lwc:elseif={row.isAddress}>
+                                            <span class="sr-answer sr-address"
+                                                >{row.value}</span
+                                            >
+                                        </template>
                                         <template lwc:else>
                                             <span class="sr-answer"
                                                 >{row.value}</span

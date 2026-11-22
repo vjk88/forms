@@ -324,6 +324,9 @@ function displayValue(a, el) {
             return { value: a.text || '', isPhone: true };
         case 'URL':
             return { value: a.text || '', isUrl: true };
+        case 'Address':
+            // already formatted by the server, one line per part
+            return { value: a.text || '', isAddress: true };
         default:
             return plain(a.text || '');
     }

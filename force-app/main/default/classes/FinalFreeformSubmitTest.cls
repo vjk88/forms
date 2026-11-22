@@ -589,4 +589,108 @@ private class FinalFreeformSubmitTest {
     static void responseLanguageBlankWithoutLanguagesBlock() {
         Assert.isNull(freeformLang(null, 'fr'));
     }
+
+    // ----- Address answers (IMPL_PLAN_ADDRESS_INPUT) -----
+
+    @IsTest
+    static void addressAnswerStoresAsAddressType() {
+        Map<String, Object> spec = makeForm(
+            new List<Object>{
+                question(
+                    'el_addr',
+                    'field',
+                    'Shipping address',
+                    new Map<String, Object>{ 'inputType' => 'Address' }
+                )
+            },
+            null
+        );
+        FinalSubmitService.SubmitOutcome out = FinalSubmitService.run(
+            spec,
+            payload(
+                new Map<String, Object>{
+                    'el_addr' => new Map<String, Object>{
+                        'street' => '1 Main St',
+                        'city' => 'Springfield',
+                        'postalCode' => '62701',
+                        'country' => 'United States',
+                        'latitude' => 39.78,
+                        'longitude' => '-89.65'
+                    }
+                },
+                'key-addr'
+            ),
+            versionId,
+            FinalSubmitService.Posture.INTERNAL
+        );
+
+        Assert.isNotNull(out.recordId, 'submission stored');
+        Form_Submission_Answer__c row = answersByKey(out.recordId)
+            .get('el_addr');
+        Assert.isNotNull(row, 'address row');
+        Assert.areEqual('Address', row.Answer_Type__c);
+        Assert.areEqual(
+            '1 Main St\nSpringfield 62701\nUnited States',
+            row.Text_Value__c
+        );
+        Form_Submission_Answer__c full = [
+            SELECT Value_JSON__c
+            FROM Form_Submission_Answer__c
+            WHERE Id = :row.Id
+        ];
+        Map<String, Object> stored = (Map<String, Object>) JSON.deserializeUntyped(
+            full.Value_JSON__c
+        );
+        Assert.areEqual('Springfield', stored.get('city'));
+        Assert.areEqual(
+            Decimal.valueOf('39.78'),
+            Decimal.valueOf(String.valueOf(stored.get('latitude')))
+        );
+        Assert.areEqual(
+            Decimal.valueOf('-89.65'),
+            Decimal.valueOf(String.valueOf(stored.get('longitude')))
+        );
+    }
+
+    @IsTest
+    static void emptyAddressWritesNoRowOnFreeform() {
+        Map<String, Object> spec = makeForm(
+            new List<Object>{
+                question(
+                    'el_addr',
+                    'field',
+                    'Shipping address',
+                    new Map<String, Object>{ 'inputType' => 'address' }
+                ),
+                question(
+                    'el_name',
+                    'field',
+                    'Name',
+                    new Map<String, Object>{ 'inputType' => 'text' }
+                )
+            },
+            null
+        );
+        FinalSubmitService.SubmitOutcome out = FinalSubmitService.run(
+            spec,
+            payload(
+                new Map<String, Object>{
+                    'el_addr' => new Map<String, Object>{
+                        'street' => '',
+                        'country' => ' '
+                    },
+                    'el_name' => 'Ada'
+                },
+                'key-addr-empty'
+            ),
+            versionId,
+            FinalSubmitService.Posture.INTERNAL
+        );
+
+        Map<String, Form_Submission_Answer__c> rows = answersByKey(
+            out.recordId
+        );
+        Assert.areEqual(1, rows.size(), 'only the name is stored');
+        Assert.isTrue(rows.containsKey('el_name'));
+    }
 }
