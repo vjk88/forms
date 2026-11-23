@@ -74,4 +74,51 @@ describe('c-final-studio-rail', () => {
         await Promise.resolve();
         expect(buttons(el)[2].getAttribute('aria-pressed')).toBe('true');
     });
+
+    it('is vertical by default and a horizontal strip on request, same buttons', () => {
+        const el = mount();
+        const nav = () => el.shadowRoot.querySelector('nav');
+        expect(nav().classList.contains('rail--h')).toBe(false);
+        el.orientation = 'horizontal';
+        return Promise.resolve().then(() => {
+            expect(nav().classList.contains('rail--h')).toBe(true);
+            expect(
+                buttons(el).map((b) => b.getAttribute('aria-pressed'))
+            ).toEqual(['true', 'false', 'false']);
+        });
+    });
+
+    describe('trailing-edge fade', () => {
+        let sw;
+        let cw;
+        beforeEach(() => {
+            sw = jest
+                .spyOn(HTMLElement.prototype, 'scrollWidth', 'get')
+                .mockReturnValue(300);
+            cw = jest
+                .spyOn(HTMLElement.prototype, 'clientWidth', 'get')
+                .mockReturnValue(200);
+        });
+        afterEach(() => {
+            sw.mockRestore();
+            cw.mockRestore();
+        });
+        const nav = (el) => el.shadowRoot.querySelector('nav');
+
+        it('fades only a horizontal strip that overflows', async () => {
+            const el = mount({ orientation: 'horizontal' });
+            await Promise.resolve();
+            expect(nav(el).classList.contains('rail--more')).toBe(true);
+            cw.mockReturnValue(400);
+            nav(el).dispatchEvent(new CustomEvent('scroll'));
+            await Promise.resolve();
+            expect(nav(el).classList.contains('rail--more')).toBe(false);
+        });
+
+        it('never fades the vertical rail', async () => {
+            const el = mount();
+            await Promise.resolve();
+            expect(nav(el).classList.contains('rail--more')).toBe(false);
+        });
+    });
 });

@@ -64,6 +64,8 @@ import listLanguages from '@salesforce/apex/FinalStudioController.listLanguages'
 
 const FORMS_TAB = 'Final_Forms';
 const SAVE_DEBOUNCE_MS = 900;
+/** Workspace width under which Build and Design show Editor / Preview tabs. */
+const NARROW_WORKSPACE_PX = 700;
 
 /** Schema §6: prefixed, crypto-random, client-minted, 8+ chars. */
 /** renderAs lives INSIDE config - the renderer reads cfg.renderAs and the
@@ -226,6 +228,7 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
      *  own catch owns failures. */
     disconnectedCallback() {
         window.removeEventListener('pageshow', this._onPageShow);
+        this._unobserveWorkspace();
         clearTimeout(this._saveTimer);
         if (this.saveState === 'dirty') {
             this._save();
@@ -271,6 +274,10 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         this.previewSession = undefined;
         this.previewExpanded = false;
         this.toolsCollapsed = false;
+        this.narrowTab = 'editor';
+        this.editorDot = false;
+        this.narrowNote = '';
+        this._narrowScroll = {};
         this.exiting = false;
         clearTimeout(this._saveTimer);
         const session = {
@@ -365,6 +372,13 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
      *  (e.g. "Back to draft" from the notice). */
     renderedCallback() {
         this._ensureLiveChoices();
+        this._observeWorkspace();
+        // Design at narrow is a column filling the host (no guessed top-bar
+        // height); the host class lets the stylesheet say so.
+        this.classList.toggle(
+            'st-host--fill',
+            this.isNarrowEditing && this.isDesign
+        );
         // The current LWC template compiler does not recognize inert yet.
         // Apply it to our own DOM so publishing blocks both pointer and keyboard edits.
         this.template
@@ -713,6 +727,186 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
 
     previewSession;
 
+    // ----- narrow workspace: Editor / Preview tabs (DEFERRED 49) -----
+
+    /** True while the WORKSPACE box (not the window: the Studio also runs in
+     *  a VF page and a LEX tab narrower than the screen) is under
+     *  NARROW_WORKSPACE_PX wide. Layout only, like previewExpanded: never the
+     *  spec, undo history, autosave or storage. */
+    narrow = false;
+
+    /** Which half of the narrow workspace shows: 'editor' | 'preview'. Kept
+     *  across Build/Design switches; resets when another form loads. */
+    narrowTab = 'editor';
+
+    /** A change-dot on the Editor tab: the selection changed while the
+     *  Preview tab was showing, and the inspector is waiting on Editor. */
+    editorDot = false;
+
+    /** Polite live-region line for that same change. */
+    narrowNote = '';
+
+    /** Page scroll remembered per tab: { editor: y, preview: y }. */
+    _narrowScroll = {};
+
+    /** One ResizeObserver on `.st-workspace-container`. That box has
+     *  `container-type: inline-size`, so its width never depends on its
+     *  content and the observer can't feed back into itself. */
+    _observeWorkspace() {
+        const box = this.template.querySelector('.st-workspace-container');
+        if (box === this._workspaceBox) {
+            return;
+        }
+        this._unobserveWorkspace();
+        this._workspaceBox = box || undefined;
+        if (!box || typeof ResizeObserver === 'undefined') {
+            return;
+        }
+        this._workspaceRO = new ResizeObserver((entries) => {
+            const rect = entries && entries[0] && entries[0].contentRect;
+            const width = rect ? rect.width : box.clientWidth;
+            // a hidden host (background LEX tab) reports 0: keep the layout
+            if (width > 0) {
+                this.narrow = width < NARROW_WORKSPACE_PX;
+            }
+        });
+        this._workspaceRO.observe(box);
+    }
+
+    _unobserveWorkspace() {
+        if (this._workspaceRO) {
+            this._workspaceRO.disconnect();
+            this._workspaceRO = undefined;
+        }
+        this._workspaceBox = undefined;
+    }
+
+    /** Narrow applies to Build and Design only; Translate keeps its own
+     *  layout and read-only history keeps its notice + preview. */
+    get isNarrowEditing() {
+        return this.narrow && !this.isReadOnly && !this.isTranslate;
+    }
+
+    get showNarrowTabs() {
+        return this.isNarrowEditing;
+    }
+
+    /** The preview's Expand control means "hide the editing panes", which the
+     *  Preview tab already does: no control while narrow. The flag itself is
+     *  kept, so widening restores an expanded preview untouched. */
+    get previewExpandable() {
+        return !this.isNarrowEditing;
+    }
+
+    get editorTabSelected() {
+        return String(this.narrowTab === 'editor');
+    }
+
+    get previewTabSelected() {
+        return String(this.narrowTab === 'preview');
+    }
+
+    // roving tabindex: ONE tab stop, the selected tab
+    get editorTabIndex() {
+        return this.narrowTab === 'editor' ? '0' : '-1';
+    }
+
+    get previewTabIndex() {
+        return this.narrowTab === 'preview' ? '0' : '-1';
+    }
+
+    get barClass() {
+        return this.isNarrowEditing ? 'st-bar st-bar--narrow' : 'st-bar';
+    }
+
+    /** Names the tabpanel (a static id, so LWC can scope it; the text follows
+     *  the selected tab). */
+    get narrowPanelLabel() {
+        return this.isNarrowEditing
+            ? this.narrowTab === 'preview'
+                ? 'Preview'
+                : 'Editor'
+            : '';
+    }
+
+    get bodyRole() {
+        return this.isNarrowEditing ? 'tabpanel' : undefined;
+    }
+
+    /** The element that scrolls the page: the nearest scrolling ancestor
+     *  (LEX scrolls a div, not the window), else the window. */
+    _scroller() {
+        let node = this.template.host.parentNode;
+        while (node && node.nodeType === 1) {
+            const oy = window.getComputedStyle(node).overflowY;
+            if (
+                (oy === 'auto' || oy === 'scroll') &&
+                node.scrollHeight > node.clientHeight
+            ) {
+                return node;
+            }
+            node = node.parentNode || node.host;
+        }
+        return null;
+    }
+
+    _readScroll() {
+        const box = this._scroller();
+        return box ? box.scrollTop : window.scrollY || 0;
+    }
+
+    _writeScroll(y) {
+        const box = this._scroller();
+        if (box) {
+            box.scrollTop = y;
+        } else {
+            window.scrollTo(0, y);
+        }
+    }
+
+    /** Switch halves: remember where the leaving tab was scrolled and put the
+     *  arriving one back once it has rendered. */
+    _setNarrowTab(next) {
+        if (next === this.narrowTab) {
+            return;
+        }
+        this._narrowScroll[this.narrowTab] = this._readScroll();
+        this.narrowTab = next;
+        if (next === 'editor') {
+            this.editorDot = false;
+            this.narrowNote = '';
+        }
+        const y = this._narrowScroll[next] || 0;
+        // eslint-disable-next-line @lwc/lwc/no-async-operation -- must wait for the re-render that shows the other half
+        requestAnimationFrame(() => this._writeScroll(y));
+    }
+
+    handleNarrowTab(event) {
+        this._setNarrowTab(event.currentTarget.dataset.np);
+    }
+
+    /** Tabs pattern: Left/Right wrap, Home/End jump; moving selects. Both
+     *  tabs stay mounted, so focus can move before the re-render. */
+    handleNarrowTabKeydown(event) {
+        const order = ['editor', 'preview'];
+        const at = order.indexOf(this.narrowTab);
+        let next;
+        if (event.key === 'ArrowRight') {
+            next = order[(at + 1) % order.length];
+        } else if (event.key === 'ArrowLeft') {
+            next = order[(at + order.length - 1) % order.length];
+        } else if (event.key === 'Home') {
+            next = order[0];
+        } else if (event.key === 'End') {
+            next = order[order.length - 1];
+        } else {
+            return;
+        }
+        event.preventDefault();
+        this._setNarrowTab(next);
+        this.template.querySelector(`[data-np="${next}"]`)?.focus();
+    }
+
     /** Workspace layout only — never the spec, undo history, autosave or
      *  storage. The ONE preview stage stays mounted (its answers, device and
      *  zoom live there); the flag just hides the editing panes around it. */
@@ -731,32 +925,47 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         if (!this.isReadOnly && !this.isDesign && !this.isTranslate) {
             cls += ' st-body--build';
         }
-        if (this.previewExpanded) {
+        if (this.isNarrowEditing) {
+            // Both halves stay MOUNTED; CSS hides the other one (never
+            // lwc:if), so typed test answers, the selection and unapplied
+            // inspector edits survive switching. Expanded has no meaning here.
+            cls += ` st-body--narrow st-body--np-${this.narrowTab}`;
+        } else if (this.previewExpanded) {
             cls += ' st-body--expanded';
         }
         return cls;
     }
 
+    /** The folded state only applies to the wide workspace: while narrow the
+     *  Editor tab must always show its content. The flag itself is kept. */
+    get toolsFolded() {
+        return this.toolsCollapsed && !this.isNarrowEditing;
+    }
+
+    get toolsToggleVisible() {
+        return !this.isNarrowEditing;
+    }
+
     get toolsClass() {
-        return this.toolsCollapsed
+        return this.toolsFolded
             ? 'st-left st-left--build st-left--collapsed'
             : 'st-left st-left--build';
     }
 
     get toolsOpen() {
-        return !this.toolsCollapsed;
+        return !this.toolsFolded;
     }
 
     get toolsExpandedAria() {
-        return String(!this.toolsCollapsed);
+        return String(!this.toolsFolded);
     }
 
     get toolsToggleLabel() {
-        return this.toolsCollapsed ? 'Show tools' : 'Collapse tools';
+        return this.toolsFolded ? 'Show tools' : 'Collapse tools';
     }
 
     get toolsGlyph() {
-        return this.toolsCollapsed ? '»' : '«';
+        return this.toolsFolded ? '»' : '«';
     }
 
     handleToolsToggle() {
@@ -3079,8 +3288,23 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
                 }
             }
         });
+        const changed = !(
+            this.selection &&
+            this.selection.kind === 'element' &&
+            this.selection.id === id
+        );
         this.selection = { kind: 'element', id };
         this._revealProperties();
+        // Narrow mode: a click in the preview deliberately keeps you on the
+        // Preview tab. The selection still updates; the inspector is waiting
+        // on the Editor tab when you go back. (narrowTab is left alone.) The
+        // dot + one live line tell you so, once per change.
+        if (this.isNarrowEditing && this.narrowTab === 'preview' && changed) {
+            const node = this.selectedNode;
+            const label = node && node.label ? node.label : 'Question';
+            this.editorDot = true;
+            this.narrowNote = `${label} selected. Open Editor to change it.`;
+        }
     }
 
     handleAddPage() {

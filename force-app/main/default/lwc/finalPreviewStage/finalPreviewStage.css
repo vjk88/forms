@@ -20,7 +20,8 @@
    Tokens only; the toolbar's groups, options and behavior stay as built. */
 .ps-bar {
     position: sticky;
-    top: 0;
+    /* the Studio's narrow tab bar sets this so the toolbar docks under it */
+    top: var(--st-sticky-top, 0);
     z-index: var(--c-studio-z-raised);
     display: flex;
     flex-wrap: wrap;
