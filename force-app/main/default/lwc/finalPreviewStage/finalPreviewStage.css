@@ -131,14 +131,16 @@
     position: absolute;
     top: 0;
     left: 0;
-    transform-origin: top left;
+    /* its own stacking context, which the old transform gave for free: the
+       margin bands below sit at z-index -1 inside it, not behind the stage */
+    isolation: isolate;
 }
 
 /* The host's margin around the form (the canvas's side padding), drawn as two
    quiet hatched bands behind the form, so it reads as "the page, not your
    form". Pseudo-elements, not a canvas background, so the form's own rounded
    corners never show a hatch behind them; the canvas is a stacking context
-   (transform), so z-index -1 keeps the bands under anything the form overflows. */
+   (isolation), so z-index -1 keeps the bands under anything the form overflows. */
 .ps-canvas::before,
 .ps-canvas::after {
     content: '';
