@@ -38,6 +38,10 @@
     min-height: 0;
 }
 
+.panel-root--narrow {
+    flex-direction: column;
+}
+
 /* ----- settings column ----- */
 .settings {
     flex: 1;

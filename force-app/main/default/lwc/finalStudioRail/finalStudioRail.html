@@ -1,5 +1,5 @@
 <template>
-    <nav class="rail" aria-label={label}>
+    <nav class={navClass} aria-label={label} onscroll={handleScroll}>
         <template for:each={items} for:item="t">
             <div key={t.key} class="rail-item">
                 <template lwc:if={t.divider}>

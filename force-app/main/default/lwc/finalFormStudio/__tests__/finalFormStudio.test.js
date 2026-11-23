@@ -4231,3 +4231,411 @@ describe('rule values: live choice lists (DEFERRED 29)', () => {
         expect(opened.items).toHaveLength(3);
     });
 });
+
+describe('c-final-form-studio narrow Editor / Preview tabs (DEFERRED 49)', () => {
+    const FIELD_SPEC = {
+        ...SPEC,
+        pages: [
+            {
+                id: 'p',
+                sections: [
+                    {
+                        id: 's',
+                        elements: [
+                            {
+                                id: 'q',
+                                type: 'field',
+                                config: { inputType: 'text' }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    };
+    let callbacks;
+    let disconnects;
+    let originalResizeObserver;
+
+    beforeEach(() => {
+        callbacks = [];
+        disconnects = [];
+        originalResizeObserver = global.ResizeObserver;
+        global.ResizeObserver = jest.fn().mockImplementation((callback) => {
+            callbacks.push(callback);
+            return {
+                observe: jest.fn(),
+                disconnect: jest.fn(() => disconnects.push(callback))
+            };
+        });
+    });
+
+    afterEach(() => {
+        global.ResizeObserver = originalResizeObserver;
+        while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild);
+        }
+        jest.clearAllMocks();
+    });
+
+    async function open(mode = 'build') {
+        loadStudio.mockResolvedValue({
+            name: 'Narrow',
+            specJson: JSON.stringify(FIELD_SPEC),
+            draftVersionId: 'a0V2',
+            versionNumber: 2,
+            activeVersionNumber: 1
+        });
+        listVersions.mockResolvedValue(VERSIONS);
+        getSpec.mockResolvedValue(JSON.stringify(FIELD_SPEC));
+        saveDraft.mockResolvedValue('a0V2');
+        const el = mount();
+        CurrentPageReference.emit({ state: { c__formId: 'a0F1' } });
+        await flush();
+        await flush();
+        if (mode === 'build') {
+            el.shadowRoot.querySelectorAll('.st-mode')[0].click();
+            await flush();
+        }
+        return el;
+    }
+
+    // The preview stage makes its own observers; the Studio's is the one
+    // created for the workspace box, so fire every Studio-level callback.
+    async function resizeTo(width) {
+        callbacks.forEach((cb) => cb([{ contentRect: { width } }]));
+        await flush();
+    }
+
+    const tabs = (el) => [...el.shadowRoot.querySelectorAll('[role="tab"]')];
+    const body = (el) => el.shadowRoot.querySelector('.st-body');
+    const stage = (el) => el.shadowRoot.querySelector('c-final-preview-stage');
+    const palette = (el) =>
+        el.shadowRoot.querySelector('c-final-field-palette');
+
+    function key(tab, k) {
+        tab.dispatchEvent(
+            new KeyboardEvent('keydown', {
+                key: k,
+                bubbles: true,
+                composed: true
+            })
+        );
+        return flush();
+    }
+
+    it('shows no tab bar and the usual layout at 700px and wider', async () => {
+        const el = await open();
+        await resizeTo(700);
+        expect(tabs(el)).toHaveLength(0);
+        expect(body(el).classList.contains('st-body--narrow')).toBe(false);
+        expect(stage(el).expandable).toBe(true);
+        expect(palette(el).narrow).toBe(false);
+    });
+
+    it('shows the tab bar under 700px with Editor selected', async () => {
+        const el = await open();
+        await resizeTo(699);
+        const list = el.shadowRoot.querySelector('[role="tablist"]');
+        expect(list.getAttribute('aria-label')).toBe('Editor or preview');
+        expect(tabs(el).map((t) => t.textContent.trim())).toEqual([
+            'Editor',
+            'Preview'
+        ]);
+        expect(tabs(el).map((t) => t.getAttribute('aria-selected'))).toEqual([
+            'true',
+            'false'
+        ]);
+        expect(tabs(el).map((t) => t.getAttribute('tabindex'))).toEqual([
+            '0',
+            '-1'
+        ]);
+        expect(tabs(el).every((t) => t.hasAttribute('aria-controls'))).toBe(
+            true
+        );
+        expect(body(el).classList.contains('st-body--np-editor')).toBe(true);
+        // Expand means "hide the editing panes": the Preview tab does that
+        expect(stage(el).expandable).toBe(false);
+    });
+
+    it('switches panes without unmounting either one', async () => {
+        const el = await open();
+        await resizeTo(600);
+        const theStage = stage(el);
+        const thePalette = palette(el);
+        const viewer = previewViewer(el);
+
+        tabs(el)[1].click();
+        await flush();
+        expect(body(el).classList.contains('st-body--np-preview')).toBe(true);
+        expect(body(el).classList.contains('st-body--np-editor')).toBe(false);
+        expect(tabs(el)[1].getAttribute('aria-selected')).toBe('true');
+
+        tabs(el)[0].click();
+        await flush();
+        expect(body(el).classList.contains('st-body--np-editor')).toBe(true);
+        expect(stage(el)).toBe(theStage);
+        expect(palette(el)).toBe(thePalette);
+        expect(previewViewer(el)).toBe(viewer);
+    });
+
+    it('keeps typed test answers across a tab switch', async () => {
+        const el = await open();
+        await resizeTo(600);
+        previewViewer(el)
+            .shadowRoot.querySelector('x-test')
+            .dispatchEvent(
+                new CustomEvent('valuechange', {
+                    detail: { elementId: 'q', value: 'Typed' }
+                })
+            );
+        tabs(el)[1].click();
+        await flush();
+        tabs(el)[0].click();
+        await flush();
+        expect(stage(el).getSession().viewer.answers.q).toBe('Typed');
+    });
+
+    it('moves and selects with Left / Right / Home / End and keeps one tab stop', async () => {
+        const el = await open();
+        await resizeTo(600);
+        await key(tabs(el)[0], 'ArrowRight');
+        expect(tabs(el)[1].getAttribute('aria-selected')).toBe('true');
+        expect(tabs(el)[1].getAttribute('tabindex')).toBe('0');
+        expect(tabs(el)[0].getAttribute('tabindex')).toBe('-1');
+        expect(el.shadowRoot.activeElement).toBe(tabs(el)[1]);
+
+        await key(tabs(el)[1], 'ArrowRight'); // wraps
+        expect(tabs(el)[0].getAttribute('aria-selected')).toBe('true');
+        await key(tabs(el)[0], 'ArrowLeft'); // wraps back
+        expect(tabs(el)[1].getAttribute('aria-selected')).toBe('true');
+        await key(tabs(el)[1], 'Home');
+        expect(tabs(el)[0].getAttribute('aria-selected')).toBe('true');
+        await key(tabs(el)[0], 'End');
+        expect(tabs(el)[1].getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('keeps the current tab when switching Build and Design', async () => {
+        const el = await open();
+        await resizeTo(600);
+        tabs(el)[1].click();
+        await flush();
+
+        el.shadowRoot.querySelectorAll('.st-mode')[1].click(); // Design
+        await flush();
+        expect(tabs(el)[1].getAttribute('aria-selected')).toBe('true');
+        expect(body(el).classList.contains('st-body--np-preview')).toBe(true);
+        const panel = el.shadowRoot.querySelector('c-final-design-panel');
+        expect(panel.narrow).toBe(true);
+
+        el.shadowRoot.querySelectorAll('.st-mode')[0].click(); // Build
+        await flush();
+        expect(tabs(el)[1].getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('turns the rail into a horizontal strip while narrow', async () => {
+        const el = await open();
+        await resizeTo(600);
+        expect(palette(el).narrow).toBe(true);
+        const rail = palette(el).shadowRoot.querySelector(
+            'c-final-studio-rail'
+        );
+        expect(rail.orientation).toBe('horizontal');
+        await resizeTo(1000);
+        expect(rail.orientation).toBe('vertical');
+    });
+
+    it('selecting a question in the preview keeps you on Preview and updates the selection', async () => {
+        const el = await open();
+        await resizeTo(600);
+        tabs(el)[1].click();
+        await flush();
+        stage(el).dispatchEvent(
+            new CustomEvent('elementselect', { detail: { elementId: 'q' } })
+        );
+        await flush();
+        expect(tabs(el)[1].getAttribute('aria-selected')).toBe('true');
+        tabs(el)[0].click();
+        await flush();
+        expect(
+            el.shadowRoot.querySelector('c-final-property-panel')
+        ).not.toBeNull();
+    });
+
+    it('restores the usual layout when widened, with nothing lost', async () => {
+        const el = await open();
+        await resizeTo(600);
+        tabs(el)[1].click();
+        await flush();
+        const theStage = stage(el);
+        await resizeTo(1200);
+        expect(tabs(el)).toHaveLength(0);
+        expect(body(el).classList.contains('st-body--narrow')).toBe(false);
+        expect(stage(el)).toBe(theStage);
+        expect(stage(el).expandable).toBe(true);
+    });
+
+    it('does not apply to Translate, and ignores a 0-width (hidden) host', async () => {
+        const el = await open();
+        await resizeTo(600);
+        el.shadowRoot.querySelector('[data-id="mode-translate"]').click();
+        await flush();
+        expect(tabs(el)).toHaveLength(0);
+        el.shadowRoot.querySelectorAll('.st-mode')[0].click();
+        await flush();
+        expect(tabs(el)).toHaveLength(2);
+        await resizeTo(0);
+        expect(tabs(el)).toHaveLength(2);
+    });
+
+    describe('narrow UX-review fixes', () => {
+        let raf;
+        let scrollTo;
+        let scrollY;
+        const fs = require('fs');
+        const path = require('path');
+        const readCss = (...parts) =>
+            fs.readFileSync(path.join(__dirname, '..', ...parts), 'utf8');
+
+        beforeEach(() => {
+            raf = jest
+                .spyOn(window, 'requestAnimationFrame')
+                .mockImplementation((cb) => {
+                    cb();
+                    return 0;
+                });
+            scrollTo = jest.fn();
+            window.scrollTo = scrollTo;
+            scrollY = 0;
+            Object.defineProperty(window, 'scrollY', {
+                configurable: true,
+                get: () => scrollY
+            });
+        });
+        afterEach(() => {
+            raf.mockRestore();
+        });
+
+        it('gives the tabs a sticky bar whose height the preview toolbar offsets by', async () => {
+            const el = await open();
+            await resizeTo(600);
+            const css = readCss('finalFormStudio.css');
+            expect(css).toMatch(/\.st-np-bar \{\s*position: sticky;\s*top: 0;/);
+            expect(css).toMatch(
+                /\.st-body--narrow\.st-body--build \{\s*--st-sticky-top: var\(--st-np-bar-h\)/
+            );
+            expect(
+                readCss('..', 'finalPreviewStage', 'finalPreviewStage.css')
+            ).toMatch(/top: var\(--st-sticky-top, 0\)/);
+            // no guessed top-bar height any more
+            expect(css).not.toMatch(/118px - 44px/);
+            expect(body(el).classList.contains('st-body--narrow')).toBe(true);
+        });
+
+        it('saves and restores the scroll position per tab', async () => {
+            const el = await open();
+            await resizeTo(600);
+            scrollY = 250;
+            tabs(el)[1].click();
+            await flush();
+            expect(scrollTo).toHaveBeenLastCalledWith(0, 0);
+            scrollY = 90;
+            tabs(el)[0].click();
+            await flush();
+            expect(scrollTo).toHaveBeenLastCalledWith(0, 250);
+            tabs(el)[1].click();
+            await flush();
+            expect(scrollTo).toHaveBeenLastCalledWith(0, 90);
+        });
+
+        it('hides Collapse tools and ignores a collapsed state while narrow', async () => {
+            const el = await open();
+            el.shadowRoot.querySelector('.st-tools-toggle').click();
+            await flush();
+            expect(
+                el.shadowRoot.querySelector('.st-left--collapsed')
+            ).not.toBeNull();
+            await resizeTo(600);
+            expect(el.shadowRoot.querySelector('.st-tools-toggle')).toBeNull();
+            expect(
+                el.shadowRoot.querySelector('.st-left--collapsed')
+            ).toBeNull();
+            expect(el.shadowRoot.querySelector('.st-tools-panel').hidden).toBe(
+                false
+            );
+            await resizeTo(1000);
+            expect(
+                el.shadowRoot.querySelector('.st-left--collapsed')
+            ).not.toBeNull();
+        });
+
+        it('puts a dot on Editor when a preview click selects, and clears it on Editor', async () => {
+            const el = await open();
+            await resizeTo(600);
+            const dot = () => el.shadowRoot.querySelector('.st-np-dot');
+            const status = () =>
+                el.shadowRoot.querySelector('.st-np-bar [role="status"]');
+            expect(dot()).toBeNull();
+            tabs(el)[1].click();
+            await flush();
+            stage(el).dispatchEvent(
+                new CustomEvent('elementselect', {
+                    detail: { elementId: 'q' }
+                })
+            );
+            await flush();
+            expect(dot()).not.toBeNull();
+            expect(tabs(el)[0].textContent).toContain('question selected');
+            expect(status().textContent.trim()).toBe(
+                'Question selected. Open Editor to change it.'
+            );
+            tabs(el)[0].click();
+            await flush();
+            expect(dot()).toBeNull();
+            expect(tabs(el)[0].textContent).not.toContain('question selected');
+            expect(status().textContent.trim()).toBe('');
+        });
+
+        it('makes the body a tabpanel named by the selected tab', async () => {
+            const el = await open();
+            expect(body(el).getAttribute('role')).toBeNull();
+            await resizeTo(600);
+            expect(body(el).getAttribute('role')).toBe('tabpanel');
+            const label = () =>
+                [...el.shadowRoot.querySelectorAll('span')].find(
+                    (n) =>
+                        n.id &&
+                        n.id === body(el).getAttribute('aria-labelledby')
+                );
+            expect(label().textContent.trim()).toBe('Editor');
+            tabs(el)[1].click();
+            await flush();
+            expect(label().textContent.trim()).toBe('Preview');
+        });
+
+        it('marks the top bar narrow only while narrow', async () => {
+            const el = await open();
+            const bar = () => el.shadowRoot.querySelector('.st-bar');
+            expect(bar().classList.contains('st-bar--narrow')).toBe(false);
+            await resizeTo(600);
+            expect(bar().classList.contains('st-bar--narrow')).toBe(true);
+            expect(bar().querySelector('.st-primary')).not.toBeNull();
+        });
+
+        it('makes Design a filling column on the host', async () => {
+            const el = await open();
+            await resizeTo(600);
+            expect(el.classList.contains('st-host--fill')).toBe(false);
+            el.shadowRoot.querySelectorAll('.st-mode')[1].click();
+            await flush();
+            expect(el.classList.contains('st-host--fill')).toBe(true);
+        });
+    });
+
+    it('disconnects the workspace observer on removal', async () => {
+        const el = await open();
+        const before = disconnects.length;
+        document.body.removeChild(el);
+        expect(disconnects.length).toBeGreaterThan(before);
+    });
+});

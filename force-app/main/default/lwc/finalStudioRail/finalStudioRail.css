@@ -78,3 +78,63 @@
     margin: 0 var(--c-studio-space-2);
     background: var(--c-studio-border);
 }
+
+/* Horizontal strip (narrow Studio workspace, DESIGN_SYSTEM 5.9): the same
+   tabs in a row. Scrolls sideways when they don't fit; the selected tab swaps
+   the leading bar for a bottom bar. */
+:host {
+    min-width: 0;
+}
+
+.rail--h {
+    flex: 1 1 auto;
+    flex-direction: row;
+    min-width: 0;
+    overflow-x: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--c-studio-border);
+    padding: var(--c-studio-space-2);
+}
+
+.rail--h .rail-item {
+    flex: 1 0 64px;
+    flex-direction: row;
+}
+
+.rail--h .rail-tab {
+    width: auto;
+    min-width: 64px;
+    flex: 1 1 auto;
+    border-bottom: 3px solid transparent;
+    border-radius: var(--c-studio-radius-md) var(--c-studio-radius-md) 0 0;
+}
+
+.rail--h .rail-tab.on {
+    box-shadow: none;
+    border-bottom-color: var(--c-studio-accent);
+}
+
+.rail--h .rail-dot {
+    right: auto;
+    left: calc(50% + var(--c-studio-space-3));
+}
+
+.rail--h .rail-divider {
+    width: 1px;
+    height: auto;
+    margin: var(--c-studio-space-1) 0;
+}
+
+/* Cue that more tabs wait past the trailing edge (only while they do) */
+.rail--more {
+    -webkit-mask-image: linear-gradient(
+        to right,
+        var(--c-studio-text) calc(100% - 16px),
+        transparent
+    );
+    mask-image: linear-gradient(
+        to right,
+        var(--c-studio-text) calc(100% - 16px),
+        transparent
+    );
+}

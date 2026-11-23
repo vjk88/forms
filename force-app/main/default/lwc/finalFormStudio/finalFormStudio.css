@@ -371,6 +371,9 @@
     display: block;
     width: 100%;
     min-width: 0;
+    /* the narrow tab bar's height, read by the bar itself and by the preview
+       stage's sticky toolbar so the two stack (layout variable, not a token) */
+    --st-np-bar-h: 44px;
 }
 
 .st-body {
@@ -668,6 +671,164 @@
     .st-body--build:not(.st-body--expanded) > .st-buildpreview .st-scroll {
         height: auto;
         overflow: visible;
+    }
+}
+
+/* Narrow workspace (DEFERRED 49, DESIGN_SYSTEM 5.33): under 700px the Studio
+   shows ONE half at a time behind an Editor / Preview tab bar. JS sets
+   st-body--narrow from the workspace box width (ResizeObserver); both halves
+   stay mounted and only display:none hides the other, so the preview keeps
+   its answers, device and zoom. Build's column stacking comes from the 959px
+   rule above; this block adds the tab-driven hiding and Design's layout. */
+.st-np-bar {
+    position: sticky;
+    top: 0;
+    z-index: var(--c-studio-z-raised);
+    display: flex;
+    height: var(--st-np-bar-h);
+    box-sizing: border-box;
+    padding: 0 var(--c-studio-space-4);
+    border-bottom: 1px solid var(--c-studio-border);
+    background: var(--c-studio-surface);
+}
+
+.st-np-tabs {
+    display: flex;
+    gap: var(--c-studio-space-5);
+    align-self: stretch;
+}
+
+.st-np-tab {
+    position: relative;
+    flex: none;
+    border: 0;
+    background: none;
+    padding: 0 var(--c-studio-space-1);
+    font: inherit;
+    font-size: var(--c-studio-fs-body);
+    font-weight: var(--c-studio-fw-strong);
+    white-space: nowrap;
+    color: var(--c-studio-text-weak);
+    cursor: pointer;
+}
+
+.st-np-tab::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    border-radius: var(--c-studio-radius-sm) var(--c-studio-radius-sm) 0 0;
+    background: transparent;
+}
+
+.st-np-tab[aria-selected='true'] {
+    color: var(--c-studio-accent-text);
+}
+
+.st-np-tab[aria-selected='true']::after {
+    background: var(--c-studio-accent);
+}
+
+.st-np-tab:hover:not([aria-selected='true']) {
+    color: var(--c-studio-text);
+}
+
+.st-np-tab:focus-visible {
+    outline: 2px solid var(--c-studio-focus);
+    outline-offset: 2px;
+}
+
+/* the Editor tab's "something is waiting" dot: the rail's change-dot look */
+.st-np-dot {
+    position: absolute;
+    top: var(--c-studio-space-3);
+    right: calc(-1 * var(--c-studio-space-3));
+    width: 6px;
+    height: 6px;
+    border-radius: var(--c-studio-radius-pill);
+    background: var(--c-studio-accent);
+}
+
+.st-body--narrow.st-body--np-editor > .st-stagearea,
+.st-body--narrow.st-body--np-editor > .st-buildpreview,
+.st-body--narrow.st-body--np-preview > .st-left,
+.st-body--narrow.st-body--np-preview > .st-blueprint {
+    display: none;
+}
+
+/* The wide body's 480px floor would force a second scrollbar here */
+.st-body--narrow {
+    min-height: 0;
+}
+
+/* The preview stage's own sticky toolbar sits under the tab bar (Build scrolls
+   with the page; Design's panes scroll inside, so no offset there) */
+.st-body--narrow.st-body--build {
+    --st-sticky-top: var(--st-np-bar-h);
+}
+
+/* Design: the Studio is a column (the host class is set from JS), the
+   workspace takes what the top bar leaves, the panes scroll inside. No
+   guessed top-bar height. */
+:host(.st-host--fill) {
+    display: flex;
+    flex-direction: column;
+}
+
+:host(.st-host--fill) .st-workspace-container {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.st-body--narrow:not(.st-body--build) {
+    flex: 1 1 auto;
+    flex-direction: column;
+    height: auto;
+}
+
+.st-body--narrow:not(.st-body--build) > .st-left {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 0;
+    border-right: 0;
+}
+
+.st-body--narrow:not(.st-body--build) > .st-stagearea {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+/* Build: room for the rail strip above the tools list; the preview tab has
+   no pane above it, so no divider line either */
+.st-body--narrow.st-body--build > .st-left--build {
+    height: 400px;
+}
+
+.st-body--narrow.st-body--build.st-body--np-preview > .st-buildpreview {
+    border-top: 0;
+}
+
+/* Narrow top bar: name, version and Publish share row 1; everything else
+   wraps below. Nothing is hidden. */
+.st-bar--narrow .st-exit,
+.st-bar--narrow .st-name,
+.st-bar--narrow .st-verselect,
+.st-bar--narrow .st-chip {
+    order: -2;
+}
+
+.st-bar--narrow .st-primary {
+    order: -1;
+    margin-left: auto;
+}
+
+@media (pointer: coarse) {
+    .st-np-tab {
+        min-width: 44px;
     }
 }
 

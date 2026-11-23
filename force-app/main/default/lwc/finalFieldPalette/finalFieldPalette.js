@@ -219,6 +219,16 @@ const PLAIN_TYPES = new Set([
 export default class FinalFieldPalette extends LightningElement {
     /** The form's primary context object API name. */
     @api objectApi;
+    /** Narrow Studio workspace: the rail becomes a strip above the list. */
+    @api narrow = false;
+
+    get rootClass() {
+        return this.narrow ? 'fp fp--narrow' : 'fp';
+    }
+
+    get railOrientation() {
+        return this.narrow ? 'horizontal' : 'vertical';
+    }
 
     /** The spec's form type. Types that author QUESTIONS (survey, freeform)
      *  get the question roster on the Fields tab instead of describe-driven

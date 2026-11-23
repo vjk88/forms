@@ -79,6 +79,16 @@ function fromComboValue(v) {
 export default class FinalDesignPanel extends LightningElement {
     /** Parent Form__c id — forwarded to image uploads (public/private decision). */
     @api formId;
+    /** Narrow Studio workspace: the rail becomes a strip above the settings. */
+    @api narrow = false;
+
+    get rootClass() {
+        return this.narrow ? 'panel-root panel-root--narrow' : 'panel-root';
+    }
+
+    get railOrientation() {
+        return this.narrow ? 'horizontal' : 'vertical';
+    }
 
     @track advanced = false;
     /** The rail tab: 'theme' | a DESIGN_SECTIONS key | 'colors'. Simple

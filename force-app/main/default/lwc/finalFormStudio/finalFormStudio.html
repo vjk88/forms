@@ -54,7 +54,7 @@
         </div>
     </template>
     <template lwc:elseif={spec}>
-        <header class="st-bar">
+        <header class={barClass}>
             <button
                 type="button"
                 class="st-exit"
@@ -286,7 +286,70 @@
         </template>
 
         <div class="st-workspace-container">
-            <div class={bodyClass} aria-busy={publishing}>
+            <template lwc:if={showNarrowTabs}>
+                <div class="st-np-bar">
+                    <div
+                        class="st-np-tabs"
+                        role="tablist"
+                        aria-label="Editor or preview"
+                        onkeydown={handleNarrowTabKeydown}
+                    >
+                        <button
+                            type="button"
+                            role="tab"
+                            id="np-tab-editor"
+                            class="st-np-tab"
+                            data-np="editor"
+                            aria-selected={editorTabSelected}
+                            aria-controls="np-body"
+                            tabindex={editorTabIndex}
+                            onclick={handleNarrowTab}
+                        >
+                            Editor
+                            <template lwc:if={editorDot}>
+                                <span
+                                    class="st-np-dot"
+                                    aria-hidden="true"
+                                ></span>
+                                <span class="slds-assistive-text"
+                                    >, question selected</span
+                                >
+                            </template>
+                        </button>
+                        <button
+                            type="button"
+                            role="tab"
+                            id="np-tab-preview"
+                            class="st-np-tab"
+                            data-np="preview"
+                            aria-selected={previewTabSelected}
+                            aria-controls="np-body"
+                            tabindex={previewTabIndex}
+                            onclick={handleNarrowTab}
+                        >
+                            Preview
+                        </button>
+                    </div>
+                    <span id="np-panel-label" class="slds-assistive-text"
+                        >{narrowPanelLabel}</span
+                    >
+                    <p
+                        class="slds-assistive-text"
+                        role="status"
+                        aria-live="polite"
+                        aria-atomic="true"
+                    >
+                        {narrowNote}
+                    </p>
+                </div>
+            </template>
+            <div
+                id="np-body"
+                class={bodyClass}
+                role={bodyRole}
+                aria-labelledby="np-panel-label"
+                aria-busy={publishing}
+            >
                 <template lwc:if={isReadOnly}>
                     <aside class="st-left st-left--notice">
                         <div class="st-notice">
@@ -342,6 +405,7 @@
                 <template lwc:elseif={isDesign}>
                     <aside class="st-left">
                         <c-final-design-panel
+                            narrow={isNarrowEditing}
                             spec={spec}
                             form-id={formId}
                             onspecchange={handleSpecChange}
@@ -355,7 +419,7 @@
                                 spec={spec}
                                 session={previewSession}
                                 preserve-session
-                                expandable
+                                expandable={previewExpandable}
                                 expanded={previewExpanded}
                                 onpreviewexpand={handlePreviewExpand}
                                 onsessionconsumed={handlePreviewSessionConsumed}
@@ -365,28 +429,30 @@
                 </template>
                 <template lwc:else>
                     <aside class={toolsClass}>
-                        <button
-                            type="button"
-                            class="st-tools-toggle"
-                            aria-expanded={toolsExpandedAria}
-                            aria-controls="tools-panel"
-                            aria-label={toolsToggleLabel}
-                            title={toolsToggleLabel}
-                            onclick={handleToolsToggle}
-                        >
-                            <span class="st-tools-glyph" aria-hidden="true"
-                                >{toolsGlyph}</span
+                        <template lwc:if={toolsToggleVisible}>
+                            <button
+                                type="button"
+                                class="st-tools-toggle"
+                                aria-expanded={toolsExpandedAria}
+                                aria-controls="tools-panel"
+                                aria-label={toolsToggleLabel}
+                                title={toolsToggleLabel}
+                                onclick={handleToolsToggle}
                             >
-                            <template lwc:if={toolsOpen}>
-                                <span class="st-tools-text"
-                                    >Collapse tools</span
+                                <span class="st-tools-glyph" aria-hidden="true"
+                                    >{toolsGlyph}</span
                                 >
-                            </template>
-                        </button>
+                                <template lwc:if={toolsOpen}>
+                                    <span class="st-tools-text"
+                                        >Collapse tools</span
+                                    >
+                                </template>
+                            </button>
+                        </template>
                         <div
                             id="tools-panel"
                             class="st-tools-panel"
-                            hidden={toolsCollapsed}
+                            hidden={toolsFolded}
                         >
                             <template lwc:if={showProperties}>
                                 <div class="st-props">
@@ -454,6 +520,7 @@
                                     </div>
                                 </template>
                                 <c-final-field-palette
+                                    narrow={isNarrowEditing}
                                     object-api={objectApi}
                                     form-type={formType}
                                     used-fields={usedFields}
@@ -501,7 +568,7 @@
                                 spec={spec}
                                 session={previewSession}
                                 preserve-session
-                                expandable
+                                expandable={previewExpandable}
                                 expanded={previewExpanded}
                                 onpreviewexpand={handlePreviewExpand}
                                 onsessionconsumed={handlePreviewSessionConsumed}

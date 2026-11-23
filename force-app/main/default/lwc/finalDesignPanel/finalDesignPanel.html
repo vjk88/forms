@@ -1,7 +1,8 @@
 <template>
-    <div class="panel-root">
+    <div class={rootClass}>
         <c-final-studio-rail
             tabs={railTabs}
+            orientation={railOrientation}
             value={activeAreaKey}
             label="Design areas"
             onselect={handleRailSelect}
