@@ -189,3 +189,37 @@ describe('an invalid box keeps the theme fill and text', () => {
         }
     });
 });
+
+describe('a focused box keeps the theme fill and text', () => {
+    // Unset, the platform paints a focused box white: Lightning and the Studio
+    // swap only the text area (keeping the theme's light text: unreadable on
+    // dark themes, owner screenshot 2026-11-23); the public site swaps every
+    // box to white with dark text. Hook names read from each host's live
+    // :focus rules.
+    const squash = (s) => s.replace(/\s+/g, '');
+    const host = squash(bodiesFor(':host'));
+    const decl = (name, value) => squash(`${name}: ${value};`);
+    const FILL = 'var(--c-input-bg, var(--c-field-bg))';
+
+    it('sets both spellings of the focused fill and text, box and text area', () => {
+        for (const kind of ['input', 'textarea']) {
+            for (const spelling of ['slds', 'sds']) {
+                expect(host).toContain(
+                    decl(`--${spelling}-c-${kind}-color-background-focus`, FILL)
+                );
+                expect(host).toContain(
+                    decl(`--${spelling}-c-${kind}-text-color-focus`, TEXT)
+                );
+            }
+        }
+    });
+
+    it('covers the text area focused while invalid', () => {
+        expect(host).toContain(
+            decl('--slds-c-textarea-color-background-error-focus', FILL)
+        );
+        expect(host).toContain(
+            decl('--slds-c-textarea-text-color-error-focus', TEXT)
+        );
+    });
+});
