@@ -1,6 +1,12 @@
 import { createElement } from 'lwc';
 import FinalPreviewStage from 'c/finalPreviewStage';
 
+/** jsdom's CSSStyleDeclaration drops `zoom`, so read it from the raw attribute. */
+function zoomOf(el) {
+    const m = /(?:^|;)\s*zoom:\s*([^;]+)/.exec(el.getAttribute('style') || '');
+    return m ? m[1].trim() : null;
+}
+
 // the stage mounts the REAL viewer — satisfy its module surface
 jest.mock(
     'lightning/navigation',
@@ -202,7 +208,10 @@ describe('c-final-preview-stage', () => {
             });
             await resize();
             expect(canvas.style.width).toBe('1280px');
-            expect(canvas.style.transform).toContain('scale(0.734375)');
+            expect(zoomOf(canvas)).toBe('0.734375');
+            // never a transform: it makes the canvas the containing block for
+            // position:fixed and the date picker opens ~940px off-screen
+            expect(canvas.getAttribute('style')).not.toMatch(/transform/);
             expect(surface.style.width).toBe('940px');
             expect(surface.style.height).toBe('588px');
             expect(el.shadowRoot.querySelector('.ps-scale').textContent).toBe(
@@ -212,7 +221,7 @@ describe('c-final-preview-stage', () => {
             groupButton(el, 'zooms', 'actual').click();
             await resize();
             expect(canvas.style.width).toBe('1280px');
-            expect(canvas.style.transform).toContain('scale(1)');
+            expect(zoomOf(canvas)).toBe('1');
             expect(surface.style.width).toBe('1280px');
             expect(surface.style.height).toBe('800px');
             expect(
@@ -227,11 +236,11 @@ describe('c-final-preview-stage', () => {
                 value: 640
             });
             await resize();
-            expect(canvas.style.transform).toContain('scale(1)');
+            expect(zoomOf(canvas)).toBe('1');
             viewport.scrollLeft = 300;
             groupButton(el, 'zooms', 'fit').click();
             await resize();
-            expect(canvas.style.transform).toContain('scale(0.5)');
+            expect(zoomOf(canvas)).toBe('0.5');
             expect(surface.style.width).toBe('640px');
             expect(surface.style.height).toBe('400px');
             expect(viewport.scrollLeft).toBe(0);
@@ -253,12 +262,18 @@ describe('c-final-preview-stage', () => {
             groupButton(el, 'devices', 'mobile').click();
             await resize();
             expect(canvas.style.width).toBe('390px');
-            expect(canvas.style.transform).toBe('translateX(275px) scale(1)');
+            expect([zoomOf(canvas), canvas.style.marginLeft]).toEqual([
+                '1',
+                '275px'
+            ]);
             groupButton(el, 'zooms', 'actual').click();
             groupButton(el, 'devices', 'desktop').click();
             await resize();
             expect(el.getSession().zoom).toBe('actual');
-            expect(canvas.style.transform).toBe('translateX(0px) scale(1)');
+            expect([zoomOf(canvas), canvas.style.marginLeft]).toEqual([
+                '1',
+                '0px'
+            ]);
         });
     });
 
@@ -620,9 +635,10 @@ describe('c-final-preview-stage', () => {
                 observers.forEach((callback) => callback());
                 frames.splice(0).forEach((callback) => callback());
                 await flush();
-                expect(canvas.style.transform).toBe(
-                    'translateX(310px) scale(1)'
-                );
+                expect([zoomOf(canvas), canvas.style.marginLeft]).toEqual([
+                    '1',
+                    '310px'
+                ]);
 
                 Object.defineProperty(viewport, 'clientWidth', {
                     configurable: true,
@@ -631,9 +647,10 @@ describe('c-final-preview-stage', () => {
                 observers.forEach((callback) => callback());
                 frames.splice(0).forEach((callback) => callback());
                 await flush();
-                expect(canvas.style.transform).toBe(
-                    'translateX(0px) scale(0.5)'
-                );
+                expect([zoomOf(canvas), canvas.style.marginLeft]).toEqual([
+                    '0.5',
+                    '0px'
+                ]);
             });
         });
     });

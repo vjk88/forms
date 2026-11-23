@@ -12,11 +12,14 @@ import {
  *
  * Problem it solves: the shells are responsive via CONTAINER queries, so a
  * half-width preview pane legitimately renders the tablet/mobile arrangement.
- * The stage lays the real viewer out at a fixed DEVICE width and scales it
- * down with a transform to fit the pane: transforms don't change layout size,
- * so container queries still see the device width and render the true
- * arrangement, then the result is shrunk visually (the App Builder / Webflow
- * canvas trick). No iframe — same component tree, one-parser rule intact.
+ * The stage lays the real viewer out at a fixed DEVICE width and shrinks it
+ * with CSS `zoom` to fit the pane: container queries still see the device
+ * width (in the canvas's own px) and render the true arrangement, then the
+ * result is drawn smaller. It was a `transform: scale()` until 2026-11-22;
+ * a transform traps position:fixed popups (the date picker opened
+ * off-screen), zoom does not. Zoom does snap borders to whole screen pixels,
+ * so a 2px line can draw as 1px at Fit (the Tabs underline vanishes there;
+ * owner: leave it). No iframe — same component tree, one-parser rule intact.
  *
  * The frame is the SCREEN (Desktop, Tablet, or a 320/360/390 phone) plus the
  * margin the host page leaves around the form (Public site, Lightning tab or
@@ -142,7 +145,12 @@ export default class FinalPreviewStage extends LightningElement {
             `padding-inline:${frame.margin}px;` +
             'box-sizing:border-box;' +
             `--ps-margin:${frame.margin}px;` +
-            `transform:translateX(${this.offsetX}px) scale(${this.scale});` +
+            // CSS zoom, not transform: a transformed ancestor becomes the
+            // containing block for position:fixed, which threw Salesforce's
+            // date picker calendar ~940px off-screen at Fit. The margin is
+            // written in the canvas's own (zoomed) px, so it is divided back.
+            `zoom:${this.scale};` +
+            `margin-left:${this.offsetX / this.scale}px;` +
             `--frame-offset: calc(100dvh - ${frame.screenHeight}px);`
         );
     }
@@ -276,8 +284,8 @@ export default class FinalPreviewStage extends LightningElement {
             this.zoom === 'actual' ? 1 : Math.min(1, paneWidth / screenWidth);
         this.scale = scale;
         this.offsetX = Math.max(0, (paneWidth - screenWidth * scale) / 2);
-        // Clip the unscaled layout box inside a surface sized to the visual
-        // canvas. The viewport can then scroll at 100% without ghost overflow
+        // Size the surface to the visual canvas (offsetHeight reads the
+        // canvas's own, unzoomed px). The viewport can then scroll at 100% without ghost overflow
         // in Fit mode, and its horizontal scrollbar has its own layout space.
         const width = `${Math.max(paneWidth, screenWidth * scale)}px`;
         const height = `${Math.ceil(canvas.offsetHeight * scale)}px`;
