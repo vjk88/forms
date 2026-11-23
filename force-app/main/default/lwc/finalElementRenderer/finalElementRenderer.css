@@ -42,6 +42,33 @@
     );
     --slds-c-textarea-shadow: var(--c-input-shadow, none);
 
+    /* The FOCUSED fill and text (2026-11-23). Left unset, the platform paints a
+       focused box WHITE: in Lightning and the Studio only the text area swaps,
+       and it keeps the theme's light text on white (unreadable on dark themes);
+       on the public site every box swaps, to white with dark text. A focused box
+       keeps its resting colours; the ring below is what marks focus. Both
+       spellings, like the resting set above, plus the text area's error pair,
+       which the platform re-derives from its own hooks while invalid. */
+    --slds-c-input-color-background-focus: var(--c-input-bg, var(--c-field-bg));
+    --sds-c-input-color-background-focus: var(--c-input-bg, var(--c-field-bg));
+    --slds-c-input-text-color-focus: var(--c-text);
+    --sds-c-input-text-color-focus: var(--c-text);
+    --slds-c-textarea-color-background-focus: var(
+        --c-input-bg,
+        var(--c-field-bg)
+    );
+    --sds-c-textarea-color-background-focus: var(
+        --c-input-bg,
+        var(--c-field-bg)
+    );
+    --slds-c-textarea-text-color-focus: var(--c-text);
+    --sds-c-textarea-text-color-focus: var(--c-text);
+    --slds-c-textarea-color-background-error-focus: var(
+        --c-input-bg,
+        var(--c-field-bg)
+    );
+    --slds-c-textarea-text-color-error-focus: var(--c-text);
+
     /* Focus state = the RING (shadow hook). The border-focus hooks were
        audited inert (2026-07-11 red-override probe: the ring painted, the
        border never did) and are deleted — focus rides the accent by design. */
