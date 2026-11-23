@@ -316,6 +316,20 @@ describe('c-final-theme-engine', () => {
             expect(explicit['--c-section-border-swatch']).toBe('#3fd0c9');
         });
 
+        it('the Input fill swatch is solid over a see-through card (Neon Nights)', () => {
+            // 6% white fill on an 8% white card over #08060f used to reach the
+            // panel as rgba, which the colour box showed as #ffffff
+            const t = resolveTokens(getBuiltinTheme('neonNights'), null);
+            expect(t['--c-input-bg']).toBe('rgba(255, 255, 255, 0.06)');
+            const sw = t['--c-input-bg-swatch'];
+            expect(sw).toMatch(/^#[0-9a-f]{6}$/i);
+            // dark, not white: every channel well under the midpoint
+            const [r, g, b] = [1, 3, 5].map((i) =>
+                parseInt(sw.slice(i, i + 2), 16)
+            );
+            expect(Math.max(r, g, b)).toBeLessThan(64);
+        });
+
         it('section Fill opacity wraps the fill; opacity alone activates card', () => {
             // custom fill + opacity → color-mix wrap of the custom color
             const t = resolveTokens(theme(), {

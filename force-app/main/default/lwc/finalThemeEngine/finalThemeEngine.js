@@ -39,6 +39,7 @@ import {
     backingFor,
     headerColours,
     inkFor,
+    composite,
     ratio as readRatio
 } from 'c/finalReadableText';
 
@@ -1236,6 +1237,14 @@ export function resolveTokens(themeProps, formOverrides) {
         }
     };
     const shell = INPUT_SHELLS[p.fieldStyle] || INPUT_SHELLS.outline;
+    // The panel's Input fill swatch must be ONE solid hex. mix() over a
+    // see-through card hands back rgba (Neon Nights: a 6% white fill on an 8%
+    // white card over #08060f), and the colour box shows any rgba as its RGB
+    // part — "#ffffff" — with a readability verdict measured against white.
+    // Flatten every layer the eye sees: page, then card, then the fill.
+    const pageSolid = composite(pal.pageBg, '#ffffff');
+    const cardSolid = pageSolid ? composite(pal.contentBg, pageSolid) : null;
+    const swatchSolid = cardSolid ? composite(shell.bg, cardSolid) : null;
 
     const LABEL_FLOWS = {
         top: {
@@ -1578,7 +1587,7 @@ export function resolveTokens(themeProps, formOverrides) {
         '--c-input-shadow': shell.shadow,
         '--c-input-shadow-focus': focusOut['--c-input-shadow-focus'],
         // Panel-only swatch companion (guaranteed hex) — no CSS consumes it.
-        '--c-input-bg-swatch': shell.swatch,
+        '--c-input-bg-swatch': swatchSolid || shell.swatch,
 
         // Label defaults (labelPosition + labelStyle) — flow drives the .field
         // flex axis; look drives the label typography. Per-element classes win.
