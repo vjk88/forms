@@ -170,3 +170,22 @@ describe('platform widgets take the theme colours through their own hooks', () =
         }
     });
 });
+
+describe('an invalid box keeps the theme fill and text', () => {
+    // The platform's error rule re-reads the fill and text from the older
+    // --sds- spelling; without it an invalid box turned white under the
+    // theme's light text (Neon Nights, owner 2026-11-22).
+    it('sets both spellings of the fill and text hooks on :host', () => {
+        const host = bodiesFor(':host');
+        const FILL = 'var(--c-input-bg, var(--c-field-bg))';
+        for (const kind of ['input', 'textarea']) {
+            expect(host).toMatch(
+                declares(`--slds-c-${kind}-color-background`, FILL)
+            );
+            expect(host).toMatch(
+                declares(`--sds-c-${kind}-color-background`, FILL)
+            );
+            expect(host).toMatch(declares(`--sds-c-${kind}-text-color`, TEXT));
+        }
+    });
+});

@@ -10,6 +10,12 @@
 
     --slds-c-input-color-background: var(--c-input-bg, var(--c-field-bg));
     --slds-c-input-text-color: var(--c-text);
+    /* The platform's error state re-reads the fill and text from the OLDER
+       --sds- spelling (`.slds-has-error .slds-input { --slds-c-input-color-
+       background: var(--sds-c-input-color-background, … white) }`), so without
+       these an invalid box turned white under the theme's light text. */
+    --sds-c-input-color-background: var(--c-input-bg, var(--c-field-bg));
+    --sds-c-input-text-color: var(--c-text);
     --slds-c-input-color-border: var(
         --c-input-border-color,
         var(--c-field-border)
@@ -24,6 +30,8 @@
 
     --slds-c-textarea-color-background: var(--c-input-bg, var(--c-field-bg));
     --slds-c-textarea-text-color: var(--c-text);
+    --sds-c-textarea-color-background: var(--c-input-bg, var(--c-field-bg));
+    --sds-c-textarea-text-color: var(--c-text);
     --slds-c-textarea-color-border: var(
         --c-input-border-color,
         var(--c-field-border)
