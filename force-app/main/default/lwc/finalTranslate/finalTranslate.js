@@ -1,3 +1,16 @@
+import Final_Run_UploadUnavailable from '@salesforce/label/c.Final_Run_UploadUnavailable';
+import Final_Run_UploadCount from '@salesforce/label/c.Final_Run_UploadCount';
+import Final_Run_UploadSize from '@salesforce/label/c.Final_Run_UploadSize';
+import Final_Run_UploadType from '@salesforce/label/c.Final_Run_UploadType';
+import Final_Run_UploadCapacity from '@salesforce/label/c.Final_Run_UploadCapacity';
+import Final_Run_UploadRequired from '@salesforce/label/c.Final_Run_UploadRequired';
+import Final_Run_UploadChecking from '@salesforce/label/c.Final_Run_UploadChecking';
+import Final_Run_UploadPreparing from '@salesforce/label/c.Final_Run_UploadPreparing';
+import Final_Run_UploadReady from '@salesforce/label/c.Final_Run_UploadReady';
+import Final_Run_UploadPending from '@salesforce/label/c.Final_Run_UploadPending';
+import Final_Run_UploadPreview from '@salesforce/label/c.Final_Run_UploadPreview';
+import Final_Run_UploadCancel from '@salesforce/label/c.Final_Run_UploadCancel';
+import Final_Run_UploadStatusFailed from '@salesforce/label/c.Final_Run_UploadStatusFailed';
 /**
  * Built-in respondent words (Next, Submit, error messages…) from Salesforce
  * Custom Labels, so admins can translate them in Translation Workbench.
@@ -264,6 +277,19 @@ const IMPORTED = {
     Final_Run_SliderRange,
     Final_Run_MoveUp,
     Final_Run_MoveDown,
+    Final_Run_UploadUnavailable,
+    Final_Run_UploadCount,
+    Final_Run_UploadSize,
+    Final_Run_UploadType,
+    Final_Run_UploadCapacity,
+    Final_Run_UploadRequired,
+    Final_Run_UploadChecking,
+    Final_Run_UploadPreparing,
+    Final_Run_UploadReady,
+    Final_Run_UploadPending,
+    Final_Run_UploadPreview,
+    Final_Run_UploadCancel,
+    Final_Run_UploadStatusFailed,
     Final_Run_AddFile,
     Final_Run_AddFiles,
     Final_Run_FileUpTo,

@@ -5,6 +5,23 @@ const DEFAULT_CLOSED_MESSAGE = 'This form is no longer accepting responses.';
 
 export default class FinalStudioSettingsPanel extends LightningElement {
     @api section = 'availability';
+    @api uploads;
+    get nativeUploads() {
+        return this.uploads?.transport === 'stagedV1';
+    }
+    handleNativeUploads(event) {
+        this.dispatchEvent(
+            new CustomEvent('settingschange', {
+                detail: {
+                    uploads: {
+                        ...(this.uploads || {}),
+                        transport: event.target.checked ? 'stagedV1' : null
+                    }
+                }
+            })
+        );
+    }
+
     /**
      * The spec's form type. Two different questions used to hide behind one
      * isSurvey flag: "does this store responses?" (the response limit) and

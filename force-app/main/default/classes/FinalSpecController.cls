@@ -123,6 +123,7 @@ public with sharing class FinalSpecController {
         }
 
         // Server-side Autofill validation (IMPL_PLAN_AUTOFILL_RULES §9)
+        FinalUploadPolicy.validateSpec(spec);
         FinalAutofillValidator.validateForPublish(formId, spec);
 
         // Mapping validation (FREEFORM_F2_MAPPING_SPEC D38). This is the gate:

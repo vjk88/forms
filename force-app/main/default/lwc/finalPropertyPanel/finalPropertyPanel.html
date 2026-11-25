@@ -1120,9 +1120,52 @@
                     value={n.label}
                     onchange={handleLabel}
                 ></lightning-input>
+                <div class="pp-row">
+                    <lightning-input
+                        label="Allowed file types"
+                        value={fileAcceptValue}
+                        placeholder="Any type"
+                        onchange={handleFileAccept}
+                    ></lightning-input>
+                </div>
+                <div class="pp-row">
+                    <lightning-input
+                        type="checkbox"
+                        label="Allow multiple files"
+                        checked={fileMultipleValue}
+                        onchange={handleFileMultiple}
+                    ></lightning-input>
+                </div>
+                <div class="pp-row">
+                    <lightning-input
+                        type="number"
+                        label="Maximum file size (MiB)"
+                        min="1"
+                        step="1"
+                        data-limit="maxSizeBytes"
+                        value={fileMaxMiBValue}
+                        placeholder="No additional limit"
+                        onchange={handleFileLimit}
+                    ></lightning-input>
+                </div>
+                <template lwc:if={fileMultipleValue}
+                    ><div class="pp-row">
+                        <lightning-input
+                            type="number"
+                            label="Maximum files"
+                            min="1"
+                            step="1"
+                            data-limit="maxFiles"
+                            value={fileMaxCountValue}
+                            placeholder="No additional limit"
+                            onchange={handleFileLimit}
+                        ></lightning-input></div
+                ></template>
                 <p class="pp-hint">
-                    Respondents attach files when they submit. The label above
-                    is what they&#8217;ll see.
+                    With native uploads enabled in Settings, files upload when
+                    selected and attach when the form is submitted. Guests use
+                    admin-configured limits. Blank limits add no restriction for
+                    signed-in respondents.
                 </p>
             </div>
         </template>

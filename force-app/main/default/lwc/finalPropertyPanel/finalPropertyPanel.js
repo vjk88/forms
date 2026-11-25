@@ -358,6 +358,36 @@ export default class FinalPropertyPanel extends LightningElement {
         return this.isElement && this.n.type === 'consent';
     }
 
+    @api stagedUploads = false;
+    get fileAcceptValue() {
+        return this.cfg.accept || '';
+    }
+    get fileMultipleValue() {
+        return this.cfg.multiple ?? this.stagedUploads;
+    }
+    get fileMaxCountValue() {
+        return this.cfg.maxFiles ?? null;
+    }
+    get fileMaxMiBValue() {
+        return this.cfg.maxSizeBytes ? this.cfg.maxSizeBytes / 1048576 : null;
+    }
+    handleFileAccept(event) {
+        this._config({ accept: event.target.value });
+    }
+    handleFileMultiple(event) {
+        this._config({ multiple: event.target.checked });
+    }
+    handleFileLimit(event) {
+        const name = event.target.dataset.limit;
+        const raw = event.target.value;
+        this._config({
+            [name]:
+                raw === ''
+                    ? null
+                    : Number(raw) * (name === 'maxSizeBytes' ? 1048576 : 1)
+        });
+    }
+
     get isFile() {
         return this.isElement && this.n.type === 'file';
     }

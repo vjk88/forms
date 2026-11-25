@@ -1,19 +1,19 @@
 # Guest uploads and larger attachments: technical implementation plan
 
-**Status:** Batch 1 transport-proof code prepared locally on 2026-09-09; not deployed or org-verified. Batches 2–7 remain pending.  
-**Date:** 2026-09-08.  
+**Status:** Implemented and deployed to `revclouddev` for QA, 2026-11-25: one `Form_Upload__c` per attempt, multiple files in JSON, guest defaults only, atomic association/retries and cleanup. All 187 selected Apex tests pass. Native anonymous browser transport is still unverified; the public QA setup remains pending explicit approval after automatic approval review rejected the settings/public-form change. See [the implementation handoff](../qa/GUEST_UPLOAD_IMPLEMENTATION_2026-11-25.md) for exact evidence, setup and limitations. No git commit was made.
+**Date:** 2026-09-08; storage model revised 2026-11-23.
 **Audience:** Developer implementing the feature, with explicit contracts and verification gates.  
-**Scope:** Guest uploads on the published Experience Cloud LWR form, larger uploads for authenticated respondents on supported hosts, final submission, retries, quotas, cleanup, and authoring controls.
+**Scope:** Guest uploads on the published Experience Cloud LWR form, larger uploads for authenticated respondents on supported hosts, final submission, retries, per-attempt limits, cleanup, and authoring controls.
 
 See [the transport-proof handoff](../archive/GUEST_UPLOAD_PROOF_HANDOFF.md) for the actual first batch,
 targeted metadata manifest, local checks, and the owner-run org gate. The prototype is
 isolated from the production form pipeline and does not enable staged respondent uploads.
 
-This is Slice 2 of [the existing file-upload plan](./IMPL_PLAN_FILE_UPLOAD.md). The owner requested this design; it does not record an implementation, deployment, or production-enablement approval. Existing internal upload behavior remains available during migration.
+This is Slice 2 of [the existing file-upload plan](./IMPL_PLAN_FILE_UPLOAD.md). The owner authorized implementation and targeted QA deployment, with no git commit. Production enablement is separate. Existing inline upload behavior remains available during migration.
 
 ## 1. Outcome and architectural decision
 
-A respondent can attach ordinary documents or phone photos, remove them, correct other answers, and submit once. Files appear on the record created by that submission, or on `Form_Response__c` for a survey. Guests receive no Salesforce record IDs or file-download URLs from the app.
+A respondent can attach ordinary documents or phone photos, remove them, correct other answers, and submit once. Files appear on the record created by that submission, or on `Form_Response__c` for a survey / `Form_Submission__c` for a freeform form. Guests receive no Salesforce record IDs or file-download URLs from the app.
 
 **Use native Salesforce file transport with application-controlled staging.** File bytes travel from the browser through `lightning-file-upload` into Salesforce Files. Apex handles small metadata, capabilities, validation, and final record association. It must not receive or query large `VersionData` blobs.
 
@@ -23,14 +23,16 @@ The new flow is:
 
 ```text
 Published form
-  → create an upload session
-  → reserve a one-file slot
+  → create/reuse one Form_Upload__c record for this attempt
+  → add a reserved file entry to its Files_JSON__c array
   → upload bytes through Salesforce's native uploader
   → ContentVersion guard validates and records the staged file
   → respondent sees an attached-file receipt
   → submit answers plus receipt references
-  → one transaction creates the submission, links files, and consumes the session
+  → one transaction creates the submission, links all accepted files, and completes Form_Upload__c
 ```
+
+**Simple storage model:** Salesforce Files stores the actual files. One `Form_Upload__c` attempt record stores the form, expiry, submission result, and a JSON array describing all its files. There are no separate session, per-file, or usage records. Enforce file size/count and total bytes on this attempt only; Salesforce handles org storage limits. Section 8 defines per-attempt enforcement and storage-error behavior.
 
 The file upload and final submission are separate transactions. We can make **submission creation + file linking + session consumption atomic**. We cannot roll back an already completed upload when someone abandons the form; cleanup handles it.
 
@@ -54,7 +56,7 @@ All code paths below are relative to `force-app/main/default/` and were verified
 
 | Existing file/bundle                                                     | Source-verified behavior                                                                                                           | Extend here                                                                                     |
 | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `classes/FinalSubmitService.cls`                                         | `run` and survey path create records; `attachFiles` inserts inline files inside the savepoint. Nonempty guest `files` is rejected. | Add receipt attachment inside both submission transactions; keep legacy guest Base64 rejection. |
+| `classes/FinalSubmitService.cls`                                         | `run`, survey, and freeform paths create records; `attachFiles` inserts inline files inside the savepoint. Nonempty guest `files` is rejected. | Add receipt attachment inside all three submission transactions; keep legacy guest Base64 rejection. |
 | `classes/FinalGuestController.cls`                                       | Public/active-version gates, availability checks on spec/submit, token validation, guest submission.                               | Public session/slot/receipt entry points and upload-session submit coordination.                |
 | `classes/FinalSubmitController.cls`                                      | Authenticated version loading and submit wrapper.                                                                                  | Upload-session identity/idempotency and exact form-version agreement.                           |
 | `lwc/finalElementRenderer/`                                              | Native HTML file selection/drop, Base64 read, local file list, ordinary `valuechange`.                                             | Delegate staged mode to a small new upload control; retain inline/simulated modes.              |
@@ -67,7 +69,7 @@ All code paths below are relative to `force-app/main/default/` and were verified
 | `classes/FinalSpecController.cls`                                        | Server publication.                                                                                                                | Validate upload policy and supported file configurations.                                       |
 | `classes/FinalSpecTransferValidator.cls`, `FinalSpecTransferService.cls` | Spec transfer validation and clone/import handling.                                                                                | Transfer policy only; reject/drop runtime transport state explicitly.                           |
 
-No existing dedicated upload-session/slot/quota objects or ContentVersion upload trigger were found in the local metadata inventory. Names in section 5 are **proposed new metadata**, not a changed-files manifest.
+The repository contains the isolated `Final_Upload_Proof__c` prototype and `FinalUploadContentVersion` trigger. They do not implement the production model below. Section 5 proposes `Form_Upload__c`; this is a design, not a changed-files manifest.
 
 Two older documentation statements need an explicit architectural update when implementation lands:
 
@@ -77,6 +79,8 @@ Two older documentation statements need an explicit architectural update when im
 ## 3. First implementation batch: prove the native transport boundary
 
 Do this small proof before building the full editor. Jest cannot establish any item in this section. The developer prepares targeted metadata; the owner performs deployment and approved org checks under the existing project workflow.
+
+**Latest preflight (2026-11-25):** Org connection, guest enrollment and the internal proof page are confirmed. Current Content settings show guest upload enabled. The anonymous home page is blank and the retrieved site bundle has no proof component, so no anonymous file upload was executed. See [the current check evidence](../qa/GUEST_UPLOAD_CHECK_2026-11-25.md). Restore the isolated public harness before rerunning this gate.
 
 On the actual LWR site, prove:
 
@@ -96,36 +100,38 @@ General Apex trigger transaction/error behavior is documented in [Apex trigger f
 
 ### Initial product defaults
 
-Use integer bytes internally and label MiB honestly in the UI (`1 MiB = 1,048,576 bytes`). These are proposed starting defaults, configurable downward per form and bounded by an org policy.
+Use integer bytes internally and label MiB honestly in the UI (`1 MiB = 1,048,576 bytes`). Guest defaults are 10 MiB per file, five files, and 25 MiB per attempt. Admins can raise or lower these guest defaults in upload policy; they are not hard-coded ceilings. Logged-in users have no application default file-size, total-byte, or file-count limit. Explicit author/admin restrictions still apply when configured, as do Salesforce transport, site moderation, and org storage limits.
 
 | Limit                                             | Anonymous guest                   | Authenticated staged user |
 | ------------------------------------------------- | --------------------------------- | ------------------------- |
-| Per file                                          | 10 MiB                            | 25 MiB                    |
-| Aggregate per submission                          | 25 MiB                            | 50 MiB                    |
-| Files per submission                              | 5                                 | 5                         |
+| Per file | 10 MiB; admin-configurable | No app default limit |
+| Aggregate per submission | 25 MiB; admin-configurable | No app default limit |
+| Files per submission | 5; admin-configurable | No app default limit |
 | File selections per native dialog                 | 1                                 | 1                         |
 | Upload slot lifetime                              | 10 minutes                        | 10 minutes                |
 | Upload session lifetime                           | 2 hours, absolute                 | 2 hours, absolute         |
 | Pending-file retention                            | Expiry followed by hourly cleanup | Same                      |
-| Maximum outstanding staged bytes per enabled site | 500 MiB initially                 | Same shared site ceiling  |
 
 One-file selection per reserved slot makes capability reuse/count enforcement explicit and works on Android. `multiple: true` means the respondent can add several file rows through repeated uploads, not that a single grant can upload an unlimited batch. Multi-select batch grants can be a later extension.
 
-Initial global extension allowlist: `.pdf,.jpg,.jpeg,.png,.webp,.txt,.docx,.xlsx`. Authors can narrow it. Deny executable/script/HTML/SVG/macro-enabled/standalone archive formats regardless of author configuration. Reuse and strengthen the existing extension-policy helper; do not create diverging lists across transport modes.
+**File types: the author decides; nothing is blocked by the app (owner 2026-11-23).** The file question's **Allowed file types** (`config.accept`, any extensions the author lists) drives the native picker's `accept` filter, and the guard refuses a committed file whose extension is not on that list, because the picker filter alone can be bypassed by a script. With no list, any type is accepted. There is no app-level blocklist of "dangerous" types.
 
-Extension and platform `FileType` metadata checks do **not** prove that file contents are harmless or malware-free. No custom antivirus scanner is included in this release. Do not display a “security scanned” badge. If the subscriber requires scanning before staff access, a scan integration and `QUARANTINED → READY` verdict path must be designed before enabling that subscriber's uploads; do not load large blobs into Apex to inspect them.
+**No virus scanning** (owner 2026-11-23): Salesforce does not scan uploads either. The org admin's own Setup → File Upload and Download Security settings (how types such as HTML are downloaded or opened) remain the platform control. Never show a "scanned" badge or claim files are safe.
 
 ### Proposed persisted JSON
 
-This is a fragment of a normal `specVersion: 1` form. Keep `config.accept` as the existing comma-separated string; the new size property has explicit byte units.
+This is a fragment of a normal `specVersion: 1` form. `guestDefaults` is an optional published form override of the admin-configured guest policy defaults and applies only to guests. The element restrictions shown are explicit author choices, not logged-in defaults; omit them for no app restriction. Validate overrides according to the admin's configured authoring rights. Keep `config.accept` as the existing comma-separated string; the new size property has explicit byte units.
 
 ```json
 {
   "settings": {
     "uploads": {
       "transport": "stagedV1",
-      "maxTotalBytes": 26214400,
-      "maxFiles": 5
+      "guestDefaults": {
+        "maxFileBytes": 10485760,
+        "maxTotalBytes": 26214400,
+        "maxFiles": 5
+      }
     }
   },
   "pages": [
@@ -157,10 +163,10 @@ This is a fragment of a normal `specVersion: 1` form. Keep `config.accept` as th
 }
 ```
 
-The array-valued `element.validation` contract and optional `when` gates were verified against schema section 7 and `finalExpressionEngine.validateElement`. Reuse that shape rather than adding an element-level upload-only required flag. Effective limits are the minimum of the published form, element, audience, org policy, and site moderation limits.
+The array-valued `element.validation` contract and optional `when` gates were verified against schema section 7 and `finalExpressionEngine.validateElement`. Reuse that shape rather than adding an element-level upload-only required flag. Effective limits use only explicitly configured restrictions and applicable Salesforce platform limits. Guest attempts also apply the admin-configured guest defaults. An absent size/count/total restriction means unbounded by the app for logged-in users; never substitute guest defaults or the former authenticated 25 MiB/50 MiB/five-file values. Determine audience from the running user, including signed-in customers on a public host.
 
 - Absent `settings.uploads.transport` preserves legacy inline-internal behavior. Public file upload is enabled only by publishing `stagedV1` and completing site setup.
-- Missing `accept` in staged mode uses the restricted global list, never “anything.” Normalize known MIME aliases and `image/*` to a fixed safe extension set; reject unknown tokens instead of accepting everything.
+- Missing `accept` means any type. Store and compare extensions in lower case without the dot; MIME patterns such as `image/*` only filter the picker, so the guard compares against the extensions the author listed.
 - `multiple: false` forces element maxFiles to 1. Validate total and per-element counts independently.
 - The older schema's reserved `maxSize`/`allowedTypes` names are not alternative new storage keys. On import, offer an explicit conversion with units or flag ambiguity; do not guess what an unlabelled size means.
 - Do not persist a `linkToRecord` choice. The only attachment destination is the server-created submission record.
@@ -168,38 +174,84 @@ The array-valued `element.validation` contract and optional `when` gates were ve
 
 File properties should show **Allowed file types**, **Maximum file size**, and **Allow multiple files** with a count control when enabled. Explain the effective guest limit. Update the current “attach files when they submit” copy to explain that files upload when selected and are attached when the form is submitted. This belongs in field behavior, not premium Design settings.
 
-## 5. Proposed metadata and capability model
+## 5. One Form_Upload__c record per attempt
 
-Use server-generated 256-bit random capabilities, encoded Base64URL. Store SHA-256 digests in unique fields; never store raw secrets in ledger rows, logs, URLs, design JSON, or answer records. This is a short-lived, stateful upload capability, separate from Contact/personalized-link tokens.
+Salesforce Files holds the bytes. **Create one `Form_Upload__c` record per form attempt, with all its file entries in `Files_JSON__c`.** Adding a second or fifth file updates that same record. Do not create a separate session record, per-file record, or quota object.
 
-### New metadata
+The existing API terms “session” and “slot” remain useful: a session means the attempt record; a slot means one JSON file entry. They do not name additional database records. Multiple files remain supported with the section 4 defaults, including admin-configurable guest defaults and no logged-in default file-count cap. One native dialog uploads one reserved entry at a time; several entries may upload concurrently.
 
-| Proposed metadata                           | Fields / responsibilities                                                                                                                                                                                                                                                                          |
-| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Final_Upload_Session__c`                   | `Token_Hash__c` Text(64), unique; Form and Form Version lookups; authenticated `Actor_User__c` or approved `Guest_User_Id__c`; server-derived site/audience; status; creation/expiry; count/byte counters; request digest; result record ID/type and child count; consumed timestamp. OWD private. |
-| `Final_Upload_Slot__c`                      | Session lookup; `Slot_Hash__c` Text(64), unique; random public `Slot_Key__c` for status correlation (not authorization); element ID; state; expiry; reserved max bytes; accepted version/document IDs; verified filename/bytes/extension; consumed/removed timestamp; cleanup status. OWD private. |
-| `Final_Upload_Quota__c`                     | Unique bucket key; scope/site/form/time-window identifiers; session/grant counts; pending reserved bytes; successfully uploaded bytes. Rows are locked for atomic admission. No guest CRUD.                                                                                                        |
-| `Final_Upload_Policy__mdt`                  | Disabled by default. Per-site/audience settings, approved guest-user identity, limits, rate windows, retention, supported transport and namespace-aware marker-field configuration. Treat as configuration, not a mutable counter.                                                                 |
-| `ContentVersion.Final_Upload_fileupload__c` | Optional Text(255) field receiving the raw **slot** capability through native transport. Resolve its qualified API name with Schema metadata for packaging. It is never a target record ID.                                                                                                        |
+### Proposed metadata
 
-Add exact field XML and tests during implementation; the table is a schema proposal, not a claim these files exist. Keep the correlation field optional to avoid introducing a globally required Files field. The session token authorizes status/removal/finalization; each slot token authorizes exactly one new document within that session and element.
+| Metadata | Purpose |
+| --- | --- |
+| `Form_Upload__c` | Private object containing one record per form attempt. Guests have no object CRUD. No special usage record, record-kind discriminator, or shared counters. |
+| Attempt identity fields | `Public_Key__c` Text(64), unique; `Token_Hash__c` Text(64), unique; `Form__c` and `Form_Version__c` lookups; running `Actor_User__c` / enrolled `Guest_User_Id__c`; server-derived `Site_Key__c` and audience. Public key is a random lookup key, never authorization. |
+| Attempt lifecycle fields | `Status__c` (`OPEN`, `CONSUMED`, `CANCELLED`, `EXPIRED`); `Expires_At__c`; `Submission_Key__c`; safe result record ID/type and child count; consumed timestamp. Keep queryable expiry/status on normal fields so cleanup does not scan JSON to find expired attempts. |
+| `Files_JSON__c` | Long Text Area configured for 131,072 characters. Versioned JSON containing every file entry for the attempt, including removal and cleanup state. Enforce a 64,000-character application limit, bounded filenames/error codes, and an admin-configurable guest lifetime-entry limit (initially 20). Do not apply that 20-entry limit to logged-in users. The JSON field/application character ceiling remains a technical capacity limit; return an explicit capacity error rather than silently truncating file entries. Do not store file bytes or raw secrets. |
+| `Final_Upload_Policy__mdt` | Disabled-by-default settings: enrolled guest identities, enabled sites/audiences, limits, retention, supported hosts, namespace-aware marker field. Configuration only; not counters. |
+| `ContentVersion.Final_Upload_fileupload__c` | Optional Text(255) correlation field for the upload marker. Resolve its qualified API name using Schema metadata. Never place a target record ID in it. |
+| `ContentVersion.Form_Upload_Key__c` | Optional Text(64) server-stamped attempt public key; not a secret or authorization. Retain it after clearing the raw marker, restrict field access, and guard against caller edits. It lets later version/update checks find the attempt without searching inside JSON. |
 
-Authenticated sessions bind to the real running user. Anonymous users share a site guest identity, so `CreatedById` alone cannot distinguish respondents: the unguessable session/slot capabilities are essential. A logged-in customer on a public host still gets a user-bound session even when that host uses the guest submission controller.
+These are proposed fields, not existing production metadata. Reuse the prototype's correlation field and refactor its trigger rather than installing a second competing guard.
+
+### Example file array
+
+This is server-only JSON on `Form_Upload__c`, not the published form spec or a browser-writable document. The sample illustrates two files on the same attempt. IDs and hashes below are placeholders.
+
+```json
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "key": "random-file-key-a",
+      "elementId": "el_documents",
+      "tokenHash": "sha256-of-file-secret-a",
+      "state": "READY",
+      "expiresAt": "2026-11-23T18:10:00Z",
+      "reservedMaxBytes": 10485760,
+      "contentVersionId": "server-verified-version-a",
+      "contentDocumentId": "server-verified-document-a",
+      "name": "supporting-document.pdf",
+      "sizeBytes": 5242880,
+      "extension": "pdf",
+      "cleanupStatus": "NONE"
+    },
+    {
+      "key": "random-file-key-b",
+      "elementId": "el_documents",
+      "tokenHash": "sha256-of-file-secret-b",
+      "state": "RESERVED",
+      "expiresAt": "2026-11-23T18:12:00Z",
+      "reservedMaxBytes": 10485760,
+      "cleanupStatus": "NONE"
+    }
+  ]
+}
+```
+
+Keep removed/expired entries until their files have been safely deleted or preserved for review. Persist cleanup result/retry time per entry. Repeated removal/cleanup must be idempotent; confirmed-deleted entries must not be processed again. Do not reuse file keys. The configurable guest lifetime-entry cap and the JSON character ceiling bound JSON growth. Logged-in attempts have no fixed default entry-count cap; enforce the JSON character ceiling without dropping file history.
+
+### Tokens and finding the right JSON entry
+
+Generate separate 256-bit random secrets for the attempt and each file. Store only SHA-256 hashes. The attempt token is `attemptPublicKey.secret`; the file marker / `slotToken` is `attemptPublicKey.fileKey.secret`. Only random public keys and secrets travel in these tokens, never Salesforce IDs. Both fit within the marker field's 255-character limit using bounded Base64URL keys.
+
+The trigger parses the marker, queries the attempt by its indexed unique public key, locks the record, finds the file key in JSON, and compares the secret hash. On acceptance, stamp the nonsecret `ContentVersion.Form_Upload_Key__c`. For updates or new versions, resolve the original accepted version through the document's version metadata and that key, then check the locked attempt JSON. Do not scan all attempts or rely on the cleared secret marker to recognize a protected document. Bulk-resolve these metadata reads and reject attempts to remove/change the server-stamped key. Public keys alone grant nothing. A file token authorizes one new file only; the attempt token authorizes status, removal, and final submission. Do not put secrets in logs, URLs, persisted JSON, answers, exports, or resume drafts. Status returns safe projections, never the stored JSON or token hashes.
+
+Authenticated attempts bind to the running user. Guests share a site identity, so the secret tokens distinguish visitors. A signed-in customer on a public host still gets a user-bound attempt.
+
+### Concurrent updates
+
+Every change reloads `Form_Upload__c` under a row lock, parses the latest JSON, changes the relevant entries, and writes it once. Never write back a JSON snapshot supplied by the browser or loaded before the lock. Two simultaneous uploads to different entries must both survive; two uploads using the same entry can commit at most one file. In a bulk trigger, group all versions by attempt and update each attempt once.
 
 ### State transitions
 
 ```text
-Session: OPEN → CONSUMED
-              → CANCELLED
-              → EXPIRED
-
-Slot: RESERVED → READY → CONSUMED
-                       → REMOVED
-                       → EXPIRED
-      RESERVED → CANCELLED / EXPIRED
+Attempt: OPEN → CONSUMED / CANCELLED / EXPIRED
+File:    RESERVED → READY → CONSUMED / REMOVED / EXPIRED
+         RESERVED → CANCELLED / EXPIRED
 ```
 
-`READY` means the file is committed, correlated, and passes this release's metadata checks. It does not mean malware scanned. A failed native transaction leaves the reservation unconsumed; it can be retried before expiry or cancelled. A successful slot cannot accept a second document or another version of its first document.
+`READY` means committed and accepted by the size and allowed-type checks. A rejected native transaction leaves the entry `RESERVED` and retryable until expiry. A consumed entry cannot accept another file or version.
 
 ## 6. Public and authenticated API contracts
 
@@ -209,8 +261,8 @@ Proposed method names below are new contracts; verify every LWC import/signature
 
 | Method                                | Input                                                | Output                                                                                          |
 | ------------------------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `createUploadSession`                 | `formId`, `versionId`                                | Raw session token, expiry, effective limits, supported transport.                               |
-| `reserveUploadSlot`                   | Session token, element ID                            | Raw slot token, public slot key, marker field API name, expiry, effective accept list and size. |
+| `createUploadSession`                 | `formId`, `versionId`; guest page ticket and proof nonce                                | Raw session token, expiry, effective limits, supported transport.                               |
+| `reserveUploadSlot`                   | Session token, element ID                            | Raw file marker (`slotToken`), public file key, marker field API name, expiry, effective accept list and size. |
 | `getUploadStatus`                     | Session token                                        | Safe slot receipts and state; no file content, target IDs, or guest download URLs.              |
 | `removeUpload`                        | Session token, slot token                            | Idempotent removed/pending-cleanup status.                                                      |
 | `cancelUploadSession`                 | Session token                                        | Idempotent cancelled/pending-cleanup status.                                                    |
@@ -218,9 +270,15 @@ Proposed method names below are new contracts; verify every LWC import/signature
 
 All are imperative/non-cacheable. Cap small input strings and collection lengths before processing. Return generic authorization errors and safe actionable limit errors. Never accept object API names, a target record ID, ContentVersion IDs, or ContentDocument IDs as authority.
 
-Status receipts identify rows by the random public slot key returned at reservation. They do not reissue raw capabilities from hashes. The browser retains its original slot token in memory; losing the whole browser session means starting again and allowing cleanup to expire the abandoned files. The one marker-field API name is transport configuration, not disclosure of the form's bound business schema; no business object/field API names are returned to guests.
+Status receipts identify JSON entries by the random public file key returned at reservation. They do not reissue raw capabilities from hashes. The browser retains its original slot token in memory; losing the whole browser session means starting again and allowing cleanup to expire the abandoned files. The one marker-field API name is transport configuration, not disclosure of the form's bound business schema; no business object/field API names are returned to guests.
 
-Each admission/read endpoint independently loads the authorized exact spec and checks published status, enabled upload policy, permitted adapter, opening/closing windows, applicable response caps, and active version. Internal access uses the existing authenticated permission boundary; guest access uses server-loaded metadata behind the public gate, never `WITH USER_MODE` on authoring records. For staged uploads, require Form Version to belong to Form and be the intended active published version on both submission routes.
+Each admission/read endpoint independently loads the authorized exact spec and checks published status, enabled upload policy, that the form is public (`Is_Public__c`) for guest calls, opening/closing windows, applicable response caps, and active version. Internal access uses the existing authenticated permission boundary; guest access uses server-loaded metadata behind the public gate, never `WITH USER_MODE` on authoring records. For staged uploads, require Form Version to belong to Form and be the intended active published version on both submission routes.
+
+**Bot check on guest attempts.** Guest `createUploadSession` requires the page's ticket and solved proof-of-work nonce (`FinalGuestTicket.verify`, PR 475). The ticket is not used up until Submit. Signed-in callers skip this check. Existing guest bot checks stay in scope; no per-ticket attempt counter is required for this release.
+
+### Nice to have: guest attempt throttle (DEFERRED #72)
+
+Owner 2026-11-23 moved the additional **three attempts per page ticket** throttle to Very nice to have. If implemented later, count attempts in Platform Cache partition `local.FinalGuest`, following `FinalAddressGuestGuard`, and define cache-unavailable behavior explicitly. That existing read/check/write pattern is not atomic, so concurrent requests can exceed three and cache eviction can reset a count. Describe it as a best-effort throttle, not an exact limit or storage guarantee. It requires no usage record or global lock and does not block the initial upload release. See [DEFERRED #72](../DEFERRED.md#very-nice-to-have).
 
 **Revocation exception for removal:** after closure/republish, cancellation and removal may still authenticate the capability against its original session solely to remove its unconsumed uploads. They cannot create/read new form context, reserve slots, or attach files. After successful consumption, status can return only the session's stored success receipt to support recovery from a lost network response; it cannot reopen upload privileges.
 
@@ -251,7 +309,7 @@ New `FinalUploadContentVersion` trigger delegates to `FinalUploadGuard`. Validat
 
 ### Prevent the unmarked-upload bypass
 
-Enabling native guest uploads is an org setting. Protecting only files with our marker would allow the same enabled site guest user to send an unmarked native upload and skip app quotas.
+Enabling native guest uploads is an org setting. Protecting only files with our marker would allow the same enabled site guest user to send an unmarked native upload and skip per-attempt checks.
 
 For an explicitly enrolled site guest user, require a valid slot on **every guest ContentVersion insert**. Missing, fabricated, or expired markers fail closed. Other authenticated/unrelated uploads without our marker are unaffected. Any marked upload, regardless of actor, must pass the guard.
 
@@ -261,59 +319,73 @@ Keep site **enrollment** separate from **admission enabled**. Turning off admiss
 
 ### Validation sequence
 
-1. Resolve marker hashes to slots in bulk; fail unknown capabilities without record-detail errors.
-2. Acquire locks in a consistent order: quota buckets, sessions, slots, then existing invitation locks if submission also needs them. Sort keys/IDs within each type and recheck state after locking. Use the same order in submit, removal, and cleanup.
-3. Check session/slot expiry, actor/site binding, exact published version and current availability, enabled element/type, and remaining admission budget. Reject explicit linking targets and uploads of a new version of an existing document; slots only authorize fresh staged files.
-4. After insert, query only metadata by the inserted IDs. Require ContentSize to be present and within per-file, element, session, and org limits. Normalize filename/extension and enforce the intersection allowlist. Do not trust MIME or filename from `uploadfinished`.
-5. Reject unexpected preexisting record/library/public distribution links. Account for only the platform's implicit owner link established in batch 1; no business record attachment occurs here.
-6. Record verified version/document IDs on the slot, mark `READY`, reconcile reserved versus actual pending bytes, and consume the one-file grant in the same transaction. `addError` must roll back the upload and ledger changes on any rejection.
+1. Parse bounded markers; resolve attempt public keys in bulk, then verify each file key and secret hash against the locked JSON. Fail unknown capabilities without record-detail errors.
+2. Acquire locks in one consistent order: attempt records, existing invitation records, then form-cap records. Sort IDs within each type; recheck state after locking. Use this order in admission, native guard, submit, removal, and cleanup. Refactor existing controller lock acquisition where necessary; never acquire an earlier lock while holding a later one.
+3. Check session/slot expiry, actor/site binding, exact published version and current availability, enabled element/type, and remaining per-attempt file count/byte allowance. Reject caller-selected business/library targets and uploads of a new version of an existing document; slots only authorize fresh staged files.
+4. After insert, query only metadata by the inserted IDs. Require ContentSize to be present and within the configured per-file, per-element, and per-attempt limits. Salesforce enforces org storage limits. Normalize the extension and, when the author listed allowed types, refuse a file whose extension is not on that list. Do not trust MIME or filename from `uploadfinished`.
+5. Preserve the authenticated proof finding: native transport can populate `FirstPublishLocationId` with the uploading user even without `record-id`; do not reject that verified implicit owner location. Guest ownership/link behavior still needs proof. Reject unexpected preexisting record/library/public distribution links. Account for only the platform's implicit owner link established in batch 1; no business record attachment occurs here.
+6. Record verified version/document IDs in the JSON entry, mark it `READY`, replace its reserved maximum with verified actual bytes for per-attempt checks, and save the attempt JSON in the same transaction. `addError` must roll back the upload and ledger changes on any rejection.
 
 Validate marked updates/new versions too so the marker is not a back door for replacing content after acceptance. Bind finalization to the exact accepted version; do not attach a document that has unexpectedly gained another version or different links. Clear the raw marker once correlation is safely recorded if the native lifecycle permits it; otherwise tightly restrict field read access and remove it before business attachment. Prove this behavior rather than relying on trigger-field assignment surviving platform processing.
 
-The after-insert size check prevents an oversized file from being **committed**. It does not stop all bytes from reaching Salesforce first. Native upload bandwidth/DDoS protection remains platform/ingress responsibility; app quotas must not be described as a pre-transfer size filter or an IP firewall.
+The after-insert size check prevents an oversized file from being **committed**. It does not stop all bytes from reaching Salesforce first. Native upload bandwidth/DDoS protection remains platform/ingress responsibility; per-attempt limits must not be described as a pre-transfer size filter or an IP firewall.
 
-## 8. Quotas, reservation, and denial behavior
+## 8. Per-attempt limits and Salesforce storage
 
-Start with conservative configurable limits: 50 new sessions per form/hour, 200 per site/hour, 500 per org/hour; 20 slot reservations per session lifetime; at most five simultaneously reserved/ready slots. Enforce per-user buckets for authenticated callers. Anonymous browser hints may improve UX but are not trusted identity, and a shared guest user ID is not an individual visitor.
+**Use only the person's `Form_Upload__c` record. Salesforce handles org storage limits.** There is no usage record, shared storage budget, daily byte allowance, cross-visitor counter, or application-managed site/org upload cap. Do not add shared hourly attempt counters or a usage service as part of this feature. Existing form availability/response caps remain independent submission rules.
 
-Add a guest accepted-byte budget of 1 GiB per site per UTC day and 5 GiB per org per UTC day initially. Reserve against that budget before upload, reconcile to actual accepted bytes, and never refund accepted daily bytes merely because a file was later submitted or deleted. Tune these proposed defaults explicitly for expected traffic; there is no claim that one set fits every subscriber.
+### Multiple files on the same attempt
 
-Reserve the slot's maximum allowed bytes before enabling its uploader. This can temporarily underutilize capacity, but bounds concurrency without trusting a browser's declared file size. `READY` reduces the reservation to actual bytes. Cancellation/expiry releases unused reservation; successful submission releases pending-storage quota but does not reset daily admission counters.
+Apply the admin-configurable guest defaults: **five files**, **10 MiB per file**, and **25 MiB total** initially. Admins can raise or lower them. **Logged-in users have no app default size, total-byte, or file-count limit**; apply only explicitly configured restrictions and Salesforce limits. The initial guest lifetime-entry limit is 20 and is admin-configurable; logged-in users have no default lifetime-entry count. Every attempt must still fit the bounded JSON field. Each entry gets a ten-minute upload token; the attempt expires after two hours.
 
-Use persisted unique bucket keys and row locking; Platform Cache alone is not an enforcement store. Handle the race to create a bucket using its unique key and retry/reload, not duplicate counters. A lock failure or unavailable quota store returns a safe retryable refusal, never unlimited admission. Prune old time buckets while retaining enough history to explain denial.
+Before issuing a marker, lock the attempt, read the latest JSON, and check its per-element and total file counts. For the attempt's byte allowance, count each active `RESERVED` entry at its server-calculated maximum size and each committed pending file at its verified actual size. When a size/total restriction exists, limit a new reservation to the smaller applicable per-file maximum and remaining total-byte allowance; refuse if no capacity remains. Represent absent limits as null/unbounded, never zero or a guest default. For logged-in uploads without either restriction, issue the marker without an app byte reservation and record actual size after upload; Salesforce controls transport/storage. Apply count checks only when a count limit is configured. Return that effective maximum to the UI. This reserves room only within this attempt, not in Salesforce storage.
 
-Failed native uploads can reuse a still-valid slot until its short expiry because their trigger transaction rolls back. Reservation quotas therefore bound grants and committed storage, not every rejected native HTTP attempt. Do not pretend a counter rolled back with `addError` records durable rejected attempts. Add ingress controls separately if traffic evidence requires them.
+When a native upload commits, replace that entry's reserved maximum with the verified actual size. On rejection, the native transaction rolls back and leaves the prior reservation retryable until expiry. Locking the attempt prevents two concurrent uploads from exceeding its limits or overwriting each other's JSON. Different attempts do not share a lock or counters.
 
-On capacity exhaustion show **File uploads are temporarily unavailable. Try again later.** Keep already typed answers. Block final submission only when required attachments are missing or pending. Provide an admin kill switch for new sessions/slots and a health view of pending bytes, cleanup age, failure counts, and quota utilization. No raw capabilities or filenames in aggregate logs.
+For example, a guest attempt with a 25 MiB total limit can accept files of 10 MiB, 10 MiB, and 5 MiB. After two 10 MiB files, the next grant has a 5 MiB maximum. It cannot authorize another 10 MiB file. Up to five smaller files are also allowed within that total.
+
+Cancelling an unused grant releases its allowance within the attempt. Removing a committed file invalidates its submission receipt immediately, but its actual bytes continue to count toward the attempt's pending-byte allowance until cleanup confirms deletion. Keep the failed deletion/review state in JSON; do not treat the file as gone. File-count limits apply to active RESERVED/READY entries, with any configured guest lifetime-entry limit covering removed entries too. No five-file or 20-entry fallback applies to logged-in users. Recompute byte totals from the bounded JSON rather than maintaining another counter record.
+
+### If Salesforce refuses an upload
+
+Do not try to predict or reserve org capacity in application records. If Salesforce refuses the native upload because org storage is full or another platform limit is reached, do not mark the entry READY or fabricate a receipt. Preserve answers and existing files, reconcile the entry's status, and offer retry/cancel with a safe message. The native component may provide only a generic failure; do not claim a storage-specific cause unless it is actually available.
+
+Allow a valid submission using already accepted files, or without optional files; it needs no new file upload. A pending/unknown entry must be resolved or cancelled first. A new attempt with no selected files starts with an empty file array. Creation/submission can still fail under Salesforce platform limits; surface a safe error and do not report success or create duplicate submissions on retry.
+
+### Cleanup and administration
+
+Keep hourly abandoned-file cleanup and the admission kill switch. Cleanup works from each attempt's expiry and JSON file entries; it updates that same record after each deletion attempt. Show cleanup failures and oldest pending files to admins without creating a shared usage record.
+
+Salesforce's org storage limit is the only org-wide storage ceiling in this design. Per-attempt limits do not bound total storage across visitors or identify individual anonymous people. Admins manage actual org capacity through Salesforce. Cleanup must not claim immediate physical storage reclamation until recycle-bin behavior has been verified.
 
 ## 9. Final submission transaction and idempotency
 
 Refactor the existing shared submit transaction deliberately; do not put an unrelated asynchronous linker after a success response.
 
-1. Authenticate the session and request; compute a canonical digest from normalized answers, repeats, sorted slot hashes, and version identity. Exclude changing telemetry timestamps and hash secret values before inclusion. Preserve the existing honeypot and invitation semantics.
-2. Lock and inspect the session before any business DML. If already consumed by the same submission key and digest, return the recorded original result without saving again. A different key/payload on a consumed session is refused.
-3. For an open session, recheck current availability/version and existing tracked-link validity. Lock/check all referenced ready slots. Require matching session and element, exact accepted content version, count/size/type rules, and no duplicate slot/document references. Do not infer ownership from IDs in client data.
+1. Authenticate the session and request. Preserve the existing honeypot, guest bot check and invitation semantics.
+2. Acquire attempt locks in the section 7 order before any business DML; inspect the attempt record. If it is already consumed by the same submission key, return the recorded original result without saving again. A different key on a consumed attempt is refused.
+3. For an open session, recheck current availability/version and existing tracked-link validity. Check all referenced READY entries in the freshly locked attempt JSON; there are no separate file rows to lock. Require matching session and element, exact accepted content version, count/size/type rules, and no duplicate slot/document references. Do not infer ownership from IDs in client data.
 4. Validate file requirements using server-resolved receipts, not claimed file objects in `answers`.
-5. Within one outer savepoint, call the existing classic/survey mapping work, create the authorized `ContentDocumentLink` records to `SubmitOutcome.recordId`, consume slots/session, and update any required invitation state. Store the safe success result and digest before commit.
+5. Within one outer savepoint, call the existing classic/survey/freeform submission work, create the authorized `ContentDocumentLink` records to `SubmitOutcome.recordId`, mark accepted JSON entries and the attempt CONSUMED, and update any required invitation state. Store the safe success result before commit.
 6. If validation, record DML, link insertion, or required state updates fail, roll back the submission and linking/consumption. Previously staged files remain `READY` for a corrected retry. No half-saved business record and no best-effort required file link.
 
-Do not nest the integration in a way that allows an existing inner savepoint to commit the response while outer receipt finalization fails. A caller-level catch must roll back the entire unit. Coordinate any existing invitation lock order; regression-test survey single-use links and writeback as well as classic forms.
+Do not nest the integration in a way that allows an existing inner savepoint to commit the response while outer receipt finalization fails. A caller-level catch must roll back the entire unit. Coordinate the existing invitation and form-cap locks using section 7. Check a matching consumed attempt before rejecting a now-used invitation or closed form, returning only the previously authorized safe result. Reconcile freeform's existing submission-key lookup with the attempt key so it cannot bypass attachment validation or link new files to an unrelated retry. Regression-test all three submission paths and single-use links.
 
 Use `ShareType: 'V'` and `Visibility: 'InternalUsers'` for new business record links initially, subject to batch-1 support verification. This release allows customers to upload, not to browse/download submitted attachments. Customer download access is a separate explicit policy. No `ContentDistribution`, public URL, guest record sharing, or attachment to a caller-selected record.
 
 Authenticated finalization must preserve the caller's normal rights to submit and link files. Guest association uses the narrow token/receipt-authorized system boundary. Do not turn every internal link failure into a system-mode retry.
 
-A successful upload session is also the idempotency boundary for staged submissions with zero final attachments. Persist the stable submission key before the first submit attempt; after an uncertain response, retry the same key/digest. On success, clear browser capabilities after the result is received. Retain server consumed-session receipts for 30 days, then expire the retry guarantee without allowing the old token to create a new submission.
+The attempt record is also the idempotency boundary for staged submissions with zero final attachments. Create/reuse it on the first Add file, or immediately before the first submit if no file was selected. An empty attempt requires no file upload or application storage reservation. Persist the stable submission key before the first submit attempt; after an uncertain response, retry with the same key. On success, clear browser capabilities after the result is received. Keep the file association history on the attempt record for the attachment lifecycle.
 
 ## 10. Validation and conditional visibility
 
 Do not defer file validation to the separate general server-answer-validation backlog. This feature must enforce its own required/count/size/type rules server-side.
 
-Read `element.validation` entries, including conditional `when`, from the exact published spec. Implement/reuse an Apex counterpart of the existing visibility evaluator for page, section, element, and required-condition applicability. Use shared JSON fixtures covering `all`, `any`, custom logic, blank/false/zero, dates, and trusted record-rule facts. Reuse server-resolved token facts; never accept client-provided visibility verdicts.
+Follow the existing server answer check (PR 463, `FinalAnswerValidator`): the server enforces a file question's **unconditional** required/count/size/type rules; a required rule with a `when` condition, or a file question inside a page, section or element that has a show/hide rule, is enforced by the browser only, exactly as the server check already treats every other question. No Apex rules engine is built for this feature (that stays DEFERRED #66).
 
-For v1 staged uploads, an effectively hidden file element has no required-file obligation and its receipts are not attached. The browser can retain its selected receipt in memory in case the field is shown again; finalization cancels any session slots not in the accepted visible manifest. Recompute file-driven blank/not-blank state from verified receipt presence, not from a forged answer value. File visibility depending on its own receipt, or a cycle among file visibility conditions, cannot publish in this slice.
+A hidden file question's answer is dropped from the payload by the browser like any hidden answer (#269), so its receipts are never sent and its files are never attached; finalization cancels any of the attempt's entries that the submitted `fileRefs` do not name. Recompute file-driven blank/not-blank state from verified receipt presence, not from a forged answer value.
 
-If the server cannot evaluate a required-file condition supported by the client, block publication with a repairable diagnostic; do not silently waive the requirement or make hidden required fields impossible to submit. General text/pattern/range validation outside this file feature remains separate scope.
+General text/pattern/range validation outside this file feature remains separate scope.
 
 ## 11. LWC state, user experience, and preview
 
@@ -338,7 +410,7 @@ This shape is memory-only; `_payload` emits only receipt references. Simulated p
 
 Sequence for adding one file:
 
-- First **Add file** creates/reuses a valid upload session and reserves a slot. Once ready, mount the native uploader with the slot marker and effective `accept`; never guess an unsupported maximum-size attribute.
+- First **Add file** creates/reuses the attempt record and reserves a JSON file entry. Each later file adds an entry to that same record. If no file was selected, create/reuse an empty attempt immediately before the first submit; no native upload is required. Once ready, mount the native uploader with the slot marker and effective `accept`; never guess an unsupported maximum-size attribute.
 - Native selection/progress runs in its own UI. After `uploadfinished`, call `getUploadStatus`; show **Checking upload…** until the matching slot is ready. Do not fabricate success or use returned IDs to claim files.
 - Display the server-verified name/size with an accessible **Remove [filename]** action. Successful removal immediately invalidates the receipt; physical deletion may finish in cleanup.
 - If the native transaction committed but its browser event was lost, bounded status reconciliation on focus/retry can discover the ready slot. Do not automatically create another file.
@@ -355,10 +427,10 @@ Use existing theme tokens, filenames as text, keyboard-operable buttons, live st
 New `FinalUploadCleanupBatch` plus `FinalUploadCleanupScheduler` run hourly, with smaller rerunnable scopes. Scheduling is an installation/setup step performed by the owner/admin, not by this documentation task.
 
 - Expire open sessions and reservations; mark unconsumed ready documents for deletion.
-- Before deletion, lock/recheck the session and slot to avoid racing finalization. Delete only documents referenced by app-owned, unconsumed ledger records and only after verifying their version/link history is still compatible with staging ownership.
+- Before deletion, lock the attempt record, reload its JSON, and recheck each entry to avoid racing finalization. Delete only documents referenced by app-owned, unconsumed JSON entries and only after verifying their version/link history is still compatible with staging ownership.
 - Allow only the known implicit owner link found in batch 1. If a document gained other links or another version, quarantine it for admin review; never delete an unrelated/shared file because it is old or guest-created.
 - Delete the ContentDocument as the unit, not an arbitrary version ID submitted by the client. Salesforce describes ContentDocument as the parent whose deletion removes its children. [Salesforce Files data model — Help article](https://help.salesforce.com/s/articleView?id=005314319&language=en_US&type=1).
-- Persist success/failure per cleanup item. Retry transient failures with backoff; alert if pending files exceed expiry plus 24 hours. Release storage reservations only according to the actual state, so failed deletion cannot make the pending-byte counter falsely empty.
+- Persist success/failure and retry state per JSON file entry on the attempt record. Retry transient failures with backoff; alert if pending files exceed expiry plus 24 hours. Count a removed file as still present for that attempt until deletion is confirmed; do not claim a failed deletion freed storage.
 - Removed files are eligible immediately; expired abandoned files are eligible after session expiry. Soft-deleted Files may still affect storage/recycle-bin behavior: verify actual storage reclamation during batch 1/cleanup QA and document administrator purge requirements. Do not silently hard-delete unrelated data.
 
 After successful submission, the file belongs to the business record's lifecycle, not the two-hour staging TTL. Retain its attachment ledger. A periodic orphan audit may mark it for review when the original target has been permanently deleted or the link is gone, but **do not automatically delete consumed files by age**. Respect record undelete/retention and any additional sharing. An admin-confirmed purge can delete only demonstrably app-owned, unshared orphans after the configured retention; shared files must be retained.
@@ -371,20 +443,20 @@ Each new class/bundle needs matching metadata and focused tests. Use the project
 
 | Batch                    | Existing/new responsibility                                                                                                                                  | Completion evidence                                                                                     |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
-| 1. Transport proof       | **New minimal** correlation field, guard, session/slot prototype; actual LWR test host                                                                       | Section 3 passes in the org, including rejection rollback and no guest readback.                        |
-| 2. Schema and policy     | **New** `FinalUploadPolicy.cls`; proposed objects/fields/policy metadata; existing publish/transfer validators and schema docs                               | Effective limits and normalization agree between UI/Apex; no secrets in specs or exports.               |
-| 3. Admission and guard   | **New** `FinalUploadSessionService.cls`, `FinalUploadQuotaService.cls`, `FinalUploadGuard.cls`, `FinalUploadContentVersion.trigger`; guest/auth entry points | Actual native inserts require a valid single-use slot and cannot bypass via an unmarked guest request.  |
+| 1. Transport proof       | Existing isolated correlation field, guard, proof prototype; actual LWR test host                                                                       | Section 3 passes in the org, including rejection rollback and no guest readback.                        |
+| 2. Schema and policy     | **New** `FinalUploadPolicy.cls`; `Form_Upload__c`, bounded file JSON and policy metadata; existing publish/transfer validators and schema docs                               | Effective limits and normalization agree between UI/Apex; no secrets in specs or exports.               |
+| 3. Admission and guard   | **New** `FinalUploadService.cls`, `FinalUploadGuard.cls`, `FinalUploadContentVersion.trigger`; guest/auth entry points | Actual native inserts require a valid single-use slot and cannot bypass via an unmarked guest request.  |
 | 4. Respondent UI         | **New** `lwc/finalFileUpload/`, `finalFormViewer/fileUploadSession.js`; existing renderer/viewer/host/preview components                                     | Full native flow on supported hosts, simulated Studio flow, late-response isolation, accessible errors. |
 | 5. Atomic submission     | **New** `FinalUploadFinalizeService.cls`, `FinalUploadValidation.cls`; existing `FinalSubmitService`, `FinalGuestController`, `FinalSubmitController`        | Record + links + receipt/invitation consumption are atomic and retry-idempotent.                        |
-| 6. Cleanup/operations    | **New** `FinalUploadCleanupBatch.cls`, `FinalUploadCleanupScheduler.cls`; admin status/setup documentation                                                   | Abandoned files cleaned; shared/consumed files protected; quotas reflect deletion failures.             |
+| 6. Cleanup/operations    | **New** `FinalUploadCleanupBatch.cls`, `FinalUploadCleanupScheduler.cls`; admin status/setup documentation                                                   | Abandoned files cleaned; shared/consumed files protected; deletion failures remain visible on the attempt.             |
 | 7. Authoring and rollout | Existing property panel, spec publish/transfer, permission sets, schema/runtime/pending docs                                                                 | Explicit opt-in, file behavior controls, legacy compatibility, and complete org acceptance evidence.    |
 
-Keep helpers bulk-safe: sets/maps for spec, quota, session, slot, ContentVersion, and document-link reads. No SOQL/DML per receipt. Do not create a new Files binary API, concatenate chunks in Apex, expose an OAuth/session token to the browser, or attach staged files in a best-effort post-submit job.
+Keep helpers bulk-safe: sets/maps for specs, attempt records, parsed file entries, ContentVersion, and document-link reads; lock and update each affected attempt once per operation; different attempts have no global upload lock. Do not retain separate session/slot persistence helpers or shared usage services from the superseded model. No SOQL/DML per receipt. Do not create a new Files binary API, concatenate chunks in Apex, expose an OAuth/session token to the browser, or attach staged files in a best-effort post-submit job.
 
 ## 14. Permissions, installation, and migration
 
 1. Install the proposed metadata and tests through a targeted deployment manifest. The owner commits/deploys; never run an unscoped metadata deployment.
-2. Keep native guest uploads disabled until the guard, quotas, cleanup, and approved guest identity configuration are present and verified. Confirm other guest upload consumers before applying site-wide enrollment.
+2. Keep native guest uploads disabled until the guard, per-attempt limits, cleanup, and approved guest identity configuration are present and verified. Confirm other guest upload consumers before applying site-wide enrollment.
 3. Enable the two native/LWR settings documented by Salesforce only in the intended org/site setup. Republish the Experience Cloud site after component deployment before evaluating guest behavior.
 4. Grant guest Apex access only to the existing guest controller surface. Grant only the correlation-field/platform permissions actually required by the verified native transport. No guest CRUD on authoring, upload ledgers, business targets, or general Files query access.
 5. Authenticated respondents get the narrowly scoped controller access and their normal Files rights; authors get upload configuration/diagnostics. Restrict ledger inspection and cleanup administration to admins.
@@ -409,9 +481,11 @@ Namespace qualification, installed permissions, actual guest default ownership, 
 
 - Every proposed signature matches its caller; compile all new metadata/class dependencies.
 - Invalid/expired/missing marker, wrong guest site/user, wrong form/version/element, duplicate slot, arbitrary supplied record/document/version ID, and guest Base64 rejection.
-- File metadata limits, no per-record query loops, quota concurrency/unique-key races, unknown type aliases, repeater restrictions, and no unmarked guest bypass.
+- Guest defaults can be raised/lowered by admins; logged-in internal/customer callers receive no default size/count/total limit, including on a public host. Explicit configured restrictions and JSON/platform capacity limits still apply; missing limits stay unbounded.
+- File metadata limits, retained attempt-key lookup after secret-marker clearing, no per-record query loops, attempt lock contention, per-attempt concurrent count/byte limits, JSON bounds/schema validation, unknown type aliases, repeater restrictions, and no unmarked guest bypass.
+- Concurrent files on one attempt preserve both JSON entries; duplicate file markers commit once; malformed/oversized JSON fails closed; removal/cleanup is idempotent; different attempts remain independent and require no shared records.
 - Required-file/visibility parity fixtures, including conditional required entries and record-derived facts.
-- Submit/link/invitation failure rolls back business DML and consumption; ready files remain retryable. Same key/digest returns original success; changed digest or replay across sessions fails.
+- Submit/link/invitation failure rolls back business DML and consumption; ready files remain retryable. The same submission key returns the original success; a different key on a consumed attempt fails.
 - Cleanup cannot delete consumed/shared/reversioned files; deletion failure remains visible and accounted for. No large Blob test construction to simulate native transport.
 
 ### Platform contract and real org journeys
@@ -420,8 +494,10 @@ Namespace qualification, installed permissions, actual guest default ownership, 
 | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | Anonymous LWR, 5 MiB image               | Upload succeeds and is linked only after the form's successful submission. No app-returned IDs/download URL.         |
 | Guest exact boundary and over-boundary   | Boundary accepted; oversized native attempt leaves zero committed staging file and zero business record.             |
-| Authenticated 20 MiB document            | Native transport succeeds without binary payload passing through Apex. Test internal and intended customer license.  |
+| Logged-in uploads without app defaults | Prove a file above the old 25 MiB default, aggregate above 50 MiB, and more than five files where platform/JSON capacity permits; no binary payload through Apex. Test internal and intended customer license. |
 | Two concurrent uploads using one grant   | Exactly one committed document; ledger/count/bytes agree.                                                            |
+| Different files uploaded concurrently | Both file entries survive on one attempt record within its count/byte limits; no lost JSON update. |
+| Native upload rejected by Salesforce | No fabricated READY entry; typed answers and prior files preserved; status reconciled before retry/cancel. |
 | Two concurrent final submissions         | Exactly one created target/response; retry returns the original result.                                              |
 | File link failure after record creation  | Neither business record nor consumed receipt survives; prior staged file can be retried.                             |
 | Closure/cap/republish after opening form | Fresh upload admission and submission refuse stale authorization; cleanup/removal remains possible.                  |
@@ -435,6 +511,6 @@ The implementation handoff must provide a **mechanically generated actual change
 
 ## 16. Definition of done
 
-A guest can upload a realistic attachment on the published LWR form, correct answers, remove/retry files, and submit exactly once; files attach only to that submission. Larger authenticated uploads work on supported hosts. Invalid admissions, quota overruns, stale sessions, wrong receipts, failed finalization, and abandoned uploads have tested outcomes. Existing internal inline uploads still work. Studio simulation and real upload testing are clearly distinguished.
+A guest can upload a realistic attachment on the published LWR form, correct answers, remove/retry files, and submit exactly once; files attach only to that submission. Larger authenticated uploads work on supported hosts. Invalid admissions, per-attempt limit overruns, stale sessions, wrong receipts, failed finalization, and abandoned uploads have tested outcomes. Existing internal inline uploads still work. Studio simulation and real upload testing are clearly distinguished.
 
 No implementation item in [DEFERRED.md](../DEFERRED.md) (#53) is closed merely by creating this plan.

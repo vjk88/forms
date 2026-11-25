@@ -1,0 +1,31 @@
+@import 'c/finalStudioStyles';
+:host {
+    display: block;
+}
+.us-section {
+    margin-top: var(--c-studio-space-6);
+    padding: var(--c-studio-space-5);
+    border: 1px solid var(--c-studio-border);
+    border-radius: var(--c-studio-radius-md);
+    font-family: var(--c-studio-font);
+    font-size: var(--c-studio-fs-body);
+    color: var(--c-studio-text);
+}
+.us-title {
+    margin: 0 0 var(--c-studio-space-3);
+    font-size: var(--c-studio-fs-subhead);
+    font-weight: var(--c-studio-fw-strong);
+}
+.us-help {
+    font-size: var(--c-studio-fs-small);
+    color: var(--c-studio-text-weak);
+    margin: var(--c-studio-space-3) 0;
+}
+.us-fields {
+    display: grid;
+    gap: var(--c-studio-space-5);
+    margin: var(--c-studio-space-5) 0;
+}
+.us-notice {
+    margin-top: var(--c-studio-space-3);
+}

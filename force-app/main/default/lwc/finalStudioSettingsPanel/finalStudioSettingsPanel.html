@@ -68,6 +68,13 @@
                     onchange={handleResponseCapChange}
                 ></lightning-input>
             </template>
+            <lightning-input
+                type="toggle"
+                label="Upload files when selected"
+                checked={nativeUploads}
+                onchange={handleNativeUploads}
+                field-level-help="Use Salesforce native uploads for this form. Files are attached when the form is submitted. Guests use admin-configured limits; signed-in respondents have no app default limits."
+            ></lightning-input>
             <lightning-textarea
                 label="Closed message"
                 value={closedMessageValue}

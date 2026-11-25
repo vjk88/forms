@@ -474,6 +474,44 @@
         <!-- grid-cell filler: real layout, zero paint -->
         <div class="block-emptyspace" aria-hidden="true"></div>
     </template>
+    <template lwc:elseif={isStagedFile}>
+        <div class={fileRootClass}>
+            <template lwc:if={el.label}>
+                <div class="field-label-row">
+                    <span class="field-label">{el.label}</span>
+                    <template lwc:if={el.required}
+                        ><abbr class="field-req" title={requiredTitle}
+                            >*</abbr
+                        ></template
+                    >
+                    <template lwc:if={helpContent}
+                        ><lightning-helptext
+                            content={helpContent}
+                        ></lightning-helptext
+                    ></template>
+                </div>
+            </template>
+            <template lwc:if={captionText}
+                ><p class="field-caption">{captionText}</p></template
+            >
+            <c-final-file-upload
+                context-version={uploadContext}
+                element-id={el.id}
+                label={el.label}
+                config={cfg}
+                value={fileValues}
+                preview={uploadPreview}
+                onvaluechange={handleStagedFiles}
+            ></c-final-file-upload>
+            <template lwc:if={hasErrors}
+                ><div class="field-errors" role="alert">
+                    <template for:each={errors} for:item="msg"
+                        ><p key={msg} class="field-error">{msg}</p></template
+                    >
+                </div></template
+            >
+        </div>
+    </template>
     <template lwc:elseif={isFile}>
         <div class={fileRootClass}>
             <template lwc:if={el.label}>

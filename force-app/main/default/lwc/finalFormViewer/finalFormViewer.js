@@ -1,3 +1,5 @@
+import uploadRequest from '@salesforce/apex/FinalUploadController.uploadRequest';
+import { createFileUploadSession } from './fileUploadSession';
 import { LightningElement, api, wire } from 'lwc';
 import {
     t,
@@ -293,6 +295,71 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
     /** Guest hosts only: the page's signed bot-check ticket, which address
      *  search sends with every call. Ignored for signed-in users. */
     @api guestTicket;
+    @api uploadContextVersion;
+    _uploadEpoch = 0;
+    _uploadSpecIdentity;
+    _fileUploadSession;
+    _fileUploadKey;
+    _uploadPreparing = false;
+    get stagedUploads() {
+        return this._editSpec?.settings?.uploads?.transport === 'stagedV1';
+    }
+    get uploadPreview() {
+        return (
+            this.authoring ||
+            this.preservePreview ||
+            (!!this._inlineSpec && !this.delegateSubmit)
+        );
+    }
+    _uploadIdentity() {
+        return [
+            this.effectiveFormId,
+            this.effectiveVersionId,
+            this.uploadContextVersion,
+            this._urlLinkToken
+        ].join('|');
+    }
+    _uploadCall(operation) {
+        if (!this.delegateSubmit)
+            return uploadRequest({ requestJson: JSON.stringify(operation) });
+        return new Promise((resolve, reject) =>
+            this.dispatchEvent(
+                new CustomEvent('uploadrequest', {
+                    detail: { operation, resolve, reject }
+                })
+            )
+        );
+    }
+    _uploads() {
+        const key = this._uploadIdentity();
+        if (this._fileUploadKey !== key) {
+            this._fileUploadSession?.dispose();
+            this._fileUploadSession = createFileUploadSession(
+                (operation) => this._uploadCall(operation),
+                {
+                    formId: this.effectiveFormId,
+                    versionId: this.effectiveVersionId
+                }
+            );
+            this._fileUploadKey = key;
+        }
+        return this._fileUploadSession;
+    }
+    async handleUploadOperation(event) {
+        event.stopPropagation();
+        const { operation, resolve, reject } = event.detail;
+        const identity = this._uploadIdentity();
+        try {
+            if (!this.stagedUploads || this.uploadPreview)
+                throw new Error(t('Final_Run_UploadUnavailable'));
+            const result = await this._uploads().run(operation);
+            if (identity !== this._uploadIdentity())
+                throw new Error(t('Final_Run_UploadUnavailable'));
+            resolve(result);
+        } catch (error) {
+            reject(error);
+        }
+    }
 
     /**
      * Builder-preview mode: clicks on rendered elements re-emit as
@@ -787,6 +854,9 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
      *  (An LWR reconnect re-arms nothing: completion state survives, and the
      *  respondent can still use the completion screen's own controls.) */
     disconnectedCallback() {
+        this._fileUploadSession?.dispose();
+        this._fileUploadSession = undefined;
+        this._fileUploadKey = undefined;
         this._editGeneration += 1;
         this._editReaders = [];
         this._submitGeneration += 1;
@@ -1027,6 +1097,16 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         if (this._requiresEditRecord(spec) || this._editState !== 'inactive')
             this.model = null;
         this._editSpec = incoming;
+        const uploadIdentity = this._uploadIdentity();
+        if (this._uploadSpecIdentity !== uploadIdentity) {
+            this._fileUploadSession?.dispose();
+            this._fileUploadSession = undefined;
+            this._fileUploadKey = undefined;
+            this._uploadSpecIdentity = uploadIdentity;
+            this._uploadEpoch += 1;
+            this._uploadPreparing = false;
+        }
+
         this._editGeneration += 1;
         this._editReaders = [];
         if (this._requiresEditRecord(spec)) this._editState = 'loading';
@@ -2794,6 +2874,19 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                                             answered !== undefined && !s.repeat
                                                 ? { ...el, value: answered }
                                                 : el;
+                                        if (
+                                            el.type === 'file' &&
+                                            this.stagedUploads
+                                        ) {
+                                            base = {
+                                                ...base,
+                                                upload: {
+                                                    staged: true,
+                                                    preview: this.uploadPreview,
+                                                    context: this._uploadEpoch
+                                                }
+                                            };
+                                        }
                                         // R4 — on the guest host the projection strips
                                         // bindings, so a lookup element arrives with no
                                         // target object and the picker cannot render.
@@ -4244,6 +4337,37 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         if (this._submitting || this.isAutofillPending) {
             return; // one click, one record / wait for autofill to finish
         }
+        if (this.stagedUploads && !this.uploadPreview) {
+            if (this._uploadPreparing) return;
+            const pending = Object.entries(this.answers).some(
+                ([id, rows]) =>
+                    !this._hiddenAnswerKeys?.has(id) &&
+                    this._ruleTypeIndex.get(id) === 'file' &&
+                    Array.isArray(rows) &&
+                    rows.some(
+                        (file) =>
+                            file.kind === 'stagedV1' && file.state !== 'ready'
+                    )
+            );
+            if (pending) {
+                this._submitError = t('Final_Run_UploadPending');
+                return;
+            }
+            this._uploadPreparing = true;
+            const uploadEpoch = this._uploadEpoch;
+            try {
+                await this._uploads().ensure();
+                if (uploadEpoch !== this._uploadEpoch) return;
+            } catch (error) {
+                if (uploadEpoch !== this._uploadEpoch) return;
+                this._submitError =
+                    error.body?.message || t('Final_Run_UploadUnavailable');
+                return;
+            } finally {
+                if (uploadEpoch === this._uploadEpoch)
+                    this._uploadPreparing = false;
+            }
+        }
         // Delegated submit (guest host): validation passed — hand the payload
         // to the host, which owns the guest Apex call. MUST precede the
         // inline-spec simulate below, because the host feeds the viewer an
@@ -4294,6 +4418,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 this._applyServerErrors(res.errors);
                 return;
             }
+            this._fileUploadSession?.complete();
             this.submittedRecordId = res ? res.recordId : null;
             this.completed = true;
             this._scheduleCompletion();
@@ -4329,6 +4454,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
      */
     @api
     completeSubmit() {
+        this._fileUploadSession?.complete();
         this._submitting = false;
         this.submittedRecordId = null;
         this.completed = true;
@@ -4474,6 +4600,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
         const answers = {};
         const repeats = {};
         const files = [];
+        const fileRefs = [];
         const hidden = this._hiddenAnswerKeys;
         for (const key of Object.keys(this.answers)) {
             if (hidden && hidden.has(key)) {
@@ -4486,6 +4613,12 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                 }
             } else if (this._ruleTypeIndex.get(key) === 'file') {
                 for (const f of this.answers[key] || []) {
+                    if (f?.kind === 'stagedV1' && f.state === 'ready') {
+                        fileRefs.push({
+                            elementId: key,
+                            slotToken: f.slotToken
+                        });
+                    }
                     if (f && f.base64) {
                         files.push({
                             elementId: key,
@@ -4521,6 +4654,12 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
             meta.existingRecordId = this._editRecordId;
         }
         const payload = { answers, repeats, meta };
+        if (this.stagedUploads && !this.uploadPreview) {
+            payload.fileRefs = fileRefs;
+            meta.uploadSessionToken = this._fileUploadSession?.token;
+            meta.specVersionId = this.effectiveVersionId;
+        }
+
         if (this._onRecordPage) {
             const repeatDeletes = {};
             Object.keys(this._listDeletes).forEach((id) => {

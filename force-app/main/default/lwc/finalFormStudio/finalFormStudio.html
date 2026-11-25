@@ -463,6 +463,7 @@
                                         onclick={handleBackToPalette}
                                     ></lightning-button>
                                     <c-final-property-panel
+                                        staged-uploads={stagedUploads}
                                         node={selectedNode}
                                         kind={selectedKind}
                                         binding-object-api={selectionBindingObject}
@@ -622,6 +623,7 @@
                             pending-object-change={objectPending}
                             object-error={objectError}
                             object-save-text={objectSaveText}
+                            uploads={uploads}
                             availability={availability}
                             spec-save-text={savedText}
                             is-public={isPublic}

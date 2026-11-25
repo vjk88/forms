@@ -1259,4 +1259,69 @@
         >Address search: announced while searching</shortDescription>
         <value>Searching…</value>
     </labels>
+<labels><fullName>Final_Run_UploadUnavailable</fullName><categories
+        >FinalRuntime</categories><language>en_US</language><protected
+        >false</protected><shortDescription
+        >File upload: UploadUnavailable</shortDescription><value
+        >Files could not be verified. Try again or reload the form.</value></labels>
+<labels><fullName>Final_Run_UploadCount</fullName><categories
+        >FinalRuntime</categories><language>en_US</language><protected
+        >false</protected><shortDescription
+        >File upload: UploadCount</shortDescription><value
+        >The attachment count limit has been reached. Remove a file before adding another.</value></labels>
+<labels><fullName>Final_Run_UploadSize</fullName><categories
+        >FinalRuntime</categories><language>en_US</language><protected
+        >false</protected><shortDescription
+        >File upload: UploadSize</shortDescription><value
+        >These attachments exceed the allowed size. Choose a smaller file or remove an attachment.</value></labels>
+<labels><fullName>Final_Run_UploadType</fullName><categories
+        >FinalRuntime</categories><language>en_US</language><protected
+        >false</protected><shortDescription
+        >File upload: UploadType</shortDescription><value
+        >Choose one of the allowed file types.</value></labels>
+<labels><fullName>Final_Run_UploadCapacity</fullName><categories
+        >FinalRuntime</categories><language>en_US</language><protected
+        >false</protected><shortDescription
+        >File upload: UploadCapacity</shortDescription><value
+        >This form attempt has too much attachment history. Start a new attempt.</value></labels>
+<labels><fullName>Final_Run_UploadRequired</fullName><categories
+        >FinalRuntime</categories><language>en_US</language><protected
+        >false</protected><shortDescription
+        >File upload: UploadRequired</shortDescription><value
+        >Add the required attachment before submitting.</value></labels>
+<labels><fullName>Final_Run_UploadChecking</fullName><categories
+        >FinalRuntime</categories><language>en_US</language><protected
+        >false</protected><shortDescription
+        >File upload: UploadChecking</shortDescription><value
+        >Checking upload…</value></labels>
+<labels><fullName>Final_Run_UploadPreparing</fullName><categories
+        >FinalRuntime</categories><language>en_US</language><protected
+        >false</protected><shortDescription
+        >File upload: UploadPreparing</shortDescription><value
+        >Preparing upload…</value></labels>
+<labels><fullName>Final_Run_UploadReady</fullName><categories
+        >FinalRuntime</categories><language>en_US</language><protected
+        >false</protected><shortDescription
+        >File upload: UploadReady</shortDescription><value
+        >Attached</value></labels>
+<labels><fullName>Final_Run_UploadPending</fullName><categories
+        >FinalRuntime</categories><language>en_US</language><protected
+        >false</protected><shortDescription
+        >File upload: UploadPending</shortDescription><value
+        >Finish or cancel the pending upload before submitting.</value></labels>
+<labels><fullName>Final_Run_UploadPreview</fullName><categories
+        >FinalRuntime</categories><language>en_US</language><protected
+        >false</protected><shortDescription
+        >File upload: UploadPreview</shortDescription><value
+        >Preview only. Files are not uploaded.</value></labels>
+<labels><fullName>Final_Run_UploadCancel</fullName><categories
+        >FinalRuntime</categories><language>en_US</language><protected
+        >false</protected><shortDescription
+        >File upload: UploadCancel</shortDescription><value
+        >Cancel this upload</value></labels>
+<labels><fullName>Final_Run_UploadStatusFailed</fullName><categories
+        >FinalRuntime</categories><language>en_US</language><protected
+        >false</protected><shortDescription
+        >File upload: UploadStatusFailed</shortDescription><value
+        >Upload status is unknown. Retry checking or cancel this upload.</value></labels>
 </CustomLabels>

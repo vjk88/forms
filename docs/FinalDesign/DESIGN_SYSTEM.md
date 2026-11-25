@@ -59,7 +59,7 @@ and `mocks/STUDIO_FORMWORK_DIRECTION.md` (the proposal this adopts).
 | Type sizes | `--c-fs-*` roles in `finalPageFrame.css` | `--c-studio-fs-*` roles (§4.2) |
 | Full contract | [ARCHITECTURE_LAYOUTS_THEMES.md](./ARCHITECTURE_LAYOUTS_THEMES.md) §3 | This document |
 | Guard test | `finalPageFrame/__tests__/typeScale.test.js` | `finalStudioStyles/__tests__/studioScale.test.js` (§10) |
-| Components | `finalPageFrame`, `finalFormViewer`, `finalFormHeader`, `finalSubmitBar`, `finalLayoutZones`, `finalSectionRenderer`, `finalElementRenderer`, `finalAfterSubmit`, `finalGuestHost`, `finalLookup`, `finalAddressSearch`, `finalFormHighlight`, `finalNav*` | Everything else under `final*` |
+| Components | `finalPageFrame`, `finalFormViewer`, `finalFormHeader`, `finalSubmitBar`, `finalLayoutZones`, `finalSectionRenderer`, `finalElementRenderer`, `finalAfterSubmit`, `finalGuestHost`, `finalLookup`, `finalAddressSearch`, `finalFileUpload`, `finalFormHighlight`, `finalNav*` | Everything else under `final*` |
 
 **How the wall holds** (verified in-org 2026-09-06, archive/STUDIO_COLOR_CONSISTENCY.md): the name sets don't overlap,
 and `finalPageFrame`'s wrapper resets `color` and `font-family` to theme tokens.
@@ -261,6 +261,8 @@ markup **and** behavior repeat. New components stay in the `final*` family.
 image fit, corner rounding, mesh, texture, density, pane side, pane width, progress indicator (stepper and
 brand pane), small-screen progress, tab style, tab alignment, rail side, button position. Stay as selects or
 segmented: intensities (Subtle / Medium / Strong), glass blur, max content width, step access, flow.
+
+**File uploads (2026-11-25):** `finalFileUpload` is a respondent control using native `lightning-file-upload`, a text attachment list, verified/pending status, Retry, and named Remove actions. It reads only respondent tokens. The embedded `finalUploadSettings` section reuses Studio settings fields/actions and Studio tokens; guest defaults are separate from signed-in restrictions.
 
 ## 6. States
 

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata"><classAccesses
+    ><apexClass>FinalUploadController</apexClass><enabled
+        >true</enabled></classAccesses><description
+    >Authenticated staged upload endpoints. Does not grant ledger access or Files rights beyond the caller's existing platform permissions.</description><hasActivationRequired
+    >false</hasActivationRequired><label
+    >Form Upload User</label></PermissionSet>

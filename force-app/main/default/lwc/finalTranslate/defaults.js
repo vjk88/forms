@@ -159,5 +159,24 @@ export const EN = {
     Final_Run_AddressSearchHint: 'Pick an address, or fill it in below.',
     Final_Run_AddressFilled: 'Address filled in. Check the fields below.',
     Final_Run_AddressGroupMore: ', shows more addresses',
-    Final_Run_AddressSearching: 'Searching…'
+    Final_Run_AddressSearching: 'Searching…',
+    Final_Run_UploadUnavailable:
+        'Files could not be verified. Try again or reload the form.',
+    Final_Run_UploadCount:
+        'The attachment count limit has been reached. Remove a file before adding another.',
+    Final_Run_UploadSize:
+        'These attachments exceed the allowed size. Choose a smaller file or remove an attachment.',
+    Final_Run_UploadType: 'Choose one of the allowed file types.',
+    Final_Run_UploadCapacity:
+        'This form attempt has too much attachment history. Start a new attempt.',
+    Final_Run_UploadRequired: 'Add the required attachment before submitting.',
+    Final_Run_UploadChecking: 'Checking upload…',
+    Final_Run_UploadPreparing: 'Preparing upload…',
+    Final_Run_UploadReady: 'Attached',
+    Final_Run_UploadPending:
+        'Finish or cancel the pending upload before submitting.',
+    Final_Run_UploadPreview: 'Preview only. Files are not uploaded.',
+    Final_Run_UploadCancel: 'Cancel this upload',
+    Final_Run_UploadStatusFailed:
+        'Upload status is unknown. Retry checking or cancel this upload.'
 };
