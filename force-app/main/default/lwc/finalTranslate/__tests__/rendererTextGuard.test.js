@@ -91,6 +91,7 @@ const TRANSLATED = [
 
 /** Properties known NOT to be author text. Alphabetical. */
 const NOT_TEXT = [
+    'upload', // viewer-stamped transport/preview context, not author text
     'accept', // file types, not words
     'actionButton', // thank-you button settings object; its words are buttonLabel
     'advanceTrigger',

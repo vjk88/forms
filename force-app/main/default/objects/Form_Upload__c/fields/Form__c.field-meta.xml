@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata"><fullName
+    >Form__c</fullName><label>Form</label><deleteConstraint
+    >Restrict</deleteConstraint><referenceTo
+    >Form__c</referenceTo><relationshipLabel
+    >Form uploads</relationshipLabel><relationshipName
+    >Uploads_Form</relationshipName><type>Lookup</type></CustomField>

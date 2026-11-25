@@ -1,0 +1,129 @@
+/** Isolated data factory for upload tests; no existing org records or large Blobs. */
+@IsTest
+public with sharing class FinalUploadTestData {
+    public static Form_Version__c published(Boolean required) {
+        insert new Final_Settings__c(Name = 'org', Uploads_Enabled__c = true);
+        Form__c f = new Form__c(
+            Name = 'Upload test',
+            Status__c = 'Published',
+            Is_Public__c = true,
+            Primary_Context_Object__c = 'Contact'
+        );
+        insert f;
+        Map<String, Object> spec = new Map<String, Object>{
+            'specVersion' => 1,
+            'form' => new Map<String, Object>{
+                'type' => 'form',
+                'targetObject' => 'Contact'
+            },
+            'settings' => new Map<String, Object>{
+                'uploads' => new Map<String, Object>{
+                    'transport' => 'stagedV1'
+                }
+            },
+            'pages' => new List<Object>{
+                new Map<String, Object>{
+                    'id' => 'pg',
+                    'sections' => new List<Object>{
+                        new Map<String, Object>{
+                            'id' => 'sec',
+                            'elements' => new List<Object>{
+                                new Map<String, Object>{
+                                    'id' => 'name',
+                                    'type' => 'field',
+                                    'binding' => new Map<String, Object>{
+                                        'object' => 'Contact',
+                                        'field' => 'LastName'
+                                    }
+                                },
+                                new Map<String, Object>{
+                                    'id' => 'docs',
+                                    'type' => 'file',
+                                    'label' => 'Documents',
+                                    'config' => new Map<String, Object>{
+                                        'multiple' => true,
+                                        'accept' => '.pdf,.txt'
+                                    },
+                                    'validation' => required
+                                        ? new List<Object>{
+                                              new Map<String, Object>{
+                                                  'type' => 'required'
+                                              }
+                                          }
+                                        : new List<Object>()
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        Form_Version__c v = new Form_Version__c(
+            Form__c = f.Id,
+            Version_Number__c = 1,
+            Is_Active__c = true,
+            Engine_Version__c = 1
+        );
+        FinalSpecStore.write(v, JSON.serialize(spec));
+        insert v;
+        return v;
+    }
+    public static Map<String, Object> call(Map<String, Object> operation) {
+        return FinalUploadController.uploadRequest(JSON.serialize(operation));
+    }
+    public static String attempt(Form_Version__c v) {
+        return (String) call(
+                new Map<String, Object>{
+                    'action' => 'create',
+                    'formId' => v.Form__c,
+                    'versionId' => v.Id
+                }
+            )
+            .get('sessionToken');
+    }
+    public static Map<String, Object> reserve(String token) {
+        return call(
+            new Map<String, Object>{
+                'action' => 'reserve',
+                'sessionToken' => token,
+                'elementId' => 'docs'
+            }
+        );
+    }
+    public static ContentVersion upload(String marker, String name) {
+        ContentVersion v = new ContentVersion(
+            Title = name,
+            PathOnClient = name,
+            VersionData = Blob.valueOf('sample'),
+            Final_Upload_fileupload__c = marker
+        );
+        insert v;
+        return v;
+    }
+    public static Map<String, Object> payload(
+        Form_Version__c v,
+        String token,
+        List<Map<String, Object>> slots
+    ) {
+        List<Object> refs = new List<Object>();
+        for (Map<String, Object> slot : slots) {
+            refs.add(
+                new Map<String, Object>{
+                    'elementId' => 'docs',
+                    'slotToken' => slot.get('slotToken')
+                }
+            );
+        }
+        return new Map<String, Object>{
+            'answers' => new Map<String, Object>{
+                'name' => 'Upload respondent'
+            },
+            'fileRefs' => refs,
+            'meta' => new Map<String, Object>{
+                'specVersionId' => v.Id,
+                'uploadSessionToken' => token,
+                'submissionKey' => 'stable-upload-key'
+            }
+        };
+    }
+}

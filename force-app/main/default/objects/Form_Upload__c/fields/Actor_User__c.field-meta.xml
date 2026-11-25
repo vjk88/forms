@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata"><fullName
+    >Actor_User__c</fullName><label>Upload actor</label><deleteConstraint
+    >SetNull</deleteConstraint><referenceTo>User</referenceTo><relationshipLabel
+    >Form uploads</relationshipLabel><relationshipName
+    >Uploads_Actor_User</relationshipName><type>Lookup</type></CustomField>

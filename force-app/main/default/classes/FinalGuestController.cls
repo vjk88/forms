@@ -178,7 +178,20 @@ public without sharing class FinalGuestController {
         'Final_Run_AddressSearchHint',
         'Final_Run_AddressFilled',
         'Final_Run_AddressGroupMore',
-        'Final_Run_AddressSearching'
+        'Final_Run_AddressSearching',
+        'Final_Run_UploadUnavailable',
+        'Final_Run_UploadCount',
+        'Final_Run_UploadSize',
+        'Final_Run_UploadType',
+        'Final_Run_UploadCapacity',
+        'Final_Run_UploadRequired',
+        'Final_Run_UploadChecking',
+        'Final_Run_UploadPreparing',
+        'Final_Run_UploadReady',
+        'Final_Run_UploadPending',
+        'Final_Run_UploadPreview',
+        'Final_Run_UploadCancel',
+        'Final_Run_UploadStatusFailed'
     };
     // END RUNTIME_LABEL_NAMES
 
@@ -414,6 +427,12 @@ public without sharing class FinalGuestController {
         return e;
     }
 
+    /** Published-form upload operations. Actor and public gates are enforced server side. */
+    @AuraEnabled
+    public static Map<String, Object> uploadRequest(String requestJson) {
+        return FinalUploadService.handle(requestJson, true);
+    }
+
     public class GuestSubmitResult {
         @AuraEnabled
         public Boolean success;
@@ -447,16 +466,33 @@ public without sharing class FinalGuestController {
             throw new AuraHandledException('The payload is not valid JSON.');
         }
         Map<String, Object> meta = asMap(payload.get('meta'));
+        FinalUploadFinalizeService.Context upload = FinalUploadFinalizeService.prepare(
+            f.Id,
+            version.Id,
+            spec,
+            payload,
+            true
+        );
+        if (upload != null && upload.replayed) {
+            GuestSubmitResult replay = new GuestSubmitResult();
+            replay.success = true;
+            replay.childCount = upload.attempt.Result_Child_Count__c == null
+                ? 0
+                : Integer.valueOf(upload.attempt.Result_Child_Count__c);
+            return replay;
+        }
 
         // A retry of an attempt that ALREADY LANDED is answered from the
         // store before availability is judged. The person submitted in time;
         // it was their confirmation that went missing, not their answer. The
         // ordering matters most for the submission that took the last slot -
         // without this it is told the form is full by its own earlier self.
-        FinalSubmitService.SubmitOutcome stored = FinalSubmitService.existingSubmission(
-            getStr(meta, 'submissionKey'),
-            f.Id
-        );
+        FinalSubmitService.SubmitOutcome stored = upload != null
+            ? null
+            : FinalSubmitService.existingSubmission(
+                  getStr(meta, 'submissionKey'),
+                  f.Id
+              );
         if (stored != null) {
             GuestSubmitResult again = new GuestSubmitResult();
             again.success = true;
@@ -572,6 +608,8 @@ public without sharing class FinalGuestController {
             throw new AuraHandledException(UNAVAILABLE);
         }
 
+        FinalUploadFinalizeService.complete(outcome.childCount);
+
         // The ticket is spent only by a SAVED submit (the refused case
         // returned above). The cache call fails open.
         FinalGuestTicket.markUsed(ticket);
@@ -683,6 +721,8 @@ public without sharing class FinalGuestController {
     // ----- gate + spec load -----
 
     /** The hard gate. Returns the gated Form or throws the generic message. */
+    // System read is the public/published authorization gate; guests have no authoring CRUD.
+    @SuppressWarnings('PMD.ApexCRUDViolation')
     private static Form__c gate(Id formId) {
         if (formId == null) {
             throw new AuraHandledException(UNAVAILABLE);
@@ -715,6 +755,8 @@ public without sharing class FinalGuestController {
     /** Active version (Id + spec) — read in system context (a guest can't
      *  see Form_Version__c via sharing; the gate above is the trust check).
      *  Returns the RECORD so submits anchor to the SERVER-loaded version. */
+    // Only server-selected active specs behind the public gate; never expose authoring records.
+    @SuppressWarnings('PMD.ApexCRUDViolation')
     private static Form_Version__c activeVersion(Id formId) {
         List<Form_Version__c> versions = [
             SELECT Id, Spec_JSON__c, Spec_JSON_2__c, Spec_JSON_3__c
@@ -853,6 +895,8 @@ public without sharing class FinalGuestController {
      * safe). A missing distribution passes the URL through unchanged — it
      * renders broken until the A1.5 Public-link toggle re-mints it.
      */
+    // Read only public distribution URLs for image IDs from the already-gated published spec.
+    @SuppressWarnings('PMD.ApexCRUDViolation')
     private static void rewriteImageUrls(Map<String, Object> spec) {
         Set<Id> cvIds = new Set<Id>();
         collectCvIds(spec, cvIds);

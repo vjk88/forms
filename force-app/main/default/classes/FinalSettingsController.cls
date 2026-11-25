@@ -40,6 +40,81 @@ public with sharing class FinalSettingsController {
         public String code;
     }
 
+    public class UploadSettings {
+        @AuraEnabled
+        public Boolean enabled;
+        @AuraEnabled
+        public Boolean canManage;
+        @AuraEnabled
+        public Decimal maxFileBytes;
+        @AuraEnabled
+        public Decimal maxTotalBytes;
+        @AuraEnabled
+        public Integer maxFiles;
+        @AuraEnabled
+        public Integer maxEntries;
+    }
+
+    /** Admin-readable guest defaults; authenticated respondents have no default limits. */
+    @AuraEnabled
+    public static UploadSettings getUploadSettings() {
+        if (!canManage()) {
+            throw refuse(NEED_PERMISSION);
+        }
+        Final_Settings__c s = Final_Settings__c.getInstance(SETTINGS_NAME);
+        UploadSettings r = new UploadSettings();
+        r.enabled = s?.Uploads_Enabled__c == true;
+        r.canManage = true;
+        r.maxFileBytes = s?.Guest_Upload_Max_File_Bytes__c ?? 10485760;
+        r.maxTotalBytes = s?.Guest_Upload_Max_Total_Bytes__c ?? 26214400;
+        r.maxFiles = Integer.valueOf(s?.Guest_Upload_Max_Files__c ?? 5);
+        r.maxEntries = Integer.valueOf(s?.Guest_Upload_Max_Entries__c ?? 20);
+        return r;
+    }
+
+    /** Only the existing Manage form settings permission may change guest defaults/admission. */
+    // Protected org configuration: the explicit Manage form settings permission is the write boundary.
+    @AuraEnabled
+    @SuppressWarnings('PMD.ApexCRUDViolation')
+    public static void saveUploadSettings(
+        Boolean enabled,
+        Decimal maxFileBytes,
+        Decimal maxTotalBytes,
+        Integer maxFiles,
+        Integer maxEntries
+    ) {
+        if (!canManage()) {
+            throw refuse(NEED_PERMISSION);
+        }
+        if (
+            maxFileBytes == null ||
+            maxFileBytes <= 0 ||
+            maxFileBytes.scale() > 0 ||
+            maxTotalBytes == null ||
+            maxTotalBytes <= 0 ||
+            maxTotalBytes.scale() > 0 ||
+            maxFiles == null ||
+            maxFiles < 1 ||
+            maxEntries == null ||
+            maxEntries < 1 ||
+            maxEntries < maxFiles
+        ) {
+            throw refuse(
+                'Enter positive whole-number limits. Upload attempts must be at least the file count.'
+            );
+        }
+        Final_Settings__c s = Final_Settings__c.getInstance(SETTINGS_NAME);
+        if (s == null) {
+            s = new Final_Settings__c(Name = SETTINGS_NAME);
+        }
+        s.Uploads_Enabled__c = enabled == true;
+        s.Guest_Upload_Max_File_Bytes__c = maxFileBytes;
+        s.Guest_Upload_Max_Total_Bytes__c = maxTotalBytes;
+        s.Guest_Upload_Max_Files__c = maxFiles;
+        s.Guest_Upload_Max_Entries__c = maxEntries;
+        upsert s;
+    }
+
     private static Boolean canManage() {
         return manageOverride != null
             ? manageOverride
@@ -64,7 +139,9 @@ public with sharing class FinalSettingsController {
         return r;
     }
 
+    // Protected org configuration: the explicit Manage form settings permission is the write boundary.
     @AuraEnabled
+    @SuppressWarnings('PMD.ApexCRUDViolation')
     public static void saveAddressSettings(String provider, String apexClass) {
         if (!canManage()) {
             throw refuse(NEED_PERMISSION);

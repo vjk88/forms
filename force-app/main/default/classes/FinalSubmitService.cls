@@ -2814,6 +2814,15 @@ public inherited sharing class FinalSubmitService {
         Map<String, Object> payload,
         Posture mode
     ) {
+        if (FinalUploadPolicy.staged(spec)) {
+            FinalUploadFinalizeService.attach(
+                parentId,
+                spec,
+                payload,
+                mode == Posture.GUEST
+            );
+            return;
+        }
         List<Object> entries = asList(payload.get('files'));
         if (entries == null || entries.isEmpty()) {
             return;

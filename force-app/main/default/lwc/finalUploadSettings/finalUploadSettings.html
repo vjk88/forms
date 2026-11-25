@@ -1,0 +1,85 @@
+<template>
+    <section class="us-section" aria-labelledby="uploads-heading">
+        <h3 id="uploads-heading" class="us-title">File uploads</h3>
+        <p class="us-help">
+            These defaults apply only to guests. Signed-in respondents have no
+            app default file size, count or total-size limit. Salesforce limits
+            and explicit question restrictions still apply.
+        </p>
+        <div class="us-fields">
+            <lightning-input
+                type="toggle"
+                label="Enable native form uploads"
+                data-setting="enabled"
+                checked={enabled}
+                disabled={disabled}
+                onchange={handleChange}
+            ></lightning-input>
+            <lightning-input
+                type="number"
+                label="Guest maximum file size (MiB)"
+                min="1"
+                step="1"
+                required
+                data-setting="maxFileMiB"
+                value={maxFileMiB}
+                disabled={disabled}
+                onchange={handleChange}
+            ></lightning-input>
+            <lightning-input
+                type="number"
+                label="Guest maximum total size (MiB)"
+                min="1"
+                step="1"
+                required
+                data-setting="maxTotalMiB"
+                value={maxTotalMiB}
+                disabled={disabled}
+                onchange={handleChange}
+            ></lightning-input>
+            <lightning-input
+                type="number"
+                label="Guest maximum files per submission"
+                min="1"
+                step="1"
+                required
+                data-setting="maxFiles"
+                value={maxFiles}
+                disabled={disabled}
+                onchange={handleChange}
+            ></lightning-input>
+            <lightning-input
+                type="number"
+                label="Guest file selections per form attempt"
+                field-level-help="Includes files later removed or cancelled. This prevents repeatedly uploading and removing files within one form attempt."
+                min="1"
+                step="1"
+                required
+                data-setting="maxEntries"
+                value={maxEntries}
+                disabled={disabled}
+                onchange={handleChange}
+            ></lightning-input>
+        </div>
+        <p class="us-help">
+            Guest uploads also require Salesforce Files site-upload settings and
+            enrollment of the site's guest identity. Enable “Upload files when
+            selected” in the form's Settings and publish that form to use native
+            uploads.
+        </p>
+        <lightning-button
+            variant="brand"
+            label={saveLabel}
+            disabled={disabled}
+            onclick={handleSave}
+        ></lightning-button>
+        <template lwc:if={failed}
+            ><lightning-button
+                label="Retry loading"
+                onclick={handleRetry}
+                disabled={busy}
+            ></lightning-button
+        ></template>
+        <p class="us-notice" role="status" aria-live="polite">{notice}</p>
+    </section>
+</template>

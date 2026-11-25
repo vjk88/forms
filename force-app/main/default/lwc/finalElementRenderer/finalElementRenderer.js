@@ -199,6 +199,11 @@ export default class FinalElementRenderer extends LightningElement {
         return this._element;
     }
     set element(value) {
+        if (value?.upload?.context !== this._element?.upload?.context) {
+            this._localFiles = undefined;
+            this.fileError = undefined;
+        }
+
         // Preview reconciliation is authoritative over widget-local caches.
         // Ordinary answer echoes do not reset focus or partially typed Other text.
         if (
@@ -823,6 +828,20 @@ export default class FinalElementRenderer extends LightningElement {
 
     get isEmptySpace() {
         return this.el.type === 'emptySpace';
+    }
+
+    get isStagedFile() {
+        return this.el.type === 'file' && this.el.upload?.staged === true;
+    }
+    get uploadContext() {
+        return this.el.upload?.context;
+    }
+    get uploadPreview() {
+        return this.el.upload?.preview === true;
+    }
+    handleStagedFiles(event) {
+        event.stopPropagation();
+        this._commitFiles(event.detail.value);
     }
 
     get isFile() {

@@ -1,3 +1,4 @@
+import uploadRequest from '@salesforce/apex/FinalGuestController.uploadRequest';
 import { LightningElement, api, wire } from 'lwc';
 import { CurrentPageReference } from 'lightning/navigation';
 import getGuestRuntimeSpec from '@salesforce/apex/FinalGuestController.getGuestRuntimeSpecForLangs';
@@ -79,6 +80,10 @@ export default class FinalGuestHost extends LightningElement {
     /** The live ticket string, handed to the viewer so address search can
      *  prove the page is real. `_entry` is a class field, so reassigning it
      *  (a refreshed ticket) re-renders and the viewer sees the new text. */
+    get uploadContextVersion() {
+        return this._loadGen;
+    }
+
     get currentTicket() {
         return this._entry?.ticket || null;
     }
@@ -92,6 +97,31 @@ export default class FinalGuestHost extends LightningElement {
             this._langParam = ref.state.c__lang || ref.state.lang || null;
         }
         this._load();
+    }
+
+    async handleUploadRequest(event) {
+        const { operation, resolve, reject } = event.detail;
+        const generation = this._loadGen;
+        try {
+            const request = { ...operation };
+            if (request.action === 'create' && isGuest) {
+                const entry = this._entry;
+                if (!entry) throw new Error(t('Final_Run_UploadUnavailable'));
+                request.ticket = entry.ticket;
+                request.nonce = await this._nonceFor(entry);
+                await this._waitForTicketAge(entry);
+            }
+            if (generation !== this._loadGen)
+                throw new Error(t('Final_Run_UploadUnavailable'));
+            const result = await uploadRequest({
+                requestJson: JSON.stringify(request)
+            });
+            if (generation !== this._loadGen)
+                throw new Error(t('Final_Run_UploadUnavailable'));
+            resolve(result);
+        } catch (error) {
+            reject(error);
+        }
     }
 
     connectedCallback() {

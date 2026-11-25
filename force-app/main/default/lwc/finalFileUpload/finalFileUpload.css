@@ -1,0 +1,56 @@
+:host {
+    display: block;
+    color: var(--c-text);
+    font-family: inherit;
+}
+.fu-root {
+    --slds-c-button-text-color: var(--c-text);
+    --slds-c-button-neutral-color-border: var(--c-field-border);
+    --slds-c-button-neutral-color-background: var(--c-field-bg);
+}
+.fu-input {
+    display: none;
+}
+.fu-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.fu-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--c-field-border);
+    font-size: var(--c-fs-help);
+}
+.fu-name {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.fu-help {
+    color: var(--c-text-weak);
+    font-size: var(--c-fs-help);
+    margin: 0.5rem 0;
+}
+.fu-error {
+    color: var(--c-error);
+    font-size: var(--c-fs-help);
+}
+lightning-button:focus-within,
+lightning-button-icon:focus-within {
+    outline: 2px solid var(--c-focus-outline, var(--c-field-focus));
+    box-shadow: var(--c-focus-shadow);
+}
+lightning-button-icon {
+    min-width: 1.5rem;
+    min-height: 1.5rem;
+}
+@media (pointer: coarse) {
+    lightning-button-icon {
+        min-width: 44px;
+        min-height: 44px;
+    }
+}

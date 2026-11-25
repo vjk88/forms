@@ -87,6 +87,7 @@ public with sharing class FinalSpecTransferValidator {
         Map<String, Object> spec,
         String expectedType
     ) {
+        FinalUploadPolicy.validateSpec(spec);
         if (!FORM_TYPES.contains(expectedType)) {
             throw new ValidationException(
                 'The source form type is unsupported.'

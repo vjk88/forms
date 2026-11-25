@@ -42,11 +42,6 @@ public with sharing class FinalSubmitController {
         // Availability (DEFERRED #20 → S1 ruling 7-1): the authored closed
         // flag / open-close window now gates INTERNAL submits too — same one
         // truth the guest controller enforces.
-        if (FinalSubmitService.isClosed(spec)) {
-            throw new AuraHandledException(
-                FinalSubmitService.closedMessage(spec)
-            );
-        }
         Map<String, Object> payload;
         try {
             payload = (Map<String, Object>) JSON.deserializeUntyped(
@@ -54,6 +49,26 @@ public with sharing class FinalSubmitController {
             );
         } catch (Exception e) {
             throw new AuraHandledException('The payload is not valid JSON.');
+        }
+        FinalUploadFinalizeService.Context upload = FinalUploadFinalizeService.prepare(
+            version.Form__c,
+            version.Id,
+            spec,
+            payload,
+            false
+        );
+        if (upload != null && upload.replayed) {
+            SubmitResult replay = new SubmitResult();
+            replay.recordId = (Id) upload.attempt.Result_Record_Id__c;
+            replay.childCount = upload.attempt.Result_Child_Count__c == null
+                ? 0
+                : Integer.valueOf(upload.attempt.Result_Child_Count__c);
+            return replay;
+        }
+        if (FinalSubmitService.isClosed(spec)) {
+            throw new AuraHandledException(
+                FinalSubmitService.closedMessage(spec)
+            );
         }
         // Personalized link (?c__rt=): the same checks a guest gets (owner
         // 2026-09-15 - links work for everyone). A revoked/expired/used tracked
@@ -96,6 +111,9 @@ public with sharing class FinalSubmitController {
                 throw new AuraHandledException(LINK_REFUSED);
             }
         }
+        if (outcome.errors == null || outcome.errors.isEmpty()) {
+            FinalUploadFinalizeService.complete(outcome.childCount);
+        }
         SubmitResult res = new SubmitResult();
         res.recordId = outcome.recordId;
         res.childCount = outcome.childCount;
@@ -131,6 +149,8 @@ public with sharing class FinalSubmitController {
         }
         if (
             versions.isEmpty() ||
+            (formId != null &&
+            versions[0].Form__c != formId) ||
             String.isBlank(FinalSpecStore.read(versions[0]))
         ) {
             throw new AuraHandledException(

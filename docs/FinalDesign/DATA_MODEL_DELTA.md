@@ -114,6 +114,19 @@ forms are immune regardless (snapshot). Hard-delete blocking when a draft's
 Access: **guest profile gets zero object CRUD.** Create/read exclusively through the guarded
 `without sharing` Apex path, token-gated to exactly one row (RUNTIME_NOTES).
 
+## Native upload additions
+
+Native uploads add one **private `Form_Upload__c` per attempt**, with `Files_JSON__c` holding all
+file entries. Binaries remain Salesforce Files. The attempt stores form/version, actor, hashed
+capability, expiry/cleanup timestamps, status and the saved submission receipt.
+`ContentVersion.Form_Upload_Key__c` is a nonsecret correlation key; the existing native
+`Final_Upload_fileupload__c` marker is cleared after validation.
+
+`Final_Settings__c` adds the upload switch and administrator-editable guest defaults.
+`Final_Upload_Policy__mdt` enrolls site guest identities; its shipped Disabled record enrolls no
+real user. No guest object permissions, usage records, per-file custom records or shared storage
+counters are added. See `specs/IMPL_PLAN_GUEST_FILE_UPLOAD.md`.
+
 ## 4 · Retired
 
 | Object                                                     | Disposition                                                                                                                                                                |

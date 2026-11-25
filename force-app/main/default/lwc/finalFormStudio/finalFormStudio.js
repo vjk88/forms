@@ -634,6 +634,14 @@ export default class FinalFormStudio extends NavigationMixin(LightningElement) {
         return this.translateLang ? this.translateLang.code : undefined;
     }
 
+    get stagedUploads() {
+        return this.spec?.settings?.uploads?.transport === 'stagedV1';
+    }
+
+    get uploads() {
+        return this.spec?.settings?.uploads || {};
+    }
+
     get availability() {
         return this.spec?.settings?.availability || {};
     }

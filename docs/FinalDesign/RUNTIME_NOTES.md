@@ -48,20 +48,35 @@ stub hands back whatever the test sets.
 exact `event.detail` shape; normalise at the boundary; and write the test fixture in the documented
 shape, not the one you assumed.
 
-## Guest file uploads — `fileUpload` & `formSignature` (review B)
+## Native file uploads — `settings.uploads.transport = stagedV1`
 
-Guest users on Experience / Site pages **cannot create `ContentVersion` (Files) directly** without
-server help. Rules for the runtime Apex:
+Published forms opt into native Salesforce Files uploads in Studio. The browser sends bytes through
+`lightning-file-upload`, without a record ID. Apex receives metadata and receipt references, not
+Base64. Existing forms retain the legacy inline path until explicitly switched and republished.
 
-- A dedicated Apex controller runs **`without sharing`** to insert the file on the guest's behalf.
-- Insert `ContentVersion` with **`FirstPublishLocationId` = target record Id** — this auto-creates the
-  `ContentDocumentLink` in one step (cleaner than a manual link insert).
-- **`formSignature` (ContentVersion output) reuses the SAME guest-safe path as `fileUpload`** — do not
-  build a second file-insert route. (fileUpload already does base64-on-submit → atomic `ContentVersion`
-  inside the submit savepoint; signature is just another file.)
-- **Guardrails (mandatory — `without sharing` + guest = elevated context):** link files ONLY to the
-  current submission's record; enforce size + file-type caps; never accept an arbitrary record Id from
-  the client. This is the file-upload hardening TODO.
+- One private `Form_Upload__c` holds the attempt and all file entries in `Files_JSON__c`.
+  Raw attempt/file secrets stay in browser memory; only their hashes are persisted.
+- `FinalUploadGuard` validates native correlation, clears the secret marker, and stamps a nonsecret
+  attempt key. The viewer trusts server status rather than IDs returned by `uploadfinished`.
+- Final submission validates exact file versions and creates business records, inserts
+  `ContentDocumentLink` rows, and consumes the attempt in the same transaction. Reusing the same
+  submission key returns the saved receipt without creating another record.
+- Guests initially get 10 MiB per file, 5 files and 25 MiB total per attempt, plus 20 lifetime
+  file entries. Administrators can change these defaults. Signed-in users have no application
+  default size/count/total limits; explicit published restrictions still apply.
+- There is no usage object or shared storage cap. Salesforce enforces org storage limits.
+  The JSON manifest has a technical 64,000-character budget.
+- Grants last 10 minutes and attempts last 2 hours. Removal/abandonment permits cleanup of
+  unconsumed, unshared files; consumed or independently shared files are retained.
+  `FinalUploadCleanupScheduler` must be scheduled for hourly cleanup.
+- Guest admission requires the Salesforce guest/LWR upload settings, an enrolled guest identity in
+  `Final_Upload_Policy__mdt`, and the application upload switch. Guests get no direct access to the
+  attempt object or internal form records. Narrow system-context helpers enforce the public gates.
+- Studio previews simulate selection; Lightning Out does not persist native uploads. Signature
+  generation remains on its existing path; this change adds no new signature transport.
+
+See `specs/IMPL_PLAN_GUEST_FILE_UPLOAD.md` for the contract and
+`qa/GUEST_UPLOAD_IMPLEMENTATION_2026-11-25.md` for QA evidence and limitations.
 
 ## Guest spam & bot protection (catalog review round 3)
 

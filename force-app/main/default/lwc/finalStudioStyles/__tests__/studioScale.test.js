@@ -40,6 +40,7 @@ const RESPONDENT = new Set([
     'finalGuestHost',
     'finalLookup',
     'finalAddressSearch',
+    'finalFileUpload',
     'finalLanguageMenu',
     'finalFormHighlight'
 ]);

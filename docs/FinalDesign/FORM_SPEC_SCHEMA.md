@@ -443,8 +443,27 @@ evaluates both — one evaluator, build + runtime (catalog §5 note).
   reworded. Repeated answers additionally carry `Entry_Index__c` — without it, two entries'
   answers to the same question are indistinguishable.
 
-**Draft payload** = the same shape + `resumeToken`, minus `files` (files upload on final submit
-only). Resuming = fetch draft by token (RUNTIME_NOTES guardrails) → hydrate `answers` by element id.
+**Native upload variant:** `settings.uploads.transport = "stagedV1"` opts a published form into
+upload-on-selection. The payload omits `files` and file answers and sends:
+
+```json
+{
+  "fileRefs": [{ "elementId": "el_f", "slotToken": "opaque-file-capability" }],
+  "meta": { "submissionKey": "stable-retry-key", "uploadSessionToken": "opaque-attempt-capability" }
+}
+```
+
+These fields are runtime-only: never store capabilities in specs, URLs, browser storage or drafts.
+The existing answer/repeats fields remain unchanged. Optional empty native uploads still create an
+attempt for idempotent submission. File configuration supports `accept` (extensions or supported
+MIME aliases), `multiple`, `maxSizeBytes`, and `maxFiles`. Missing `accept` accepts any type; missing
+`multiple` allows multiple files in native mode. Published upload settings can apply explicit
+`maxFiles` and `maxTotalBytes`; guest defaults are resolved separately. Signed-in respondents have
+no default application limits. See the upload implementation plan.
+
+**Draft payload** = the same answer shape + `resumeToken`, minus files and upload capabilities.
+Resuming = fetch draft by token (RUNTIME_NOTES guardrails) → hydrate answers by element id. Native
+upload attempts stay in memory and are not restored from drafts.
 
 **Asset URLs (UIUX review nit):** published snapshots embed image URLs (`logo.url`, header
 `bgImage`, page image). Publish must snapshot **stable public URLs** (the config-image-storage

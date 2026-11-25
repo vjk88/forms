@@ -1,0 +1,60 @@
+<template>
+    <div class="fu-root">
+        <lightning-button
+            data-add
+            label={addLabel}
+            disabled={addDisabled}
+            onclick={handleAdd}
+        ></lightning-button>
+        <template lwc:if={preview}>
+            <input
+                class="fu-input"
+                type="file"
+                aria-label={label}
+                accept={accept}
+                multiple={multiple}
+                onchange={handlePreviewPick}
+            />
+            <p class="fu-help">{previewText}</p>
+        </template>
+        <template for:each={instances} for:item="instance">
+            <lightning-file-upload
+                key={instance.slotKey}
+                data-key={instance.slotKey}
+                label={label}
+                accept={instance.accept}
+                file-field-name={instance.markerField}
+                file-field-value={instance.slotToken}
+                onuploadfinished={handleFinished}
+            ></lightning-file-upload>
+        </template>
+        <p class="fu-help">{guidance}</p>
+        <ul class="fu-list" aria-label={label}>
+            <template for:each={rows} for:item="file">
+                <li key={file.key} class="fu-row">
+                    <span class="fu-name">{file.name}</span
+                    ><span>{file.size}</span
+                    ><span role="status">{file.status}</span>
+                    <lightning-button-icon
+                        icon-name="utility:close"
+                        alternative-text={file.removeLabel}
+                        title={file.removeLabel}
+                        data-key={file.key}
+                        disabled={busy}
+                        onclick={handleRemove}
+                    ></lightning-button-icon>
+                </li>
+            </template>
+        </ul>
+        <template lwc:if={hasPending}
+            ><lightning-button
+                label={checkLabel}
+                disabled={busy}
+                onclick={handleCheck}
+            ></lightning-button
+        ></template>
+        <template lwc:if={error}
+            ><p class="fu-error" role="alert">{error}</p></template
+        >
+    </div>
+</template>
