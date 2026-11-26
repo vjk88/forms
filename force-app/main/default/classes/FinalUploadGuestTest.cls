@@ -71,6 +71,17 @@ private with sharing class FinalUploadGuestTest {
             ],
             'File linked to server-created record'
         );
+        Assert.areEqual(
+            'AllUsers',
+            [
+                SELECT Visibility
+                FROM ContentDocumentLink
+                WHERE LinkedEntityId = :target
+                LIMIT 1
+            ]
+            .Visibility,
+            'Guests cannot create InternalUsers links'
+        );
     }
     @IsTest
     static void publicEndpointCannotUploadToPrivateForm() {

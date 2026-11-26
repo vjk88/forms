@@ -49,6 +49,17 @@ private with sharing class FinalUploadFinalizeTest {
             'Both files linked to the created record'
         );
         Assert.areEqual(
+            2,
+            [
+                SELECT COUNT()
+                FROM ContentDocumentLink
+                WHERE
+                    LinkedEntityId = :result.recordId
+                    AND Visibility = 'InternalUsers'
+            ],
+            'Signed-in links stay internal'
+        );
+        Assert.areEqual(
             'CONSUMED',
             [SELECT Status__c FROM Form_Upload__c LIMIT 1].Status__c,
             'Attempt consumed'
