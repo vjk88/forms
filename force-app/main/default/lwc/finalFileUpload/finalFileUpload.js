@@ -43,10 +43,17 @@ export default class FinalFileUpload extends LightningElement {
         this._generation += 1;
     }
     renderedCallback() {
-        if (this._refocusAdd && !this.addDisabled) {
+        // After a removal, once no longer busy: Add if usable, else the open
+        // slot's Cancel. Cleared either way so focus never jumps later.
+        if (this._refocusAdd && !this.busy) {
             this._refocusAdd = false;
-            this.template.querySelector('[data-add]')?.focus();
+            this.template
+                .querySelector(this.addDisabled ? '.fu-cancel' : '[data-add]')
+                ?.focus();
         }
+    }
+    get hasUploader() {
+        return !!this.grant;
     }
     /** Slot reserved by Add a file whose file has not been sent yet: the
      *  native uploader stands in for it, so it gets no row and no Retry. */

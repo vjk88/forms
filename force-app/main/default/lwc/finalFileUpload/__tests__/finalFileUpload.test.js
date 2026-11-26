@@ -155,6 +155,7 @@ describe('file upload transport and receipts', () => {
         expect(el.value).toHaveLength(0);
         expect(root.querySelector('lightning-file-upload')).toBeNull();
         expect(root.querySelector('.fu-cancel')).toBeNull();
+        expect(root.querySelector('[role="group"]')).toBeNull();
     });
     it('shows the row with Retry once a sent file is still unconfirmed', async () => {
         const el = mount();

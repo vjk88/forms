@@ -19,18 +19,20 @@
         </template>
         <!-- No uploader label: the question's label already sits above; the
              group keeps that name for screen readers. -->
-        <div role="group" aria-label={label}>
-            <template for:each={instances} for:item="instance">
-                <lightning-file-upload
-                    key={instance.slotKey}
-                    data-key={instance.slotKey}
-                    accept={instance.accept}
-                    file-field-name={instance.markerField}
-                    file-field-value={instance.slotToken}
-                    onuploadfinished={handleFinished}
-                ></lightning-file-upload>
-            </template>
-        </div>
+        <template lwc:if={hasUploader}>
+            <div role="group" aria-label={label}>
+                <template for:each={instances} for:item="instance">
+                    <lightning-file-upload
+                        key={instance.slotKey}
+                        data-key={instance.slotKey}
+                        accept={instance.accept}
+                        file-field-name={instance.markerField}
+                        file-field-value={instance.slotToken}
+                        onuploadfinished={handleFinished}
+                    ></lightning-file-upload>
+                </template>
+            </div>
+        </template>
         <template lwc:if={waitingKey}
             ><lightning-button
                 class="fu-cancel"
