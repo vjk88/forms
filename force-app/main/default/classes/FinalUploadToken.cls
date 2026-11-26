@@ -1,21 +1,22 @@
 /**
  * Signed, record-free upload capabilities (IMPL_PLAN_UPLOAD_RECORDS_ON_ARRIVAL).
  *
- * A session token lets the browser ask for file slots; a slot marker is the
- * value the native uploader stamps on the ContentVersion. Neither is saved
+ * A session token lets the browser ask for a question's tag; the tag is the
+ * value the native uploader stamps on every ContentVersion it uploads for that
+ * question during this visit (one tag, any number of files). Neither is saved
  * anywhere: both carry their own claims and an HMAC over those claims plus the
  * caller's user Id (not stored in the token), so only the user they were issued
  * to can present them. The key is derived from the FinalLinkKeys MAC key, the
  * same root the guest bot-check tickets use.
  *
  *   session: s1.<publicKey>.<versionId>.<flags>.<attemptExp>.<sig>
- *   slot:    m1.<publicKey>.<slotKey>.<versionId>.<elementId b64url>.<slotExp>.<attemptExp>.<flags>.<sig>
+ *   tag:     t1.<publicKey>.<versionId>.<elementId b64url>.<attemptExp>.<flags>.<sig>
  *
  * flags: bit 1 = public host, bit 2 = guest. Expiry values are epoch seconds.
  */
 public with sharing class FinalUploadToken {
     private static final String SESSION = 's1';
-    private static final String SLOT = 'm1';
+    private static final String TAG = 't1';
     private static final String HMAC = 'hmacSHA256';
     private static final Integer MAX_ELEMENT_CHARS = 40;
     private static Blob keyCache;
@@ -26,9 +27,7 @@ public with sharing class FinalUploadToken {
         public Boolean publicHost;
         public Boolean guest;
         public Datetime attemptExpires;
-        public String slotKey;
         public String elementId;
-        public Datetime slotExpires;
     }
 
     /** @return A signed session token for these claims. */
@@ -44,8 +43,8 @@ public with sharing class FinalUploadToken {
         );
     }
 
-    /** @return A signed slot marker; refuses element ids it cannot carry. */
-    public static String slot(Claims c) {
+    /** @return A signed question tag; refuses element ids it cannot carry. */
+    public static String tag(Claims c) {
         if (
             String.isBlank(c.elementId) ||
             c.elementId.length() > MAX_ELEMENT_CHARS
@@ -54,12 +53,10 @@ public with sharing class FinalUploadToken {
         }
         return sign(
             new List<String>{
-                SLOT,
+                TAG,
                 c.publicKey,
-                c.slotKey,
                 String.valueOf(c.versionId),
                 urlB64(Blob.valueOf(c.elementId)),
-                epoch(c.slotExpires),
                 epoch(c.attemptExpires),
                 flags(c)
             }
@@ -81,19 +78,15 @@ public with sharing class FinalUploadToken {
         }
     }
 
-    /** @return Verified slot claims for the current user, or null. Expiry is the caller's check. */
-    public static Claims readSlot(String token) {
-        List<String> p = verify(token, 9, SLOT);
+    /** @return Verified tag claims for the current user, or null. Expiry is the caller's check. */
+    public static Claims readTag(String token) {
+        List<String> p = verify(token, 7, TAG);
         if (p == null) {
             return null;
         }
         try {
-            if (!Pattern.matches('[A-Za-z0-9_-]{22}', p[2])) {
-                return null;
-            }
-            Claims c = base(p[1], p[3], p[7]);
-            c.slotKey = p[2];
-            Blob element = decodeCanonical(p[4]);
+            Claims c = base(p[1], p[2], p[5]);
+            Blob element = decodeCanonical(p[3]);
             if (element == null) {
                 return null;
             }
@@ -101,8 +94,7 @@ public with sharing class FinalUploadToken {
             if (c.elementId.length() > MAX_ELEMENT_CHARS) {
                 return null;
             }
-            c.slotExpires = datetimeOf(p[5]);
-            c.attemptExpires = datetimeOf(p[6]);
+            c.attemptExpires = datetimeOf(p[4]);
             return c;
         } catch (Exception e) {
             return null;

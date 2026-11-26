@@ -5,9 +5,9 @@ private with sharing class FinalUploadFinalizeTest {
         Form_Version__c v = FinalUploadTestData.published(false);
         String token = FinalUploadTestData.attempt(v);
         Map<String, Object> first = FinalUploadTestData.reserve(token);
-        FinalUploadTestData.upload((String) first.get('slotToken'), 'one.txt');
+        FinalUploadTestData.upload((String) first.get('tag'), 'one.txt');
         Map<String, Object> second = FinalUploadTestData.reserve(token);
-        FinalUploadTestData.upload((String) second.get('slotToken'), 'two.txt');
+        FinalUploadTestData.upload((String) second.get('tag'), 'two.txt');
         Map<String, Object> payload = FinalUploadTestData.payload(
             v,
             token,
@@ -99,8 +99,8 @@ private with sharing class FinalUploadFinalizeTest {
         Form_Version__c v = FinalUploadTestData.published(false);
         String token = FinalUploadTestData.attempt(v);
         Map<String, Object> slot = FinalUploadTestData.reserve(token);
-        FinalUploadTestData.upload((String) slot.get('slotToken'), 'one.txt');
-        FinalUploadTestData.remove(token, slot.get('slotToken'));
+        FinalUploadTestData.upload((String) slot.get('tag'), 'one.txt');
+        FinalUploadTestData.removeFirst(token);
         String payload = JSON.serialize(
             FinalUploadTestData.payload(
                 v,
@@ -146,8 +146,8 @@ private with sharing class FinalUploadFinalizeTest {
         Form_Version__c v = FinalUploadTestData.published(true);
         String token = FinalUploadTestData.attempt(v);
         Map<String, Object> slot = FinalUploadTestData.reserve(token);
-        FinalUploadTestData.upload((String) slot.get('slotToken'), 'one.txt');
-        FinalUploadTestData.remove(token, slot.get('slotToken'));
+        FinalUploadTestData.upload((String) slot.get('tag'), 'one.txt');
+        FinalUploadTestData.removeFirst(token);
         Test.startTest();
         try {
             FinalSubmitController.submitForm(
@@ -211,7 +211,7 @@ private with sharing class FinalUploadFinalizeTest {
         Form_Version__c v = FinalUploadTestData.published(false);
         String token = FinalUploadTestData.attempt(v);
         Map<String, Object> slot = FinalUploadTestData.reserve(token);
-        FinalUploadTestData.upload((String) slot.get('slotToken'), 'one.txt');
+        FinalUploadTestData.upload((String) slot.get('tag'), 'one.txt');
         Map<String, Object> payload = FinalUploadTestData.payload(
             v,
             token,
@@ -249,11 +249,11 @@ private with sharing class FinalUploadFinalizeTest {
         Form_Version__c v = FinalUploadTestData.published(false);
         String token = FinalUploadTestData.attempt(v);
         Map<String, Object> slot = FinalUploadTestData.reserve(token);
-        FinalUploadTestData.upload((String) slot.get('slotToken'), 'one.txt');
+        FinalUploadTestData.upload((String) slot.get('tag'), 'one.txt');
         Map<String, Object> operation = new Map<String, Object>{
             'action' => 'remove',
             'sessionToken' => token,
-            'slotToken' => slot.get('slotToken')
+            'fileKey' => FinalUploadTestData.keys(token)[0]
         };
         Test.startTest();
         FinalUploadTestData.call(operation);
@@ -271,7 +271,7 @@ private with sharing class FinalUploadFinalizeTest {
         String token = FinalUploadTestData.attempt(v);
         Map<String, Object> slot = FinalUploadTestData.reserve(token);
         ContentVersion uploaded = FinalUploadTestData.upload(
-            (String) slot.get('slotToken'),
+            (String) slot.get('tag'),
             'shared.txt'
         );
         ContentVersion file = [
@@ -300,7 +300,7 @@ private with sharing class FinalUploadFinalizeTest {
             new Map<String, Object>{
                 'action' => 'remove',
                 'sessionToken' => token,
-                'slotToken' => slot.get('slotToken')
+                'fileKey' => FinalUploadTestData.keys(token)[0]
             }
         );
         Test.stopTest();
@@ -322,10 +322,7 @@ private with sharing class FinalUploadFinalizeTest {
         Form_Version__c v = FinalUploadTestData.published(false);
         String token = FinalUploadTestData.attempt(v);
         Map<String, Object> slot = FinalUploadTestData.reserve(token);
-        FinalUploadTestData.upload(
-            (String) slot.get('slotToken'),
-            'expired.txt'
-        );
+        FinalUploadTestData.upload((String) slot.get('tag'), 'expired.txt');
         Form_Upload__c a = [SELECT Id FROM Form_Upload__c LIMIT 1];
         a.Expires_At__c = System.now().addHours(-1);
         a.Cleanup_After__c = System.now().addHours(-1);

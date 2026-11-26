@@ -62,11 +62,10 @@ afterEach(() => {
     jest.clearAllMocks();
 });
 const slot = {
-    slotKey: 'file-a',
-    slotToken: 'm1.attempt.file-a.sig',
+    tag: 't1.attempt.version.ZG9jcw.1795700000.0.sig',
     markerField: 'Final_Upload_fileupload__c'
 };
-/** Session, slot and status answers; `arrived()` is what status reports. */
+/** Session, tag and status answers; `arrived()` is what status reports. */
 function server(viewer, arrived = () => []) {
     const actions = [];
     viewer.addEventListener('uploadrequest', (event) => {
@@ -113,7 +112,7 @@ it('passes an arrived file through the renderer into fileRefs without Base64', a
     expect(sent).toHaveBeenCalledTimes(1);
     const payload = sent.mock.calls[0][0].detail.payload;
     expect(payload.fileRefs).toEqual([
-        { elementId: 'docs', slotToken: slot.slotToken }
+        { elementId: 'docs', fileKey: 'file-a' }
     ]);
     expect(payload.meta.uploadSessionToken).toBe('s1.attempt.sig');
     expect(payload.files).toBeUndefined();
@@ -157,7 +156,7 @@ it('holds Submit while the arrival check is still running', async () => {
     await flush();
     expect(sent).toHaveBeenCalledTimes(1);
     expect(sent.mock.calls[0][0].detail.payload.fileRefs).toEqual([
-        { elementId: 'docs', slotToken: slot.slotToken }
+        { elementId: 'docs', fileKey: 'file-a' }
     ]);
 });
 it('a confirmed empty reply after Cancel releases Submit at once', async () => {
@@ -185,7 +184,7 @@ it('an untouched optional file question does not block Submit', async () => {
         actions = server(v);
         v.addEventListener('submitrequest', sent);
     });
-    // The slot is ready, but nobody picked a file.
+    // The tag is ready, but nobody picked a file.
     find(viewer.shadowRoot, 'c-final-submit-bar').dispatchEvent(
         new CustomEvent('submit')
     );

@@ -1,17 +1,13 @@
 /**
  * Token-authorized upload lifecycle; one Form_Upload__c per attempt, no shared counters.
- * No record exists until a file arrives (IMPL_PLAN_UPLOAD_RECORDS_ON_ARRIVAL): sessions
- * and slots are signed tokens, and the ContentVersion guard writes the attempt.
+ * No record exists until a file arrives (IMPL_PLAN_UPLOAD_RECORDS_ON_ARRIVAL): the
+ * session and each question's tag are signed tokens, and the ContentVersion guard
+ * writes the attempt on the first accepted file.
  */
 public with sharing class FinalUploadService {
     public static final Integer JSON_CAP = 64000;
-    /** How long a reserved slot may be used to upload. */
-    public static final Integer SLOT_MINUTES = 10;
-    /** How long an attempt stays open, counted from session start. */
+    /** How long an attempt (and its tags) stays open, counted from session start. */
     public static final Integer ATTEMPT_HOURS = 2;
-    /** Tests only: slot lifetime in seconds (negative = already expired). */
-    @TestVisible
-    private static Integer slotSecondsOverride;
 
     /** Dispatch non-cacheable upload operations from the guest or authenticated controller. */
     public static Map<String, Object> handle(
@@ -46,10 +42,13 @@ public with sharing class FinalUploadService {
                 List<Object> files = files(attempt);
                 String requestedKey;
                 if (action == 'remove') {
-                    requestedKey = fileKey(
-                        attempt,
-                        FinalUploadPolicy.stringOf(request.get('slotToken'))
+                    // The session proves the attempt; the key names its file.
+                    requestedKey = FinalUploadPolicy.stringOf(
+                        request.get('fileKey')
                     );
+                    if (requestedKey == null) {
+                        throw refuse(null);
+                    }
                 }
                 Boolean found = action == 'cancel';
                 for (Object value : files) {
@@ -164,7 +163,7 @@ public with sharing class FinalUploadService {
         return result;
     }
 
-    /** Hand out a signed slot. Limits shown here are advisory; the guard enforces them on arrival. */
+    /** Hand out the question's signed tag (reusable for every file this visit). Limits shown here are advisory; the guard enforces them on arrival. */
     private static Map<String, Object> reserve(
         Form_Upload__c attempt,
         Map<String, Object> spec,
@@ -226,22 +225,14 @@ public with sharing class FinalUploadService {
             throw refuse(Label.Final_Run_UploadSize);
         }
         FinalUploadToken.Claims c = claimsOf(attempt);
-        c.slotKey = FinalUploadCapability.key128();
         c.elementId = elementId;
-        c.slotExpires = FinalUploadToken.wholeSeconds(
-            System.now().addSeconds(slotSecondsOverride ?? SLOT_MINUTES * 60)
-        );
-        if (c.slotExpires > attempt.Expires_At__c) {
-            c.slotExpires = attempt.Expires_At__c;
-        }
         return new Map<String, Object>{
-            'slotToken' => FinalUploadToken.slot(c),
-            'slotKey' => c.slotKey,
+            'tag' => FinalUploadToken.tag(c),
             'markerField' => ContentVersion.Final_Upload_fileupload__c.getDescribe()
                 .getName(),
             'maxBytes' => maxBytes,
             'accept' => config.get('accept'),
-            'expiresAt' => c.slotExpires
+            'expiresAt' => c.attemptExpires
         };
     }
 
@@ -314,19 +305,6 @@ public with sharing class FinalUploadService {
         c.guest = attempt.Guest_User_Id__c != null;
         c.attemptExpires = FinalUploadToken.wholeSeconds(attempt.Expires_At__c);
         return c;
-    }
-
-    /**
-     * Proof that a file belongs to this attempt: a slot marker signed for this
-     * user and attempt. Slot expiry limits uploading only, so it is not checked
-     * here; the attempt's own expiry governs submit.
-     */
-    public static String fileKey(Form_Upload__c attempt, String token) {
-        FinalUploadToken.Claims c = FinalUploadToken.readSlot(token);
-        if (c == null || c.publicKey != attempt.Public_Key__c) {
-            throw refuse(null);
-        }
-        return c.slotKey;
     }
 
     public static void requireOpen(Form_Upload__c a) {

@@ -1,17 +1,15 @@
 import { LightningElement, api } from 'lwc';
 import { t } from 'c/finalTranslate';
 
-/** Refresh an unused slot this long before it expires. */
-const REFRESH_LEAD_MS = 60000;
-
 /**
  * Native transport with metadata-only simulated selection in Studio.
  *
- * IMPL_PLAN_UPLOAD_RECORDS_ON_ARRIVAL: the uploader shows straight away. A
- * signed slot is reserved quietly (no server record) and handed to the native
- * uploader; a file row exists only once the server confirms that file arrived.
- * `uploadfinished` also fires after a refused or cancelled upload, so it is
- * never trusted on its own: the server's status decides.
+ * IMPL_PLAN_UPLOAD_RECORDS_ON_ARRIVAL: the uploader shows straight away. One
+ * signed tag per question for this visit (no server record) is handed to the
+ * native uploader and stamped on every file it uploads; the server creates the
+ * attempt on the first accepted file. File rows come only from the server's
+ * status. `uploadfinished` also fires after a refused or cancelled upload, so
+ * it is never trusted on its own.
  */
 export default class FinalFileUpload extends LightningElement {
     @api elementId;
@@ -21,14 +19,10 @@ export default class FinalFileUpload extends LightningElement {
     _rows = [];
     busy = false;
     error;
-    /** The current, unused slot handed to the native uploader. */
+    /** This question's signed tag for the visit. */
     grant;
-    /** Every slot handed out on this page: slotKey -> slotToken. A file sent
-     *  with an older slot (refreshed mid-upload) is still recognised. */
-    _issued = new Map();
     _generation = 0;
     _context;
-    _refreshTimer;
     _connected = false;
     /** After a removal, move focus to the uploader once it is usable. */
     _refocus = false;
@@ -41,12 +35,10 @@ export default class FinalFileUpload extends LightningElement {
         if (value !== this._context) {
             this._context = value;
             this._generation += 1;
-            this._clearRefresh();
             this.grant = undefined;
             this.error = undefined;
             this.busy = false;
             this._rows = [];
-            this._issued = new Map();
             if (this._connected) this._reserve();
         }
     }
@@ -65,7 +57,6 @@ export default class FinalFileUpload extends LightningElement {
     disconnectedCallback() {
         this._connected = false;
         this._generation += 1;
-        this._clearRefresh();
     }
     renderedCallback() {
         if (!this._refocus || this.busy) return;
@@ -116,15 +107,30 @@ export default class FinalFileUpload extends LightningElement {
     get showUploader() {
         return !this.preview && this.canAddMore;
     }
-    /** Shown but unusable until a slot is ready, so no file goes up unsigned. */
+    /** Shown but unusable until the tag is ready, so no file goes up unsigned. */
     get uploaderDisabled() {
-        return !this.grant;
+        return !this.grant || this.hasPending;
+    }
+    /** Waiting for the tag (guests: the page's bot check): say so. */
+    get preparing() {
+        return this.showUploader && !this.grant && !this.error;
+    }
+    get preparingText() {
+        return t('Final_Run_UploadPreparing');
+    }
+    get groupBusy() {
+        return this.preparing ? 'true' : 'false';
+    }
+    /** While the uploader is disabled its file input cannot take a drop, so
+     *  the browser would open the dropped file and leave the form. */
+    handleDisabledDrop(event) {
+        if (this.uploaderDisabled) event.preventDefault();
     }
     get markerField() {
         return this.grant?.markerField;
     }
-    get slotToken() {
-        return this.grant?.slotToken;
+    get tag() {
+        return this.grant?.tag;
     }
     get uploadAccept() {
         return this.grant?.accept || this.accept;
@@ -132,7 +138,7 @@ export default class FinalFileUpload extends LightningElement {
     get hasPending() {
         return this._rows.some((row) => row.state !== 'ready');
     }
-    /** Retry re-checks pending files, or asks for a slot again after a failure. */
+    /** Retry re-checks pending files, or asks for the tag again after a failure. */
     get showRetry() {
         return (
             !this.preview &&
@@ -172,36 +178,15 @@ export default class FinalFileUpload extends LightningElement {
             );
         });
     }
-    _clearRefresh() {
-        if (this._refreshTimer) {
-            clearTimeout(this._refreshTimer);
-            this._refreshTimer = undefined;
-        }
-    }
-    _scheduleRefresh(grant) {
-        this._clearRefresh();
-        const expires = Date.parse(grant?.expiresAt);
-        if (Number.isNaN(expires)) return;
-        const wait = Math.max(expires - Date.now() - REFRESH_LEAD_MS, 1000);
-        const generation = this._generation;
-        // eslint-disable-next-line @lwc/lwc/no-async-operation
-        this._refreshTimer = setTimeout(() => {
-            this._refreshTimer = undefined;
-            if (generation === this._generation && this.grant === grant)
-                this._reserve();
-        }, wait);
-    }
-    /** Ask for a signed slot. The server saves nothing. */
+    /** Ask once for this question's signed tag. The server saves nothing. */
     async _reserve() {
-        if (this.preview || !this.canAddMore || !this.elementId) return;
+        if (this.preview || this.grant || !this.elementId) return;
         const generation = this._generation;
         this.error = undefined;
         try {
             const grant = await this._request({ action: 'reserve' });
             if (generation !== this._generation) return;
-            this._issued.set(grant.slotKey, grant.slotToken);
             this.grant = grant;
-            this._scheduleRefresh(grant);
         } catch (error) {
             if (generation === this._generation)
                 this.error =
@@ -212,77 +197,46 @@ export default class FinalFileUpload extends LightningElement {
     }
     handleFinished(event) {
         // Fires after success, refusal and cancel alike, so the server's status
-        // decides. Until it answers, a pending row holds Submit: otherwise a
-        // fast Submit could go without a file that did arrive (and the server
-        // would then clean that file up as unselected).
-        const slot = this.grant;
-        if (slot && !this._rows.some((row) => row.key === slot.slotKey)) {
-            this._emit([
-                ...this._rows,
-                {
-                    kind: 'stagedV1',
-                    key: slot.slotKey,
-                    slotToken: slot.slotToken,
-                    name: event?.detail?.files?.[0]?.name || '',
-                    state: 'pending'
-                }
-            ]);
-        }
+        // decides. Until it answers, one pending row per reported file holds
+        // Submit: otherwise a fast Submit could go without files that did
+        // arrive (and the server would then clean them up as unselected).
+        const reported = event?.detail?.files || [];
+        const pending = (reported.length ? reported : [{}]).map(
+            (file, index) => ({
+                kind: 'stagedV1',
+                key: `checking-${Date.now()}-${index}`,
+                name: file?.name || '',
+                state: 'pending'
+            })
+        );
+        this._emit([...this._rows, ...pending]);
         return this.handleCheck();
     }
     handleRetry() {
         return this.hasPending ? this.handleCheck() : this._reserve();
     }
+    /** Rows are exactly the server's live files for this question. */
     async handleCheck() {
         const generation = this._generation;
         this.busy = true;
         try {
             const result = await this._request({ action: 'status' });
             if (generation !== this._generation) return;
-            const receipts = (result.files || []).filter(
-                (row) =>
-                    row.elementId === this.elementId &&
-                    !['REMOVED', 'CANCELLED', 'EXPIRED'].includes(row.state)
-            );
-            const byKey = new Map(receipts.map((row) => [row.key, row]));
-            const toRow = (row, receipt) => ({
-                ...row,
-                name: receipt.name || row.name,
-                sizeBytes: receipt.sizeBytes,
-                state: receipt.state === 'READY' ? 'ready' : 'pending'
-            });
-            const next = [];
-            for (const row of this._rows) {
-                if (byKey.has(row.key)) {
-                    next.push(toRow(row, byKey.get(row.key)));
-                }
-            }
-            const known = new Set(next.map((row) => row.key));
-            for (const receipt of receipts) {
-                if (!known.has(receipt.key) && this._issued.has(receipt.key)) {
-                    next.push(
-                        toRow(
-                            {
-                                kind: 'stagedV1',
-                                key: receipt.key,
-                                slotToken: this._issued.get(receipt.key)
-                            },
-                            receipt
-                        )
-                    );
-                }
-            }
+            const next = (result.files || [])
+                .filter(
+                    (row) =>
+                        row.elementId === this.elementId &&
+                        row.state === 'READY'
+                )
+                .map((receipt) => ({
+                    kind: 'stagedV1',
+                    key: receipt.key,
+                    name: receipt.name,
+                    sizeBytes: receipt.sizeBytes,
+                    state: 'ready'
+                }));
             this._emit(next);
-            this.error = next.some((row) => row.state !== 'ready')
-                ? t('Final_Run_UploadStatusFailed')
-                : undefined;
-            // The current slot is used up once its file arrived; nothing
-            // arrived (refused or cancelled) means the same slot stays ready.
-            if (this.grant && byKey.has(this.grant.slotKey)) {
-                this.grant = undefined;
-                this._clearRefresh();
-                this._reserve();
-            }
+            this.error = undefined;
         } catch (error) {
             if (generation === this._generation)
                 this.error =
@@ -300,14 +254,10 @@ export default class FinalFileUpload extends LightningElement {
         this.error = undefined;
         try {
             if (!this.preview)
-                await this._request({
-                    action: 'remove',
-                    slotToken: row.slotToken
-                });
+                await this._request({ action: 'remove', fileKey: row.key });
             if (generation !== this._generation) return;
             this._emit(this._rows.filter((file) => file.key !== key));
             this._refocus = true;
-            if (!this.grant) this._reserve();
         } catch (error) {
             if (generation === this._generation)
                 this.error =

@@ -15,19 +15,29 @@
             />
             <p class="fu-help">{previewText}</p>
         </template>
-        <!-- Upload Files straight away; disabled until a signed slot is ready.
+        <!-- Upload Files straight away; disabled until the signed tag is ready.
              No uploader label: the question's label already sits above, and
              the group keeps that name for screen readers. -->
         <template lwc:if={showUploader}>
-            <div role="group" aria-label={label}>
+            <div
+                role="group"
+                aria-label={label}
+                aria-busy={groupBusy}
+                ondragover={handleDisabledDrop}
+                ondrop={handleDisabledDrop}
+            >
                 <lightning-file-upload
                     accept={uploadAccept}
                     disabled={uploaderDisabled}
                     file-field-name={markerField}
-                    file-field-value={slotToken}
+                    file-field-value={tag}
+                    multiple={multiple}
                     onuploadfinished={handleFinished}
                 ></lightning-file-upload>
             </div>
+            <template lwc:if={preparing}
+                ><p class="fu-help" role="status">{preparingText}</p></template
+            >
         </template>
         <p class="fu-help">{guidance}</p>
         <ul class="fu-list" aria-label={label}>

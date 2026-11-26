@@ -97,11 +97,11 @@ public with sharing class FinalUploadFinalizeService {
         Set<Id> versions = new Set<Id>();
         for (Object value : FinalUploadPolicy.listOf(payload.get('fileRefs'))) {
             Map<String, Object> ref = FinalUploadPolicy.mapOf(value);
-            String fileKey = FinalUploadService.fileKey(
-                a,
-                FinalUploadPolicy.stringOf(ref.get('slotToken'))
-            );
-            Map<String, Object> e = entries.get(fileKey);
+            // The verified session owns this attempt; the key names one of its files.
+            String fileKey = FinalUploadPolicy.stringOf(ref.get('fileKey'));
+            Map<String, Object> e = fileKey == null
+                ? null
+                : entries.get(fileKey);
             if (e == null) {
                 throw FinalUploadService.refuse(null);
             }

@@ -91,14 +91,42 @@ public with sharing class FinalUploadTestData {
             }
         );
     }
-    public static Map<String, Object> remove(String token, Object slotToken) {
+    /** Server keys of the session's READY files, in arrival order. */
+    public static List<String> keys(String token) {
+        return keys(token, false);
+    }
+    /** As keys(token), asking the endpoint for the session's host. */
+    public static List<String> keys(String token, Boolean publicHost) {
+        List<String> result = new List<String>();
+        String request = JSON.serialize(
+            new Map<String, Object>{
+                'action' => 'status',
+                'sessionToken' => token
+            }
+        );
+        Map<String, Object> status = publicHost
+            ? FinalGuestController.uploadRequest(request)
+            : FinalUploadController.uploadRequest(request);
+        for (Object value : (List<Object>) status.get('files')) {
+            Map<String, Object> f = (Map<String, Object>) value;
+            if (f.get('state') == 'READY') {
+                result.add((String) f.get('key'));
+            }
+        }
+        return result;
+    }
+    public static Map<String, Object> remove(String token, String fileKey) {
         return call(
             new Map<String, Object>{
                 'action' => 'remove',
                 'sessionToken' => token,
-                'slotToken' => slotToken
+                'fileKey' => fileKey
             }
         );
+    }
+    /** Remove the session's first READY file. */
+    public static Map<String, Object> removeFirst(String token) {
+        return remove(token, keys(token)[0]);
     }
     /** Insert without throwing; for refusal tests. */
     public static Database.SaveResult tryUpload(String marker, String name) {
@@ -130,19 +158,34 @@ public with sharing class FinalUploadTestData {
         insert v;
         return v;
     }
+    /**
+     * A submit payload. With any tags passed, it references every file that
+     * arrived for this session (by server key), as the browser does; with
+     * none, it references no files.
+     */
     public static Map<String, Object> payload(
         Form_Version__c v,
         String token,
-        List<Map<String, Object>> slots
+        List<Map<String, Object>> tags
+    ) {
+        return payload(v, token, tags, false);
+    }
+    public static Map<String, Object> payload(
+        Form_Version__c v,
+        String token,
+        List<Map<String, Object>> tags,
+        Boolean publicHost
     ) {
         List<Object> refs = new List<Object>();
-        for (Map<String, Object> slot : slots) {
-            refs.add(
-                new Map<String, Object>{
-                    'elementId' => 'docs',
-                    'slotToken' => slot.get('slotToken')
-                }
-            );
+        if (!tags.isEmpty()) {
+            for (String key : keys(token, publicHost)) {
+                refs.add(
+                    new Map<String, Object>{
+                        'elementId' => 'docs',
+                        'fileKey' => key
+                    }
+                );
+            }
         }
         return new Map<String, Object>{
             'answers' => new Map<String, Object>{

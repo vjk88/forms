@@ -40,7 +40,8 @@
     font-size: var(--c-fs-help);
 }
 lightning-button:focus-within,
-lightning-button-icon:focus-within {
+lightning-button-icon:focus-within,
+lightning-file-upload:focus-within {
     outline: 2px solid var(--c-focus-outline, var(--c-field-focus));
     box-shadow: var(--c-focus-shadow);
 }

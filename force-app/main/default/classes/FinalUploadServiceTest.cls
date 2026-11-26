@@ -24,7 +24,7 @@ private with sharing class FinalUploadServiceTest {
             [SELECT COUNT() FROM Form_Upload__c],
             'No record from a session, two slots or a cancel'
         );
-        FinalUploadTestData.upload((String) slot.get('slotToken'), 'one.txt');
+        FinalUploadTestData.upload((String) slot.get('tag'), 'one.txt');
         Test.stopTest();
         Form_Upload__c a = [
             SELECT Status__c, Public_Host__c, Guest_User_Id__c, Expires_At__c
@@ -119,7 +119,7 @@ private with sharing class FinalUploadServiceTest {
                     Title = 'Sample',
                     PathOnClient = 'sample.txt',
                     VersionData = Blob.valueOf('small'),
-                    Final_Upload_fileupload__c = (String) slot.get('slotToken')
+                    Final_Upload_fileupload__c = (String) slot.get('tag')
                 )
             );
         }
@@ -169,7 +169,7 @@ private with sharing class FinalUploadServiceTest {
         Form_Version__c v = FinalUploadTestData.published(false);
         String token = FinalUploadTestData.attempt(v);
         FinalUploadTestData.upload(
-            (String) FinalUploadTestData.reserve(token).get('slotToken'),
+            (String) FinalUploadTestData.reserve(token).get('tag'),
             'one.txt'
         );
         Form_Upload__c a = [SELECT Id FROM Form_Upload__c LIMIT 1];
@@ -208,28 +208,46 @@ private with sharing class FinalUploadServiceTest {
         );
     }
     @IsTest
-    static void duplicateFileTokenCannotCommitTwice() {
+    static void oneTagTakesSeveralFilesOnOneAttempt() {
         Form_Version__c v = FinalUploadTestData.published(false);
         String token = FinalUploadTestData.attempt(v);
-        Map<String, Object> slot = FinalUploadTestData.reserve(token);
-        FinalUploadTestData.upload((String) slot.get('slotToken'), 'first.txt');
+        String tag = (String) FinalUploadTestData.reserve(token).get('tag');
+        FinalUploadTestData.upload(tag, 'first.txt');
         Test.startTest();
-        Database.SaveResult result = Database.insert(
-            new ContentVersion(
-                Title = 'Second',
-                PathOnClient = 'second.txt',
-                VersionData = Blob.valueOf('small'),
-                Final_Upload_fileupload__c = (String) slot.get('slotToken')
-            ),
-            false
+        Database.SaveResult result = FinalUploadTestData.tryUpload(
+            tag,
+            'second.txt'
         );
         Test.stopTest();
-        Assert.isFalse(result.isSuccess(), 'Single-use file token');
+        Assert.isTrue(result.isSuccess(), 'The same tag takes another file');
+        Form_Upload__c a = [SELECT Files_JSON__c FROM Form_Upload__c];
+        List<Object> files = FinalUploadService.files(a);
+        Assert.areEqual(2, files.size(), 'Both files on the one attempt');
+        Assert.areNotEqual(
+            FinalUploadPolicy.mapOf(files[0]).get('key'),
+            FinalUploadPolicy.mapOf(files[1]).get('key'),
+            'Each file gets its own server key'
+        );
+    }
+    @IsTest
+    static void anotherSessionCannotRemoveThisFile() {
+        Form_Version__c v = FinalUploadTestData.published(false);
+        String mine = FinalUploadTestData.attempt(v);
+        FinalUploadTestData.upload(
+            (String) FinalUploadTestData.reserve(mine).get('tag'),
+            'mine.txt'
+        );
+        String key = FinalUploadTestData.keys(mine)[0];
+        String other = FinalUploadTestData.attempt(v);
+        Test.startTest();
+        FinalUploadTestData.remove(other, key);
+        Test.stopTest();
         Assert.areEqual(
             1,
-            [SELECT COUNT() FROM ContentDocument],
-            'No second committed document'
+            FinalUploadTestData.keys(mine).size(),
+            'A key alone cannot remove another visit\'s file'
         );
+        Assert.areEqual(1, [SELECT COUNT() FROM ContentDocument], 'Kept');
     }
     @IsTest
     static void disallowedExtensionLeavesNoFile() {
@@ -242,7 +260,7 @@ private with sharing class FinalUploadServiceTest {
                 Title = 'Image',
                 PathOnClient = 'image.png',
                 VersionData = Blob.valueOf('small'),
-                Final_Upload_fileupload__c = (String) slot.get('slotToken')
+                Final_Upload_fileupload__c = (String) slot.get('tag')
             ),
             false
         );
@@ -261,7 +279,7 @@ private with sharing class FinalUploadServiceTest {
         Map<String, Object> slot = FinalUploadTestData.reserve(token);
         Test.startTest();
         ContentVersion file = FinalUploadTestData.upload(
-            (String) slot.get('slotToken'),
+            (String) slot.get('tag'),
             'sample.txt'
         );
         Map<String, Object> status = FinalUploadTestData.call(
@@ -393,11 +411,10 @@ private with sharing class FinalUploadServiceTest {
     static void alteredMarkerIsRefused() {
         Form_Version__c v = FinalUploadTestData.published(false);
         String token = FinalUploadTestData.attempt(v);
-        String marker = (String) FinalUploadTestData.reserve(token)
-            .get('slotToken');
+        String marker = (String) FinalUploadTestData.reserve(token).get('tag');
         // Flip the public-host flag (the segment before the signature).
         List<String> parts = marker.split('\\.');
-        parts[7] = parts[7] == '0' ? '1' : '0';
+        parts[5] = parts[5] == '0' ? '1' : '0';
         Test.startTest();
         Database.SaveResult flipped = FinalUploadTestData.tryUpload(
             String.join(parts, '.'),
@@ -417,12 +434,12 @@ private with sharing class FinalUploadServiceTest {
         );
     }
     @IsTest
-    static void refusedFirstFileLeavesTheSameSlotUsable() {
+    static void refusedFirstFileLeavesTheTagUsable() {
         Form_Version__c v = FinalUploadTestData.published(false);
         String marker = (String) FinalUploadTestData.reserve(
                 FinalUploadTestData.attempt(v)
             )
-            .get('slotToken');
+            .get('tag');
         Test.startTest();
         Database.SaveResult refused = FinalUploadTestData.tryUpload(
             marker,
@@ -434,7 +451,7 @@ private with sharing class FinalUploadServiceTest {
         );
         Test.stopTest();
         Assert.isFalse(refused.isSuccess(), 'First file refused');
-        Assert.isTrue(retried.isSuccess(), 'Same slot accepts the re-pick');
+        Assert.isTrue(retried.isSuccess(), 'Same tag accepts the re-pick');
         Form_Upload__c a = [SELECT Files_JSON__c FROM Form_Upload__c];
         Assert.areEqual(
             1,
@@ -453,7 +470,7 @@ private with sharing class FinalUploadServiceTest {
         String marker = (String) FinalUploadTestData.reserve(
                 FinalUploadTestData.attempt(v)
             )
-            .get('slotToken');
+            .get('tag');
         User other = new User(
             ProfileId = [
                 SELECT Id
@@ -486,43 +503,12 @@ private with sharing class FinalUploadServiceTest {
         );
     }
     @IsTest
-    static void expiredSlotCannotUploadButStillProvesArrival() {
-        Form_Version__c v = FinalUploadTestData.published(false);
-        String token = FinalUploadTestData.attempt(v);
-        Map<String, Object> good = FinalUploadTestData.reserve(token);
-        FinalUploadTestData.upload((String) good.get('slotToken'), 'one.txt');
-        FinalUploadService.slotSecondsOverride = -60;
-        String expired = (String) FinalUploadTestData.reserve(token)
-            .get('slotToken');
-        FinalUploadService.slotSecondsOverride = null;
-        Test.startTest();
-        Database.SaveResult late = FinalUploadTestData.tryUpload(
-            expired,
-            'late.txt'
-        );
-        Form_Upload__c a = [
-            SELECT Public_Key__c, Actor_User__c
-            FROM Form_Upload__c
-            LIMIT 1
-        ];
-        String key = FinalUploadService.fileKey(a, expired);
-        Test.stopTest();
-        Assert.isFalse(
-            late.isSuccess(),
-            'Upload after the slot expired refused'
-        );
-        Assert.isNotNull(
-            key,
-            'An expired slot still identifies its file at submit'
-        );
-    }
-    @IsTest
     static void uploadsSwitchedOffAfterReserveAreRefused() {
         Form_Version__c v = FinalUploadTestData.published(false);
         String marker = (String) FinalUploadTestData.reserve(
                 FinalUploadTestData.attempt(v)
             )
-            .get('slotToken');
+            .get('tag');
         Final_Settings__c s = Final_Settings__c.getInstance('org');
         s.Uploads_Enabled__c = false;
         update s;
@@ -554,10 +540,8 @@ private with sharing class FinalUploadServiceTest {
         update v;
         String token = FinalUploadTestData.attempt(v);
         // Two slots handed out before any file arrived: reserve cannot know.
-        String first = (String) FinalUploadTestData.reserve(token)
-            .get('slotToken');
-        String second = (String) FinalUploadTestData.reserve(token)
-            .get('slotToken');
+        String first = (String) FinalUploadTestData.reserve(token).get('tag');
+        String second = (String) FinalUploadTestData.reserve(token).get('tag');
         Test.startTest();
         FinalUploadTestData.upload(first, 'one.txt');
         Database.SaveResult over = FinalUploadTestData.tryUpload(
