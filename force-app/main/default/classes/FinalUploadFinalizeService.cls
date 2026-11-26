@@ -5,6 +5,8 @@ public with sharing class FinalUploadFinalizeService {
         public Form_Upload__c attempt;
         public List<Map<String, Object>> selected = new List<Map<String, Object>>();
         public Boolean replayed = false;
+        /** No file ever arrived: nothing to link, and no record is created. */
+        public Boolean empty = false;
     }
     /** Authorize and lock before invitation/form locks. Successful retries return the stored result. */
     public static Context prepare(
@@ -43,6 +45,25 @@ public with sharing class FinalUploadFinalizeService {
         ) {
             throw FinalUploadService.refuse(null);
         }
+        if (a.Id == null) {
+            // Nothing ever arrived (IMPL_PLAN_UPLOAD_RECORDS_ON_ARRIVAL §5):
+            // submit without creating an upload record. Required file
+            // questions are still enforced.
+            if (
+                a.Form_Version__c != versionId ||
+                !FinalUploadPolicy.listOf(payload.get('fileRefs')).isEmpty()
+            ) {
+                throw FinalUploadService.refuse(null);
+            }
+            FinalUploadValidation.manifest(
+                spec,
+                new List<Map<String, Object>>(),
+                a.Guest_User_Id__c != null
+            );
+            c.empty = true;
+            current = c;
+            return c;
+        }
         if (a.Status__c == 'CONSUMED') {
             if (a.Submission_Key__c != key || a.Result_Record_Id__c == null) {
                 throw FinalUploadService.refuse(null);
@@ -76,11 +97,14 @@ public with sharing class FinalUploadFinalizeService {
         Set<Id> versions = new Set<Id>();
         for (Object value : FinalUploadPolicy.listOf(payload.get('fileRefs'))) {
             Map<String, Object> ref = FinalUploadPolicy.mapOf(value);
-            String fileKey = FinalUploadService.fileKey(
-                a,
-                FinalUploadPolicy.stringOf(ref.get('slotToken'))
-            );
-            Map<String, Object> e = entries.get(fileKey);
+            // The verified session owns this attempt; the key names one of its files.
+            String fileKey = FinalUploadPolicy.stringOf(ref.get('fileKey'));
+            Map<String, Object> e = fileKey == null
+                ? null
+                : entries.get(fileKey);
+            if (e == null) {
+                throw FinalUploadService.refuse(null);
+            }
             Id documentId = (Id) FinalUploadPolicy.stringOf(
                 e.get('contentDocumentId')
             );
@@ -163,17 +187,19 @@ public with sharing class FinalUploadFinalizeService {
             return;
         }
         Context c = current;
+        if (c != null && c.empty) {
+            return; // no file ever arrived; nothing to link or record
+        }
         if (c == null || c.replayed || targetId == null) {
             throw FinalUploadService.refuse(null);
         }
-        String token = FinalUploadPolicy.stringOf(
-            FinalUploadPolicy.mapOf(payload.get('meta'))
-                .get('uploadSessionToken')
+        FinalUploadToken.Claims session = FinalUploadToken.readSession(
+            FinalUploadPolicy.stringOf(
+                FinalUploadPolicy.mapOf(payload.get('meta'))
+                    .get('uploadSessionToken')
+            )
         );
-        if (
-            FinalUploadService.tokenParts(token, 2)[0] !=
-            c.attempt.Public_Key__c
-        ) {
+        if (session == null || session.publicKey != c.attempt.Public_Key__c) {
             throw FinalUploadService.refuse(null);
         }
         // A guest may not create InternalUsers links ("Visibility InternalUsers

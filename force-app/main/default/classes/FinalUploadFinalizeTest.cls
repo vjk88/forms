@@ -5,9 +5,9 @@ private with sharing class FinalUploadFinalizeTest {
         Form_Version__c v = FinalUploadTestData.published(false);
         String token = FinalUploadTestData.attempt(v);
         Map<String, Object> first = FinalUploadTestData.reserve(token);
-        FinalUploadTestData.upload((String) first.get('slotToken'), 'one.txt');
+        FinalUploadTestData.upload((String) first.get('tag'), 'one.txt');
         Map<String, Object> second = FinalUploadTestData.reserve(token);
-        FinalUploadTestData.upload((String) second.get('slotToken'), 'two.txt');
+        FinalUploadTestData.upload((String) second.get('tag'), 'two.txt');
         Map<String, Object> payload = FinalUploadTestData.payload(
             v,
             token,
@@ -66,7 +66,7 @@ private with sharing class FinalUploadFinalizeTest {
         );
     }
     @IsTest
-    static void emptyOptionalAttemptIsAlsoIdempotent() {
+    static void untouchedOptionalFileSubmitsWithoutAnUploadRecord() {
         Form_Version__c v = FinalUploadTestData.published(false);
         String token = FinalUploadTestData.attempt(v);
         String payload = JSON.serialize(
@@ -77,21 +77,99 @@ private with sharing class FinalUploadFinalizeTest {
             )
         );
         Test.startTest();
-        FinalSubmitController.SubmitResult first = FinalSubmitController.submitForm(
-            v.Form__c,
-            v.Id,
-            payload
-        );
-        FinalSubmitController.SubmitResult second = FinalSubmitController.submitForm(
+        FinalSubmitController.SubmitResult result = FinalSubmitController.submitForm(
             v.Form__c,
             v.Id,
             payload
         );
         Test.stopTest();
+        Assert.isTrue(
+            result.errors == null || result.errors.isEmpty(),
+            'Submission errors: ' + JSON.serialize(result.errors)
+        );
+        Assert.isNotNull(result.recordId, 'Business record created');
         Assert.areEqual(
-            first.recordId,
-            second.recordId,
-            'Optional empty attempt retries safely'
+            0,
+            [SELECT COUNT() FROM Form_Upload__c],
+            'No upload record when no file ever arrived'
+        );
+    }
+    @IsTest
+    static void removingTheOnlyOptionalFileStillSubmits() {
+        Form_Version__c v = FinalUploadTestData.published(false);
+        String token = FinalUploadTestData.attempt(v);
+        Map<String, Object> slot = FinalUploadTestData.reserve(token);
+        FinalUploadTestData.upload((String) slot.get('tag'), 'one.txt');
+        FinalUploadTestData.removeFirst(token);
+        String payload = JSON.serialize(
+            FinalUploadTestData.payload(
+                v,
+                token,
+                new List<Map<String, Object>>()
+            )
+        );
+        Test.startTest();
+        FinalSubmitController.SubmitResult result = FinalSubmitController.submitForm(
+            v.Form__c,
+            v.Id,
+            payload
+        );
+        Test.stopTest();
+        Assert.isTrue(
+            result.errors == null || result.errors.isEmpty(),
+            'Submission errors: ' + JSON.serialize(result.errors)
+        );
+        Form_Upload__c a = [
+            SELECT Status__c, Files_JSON__c
+            FROM Form_Upload__c
+            LIMIT 1
+        ];
+        Assert.areEqual('CONSUMED', a.Status__c, 'Existing attempt finished');
+        Assert.areEqual(
+            'REMOVED',
+            FinalUploadPolicy.mapOf(FinalUploadService.files(a)[0])
+                .get('state'),
+            'Removed file keeps its cleanup state'
+        );
+        Assert.areEqual(
+            0,
+            [
+                SELECT COUNT()
+                FROM ContentDocumentLink
+                WHERE LinkedEntityId = :result.recordId
+            ],
+            'Nothing linked'
+        );
+    }
+    @IsTest
+    static void requiredFileRefusedAfterItsOnlyFileWasRemoved() {
+        Form_Version__c v = FinalUploadTestData.published(true);
+        String token = FinalUploadTestData.attempt(v);
+        Map<String, Object> slot = FinalUploadTestData.reserve(token);
+        FinalUploadTestData.upload((String) slot.get('tag'), 'one.txt');
+        FinalUploadTestData.removeFirst(token);
+        Test.startTest();
+        try {
+            FinalSubmitController.submitForm(
+                v.Form__c,
+                v.Id,
+                JSON.serialize(
+                    FinalUploadTestData.payload(
+                        v,
+                        token,
+                        new List<Map<String, Object>>()
+                    )
+                )
+            );
+            Assert.fail('Required file question submitted empty');
+        } catch (AuraHandledException e) {
+            Assert.isTrue(e.getMessage().length() > 0, 'Required file refused');
+        }
+        Test.stopTest();
+        Assert.areEqual(
+            0,
+            [SELECT COUNT() FROM Contact WHERE LastName = 'Upload respondent'],
+            'No business DML'
         );
     }
     @IsTest
@@ -133,7 +211,7 @@ private with sharing class FinalUploadFinalizeTest {
         Form_Version__c v = FinalUploadTestData.published(false);
         String token = FinalUploadTestData.attempt(v);
         Map<String, Object> slot = FinalUploadTestData.reserve(token);
-        FinalUploadTestData.upload((String) slot.get('slotToken'), 'one.txt');
+        FinalUploadTestData.upload((String) slot.get('tag'), 'one.txt');
         Map<String, Object> payload = FinalUploadTestData.payload(
             v,
             token,
@@ -171,11 +249,11 @@ private with sharing class FinalUploadFinalizeTest {
         Form_Version__c v = FinalUploadTestData.published(false);
         String token = FinalUploadTestData.attempt(v);
         Map<String, Object> slot = FinalUploadTestData.reserve(token);
-        FinalUploadTestData.upload((String) slot.get('slotToken'), 'one.txt');
+        FinalUploadTestData.upload((String) slot.get('tag'), 'one.txt');
         Map<String, Object> operation = new Map<String, Object>{
             'action' => 'remove',
             'sessionToken' => token,
-            'slotToken' => slot.get('slotToken')
+            'fileKey' => FinalUploadTestData.keys(token)[0]
         };
         Test.startTest();
         FinalUploadTestData.call(operation);
@@ -193,7 +271,7 @@ private with sharing class FinalUploadFinalizeTest {
         String token = FinalUploadTestData.attempt(v);
         Map<String, Object> slot = FinalUploadTestData.reserve(token);
         ContentVersion uploaded = FinalUploadTestData.upload(
-            (String) slot.get('slotToken'),
+            (String) slot.get('tag'),
             'shared.txt'
         );
         ContentVersion file = [
@@ -222,7 +300,7 @@ private with sharing class FinalUploadFinalizeTest {
             new Map<String, Object>{
                 'action' => 'remove',
                 'sessionToken' => token,
-                'slotToken' => slot.get('slotToken')
+                'fileKey' => FinalUploadTestData.keys(token)[0]
             }
         );
         Test.stopTest();
@@ -244,10 +322,7 @@ private with sharing class FinalUploadFinalizeTest {
         Form_Version__c v = FinalUploadTestData.published(false);
         String token = FinalUploadTestData.attempt(v);
         Map<String, Object> slot = FinalUploadTestData.reserve(token);
-        FinalUploadTestData.upload(
-            (String) slot.get('slotToken'),
-            'expired.txt'
-        );
+        FinalUploadTestData.upload((String) slot.get('tag'), 'expired.txt');
         Form_Upload__c a = [SELECT Id FROM Form_Upload__c LIMIT 1];
         a.Expires_At__c = System.now().addHours(-1);
         a.Cleanup_After__c = System.now().addHours(-1);

@@ -1,7 +1,16 @@
 import { LightningElement, api } from 'lwc';
 import { t } from 'c/finalTranslate';
 
-/** Native transport with metadata-only simulated selection in Studio. */
+/**
+ * Native transport with metadata-only simulated selection in Studio.
+ *
+ * IMPL_PLAN_UPLOAD_RECORDS_ON_ARRIVAL: the uploader shows straight away. One
+ * signed tag per question for this visit (no server record) is handed to the
+ * native uploader and stamped on every file it uploads; the server creates the
+ * attempt on the first accepted file. File rows come only from the server's
+ * status. `uploadfinished` also fires after a refused or cancelled upload, so
+ * it is never trusted on its own.
+ */
 export default class FinalFileUpload extends LightningElement {
     @api elementId;
     @api label;
@@ -10,12 +19,14 @@ export default class FinalFileUpload extends LightningElement {
     _rows = [];
     busy = false;
     error;
+    /** This question's signed tag for the visit. */
     grant;
     _generation = 0;
     _context;
-    /** Slot keys whose native upload has finished. */
-    _sent = new Set();
-    _refocusAdd = false;
+    _connected = false;
+    /** After a removal, move focus to the uploader once it is usable. */
+    _refocus = false;
+
     @api
     get contextVersion() {
         return this._context;
@@ -28,7 +39,7 @@ export default class FinalFileUpload extends LightningElement {
             this.error = undefined;
             this.busy = false;
             this._rows = [];
-            this._sent = new Set();
+            if (this._connected) this._reserve();
         }
     }
 
@@ -39,39 +50,36 @@ export default class FinalFileUpload extends LightningElement {
     set value(value) {
         this._rows = Array.isArray(value) ? [...value] : [];
     }
+    connectedCallback() {
+        this._connected = true;
+        this._reserve();
+    }
     disconnectedCallback() {
+        this._connected = false;
         this._generation += 1;
     }
     renderedCallback() {
-        // After a removal, once no longer busy: Add if usable, else the open
-        // slot's Cancel. Cleared either way so focus never jumps later.
-        if (this._refocusAdd && !this.busy) {
-            this._refocusAdd = false;
-            this.template
-                .querySelector(this.addDisabled ? '.fu-cancel' : '[data-add]')
-                ?.focus();
+        if (!this._refocus || this.busy) return;
+        const uploader = this.template.querySelector('lightning-file-upload');
+        if (!uploader) {
+            this._refocus = false; // no more files allowed: nothing to focus
+        } else if (!this.uploaderDisabled) {
+            this._refocus = false;
+            uploader.focus();
         }
     }
-    get hasUploader() {
-        return !!this.grant;
-    }
-    /** Slot reserved by Add a file whose file has not been sent yet: the
-     *  native uploader stands in for it, so it gets no row and no Retry. */
-    get waitingKey() {
-        const key = this.grant?.slotKey;
-        return key && !this._sent.has(key) ? key : undefined;
-    }
-    get visibleRows() {
-        return this._rows.filter((row) => row.key !== this.waitingKey);
-    }
+
     get rows() {
-        return this.visibleRows.map((row) => ({
+        return this._rows.map((row) => ({
             ...row,
             removeLabel: t('Final_Run_RemoveFile', row.name || this.label),
             size: row.sizeBytes
                 ? `${(row.sizeBytes / 1048576).toFixed(2)} MiB`
                 : '',
             pending: row.state !== 'ready',
+            // A pending row is browser-only until the server confirms it, so
+            // it has no server key to remove; Retry is the way forward.
+            removeDisabled: this.busy || row.state !== 'ready',
             status:
                 row.state === 'ready'
                     ? t('Final_Run_UploadReady')
@@ -79,15 +87,10 @@ export default class FinalFileUpload extends LightningElement {
         }));
     }
     get addLabel() {
-        return this.busy
-            ? t('Final_Run_UploadPreparing')
-            : t('Final_Run_AddFile');
+        return t('Final_Run_AddFile');
     }
     get checkLabel() {
         return t('Final_Run_Retry');
-    }
-    get cancelLabel() {
-        return t('Final_Run_UploadCancel');
     }
     get previewText() {
         return t('Final_Run_UploadPreview');
@@ -98,20 +101,53 @@ export default class FinalFileUpload extends LightningElement {
     get multiple() {
         return this.config?.multiple !== false;
     }
-    get addDisabled() {
-        return (
-            this.busy ||
-            !!this.grant ||
-            (!this.multiple && this._rows.length > 0)
-        );
+    /** Whether this question can take another file. */
+    get canAddMore() {
+        if (!this.multiple) return this._rows.length === 0;
+        const max = Number(this.config?.maxFiles);
+        return !(max > 0 && this._rows.length >= max);
+    }
+    get showUploader() {
+        return !this.preview && this.canAddMore;
+    }
+    /** Shown but unusable until the tag is ready, so no file goes up unsigned. */
+    get uploaderDisabled() {
+        return !this.grant || this.hasPending;
+    }
+    /** Waiting for the tag (guests: the page's bot check): say so. */
+    get preparing() {
+        return this.showUploader && !this.grant && !this.error;
+    }
+    get preparingText() {
+        return t('Final_Run_UploadPreparing');
+    }
+    get groupBusy() {
+        return this.preparing ? 'true' : 'false';
+    }
+    /** While the uploader is disabled its file input cannot take a drop, so
+     *  the browser would open the dropped file and leave the form. */
+    handleDisabledDrop(event) {
+        if (this.uploaderDisabled) event.preventDefault();
+    }
+    get markerField() {
+        return this.grant?.markerField;
+    }
+    get tag() {
+        return this.grant?.tag;
+    }
+    get uploadAccept() {
+        return this.grant?.accept || this.accept;
     }
     get hasPending() {
-        return this.visibleRows.some((row) => row.state !== 'ready');
+        return this._rows.some((row) => row.state !== 'ready');
     }
-    get instances() {
-        return this.grant
-            ? [{ ...this.grant, generation: this._generation }]
-            : [];
+    /** Retry re-checks pending files, or asks for the tag again after a failure. */
+    get showRetry() {
+        return (
+            !this.preview &&
+            (this.hasPending ||
+                (this.canAddMore && !this.grant && !!this.error))
+        );
     }
     get guidance() {
         const types = this.accept || '';
@@ -145,87 +181,69 @@ export default class FinalFileUpload extends LightningElement {
             );
         });
     }
-    async handleAdd() {
-        if (this.preview) {
-            this.template.querySelector('input[type="file"]')?.click();
-            return;
-        }
+    /** Ask once for this question's signed tag. The server saves nothing. */
+    async _reserve() {
+        if (this.preview || this.grant || !this.elementId) return;
         const generation = this._generation;
-        this.busy = true;
         this.error = undefined;
         try {
             const grant = await this._request({ action: 'reserve' });
             if (generation !== this._generation) return;
             this.grant = grant;
-            this._emit([
-                ...this._rows,
-                {
-                    kind: 'stagedV1',
-                    key: grant.slotKey,
-                    slotToken: grant.slotToken,
-                    state: 'pending',
-                    name: ''
-                }
-            ]);
         } catch (error) {
             if (generation === this._generation)
                 this.error =
-                    error.body?.message ||
-                    error.message ||
+                    error?.body?.message ||
+                    error?.message ||
                     t('Final_Run_UploadUnavailable');
-        } finally {
-            if (generation === this._generation) this.busy = false;
         }
     }
-    async handleFinished(event) {
-        if (
-            !this.grant ||
-            event.currentTarget.dataset.key !== this.grant.slotKey
-        )
-            return;
-        this._sent = new Set([...this._sent, this.grant.slotKey]);
-        await this.handleCheck();
+    handleFinished(event) {
+        // Fires after success, refusal and cancel alike, so the server's status
+        // decides. Until it answers, one pending row per reported file holds
+        // Submit: otherwise a fast Submit could go without files that did
+        // arrive (and the server would then clean them up as unselected).
+        const reported = event?.detail?.files || [];
+        const pending = (reported.length ? reported : [{}]).map(
+            (file, index) => ({
+                kind: 'stagedV1',
+                key: `checking-${Date.now()}-${index}`,
+                name: file?.name || '',
+                state: 'pending'
+            })
+        );
+        this._emit([...this._rows, ...pending]);
+        return this.handleCheck();
     }
+    handleRetry() {
+        return this.hasPending ? this.handleCheck() : this._reserve();
+    }
+    /** Rows are exactly the server's live files for this question. */
     async handleCheck() {
         const generation = this._generation;
         this.busy = true;
-        this.error = undefined;
         try {
             const result = await this._request({ action: 'status' });
             if (generation !== this._generation) return;
-            const receipts = new Map(
-                (result.files || []).map((row) => [row.key, row])
-            );
-            const next = this._rows.flatMap((row) => {
-                const receipt = receipts.get(row.key);
-                if (
-                    !receipt ||
-                    ['REMOVED', 'CANCELLED', 'EXPIRED'].includes(receipt.state)
-                )
-                    return [];
-                return [
-                    {
-                        ...row,
-                        name: receipt.name || row.name,
-                        sizeBytes: receipt.sizeBytes,
-                        state: receipt.state === 'READY' ? 'ready' : 'pending'
-                    }
-                ];
-            });
-            this._emit(next);
-            if (
-                !next.some(
+            const next = (result.files || [])
+                .filter(
                     (row) =>
-                        row.key === this.grant?.slotKey && row.state !== 'ready'
+                        row.elementId === this.elementId &&
+                        row.state === 'READY'
                 )
-            )
-                this.grant = undefined;
-            if (next.some((row) => row.state !== 'ready'))
-                this.error = t('Final_Run_UploadStatusFailed');
+                .map((receipt) => ({
+                    kind: 'stagedV1',
+                    key: receipt.key,
+                    name: receipt.name,
+                    sizeBytes: receipt.sizeBytes,
+                    state: 'ready'
+                }));
+            this._emit(next);
+            this.error = undefined;
         } catch (error) {
             if (generation === this._generation)
                 this.error =
-                    error.body?.message || t('Final_Run_UploadStatusFailed');
+                    error?.body?.message || t('Final_Run_UploadStatusFailed');
         } finally {
             if (generation === this._generation) this.busy = false;
         }
@@ -239,22 +257,20 @@ export default class FinalFileUpload extends LightningElement {
         this.error = undefined;
         try {
             if (!this.preview)
-                await this._request({
-                    action: 'remove',
-                    slotToken: row.slotToken
-                });
+                await this._request({ action: 'remove', fileKey: row.key });
             if (generation !== this._generation) return;
             this._emit(this._rows.filter((file) => file.key !== key));
-            if (this.grant?.slotKey === key) this.grant = undefined;
-            // Add is still disabled (busy) here; focus it once re-rendered.
-            this._refocusAdd = true;
+            this._refocus = true;
         } catch (error) {
             if (generation === this._generation)
                 this.error =
-                    error.body?.message || t('Final_Run_UploadUnavailable');
+                    error?.body?.message || t('Final_Run_UploadUnavailable');
         } finally {
             if (generation === this._generation) this.busy = false;
         }
+    }
+    handlePreviewAdd() {
+        this.template.querySelector('input[type="file"]')?.click();
     }
     handlePreviewPick() {
         const input = this.template.querySelector('input[type="file"]');

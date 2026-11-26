@@ -23,17 +23,15 @@ private with sharing class FinalUploadGuestTest {
                 }
             )
         );
-        FinalUploadTestData.upload(
-            (String) slot.get('slotToken'),
-            'public.txt'
-        );
+        FinalUploadTestData.upload((String) slot.get('tag'), 'public.txt');
         String payload = FinalGuestTicketTestUtil.withTicket(
             v.Form__c,
             JSON.serialize(
                 FinalUploadTestData.payload(
                     v,
                     token,
-                    new List<Map<String, Object>>{ slot }
+                    new List<Map<String, Object>>{ slot },
+                    true
                 )
             )
         );

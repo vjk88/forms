@@ -16,7 +16,6 @@ public with sharing class FinalUploadGuard {
     public static void beforeInsert(List<ContentVersion> rows) {
         protectVersions(rows);
         List<ContentVersion> candidates = new List<ContentVersion>();
-        Set<String> keys = new Set<String>();
         for (ContentVersion row : rows) {
             if (!production(row)) {
                 if (
@@ -28,16 +27,6 @@ public with sharing class FinalUploadGuard {
                 continue;
             }
             candidates.add(row);
-            try {
-                keys.add(
-                    FinalUploadService.tokenParts(
-                        row.Final_Upload_fileupload__c,
-                        3
-                    )[0]
-                );
-            } catch (Exception e) {
-                row.addError(Label.Final_Run_UploadUnavailable);
-            }
         }
         if (candidates.isEmpty()) {
             return;
@@ -46,37 +35,21 @@ public with sharing class FinalUploadGuard {
             if (!FinalUploadPolicy.enabled()) {
                 throw FinalUploadService.refuse(null);
             }
-            Map<String, Form_Upload__c> attempts = FinalUploadStore.lockAttempts(
-                keys
-            );
+            List<FinalUploadToken.Claims> claims = tagClaims(candidates);
+            Map<String, Form_Upload__c> attempts = resolve(claims);
             FinalUploadStore.specs(attempts.values());
-            Set<String> seen = new Set<String>();
-            for (ContentVersion row : candidates) {
-                List<String> parts = FinalUploadService.tokenParts(
-                    row.Final_Upload_fileupload__c,
-                    3
+            for (Integer i = 0; i < candidates.size(); i++) {
+                ContentVersion row = candidates[i];
+                FinalUploadService.requireOpen(
+                    attempts.get(claims[i].publicKey)
                 );
-                Form_Upload__c attempt = attempts.get(parts[0]);
-                if (attempt == null) {
-                    throw FinalUploadService.refuse(null);
-                }
-                FinalUploadService.requireOpen(attempt);
-                String key = FinalUploadService.fileKey(
-                    attempt,
-                    row.Final_Upload_fileupload__c
-                );
-                Map<String, Object> entry = find(attempt, key);
                 if (
-                    entry.get('state') != 'RESERVED' ||
-                    FinalUploadService.expired(entry) ||
-                    seen.contains(row.Final_Upload_fileupload__c) ||
                     row.ContentDocumentId != null ||
                     (row.FirstPublishLocationId != null &&
                     row.FirstPublishLocationId != UserInfo.getUserId())
                 ) {
                     row.addError(Label.Final_Run_UploadUnavailable);
                 }
-                seen.add(row.Final_Upload_fileupload__c);
             }
         } catch (Exception e) {
             if (Test.isRunningTest()) {
@@ -93,31 +66,19 @@ public with sharing class FinalUploadGuard {
 
     public static void afterInsert(List<ContentVersion> rows) {
         List<ContentVersion> candidates = new List<ContentVersion>();
-        Set<String> keys = new Set<String>();
         Set<Id> ids = new Set<Id>();
         for (ContentVersion row : rows) {
             if (production(row)) {
                 candidates.add(row);
                 ids.add(row.Id);
-                try {
-                    keys.add(
-                        FinalUploadService.tokenParts(
-                            row.Final_Upload_fileupload__c,
-                            3
-                        )[0]
-                    );
-                } catch (Exception e) {
-                    row.addError(Label.Final_Run_UploadUnavailable);
-                }
             }
         }
         if (candidates.isEmpty()) {
             return;
         }
         try {
-            Map<String, Form_Upload__c> attempts = FinalUploadStore.lockAttempts(
-                keys
-            );
+            List<FinalUploadToken.Claims> claims = tagClaims(candidates);
+            Map<String, Form_Upload__c> attempts = resolve(claims);
             Map<Id, Map<String, Object>> specs = FinalUploadStore.specs(
                 attempts.values()
             );
@@ -139,12 +100,10 @@ public with sharing class FinalUploadGuard {
                 lists.put(key, FinalUploadService.files(attempts.get(key)));
             }
             List<ContentVersion> patches = new List<ContentVersion>();
-            for (ContentVersion row : candidates) {
-                List<String> parts = FinalUploadService.tokenParts(
-                    row.Final_Upload_fileupload__c,
-                    3
-                );
-                Form_Upload__c attempt = attempts.get(parts[0]);
+            for (Integer i = 0; i < candidates.size(); i++) {
+                ContentVersion row = candidates[i];
+                FinalUploadToken.Claims c = claims[i];
+                Form_Upload__c attempt = attempts.get(c.publicKey);
                 FinalUploadService.requireOpen(attempt);
                 ContentVersion v = versions.get(row.Id);
                 if (
@@ -155,21 +114,47 @@ public with sharing class FinalUploadGuard {
                 ) {
                     throw FinalUploadService.refuse(null);
                 }
-                Map<String, Object> entry;
-                for (Object value : lists.get(parts[0])) {
+                List<Object> entries = lists.get(c.publicKey);
+                Map<String, Object> spec = specs.get(attempt.Form_Version__c);
+                FinalUploadPolicy.Rules limits = FinalUploadPolicy.limits(
+                    spec,
+                    attempt.Guest_User_Id__c != null
+                );
+                Map<String, Object> element = FinalUploadPolicy.elements(spec)
+                    .get(c.elementId);
+                if (element == null) {
+                    throw FinalUploadService.refuse(null);
+                }
+                // The tag reserves nothing, so every count limit is enforced
+                // here, on arrival, against the locked attempt.
+                Integer active = 0;
+                Integer elementCount = 0;
+                for (Object value : entries) {
                     Map<String, Object> item = FinalUploadPolicy.mapOf(value);
-                    if (item.get('key') == parts[1]) {
-                        entry = item;
+                    if (item.get('state') == 'READY') {
+                        active++;
+                        if (item.get('elementId') == c.elementId) {
+                            elementCount++;
+                        }
                     }
                 }
+                Map<String, Object> config = FinalUploadPolicy.mapOf(
+                    element.get('config')
+                );
+                Decimal perElement = config.get('multiple') == false
+                    ? 1
+                    : FinalUploadPolicy.positive(config.get('maxFiles'));
                 if (
-                    entry == null ||
-                    entry.get('state') != 'RESERVED' ||
-                    entry.get('tokenHash') !=
-                    FinalUploadCapability.digest(parts[2]) ||
-                    FinalUploadService.expired(entry)
+                    (limits.maxFiles != null &&
+                    active >= limits.maxFiles) ||
+                    (perElement != null &&
+                    elementCount >= perElement) ||
+                    (limits.maxEntries != null &&
+                    entries.size() >= limits.maxEntries)
                 ) {
-                    throw FinalUploadService.refuse(null);
+                    throw FinalUploadService.refuse(
+                        Label.Final_Run_UploadCount
+                    );
                 }
                 String path = v.PathOnClient == null
                     ? ''
@@ -178,30 +163,21 @@ public with sharing class FinalUploadGuard {
                 if (String.isBlank(name) || name.length() > 255) {
                     throw FinalUploadService.refuse(null);
                 }
-                entry.put('name', name);
-                entry.put('sizeBytes', v.ContentSize);
-                entry.put(
-                    'extension',
-                    v.FileExtension == null ? '' : v.FileExtension.toLowerCase()
-                );
-                entry.put('contentVersionId', String.valueOf(v.Id));
-                entry.put(
-                    'contentDocumentId',
-                    String.valueOf(v.ContentDocumentId)
-                );
-                entry.put('state', 'READY');
-                Map<String, Object> spec = specs.get(attempt.Form_Version__c);
-                FinalUploadValidation.file(
-                    entry,
-                    FinalUploadPolicy.elements(spec)
-                        .get(
-                            FinalUploadPolicy.stringOf(entry.get('elementId'))
-                        ),
-                    FinalUploadPolicy.limits(
-                        spec,
-                        attempt.Guest_User_Id__c != null
-                    )
-                );
+                Map<String, Object> entry = new Map<String, Object>{
+                    'key' => FinalUploadCapability.key128(), // names this file
+                    'elementId' => c.elementId,
+                    'state' => 'READY',
+                    'name' => name,
+                    'sizeBytes' => v.ContentSize,
+                    'extension' => v.FileExtension == null
+                        ? ''
+                        : v.FileExtension.toLowerCase(),
+                    'contentVersionId' => String.valueOf(v.Id),
+                    'contentDocumentId' => String.valueOf(v.ContentDocumentId),
+                    'cleanupStatus' => 'NONE'
+                };
+                FinalUploadValidation.file(entry, element, limits);
+                entries.add(entry);
                 patches.add(
                     new ContentVersion(
                         Id = v.Id,
@@ -229,7 +205,18 @@ public with sharing class FinalUploadGuard {
                 }
                 a.Files_JSON__c = FinalUploadService.encode(lists.get(key));
             }
-            FinalUploadStore.saveAttempts(attempts.values());
+            // The first file is the only thing that creates an attempt.
+            List<Form_Upload__c> fresh = new List<Form_Upload__c>();
+            List<Form_Upload__c> existing = new List<Form_Upload__c>();
+            for (Form_Upload__c a : attempts.values()) {
+                if (a.Id == null) {
+                    fresh.add(a);
+                } else {
+                    existing.add(a);
+                }
+            }
+            FinalUploadStore.insertAttempts(fresh);
+            FinalUploadStore.saveAttempts(existing);
             FinalUploadStore.patchVersions(patches);
         } catch (Exception e) {
             if (Test.isRunningTest()) {
@@ -320,15 +307,57 @@ public with sharing class FinalUploadGuard {
             }
         }
     }
-    private static Map<String, Object> find(Form_Upload__c a, String key) {
-        for (Object value : FinalUploadService.files(a)) {
-            Map<String, Object> e = FinalUploadPolicy.mapOf(value);
-            if (e.get('key') == key) {
-                return e;
+    /** Verified, unexpired tag claims for each marked row, in row order. */
+    private static List<FinalUploadToken.Claims> tagClaims(
+        List<ContentVersion> rows
+    ) {
+        Boolean guest = UserInfo.getUserType() == 'Guest';
+        Datetime now = System.now();
+        List<FinalUploadToken.Claims> result = new List<FinalUploadToken.Claims>();
+        for (ContentVersion row : rows) {
+            FinalUploadToken.Claims c = FinalUploadToken.readTag(
+                row.Final_Upload_fileupload__c
+            );
+            if (c == null || c.guest != guest || c.attemptExpires <= now) {
+                throw FinalUploadService.refuse(null);
             }
+            result.add(c);
         }
-        throw FinalUploadService.refuse(null);
+        return result;
     }
+
+    /**
+     * Locked stored attempts, plus an unsaved draft for each first file. Every
+     * marker must agree with the attempt it names (actor, version, host, guest).
+     */
+    private static Map<String, Form_Upload__c> resolve(
+        List<FinalUploadToken.Claims> claims
+    ) {
+        Set<String> keys = new Set<String>();
+        Set<Id> versionIds = new Set<Id>();
+        for (FinalUploadToken.Claims c : claims) {
+            keys.add(c.publicKey);
+            versionIds.add(c.versionId);
+        }
+        Map<String, Form_Upload__c> attempts = FinalUploadStore.lockAttempts(
+            keys
+        );
+        Map<Id, Id> forms;
+        for (FinalUploadToken.Claims c : claims) {
+            if (!attempts.containsKey(c.publicKey)) {
+                if (forms == null) {
+                    forms = FinalUploadStore.formsOf(versionIds);
+                }
+                attempts.put(
+                    c.publicKey,
+                    FinalUploadService.draft(c, forms.get(c.versionId))
+                );
+            }
+            FinalUploadService.requireMatch(attempts.get(c.publicKey), c);
+        }
+        return attempts;
+    }
+
     private static void reject(List<ContentVersion> rows) {
         for (ContentVersion row : rows) {
             row.addError(Label.Final_Run_UploadUnavailable);

@@ -2,6 +2,7 @@
 @IsTest
 public with sharing class FinalUploadTestData {
     public static Form_Version__c published(Boolean required) {
+        FinalGuestTicketTestUtil.ensureKeys(); // upload tokens are signed with these
         insert new Final_Settings__c(Name = 'org', Uploads_Enabled__c = true);
         Form__c f = new Form__c(
             Name = 'Upload test',
@@ -90,6 +91,63 @@ public with sharing class FinalUploadTestData {
             }
         );
     }
+    /** Server keys of the session's READY files, in arrival order. */
+    public static List<String> keys(String token) {
+        return keys(token, false);
+    }
+    /** As keys(token), asking the endpoint for the session's host. */
+    public static List<String> keys(String token, Boolean publicHost) {
+        List<String> result = new List<String>();
+        String request = JSON.serialize(
+            new Map<String, Object>{
+                'action' => 'status',
+                'sessionToken' => token
+            }
+        );
+        Map<String, Object> status = publicHost
+            ? FinalGuestController.uploadRequest(request)
+            : FinalUploadController.uploadRequest(request);
+        for (Object value : (List<Object>) status.get('files')) {
+            Map<String, Object> f = (Map<String, Object>) value;
+            if (f.get('state') == 'READY') {
+                result.add((String) f.get('key'));
+            }
+        }
+        return result;
+    }
+    public static Map<String, Object> remove(String token, String fileKey) {
+        return call(
+            new Map<String, Object>{
+                'action' => 'remove',
+                'sessionToken' => token,
+                'fileKey' => fileKey
+            }
+        );
+    }
+    /** Remove the session's first READY file. */
+    public static Map<String, Object> removeFirst(String token) {
+        return remove(token, keys(token)[0]);
+    }
+    /** Insert without throwing; for refusal tests. */
+    public static Database.SaveResult tryUpload(String marker, String name) {
+        return Database.insert(
+            new ContentVersion(
+                Title = name,
+                PathOnClient = name,
+                VersionData = Blob.valueOf('sample'),
+                Final_Upload_fileupload__c = marker
+            ),
+            false
+        );
+    }
+    /** The token with one character of its signature changed. */
+    public static String tamper(String token) {
+        Integer at = token.length() - 5;
+        String c = token.substring(at, at + 1);
+        return token.left(at) +
+            (c == 'A' ? 'B' : 'A') +
+            token.substring(at + 1);
+    }
     public static ContentVersion upload(String marker, String name) {
         ContentVersion v = new ContentVersion(
             Title = name,
@@ -100,19 +158,34 @@ public with sharing class FinalUploadTestData {
         insert v;
         return v;
     }
+    /**
+     * A submit payload. With any tags passed, it references every file that
+     * arrived for this session (by server key), as the browser does; with
+     * none, it references no files.
+     */
     public static Map<String, Object> payload(
         Form_Version__c v,
         String token,
-        List<Map<String, Object>> slots
+        List<Map<String, Object>> tags
+    ) {
+        return payload(v, token, tags, false);
+    }
+    public static Map<String, Object> payload(
+        Form_Version__c v,
+        String token,
+        List<Map<String, Object>> tags,
+        Boolean publicHost
     ) {
         List<Object> refs = new List<Object>();
-        for (Map<String, Object> slot : slots) {
-            refs.add(
-                new Map<String, Object>{
-                    'elementId' => 'docs',
-                    'slotToken' => slot.get('slotToken')
-                }
-            );
+        if (!tags.isEmpty()) {
+            for (String key : keys(token, publicHost)) {
+                refs.add(
+                    new Map<String, Object>{
+                        'elementId' => 'docs',
+                        'fileKey' => key
+                    }
+                );
+            }
         }
         return new Map<String, Object>{
             'answers' => new Map<String, Object>{

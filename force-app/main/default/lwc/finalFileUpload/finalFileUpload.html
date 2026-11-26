@@ -1,12 +1,10 @@
 <template>
     <div class="fu-root">
-        <lightning-button
-            data-add
-            label={addLabel}
-            disabled={addDisabled}
-            onclick={handleAdd}
-        ></lightning-button>
         <template lwc:if={preview}>
+            <lightning-button
+                label={addLabel}
+                onclick={handlePreviewAdd}
+            ></lightning-button>
             <input
                 class="fu-input"
                 type="file"
@@ -17,32 +15,30 @@
             />
             <p class="fu-help">{previewText}</p>
         </template>
-        <!-- No uploader label: the question's label already sits above; the
-             group keeps that name for screen readers. -->
-        <template lwc:if={hasUploader}>
-            <div role="group" aria-label={label}>
-                <template for:each={instances} for:item="instance">
-                    <lightning-file-upload
-                        key={instance.slotKey}
-                        data-key={instance.slotKey}
-                        accept={instance.accept}
-                        file-field-name={instance.markerField}
-                        file-field-value={instance.slotToken}
-                        onuploadfinished={handleFinished}
-                    ></lightning-file-upload>
-                </template>
+        <!-- Upload Files straight away; disabled until the signed tag is ready.
+             No uploader label: the question's label already sits above, and
+             the group keeps that name for screen readers. -->
+        <template lwc:if={showUploader}>
+            <div
+                role="group"
+                aria-label={label}
+                aria-busy={groupBusy}
+                ondragover={handleDisabledDrop}
+                ondrop={handleDisabledDrop}
+            >
+                <lightning-file-upload
+                    accept={uploadAccept}
+                    disabled={uploaderDisabled}
+                    file-field-name={markerField}
+                    file-field-value={tag}
+                    multiple={multiple}
+                    onuploadfinished={handleFinished}
+                ></lightning-file-upload>
             </div>
+            <template lwc:if={preparing}
+                ><p class="fu-help" role="status">{preparingText}</p></template
+            >
         </template>
-        <template lwc:if={waitingKey}
-            ><lightning-button
-                class="fu-cancel"
-                variant="base"
-                label={cancelLabel}
-                data-key={waitingKey}
-                disabled={busy}
-                onclick={handleRemove}
-            ></lightning-button
-        ></template>
         <p class="fu-help">{guidance}</p>
         <ul class="fu-list" aria-label={label}>
             <template for:each={rows} for:item="file">
@@ -55,17 +51,17 @@
                         alternative-text={file.removeLabel}
                         title={file.removeLabel}
                         data-key={file.key}
-                        disabled={busy}
+                        disabled={file.removeDisabled}
                         onclick={handleRemove}
                     ></lightning-button-icon>
                 </li>
             </template>
         </ul>
-        <template lwc:if={hasPending}
+        <template lwc:if={showRetry}
             ><lightning-button
                 label={checkLabel}
                 disabled={busy}
-                onclick={handleCheck}
+                onclick={handleRetry}
             ></lightning-button
         ></template>
         <template lwc:if={error}

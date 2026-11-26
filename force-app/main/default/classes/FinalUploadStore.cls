@@ -103,8 +103,24 @@ public without sharing class FinalUploadStore {
         return result;
     }
 
-    public static void insertAttempt(Form_Upload__c row) {
-        insert row;
+    /** A first file's attempt. Public_Key__c is unique, so a racing twin fails cleanly. */
+    public static void insertAttempts(List<Form_Upload__c> rows) {
+        if (!rows.isEmpty()) {
+            insert rows;
+        }
+    }
+
+    /** Form of each version, for attempts that do not exist yet. Gates run in specs(). */
+    public static Map<Id, Id> formsOf(Set<Id> versionIds) {
+        Map<Id, Id> result = new Map<Id, Id>();
+        for (Form_Version__c v : [
+            SELECT Id, Form__c
+            FROM Form_Version__c
+            WHERE Id IN :versionIds
+        ]) {
+            result.put(v.Id, v.Form__c);
+        }
+        return result;
     }
     public static void saveAttempts(List<Form_Upload__c> rows) {
         if (!rows.isEmpty()) {

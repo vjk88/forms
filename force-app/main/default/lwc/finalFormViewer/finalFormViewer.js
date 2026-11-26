@@ -4616,7 +4616,7 @@ export default class FinalFormViewer extends NavigationMixin(LightningElement) {
                     if (f?.kind === 'stagedV1' && f.state === 'ready') {
                         fileRefs.push({
                             elementId: key,
-                            slotToken: f.slotToken
+                            fileKey: f.key
                         });
                     }
                     if (f && f.base64) {
