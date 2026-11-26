@@ -33,7 +33,10 @@ export function createFileUploadSession(request, context) {
         if (token) return token;
         if (!creating) {
             const captured = generation;
-            creating = boundedRequest({ ...context, action: 'create' })
+            // No 30 s bound here: for a guest, starting a session waits on the
+            // page's bot-check puzzle, which deliberately never gives up on a
+            // slow device. Slot and status calls stay bounded.
+            creating = request({ ...context, action: 'create' })
                 .then((result) => {
                     if (disposed || captured !== generation) {
                         request({

@@ -1,7 +1,18 @@
 import { LightningElement, api } from 'lwc';
 import { t } from 'c/finalTranslate';
 
-/** Native transport with metadata-only simulated selection in Studio. */
+/** Refresh an unused slot this long before it expires. */
+const REFRESH_LEAD_MS = 60000;
+
+/**
+ * Native transport with metadata-only simulated selection in Studio.
+ *
+ * IMPL_PLAN_UPLOAD_RECORDS_ON_ARRIVAL: the uploader shows straight away. A
+ * signed slot is reserved quietly (no server record) and handed to the native
+ * uploader; a file row exists only once the server confirms that file arrived.
+ * `uploadfinished` also fires after a refused or cancelled upload, so it is
+ * never trusted on its own: the server's status decides.
+ */
 export default class FinalFileUpload extends LightningElement {
     @api elementId;
     @api label;
@@ -10,12 +21,18 @@ export default class FinalFileUpload extends LightningElement {
     _rows = [];
     busy = false;
     error;
+    /** The current, unused slot handed to the native uploader. */
     grant;
+    /** Every slot handed out on this page: slotKey -> slotToken. A file sent
+     *  with an older slot (refreshed mid-upload) is still recognised. */
+    _issued = new Map();
     _generation = 0;
     _context;
-    /** Slot keys whose native upload has finished. */
-    _sent = new Set();
-    _refocusAdd = false;
+    _refreshTimer;
+    _connected = false;
+    /** After a removal, move focus to the uploader once it is usable. */
+    _refocus = false;
+
     @api
     get contextVersion() {
         return this._context;
@@ -24,11 +41,13 @@ export default class FinalFileUpload extends LightningElement {
         if (value !== this._context) {
             this._context = value;
             this._generation += 1;
+            this._clearRefresh();
             this.grant = undefined;
             this.error = undefined;
             this.busy = false;
             this._rows = [];
-            this._sent = new Set();
+            this._issued = new Map();
+            if (this._connected) this._reserve();
         }
     }
 
@@ -39,33 +58,28 @@ export default class FinalFileUpload extends LightningElement {
     set value(value) {
         this._rows = Array.isArray(value) ? [...value] : [];
     }
+    connectedCallback() {
+        this._connected = true;
+        this._reserve();
+    }
     disconnectedCallback() {
+        this._connected = false;
         this._generation += 1;
+        this._clearRefresh();
     }
     renderedCallback() {
-        // After a removal, once no longer busy: Add if usable, else the open
-        // slot's Cancel. Cleared either way so focus never jumps later.
-        if (this._refocusAdd && !this.busy) {
-            this._refocusAdd = false;
-            this.template
-                .querySelector(this.addDisabled ? '.fu-cancel' : '[data-add]')
-                ?.focus();
+        if (!this._refocus || this.busy) return;
+        const uploader = this.template.querySelector('lightning-file-upload');
+        if (!uploader) {
+            this._refocus = false; // no more files allowed: nothing to focus
+        } else if (!this.uploaderDisabled) {
+            this._refocus = false;
+            uploader.focus();
         }
     }
-    get hasUploader() {
-        return !!this.grant;
-    }
-    /** Slot reserved by Add a file whose file has not been sent yet: the
-     *  native uploader stands in for it, so it gets no row and no Retry. */
-    get waitingKey() {
-        const key = this.grant?.slotKey;
-        return key && !this._sent.has(key) ? key : undefined;
-    }
-    get visibleRows() {
-        return this._rows.filter((row) => row.key !== this.waitingKey);
-    }
+
     get rows() {
-        return this.visibleRows.map((row) => ({
+        return this._rows.map((row) => ({
             ...row,
             removeLabel: t('Final_Run_RemoveFile', row.name || this.label),
             size: row.sizeBytes
@@ -79,15 +93,10 @@ export default class FinalFileUpload extends LightningElement {
         }));
     }
     get addLabel() {
-        return this.busy
-            ? t('Final_Run_UploadPreparing')
-            : t('Final_Run_AddFile');
+        return t('Final_Run_AddFile');
     }
     get checkLabel() {
         return t('Final_Run_Retry');
-    }
-    get cancelLabel() {
-        return t('Final_Run_UploadCancel');
     }
     get previewText() {
         return t('Final_Run_UploadPreview');
@@ -98,20 +107,38 @@ export default class FinalFileUpload extends LightningElement {
     get multiple() {
         return this.config?.multiple !== false;
     }
-    get addDisabled() {
-        return (
-            this.busy ||
-            !!this.grant ||
-            (!this.multiple && this._rows.length > 0)
-        );
+    /** Whether this question can take another file. */
+    get canAddMore() {
+        if (!this.multiple) return this._rows.length === 0;
+        const max = Number(this.config?.maxFiles);
+        return !(max > 0 && this._rows.length >= max);
+    }
+    get showUploader() {
+        return !this.preview && this.canAddMore;
+    }
+    /** Shown but unusable until a slot is ready, so no file goes up unsigned. */
+    get uploaderDisabled() {
+        return !this.grant;
+    }
+    get markerField() {
+        return this.grant?.markerField;
+    }
+    get slotToken() {
+        return this.grant?.slotToken;
+    }
+    get uploadAccept() {
+        return this.grant?.accept || this.accept;
     }
     get hasPending() {
-        return this.visibleRows.some((row) => row.state !== 'ready');
+        return this._rows.some((row) => row.state !== 'ready');
     }
-    get instances() {
-        return this.grant
-            ? [{ ...this.grant, generation: this._generation }]
-            : [];
+    /** Retry re-checks pending files, or asks for a slot again after a failure. */
+    get showRetry() {
+        return (
+            !this.preview &&
+            (this.hasPending ||
+                (this.canAddMore && !this.grant && !!this.error))
+        );
     }
     get guidance() {
         const types = this.accept || '';
@@ -145,87 +172,121 @@ export default class FinalFileUpload extends LightningElement {
             );
         });
     }
-    async handleAdd() {
-        if (this.preview) {
-            this.template.querySelector('input[type="file"]')?.click();
-            return;
+    _clearRefresh() {
+        if (this._refreshTimer) {
+            clearTimeout(this._refreshTimer);
+            this._refreshTimer = undefined;
         }
+    }
+    _scheduleRefresh(grant) {
+        this._clearRefresh();
+        const expires = Date.parse(grant?.expiresAt);
+        if (Number.isNaN(expires)) return;
+        const wait = Math.max(expires - Date.now() - REFRESH_LEAD_MS, 1000);
         const generation = this._generation;
-        this.busy = true;
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
+        this._refreshTimer = setTimeout(() => {
+            this._refreshTimer = undefined;
+            if (generation === this._generation && this.grant === grant)
+                this._reserve();
+        }, wait);
+    }
+    /** Ask for a signed slot. The server saves nothing. */
+    async _reserve() {
+        if (this.preview || !this.canAddMore || !this.elementId) return;
+        const generation = this._generation;
         this.error = undefined;
         try {
             const grant = await this._request({ action: 'reserve' });
             if (generation !== this._generation) return;
+            this._issued.set(grant.slotKey, grant.slotToken);
             this.grant = grant;
+            this._scheduleRefresh(grant);
+        } catch (error) {
+            if (generation === this._generation)
+                this.error =
+                    error?.body?.message ||
+                    error?.message ||
+                    t('Final_Run_UploadUnavailable');
+        }
+    }
+    handleFinished(event) {
+        // Fires after success, refusal and cancel alike, so the server's status
+        // decides. Until it answers, a pending row holds Submit: otherwise a
+        // fast Submit could go without a file that did arrive (and the server
+        // would then clean that file up as unselected).
+        const slot = this.grant;
+        if (slot && !this._rows.some((row) => row.key === slot.slotKey)) {
             this._emit([
                 ...this._rows,
                 {
                     kind: 'stagedV1',
-                    key: grant.slotKey,
-                    slotToken: grant.slotToken,
-                    state: 'pending',
-                    name: ''
+                    key: slot.slotKey,
+                    slotToken: slot.slotToken,
+                    name: event?.detail?.files?.[0]?.name || '',
+                    state: 'pending'
                 }
             ]);
-        } catch (error) {
-            if (generation === this._generation)
-                this.error =
-                    error.body?.message ||
-                    error.message ||
-                    t('Final_Run_UploadUnavailable');
-        } finally {
-            if (generation === this._generation) this.busy = false;
         }
+        return this.handleCheck();
     }
-    async handleFinished(event) {
-        if (
-            !this.grant ||
-            event.currentTarget.dataset.key !== this.grant.slotKey
-        )
-            return;
-        this._sent = new Set([...this._sent, this.grant.slotKey]);
-        await this.handleCheck();
+    handleRetry() {
+        return this.hasPending ? this.handleCheck() : this._reserve();
     }
     async handleCheck() {
         const generation = this._generation;
         this.busy = true;
-        this.error = undefined;
         try {
             const result = await this._request({ action: 'status' });
             if (generation !== this._generation) return;
-            const receipts = new Map(
-                (result.files || []).map((row) => [row.key, row])
+            const receipts = (result.files || []).filter(
+                (row) =>
+                    row.elementId === this.elementId &&
+                    !['REMOVED', 'CANCELLED', 'EXPIRED'].includes(row.state)
             );
-            const next = this._rows.flatMap((row) => {
-                const receipt = receipts.get(row.key);
-                if (
-                    !receipt ||
-                    ['REMOVED', 'CANCELLED', 'EXPIRED'].includes(receipt.state)
-                )
-                    return [];
-                return [
-                    {
-                        ...row,
-                        name: receipt.name || row.name,
-                        sizeBytes: receipt.sizeBytes,
-                        state: receipt.state === 'READY' ? 'ready' : 'pending'
-                    }
-                ];
+            const byKey = new Map(receipts.map((row) => [row.key, row]));
+            const toRow = (row, receipt) => ({
+                ...row,
+                name: receipt.name || row.name,
+                sizeBytes: receipt.sizeBytes,
+                state: receipt.state === 'READY' ? 'ready' : 'pending'
             });
+            const next = [];
+            for (const row of this._rows) {
+                if (byKey.has(row.key)) {
+                    next.push(toRow(row, byKey.get(row.key)));
+                }
+            }
+            const known = new Set(next.map((row) => row.key));
+            for (const receipt of receipts) {
+                if (!known.has(receipt.key) && this._issued.has(receipt.key)) {
+                    next.push(
+                        toRow(
+                            {
+                                kind: 'stagedV1',
+                                key: receipt.key,
+                                slotToken: this._issued.get(receipt.key)
+                            },
+                            receipt
+                        )
+                    );
+                }
+            }
             this._emit(next);
-            if (
-                !next.some(
-                    (row) =>
-                        row.key === this.grant?.slotKey && row.state !== 'ready'
-                )
-            )
+            this.error = next.some((row) => row.state !== 'ready')
+                ? t('Final_Run_UploadStatusFailed')
+                : undefined;
+            // The current slot is used up once its file arrived; nothing
+            // arrived (refused or cancelled) means the same slot stays ready.
+            if (this.grant && byKey.has(this.grant.slotKey)) {
                 this.grant = undefined;
-            if (next.some((row) => row.state !== 'ready'))
-                this.error = t('Final_Run_UploadStatusFailed');
+                this._clearRefresh();
+                this._reserve();
+            }
         } catch (error) {
             if (generation === this._generation)
                 this.error =
-                    error.body?.message || t('Final_Run_UploadStatusFailed');
+                    error?.body?.message || t('Final_Run_UploadStatusFailed');
         } finally {
             if (generation === this._generation) this.busy = false;
         }
@@ -245,16 +306,18 @@ export default class FinalFileUpload extends LightningElement {
                 });
             if (generation !== this._generation) return;
             this._emit(this._rows.filter((file) => file.key !== key));
-            if (this.grant?.slotKey === key) this.grant = undefined;
-            // Add is still disabled (busy) here; focus it once re-rendered.
-            this._refocusAdd = true;
+            this._refocus = true;
+            if (!this.grant) this._reserve();
         } catch (error) {
             if (generation === this._generation)
                 this.error =
-                    error.body?.message || t('Final_Run_UploadUnavailable');
+                    error?.body?.message || t('Final_Run_UploadUnavailable');
         } finally {
             if (generation === this._generation) this.busy = false;
         }
+    }
+    handlePreviewAdd() {
+        this.template.querySelector('input[type="file"]')?.click();
     }
     handlePreviewPick() {
         const input = this.template.querySelector('input[type="file"]');

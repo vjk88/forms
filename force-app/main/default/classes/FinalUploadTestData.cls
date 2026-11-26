@@ -2,6 +2,7 @@
 @IsTest
 public with sharing class FinalUploadTestData {
     public static Form_Version__c published(Boolean required) {
+        FinalGuestTicketTestUtil.ensureKeys(); // upload tokens are signed with these
         insert new Final_Settings__c(Name = 'org', Uploads_Enabled__c = true);
         Form__c f = new Form__c(
             Name = 'Upload test',
@@ -89,6 +90,35 @@ public with sharing class FinalUploadTestData {
                 'elementId' => 'docs'
             }
         );
+    }
+    public static Map<String, Object> remove(String token, Object slotToken) {
+        return call(
+            new Map<String, Object>{
+                'action' => 'remove',
+                'sessionToken' => token,
+                'slotToken' => slotToken
+            }
+        );
+    }
+    /** Insert without throwing; for refusal tests. */
+    public static Database.SaveResult tryUpload(String marker, String name) {
+        return Database.insert(
+            new ContentVersion(
+                Title = name,
+                PathOnClient = name,
+                VersionData = Blob.valueOf('sample'),
+                Final_Upload_fileupload__c = marker
+            ),
+            false
+        );
+    }
+    /** The token with one character of its signature changed. */
+    public static String tamper(String token) {
+        Integer at = token.length() - 5;
+        String c = token.substring(at, at + 1);
+        return token.left(at) +
+            (c == 'A' ? 'B' : 'A') +
+            token.substring(at + 1);
     }
     public static ContentVersion upload(String marker, String name) {
         ContentVersion v = new ContentVersion(

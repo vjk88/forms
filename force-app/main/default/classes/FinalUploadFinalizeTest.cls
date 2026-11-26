@@ -66,7 +66,7 @@ private with sharing class FinalUploadFinalizeTest {
         );
     }
     @IsTest
-    static void emptyOptionalAttemptIsAlsoIdempotent() {
+    static void untouchedOptionalFileSubmitsWithoutAnUploadRecord() {
         Form_Version__c v = FinalUploadTestData.published(false);
         String token = FinalUploadTestData.attempt(v);
         String payload = JSON.serialize(
@@ -77,21 +77,99 @@ private with sharing class FinalUploadFinalizeTest {
             )
         );
         Test.startTest();
-        FinalSubmitController.SubmitResult first = FinalSubmitController.submitForm(
-            v.Form__c,
-            v.Id,
-            payload
-        );
-        FinalSubmitController.SubmitResult second = FinalSubmitController.submitForm(
+        FinalSubmitController.SubmitResult result = FinalSubmitController.submitForm(
             v.Form__c,
             v.Id,
             payload
         );
         Test.stopTest();
+        Assert.isTrue(
+            result.errors == null || result.errors.isEmpty(),
+            'Submission errors: ' + JSON.serialize(result.errors)
+        );
+        Assert.isNotNull(result.recordId, 'Business record created');
         Assert.areEqual(
-            first.recordId,
-            second.recordId,
-            'Optional empty attempt retries safely'
+            0,
+            [SELECT COUNT() FROM Form_Upload__c],
+            'No upload record when no file ever arrived'
+        );
+    }
+    @IsTest
+    static void removingTheOnlyOptionalFileStillSubmits() {
+        Form_Version__c v = FinalUploadTestData.published(false);
+        String token = FinalUploadTestData.attempt(v);
+        Map<String, Object> slot = FinalUploadTestData.reserve(token);
+        FinalUploadTestData.upload((String) slot.get('slotToken'), 'one.txt');
+        FinalUploadTestData.remove(token, slot.get('slotToken'));
+        String payload = JSON.serialize(
+            FinalUploadTestData.payload(
+                v,
+                token,
+                new List<Map<String, Object>>()
+            )
+        );
+        Test.startTest();
+        FinalSubmitController.SubmitResult result = FinalSubmitController.submitForm(
+            v.Form__c,
+            v.Id,
+            payload
+        );
+        Test.stopTest();
+        Assert.isTrue(
+            result.errors == null || result.errors.isEmpty(),
+            'Submission errors: ' + JSON.serialize(result.errors)
+        );
+        Form_Upload__c a = [
+            SELECT Status__c, Files_JSON__c
+            FROM Form_Upload__c
+            LIMIT 1
+        ];
+        Assert.areEqual('CONSUMED', a.Status__c, 'Existing attempt finished');
+        Assert.areEqual(
+            'REMOVED',
+            FinalUploadPolicy.mapOf(FinalUploadService.files(a)[0])
+                .get('state'),
+            'Removed file keeps its cleanup state'
+        );
+        Assert.areEqual(
+            0,
+            [
+                SELECT COUNT()
+                FROM ContentDocumentLink
+                WHERE LinkedEntityId = :result.recordId
+            ],
+            'Nothing linked'
+        );
+    }
+    @IsTest
+    static void requiredFileRefusedAfterItsOnlyFileWasRemoved() {
+        Form_Version__c v = FinalUploadTestData.published(true);
+        String token = FinalUploadTestData.attempt(v);
+        Map<String, Object> slot = FinalUploadTestData.reserve(token);
+        FinalUploadTestData.upload((String) slot.get('slotToken'), 'one.txt');
+        FinalUploadTestData.remove(token, slot.get('slotToken'));
+        Test.startTest();
+        try {
+            FinalSubmitController.submitForm(
+                v.Form__c,
+                v.Id,
+                JSON.serialize(
+                    FinalUploadTestData.payload(
+                        v,
+                        token,
+                        new List<Map<String, Object>>()
+                    )
+                )
+            );
+            Assert.fail('Required file question submitted empty');
+        } catch (AuraHandledException e) {
+            Assert.isTrue(e.getMessage().length() > 0, 'Required file refused');
+        }
+        Test.stopTest();
+        Assert.areEqual(
+            0,
+            [SELECT COUNT() FROM Contact WHERE LastName = 'Upload respondent'],
+            'No business DML'
         );
     }
     @IsTest

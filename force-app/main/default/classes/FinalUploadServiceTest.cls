@@ -1,7 +1,7 @@
 @IsTest
 private with sharing class FinalUploadServiceTest {
     @IsTest
-    static void createsOnePrivateAttemptAndReturnsNoIds() {
+    static void sessionAndSlotsWriteNothingUntilAFileArrives() {
         Form_Version__c v = FinalUploadTestData.published(false);
         Test.startTest();
         String token = FinalUploadTestData.attempt(v);
@@ -11,11 +11,31 @@ private with sharing class FinalUploadServiceTest {
                 'sessionToken' => token
             }
         );
-        Test.stopTest();
+        Map<String, Object> slot = FinalUploadTestData.reserve(token);
+        FinalUploadTestData.reserve(token);
+        FinalUploadTestData.call(
+            new Map<String, Object>{
+                'action' => 'cancel',
+                'sessionToken' => token
+            }
+        );
         Assert.areEqual(
-            1,
+            0,
             [SELECT COUNT() FROM Form_Upload__c],
-            'One attempt record'
+            'No record from a session, two slots or a cancel'
+        );
+        FinalUploadTestData.upload((String) slot.get('slotToken'), 'one.txt');
+        Test.stopTest();
+        Form_Upload__c a = [
+            SELECT Status__c, Public_Host__c, Guest_User_Id__c, Expires_At__c
+            FROM Form_Upload__c
+        ];
+        Assert.areEqual('OPEN', a.Status__c, 'First file opens the attempt');
+        Assert.isFalse(a.Public_Host__c, 'Host taken from the marker');
+        Assert.isNull(a.Guest_User_Id__c, 'Signed-in attempt');
+        Assert.isTrue(
+            a.Expires_At__c > System.now().addMinutes(110),
+            'Two-hour attempt expiry taken from the marker'
         );
         Assert.areEqual('OPEN', status.get('state'), 'Open attempt');
         Assert.isFalse(
@@ -129,10 +149,7 @@ private with sharing class FinalUploadServiceTest {
     static void unknownSecretCannotReadAttempt() {
         Form_Version__c v = FinalUploadTestData.published(false);
         String token = FinalUploadTestData.attempt(v);
-        String forged =
-            token.substringBefore('.') +
-            '.' +
-            FinalUploadCapability.mint();
+        String forged = FinalUploadTestData.tamper(token);
         Test.startTest();
         try {
             FinalUploadTestData.call(
@@ -151,6 +168,10 @@ private with sharing class FinalUploadServiceTest {
     static void expiredAttemptCannotReserve() {
         Form_Version__c v = FinalUploadTestData.published(false);
         String token = FinalUploadTestData.attempt(v);
+        FinalUploadTestData.upload(
+            (String) FinalUploadTestData.reserve(token).get('slotToken'),
+            'one.txt'
+        );
         Form_Upload__c a = [SELECT Id FROM Form_Upload__c LIMIT 1];
         a.Expires_At__c = System.now().addSeconds(-1);
         update a;
@@ -367,6 +388,189 @@ private with sharing class FinalUploadServiceTest {
             );
         }
         Test.stopTest();
+    }
+    @IsTest
+    static void alteredMarkerIsRefused() {
+        Form_Version__c v = FinalUploadTestData.published(false);
+        String token = FinalUploadTestData.attempt(v);
+        String marker = (String) FinalUploadTestData.reserve(token)
+            .get('slotToken');
+        // Flip the public-host flag (the segment before the signature).
+        List<String> parts = marker.split('\\.');
+        parts[7] = parts[7] == '0' ? '1' : '0';
+        Test.startTest();
+        Database.SaveResult flipped = FinalUploadTestData.tryUpload(
+            String.join(parts, '.'),
+            'flipped.txt'
+        );
+        Database.SaveResult forged = FinalUploadTestData.tryUpload(
+            FinalUploadTestData.tamper(marker),
+            'forged.txt'
+        );
+        Test.stopTest();
+        Assert.isFalse(flipped.isSuccess(), 'Host flag cannot be changed');
+        Assert.isFalse(forged.isSuccess(), 'Signature cannot be forged');
+        Assert.areEqual(
+            0,
+            [SELECT COUNT() FROM Form_Upload__c],
+            'No record from refused files'
+        );
+    }
+    @IsTest
+    static void refusedFirstFileLeavesTheSameSlotUsable() {
+        Form_Version__c v = FinalUploadTestData.published(false);
+        String marker = (String) FinalUploadTestData.reserve(
+                FinalUploadTestData.attempt(v)
+            )
+            .get('slotToken');
+        Test.startTest();
+        Database.SaveResult refused = FinalUploadTestData.tryUpload(
+            marker,
+            'image.png' // not on the question's .pdf,.txt list
+        );
+        Database.SaveResult retried = FinalUploadTestData.tryUpload(
+            marker,
+            'retry.txt'
+        );
+        Test.stopTest();
+        Assert.isFalse(refused.isSuccess(), 'First file refused');
+        Assert.isTrue(retried.isSuccess(), 'Same slot accepts the re-pick');
+        Form_Upload__c a = [SELECT Files_JSON__c FROM Form_Upload__c];
+        Assert.areEqual(
+            1,
+            FinalUploadService.files(a).size(),
+            'One attempt holding the one accepted file'
+        );
+        Assert.areEqual(
+            1,
+            [SELECT COUNT() FROM ContentDocument],
+            'Refused file rolled back'
+        );
+    }
+    @IsTest
+    static void markerOnlyWorksForItsOwnUser() {
+        Form_Version__c v = FinalUploadTestData.published(false);
+        String marker = (String) FinalUploadTestData.reserve(
+                FinalUploadTestData.attempt(v)
+            )
+            .get('slotToken');
+        User other = new User(
+            ProfileId = [
+                SELECT Id
+                FROM Profile
+                WHERE Name = 'System Administrator'
+                LIMIT 1
+            ]
+            .Id,
+            LastName = 'Other',
+            Email = 'upload-other@example.com',
+            Username = 'upload-other-' +
+                System.currentTimeMillis() +
+                '@example.com',
+            Alias = 'uother',
+            TimeZoneSidKey = 'America/Los_Angeles',
+            LocaleSidKey = 'en_US',
+            EmailEncodingKey = 'UTF-8',
+            LanguageLocaleKey = 'en_US'
+        );
+        insert other;
+        Database.SaveResult result;
+        Test.startTest();
+        System.runAs(other) {
+            result = FinalUploadTestData.tryUpload(marker, 'stolen.txt');
+        }
+        Test.stopTest();
+        Assert.isFalse(
+            result.isSuccess(),
+            'Another user cannot use the marker'
+        );
+    }
+    @IsTest
+    static void expiredSlotCannotUploadButStillProvesArrival() {
+        Form_Version__c v = FinalUploadTestData.published(false);
+        String token = FinalUploadTestData.attempt(v);
+        Map<String, Object> good = FinalUploadTestData.reserve(token);
+        FinalUploadTestData.upload((String) good.get('slotToken'), 'one.txt');
+        FinalUploadService.slotSecondsOverride = -60;
+        String expired = (String) FinalUploadTestData.reserve(token)
+            .get('slotToken');
+        FinalUploadService.slotSecondsOverride = null;
+        Test.startTest();
+        Database.SaveResult late = FinalUploadTestData.tryUpload(
+            expired,
+            'late.txt'
+        );
+        Form_Upload__c a = [
+            SELECT Public_Key__c, Actor_User__c
+            FROM Form_Upload__c
+            LIMIT 1
+        ];
+        String key = FinalUploadService.fileKey(a, expired);
+        Test.stopTest();
+        Assert.isFalse(
+            late.isSuccess(),
+            'Upload after the slot expired refused'
+        );
+        Assert.isNotNull(
+            key,
+            'An expired slot still identifies its file at submit'
+        );
+    }
+    @IsTest
+    static void uploadsSwitchedOffAfterReserveAreRefused() {
+        Form_Version__c v = FinalUploadTestData.published(false);
+        String marker = (String) FinalUploadTestData.reserve(
+                FinalUploadTestData.attempt(v)
+            )
+            .get('slotToken');
+        Final_Settings__c s = Final_Settings__c.getInstance('org');
+        s.Uploads_Enabled__c = false;
+        update s;
+        Test.startTest();
+        Database.SaveResult result = FinalUploadTestData.tryUpload(
+            marker,
+            'off.txt'
+        );
+        Test.stopTest();
+        Assert.isFalse(result.isSuccess(), 'Switch rechecked on arrival');
+        Assert.areEqual(0, [SELECT COUNT() FROM Form_Upload__c], 'No record');
+    }
+    @IsTest
+    static void countLimitIsEnforcedOnArrival() {
+        Form_Version__c v = FinalUploadTestData.published(false);
+        Map<String, Object> spec = (Map<String, Object>) JSON.deserializeUntyped(
+            FinalSpecStore.read(
+                [
+                    SELECT Spec_JSON__c, Spec_JSON_2__c, Spec_JSON_3__c
+                    FROM Form_Version__c
+                    WHERE Id = :v.Id
+                ]
+            )
+        );
+        ((Map<String, Object>) ((Map<String, Object>) spec.get('settings'))
+                .get('uploads'))
+            .put('maxFiles', 1);
+        FinalSpecStore.write(v, JSON.serialize(spec));
+        update v;
+        String token = FinalUploadTestData.attempt(v);
+        // Two slots handed out before any file arrived: reserve cannot know.
+        String first = (String) FinalUploadTestData.reserve(token)
+            .get('slotToken');
+        String second = (String) FinalUploadTestData.reserve(token)
+            .get('slotToken');
+        Test.startTest();
+        FinalUploadTestData.upload(first, 'one.txt');
+        Database.SaveResult over = FinalUploadTestData.tryUpload(
+            second,
+            'two.txt'
+        );
+        Test.stopTest();
+        Assert.isFalse(over.isSuccess(), 'Second file over the limit refused');
+        Assert.areEqual(
+            1,
+            [SELECT COUNT() FROM ContentDocument],
+            'Only the first file kept'
+        );
     }
     @IsTest
     static void settingsRequireExistingAdminPermission() {

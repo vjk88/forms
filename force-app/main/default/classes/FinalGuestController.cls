@@ -487,7 +487,10 @@ public without sharing class FinalGuestController {
         // it was their confirmation that went missing, not their answer. The
         // ordering matters most for the submission that took the last slot -
         // without this it is told the form is full by its own earlier self.
-        FinalSubmitService.SubmitOutcome stored = upload != null
+        // An upload attempt answers its own retries; with no file ever
+        // uploaded there is no attempt, so the saved-submission lookup applies.
+        FinalSubmitService.SubmitOutcome stored = upload != null &&
+            !upload.empty
             ? null
             : FinalSubmitService.existingSubmission(
                   getStr(meta, 'submissionKey'),

@@ -1,6 +1,17 @@
-/** Token-authorized upload lifecycle; one Form_Upload__c per attempt, no shared counters. */
+/**
+ * Token-authorized upload lifecycle; one Form_Upload__c per attempt, no shared counters.
+ * No record exists until a file arrives (IMPL_PLAN_UPLOAD_RECORDS_ON_ARRIVAL): sessions
+ * and slots are signed tokens, and the ContentVersion guard writes the attempt.
+ */
 public with sharing class FinalUploadService {
     public static final Integer JSON_CAP = 64000;
+    /** How long a reserved slot may be used to upload. */
+    public static final Integer SLOT_MINUTES = 10;
+    /** How long an attempt stays open, counted from session start. */
+    public static final Integer ATTEMPT_HOURS = 2;
+    /** Tests only: slot lifetime in seconds (negative = already expired). */
+    @TestVisible
+    private static Integer slotSecondsOverride;
 
     /** Dispatch non-cacheable upload operations from the guest or authenticated controller. */
     public static Map<String, Object> handle(
@@ -25,6 +36,10 @@ public with sharing class FinalUploadService {
                 throw refuse(null);
             }
             if (action == 'cancel' || action == 'remove') {
+                // Nothing has arrived, so there is nothing to cancel or remove.
+                if (attempt.Id == null) {
+                    return receipt(attempt);
+                }
                 if (attempt.Status__c == 'CONSUMED') {
                     throw refuse(null);
                 }
@@ -102,6 +117,7 @@ public with sharing class FinalUploadService {
         }
     }
 
+    /** Start a session: every gate is checked, nothing is saved. */
     private static Map<String, Object> create(
         Map<String, Object> request,
         Boolean publicHost
@@ -120,18 +136,15 @@ public with sharing class FinalUploadService {
         if (formId == null || versionId == null) {
             throw refuse(null);
         }
-        Form_Upload__c attempt = new Form_Upload__c(
-            Form__c = formId,
-            Form_Version__c = versionId,
-            Actor_User__c = UserInfo.getUserId(),
-            Guest_User_Id__c = guest
-                ? String.valueOf(UserInfo.getUserId())
-                : null,
-            Public_Host__c = publicHost,
-            Status__c = 'OPEN',
-            Expires_At__c = System.now().addHours(2),
-            Cleanup_After__c = System.now().addHours(2)
+        FinalUploadToken.Claims c = new FinalUploadToken.Claims();
+        c.publicKey = FinalUploadCapability.mint();
+        c.versionId = versionId;
+        c.publicHost = publicHost;
+        c.guest = guest;
+        c.attemptExpires = FinalUploadToken.wholeSeconds(
+            System.now().addHours(ATTEMPT_HOURS)
         );
+        Form_Upload__c attempt = draft(c, formId);
         Map<String, Object> spec = FinalUploadStore.specs(
                 new List<Form_Upload__c>{ attempt }
             )
@@ -146,16 +159,12 @@ public with sharing class FinalUploadService {
                 formId
             );
         }
-        String secret = FinalUploadCapability.mint();
-        attempt.Public_Key__c = FinalUploadCapability.mint();
-        attempt.Token_Hash__c = FinalUploadCapability.digest(secret);
-        attempt.Files_JSON__c = encode(new List<Object>());
-        FinalUploadStore.insertAttempt(attempt);
         Map<String, Object> result = receipt(attempt);
-        result.put('sessionToken', attempt.Public_Key__c + '.' + secret);
+        result.put('sessionToken', FinalUploadToken.session(c));
         return result;
     }
 
+    /** Hand out a signed slot. Limits shown here are advisory; the guard enforces them on arrival. */
     private static Map<String, Object> reserve(
         Form_Upload__c attempt,
         Map<String, Object> spec,
@@ -182,13 +191,7 @@ public with sharing class FinalUploadService {
         Decimal used = 0;
         for (Object value : files) {
             Map<String, Object> entry = FinalUploadPolicy.mapOf(value);
-            if (entry.get('state') == 'RESERVED' && expired(entry)) {
-                entry.put('state', 'EXPIRED');
-            }
-            if (
-                entry.get('state') == 'READY' ||
-                entry.get('state') == 'RESERVED'
-            ) {
+            if (entry.get('state') == 'READY') {
                 active++;
                 if (entry.get('elementId') == elementId) {
                     elementCount++;
@@ -222,82 +225,110 @@ public with sharing class FinalUploadService {
         if (maxBytes != null && maxBytes <= 0) {
             throw refuse(Label.Final_Run_UploadSize);
         }
-        String key = FinalUploadCapability.mint();
-        String secret = FinalUploadCapability.mint();
-        Map<String, Object> entry = new Map<String, Object>{
-            'key' => key,
-            'elementId' => elementId,
-            'tokenHash' => FinalUploadCapability.digest(secret),
-            'state' => 'RESERVED',
-            'expiresAt' => System.now().addMinutes(10),
-            'reservedMaxBytes' => maxBytes,
-            'cleanupStatus' => 'NONE'
-        };
-        files.add(entry);
-        save(attempt, files);
+        FinalUploadToken.Claims c = claimsOf(attempt);
+        c.slotKey = FinalUploadCapability.key128();
+        c.elementId = elementId;
+        c.slotExpires = FinalUploadToken.wholeSeconds(
+            System.now().addSeconds(slotSecondsOverride ?? SLOT_MINUTES * 60)
+        );
+        if (c.slotExpires > attempt.Expires_At__c) {
+            c.slotExpires = attempt.Expires_At__c;
+        }
         return new Map<String, Object>{
-            'slotToken' => attempt.Public_Key__c +
-            '.' +
-            key +
-            '.' +
-            secret,
-            'slotKey' => key,
+            'slotToken' => FinalUploadToken.slot(c),
+            'slotKey' => c.slotKey,
             'markerField' => ContentVersion.Final_Upload_fileupload__c.getDescribe()
                 .getName(),
             'maxBytes' => maxBytes,
             'accept' => config.get('accept'),
-            'expiresAt' => entry.get('expiresAt')
+            'expiresAt' => c.slotExpires
         };
     }
 
-    /** Lock and authenticate the real actor; callers never supply a ledger ID. */
+    /**
+     * Verify the signed session for the real actor and lock its attempt.
+     * Before any file has arrived there is no record: an unsaved draft
+     * (Id == null) stands in, built only from the verified claims.
+     */
     public static Form_Upload__c authenticate(String token) {
-        List<String> parts = tokenParts(token, 2);
+        FinalUploadToken.Claims c = FinalUploadToken.readSession(token);
+        if (c == null || c.guest != (UserInfo.getUserType() == 'Guest')) {
+            throw refuse(null);
+        }
         Form_Upload__c attempt = FinalUploadStore.lockAttempts(
-                new Set<String>{ parts[0] }
+                new Set<String>{ c.publicKey }
             )
-            .get(parts[0]);
+            .get(c.publicKey);
+        if (attempt == null) {
+            return draft(
+                c,
+                FinalUploadStore.formsOf(new Set<Id>{ c.versionId })
+                    .get(c.versionId)
+            );
+        }
+        requireMatch(attempt, c);
+        return attempt;
+    }
+
+    /** A stored attempt must agree with every signed claim presented for it. */
+    public static void requireMatch(
+        Form_Upload__c attempt,
+        FinalUploadToken.Claims c
+    ) {
         if (
-            attempt == null ||
             attempt.Actor_User__c != UserInfo.getUserId() ||
-            attempt.Token_Hash__c != FinalUploadCapability.digest(parts[1])
+            attempt.Form_Version__c != c.versionId ||
+            attempt.Public_Host__c != c.publicHost ||
+            (attempt.Guest_User_Id__c != null) != c.guest
         ) {
             throw refuse(null);
         }
-        return attempt;
     }
-    /** Verify file secret against the locked JSON; a public file key alone grants nothing. */
+
+    /** The unsaved attempt a first file will create, from verified claims only. */
+    public static Form_Upload__c draft(FinalUploadToken.Claims c, Id formId) {
+        if (formId == null) {
+            throw refuse(null);
+        }
+        return new Form_Upload__c(
+            Public_Key__c = c.publicKey,
+            Form__c = formId,
+            Form_Version__c = c.versionId,
+            Actor_User__c = UserInfo.getUserId(),
+            Guest_User_Id__c = c.guest
+                ? String.valueOf(UserInfo.getUserId())
+                : null,
+            Public_Host__c = c.publicHost,
+            Status__c = 'OPEN',
+            Expires_At__c = c.attemptExpires,
+            Cleanup_After__c = c.attemptExpires,
+            Files_JSON__c = encode(new List<Object>())
+        );
+    }
+
+    private static FinalUploadToken.Claims claimsOf(Form_Upload__c attempt) {
+        FinalUploadToken.Claims c = new FinalUploadToken.Claims();
+        c.publicKey = attempt.Public_Key__c;
+        c.versionId = attempt.Form_Version__c;
+        c.publicHost = attempt.Public_Host__c;
+        c.guest = attempt.Guest_User_Id__c != null;
+        c.attemptExpires = FinalUploadToken.wholeSeconds(attempt.Expires_At__c);
+        return c;
+    }
+
+    /**
+     * Proof that a file belongs to this attempt: a slot marker signed for this
+     * user and attempt. Slot expiry limits uploading only, so it is not checked
+     * here; the attempt's own expiry governs submit.
+     */
     public static String fileKey(Form_Upload__c attempt, String token) {
-        List<String> parts = tokenParts(token, 3);
-        if (parts[0] != attempt.Public_Key__c) {
+        FinalUploadToken.Claims c = FinalUploadToken.readSlot(token);
+        if (c == null || c.publicKey != attempt.Public_Key__c) {
             throw refuse(null);
         }
-        for (Object value : files(attempt)) {
-            Map<String, Object> entry = FinalUploadPolicy.mapOf(value);
-            if (
-                entry.get('key') == parts[1] &&
-                entry.get('tokenHash') == FinalUploadCapability.digest(parts[2])
-            ) {
-                return parts[1];
-            }
-        }
-        throw refuse(null);
+        return c.slotKey;
     }
-    public static List<String> tokenParts(String token, Integer count) {
-        if (token == null || token.length() > 255) {
-            throw refuse(null);
-        }
-        List<String> parts = token.split('\\.');
-        if (parts.size() != count) {
-            throw refuse(null);
-        }
-        for (String p : parts) {
-            if (FinalUploadCapability.digest(p) == null) {
-                throw refuse(null);
-            }
-        }
-        return parts;
-    }
+
     public static void requireOpen(Form_Upload__c a) {
         if (
             a.Status__c != 'OPEN' ||
@@ -345,10 +376,6 @@ public with sharing class FinalUploadService {
             ) <= System.now();
     }
     public static Decimal pendingBytes(Map<String, Object> entry) {
-        if (entry.get('state') == 'RESERVED') {
-            return FinalUploadPolicy.positive(entry.get('reservedMaxBytes')) ??
-                0;
-        }
         return entry.get('contentDocumentId') != null &&
             entry.get('cleanupStatus') != 'DELETED' &&
             entry.get('state') != 'CONSUMED'

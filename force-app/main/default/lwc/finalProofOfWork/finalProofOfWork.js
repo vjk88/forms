@@ -42,16 +42,25 @@ function firstPrimes(count) {
     return out;
 }
 const FRACTION_UNIT = 4294967296;
-const K = Int32Array.from(
+const K = Array.from(
     firstPrimes(64).map(
         (p) => Math.floor((Math.cbrt(p) % 1) * FRACTION_UNIT) | 0
     )
 );
-const INIT = Int32Array.from(
+const INIT = Array.from(
     firstPrimes(8).map(
         (p) => Math.floor((Math.sqrt(p) % 1) * FRACTION_UNIT) | 0
     )
 );
+
+/**
+ * Plain arrays, never typed arrays: Lightning Web Security (LWR sites) wraps
+ * typed arrays, which made a ~60 ms puzzle take 14-36 s on TestSite
+ * (2026-11-26). Plain arrays of small integers are just as fast unsandboxed.
+ */
+function zeros(length) {
+    return new Array(length).fill(0);
+}
 
 /** A string as UTF-8 bytes (no TextEncoder: not every host provides one). */
 export function utf8Bytes(text) {
@@ -81,7 +90,7 @@ export function utf8Bytes(text) {
             );
         }
     }
-    return Uint8Array.from(out);
+    return out;
 }
 
 /** One SHA-256 block: folds buf[off..off+64) into the state `h` in place. */
@@ -159,12 +168,14 @@ function writeLength(buf, byteLength) {
 export function sha256Hex(text) {
     const msg = utf8Bytes(text);
     const blocks = Math.ceil((msg.length + 9) / 64);
-    const buf = new Uint8Array(blocks * 64);
-    buf.set(msg, 0);
+    const buf = zeros(blocks * 64);
+    for (let i = 0; i < msg.length; i++) {
+        buf[i] = msg[i];
+    }
     buf[msg.length] = 0x80;
     writeLength(buf, msg.length);
-    const h = Int32Array.from(INIT);
-    const w = new Int32Array(64);
+    const h = INIT.slice();
+    const w = zeros(64);
     for (let b = 0; b < blocks; b++) {
         compress(h, buf, b * 64, w);
     }
@@ -224,14 +235,14 @@ export function ticketDifficulty(ticket) {
 function createSearch(ticket, difficulty) {
     const prefix = utf8Bytes(`${ticket}:`);
     const fullBlocks = Math.floor(prefix.length / 64);
-    const mid = Int32Array.from(INIT);
-    const w = new Int32Array(64);
+    const mid = INIT.slice();
+    const w = zeros(64);
     for (let b = 0; b < fullBlocks; b++) {
         compress(mid, prefix, b * 64, w);
     }
-    const rest = prefix.subarray(fullBlocks * 64);
+    const rest = prefix.slice(fullBlocks * 64);
     const r = rest.length;
-    const h = new Int32Array(8);
+    const h = zeros(8);
     let digits = 1; // how many decimal digits the nonce has right now
     let tail;
     let blocks;
@@ -239,8 +250,10 @@ function createSearch(ticket, difficulty) {
     function layout() {
         const needed = r + digits + 1 + 8;
         blocks = Math.ceil(needed / 64);
-        const next = new Uint8Array(blocks * 64);
-        next.set(rest, 0);
+        const next = zeros(blocks * 64);
+        for (let i = 0; i < r; i++) {
+            next[i] = rest[i];
+        }
         // the digits start (or restart) at 0...0 on a new length
         for (let i = 0; i < digits; i++) {
             next[r + i] = 48;
@@ -291,7 +304,9 @@ function createSearch(ticket, difficulty) {
     /** Try up to `count` nonces; the winning nonce text, or null. */
     function run(count) {
         for (let n = 0; n < count; n++) {
-            h.set(mid);
+            for (let i = 0; i < 8; i++) {
+                h[i] = mid[i];
+            }
             for (let b = 0; b < blocks; b++) {
                 compress(h, tail, b * 64, w);
             }
