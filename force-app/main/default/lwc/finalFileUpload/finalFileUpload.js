@@ -13,6 +13,9 @@ export default class FinalFileUpload extends LightningElement {
     grant;
     _generation = 0;
     _context;
+    /** Slot keys whose native upload has finished. */
+    _sent = new Set();
+    _refocusAdd = false;
     @api
     get contextVersion() {
         return this._context;
@@ -25,6 +28,7 @@ export default class FinalFileUpload extends LightningElement {
             this.error = undefined;
             this.busy = false;
             this._rows = [];
+            this._sent = new Set();
         }
     }
 
@@ -38,8 +42,30 @@ export default class FinalFileUpload extends LightningElement {
     disconnectedCallback() {
         this._generation += 1;
     }
+    renderedCallback() {
+        // After a removal, once no longer busy: Add if usable, else the open
+        // slot's Cancel. Cleared either way so focus never jumps later.
+        if (this._refocusAdd && !this.busy) {
+            this._refocusAdd = false;
+            this.template
+                .querySelector(this.addDisabled ? '.fu-cancel' : '[data-add]')
+                ?.focus();
+        }
+    }
+    get hasUploader() {
+        return !!this.grant;
+    }
+    /** Slot reserved by Add a file whose file has not been sent yet: the
+     *  native uploader stands in for it, so it gets no row and no Retry. */
+    get waitingKey() {
+        const key = this.grant?.slotKey;
+        return key && !this._sent.has(key) ? key : undefined;
+    }
+    get visibleRows() {
+        return this._rows.filter((row) => row.key !== this.waitingKey);
+    }
     get rows() {
-        return this._rows.map((row) => ({
+        return this.visibleRows.map((row) => ({
             ...row,
             removeLabel: t('Final_Run_RemoveFile', row.name || this.label),
             size: row.sizeBytes
@@ -80,7 +106,7 @@ export default class FinalFileUpload extends LightningElement {
         );
     }
     get hasPending() {
-        return this._rows.some((row) => row.state !== 'ready');
+        return this.visibleRows.some((row) => row.state !== 'ready');
     }
     get instances() {
         return this.grant
@@ -157,6 +183,7 @@ export default class FinalFileUpload extends LightningElement {
             event.currentTarget.dataset.key !== this.grant.slotKey
         )
             return;
+        this._sent = new Set([...this._sent, this.grant.slotKey]);
         await this.handleCheck();
     }
     async handleCheck() {
@@ -219,7 +246,8 @@ export default class FinalFileUpload extends LightningElement {
             if (generation !== this._generation) return;
             this._emit(this._rows.filter((file) => file.key !== key));
             if (this.grant?.slotKey === key) this.grant = undefined;
-            this.template.querySelector('[data-add]')?.focus();
+            // Add is still disabled (busy) here; focus it once re-rendered.
+            this._refocusAdd = true;
         } catch (error) {
             if (generation === this._generation)
                 this.error =
