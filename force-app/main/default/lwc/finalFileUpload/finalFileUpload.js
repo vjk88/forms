@@ -77,6 +77,9 @@ export default class FinalFileUpload extends LightningElement {
                 ? `${(row.sizeBytes / 1048576).toFixed(2)} MiB`
                 : '',
             pending: row.state !== 'ready',
+            // A pending row is browser-only until the server confirms it, so
+            // it has no server key to remove; Retry is the way forward.
+            removeDisabled: this.busy || row.state !== 'ready',
             status:
                 row.state === 'ready'
                     ? t('Final_Run_UploadReady')

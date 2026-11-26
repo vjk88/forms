@@ -192,6 +192,10 @@ describe('file upload: one tag per question, rows from the server', () => {
         ].map((b) => b.label);
         expect(labels).toContain('Retry');
         expect(el.shadowRoot.querySelector('[role="alert"]')).not.toBeNull();
+        // No server key yet, so its × cannot be used; Retry is the way out.
+        expect(
+            el.shadowRoot.querySelector('lightning-button-icon').disabled
+        ).toBe(true);
     });
 
     it('removes a file by its server key', async () => {
