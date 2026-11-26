@@ -176,6 +176,9 @@ public with sharing class FinalUploadFinalizeService {
         ) {
             throw FinalUploadService.refuse(null);
         }
+        // A guest may not create InternalUsers links ("Visibility InternalUsers
+        // is not permitted for this linked record"), so guest files use AllUsers.
+        String visibility = guest == true ? 'AllUsers' : 'InternalUsers';
         List<ContentDocumentLink> links = new List<ContentDocumentLink>();
         Set<String> selected = new Set<String>();
         for (Map<String, Object> e : c.selected) {
@@ -186,7 +189,7 @@ public with sharing class FinalUploadFinalizeService {
                     ),
                     LinkedEntityId = targetId,
                     ShareType = 'V',
-                    Visibility = 'InternalUsers'
+                    Visibility = visibility
                 )
             );
             selected.add(FinalUploadPolicy.stringOf(e.get('key')));
