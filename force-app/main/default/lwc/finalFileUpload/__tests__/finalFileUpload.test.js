@@ -118,6 +118,76 @@ describe('file upload transport and receipts', () => {
             el.shadowRoot.querySelector('[role="alert"]').textContent
         ).toContain('Try removing again');
     });
+    it('shows no row or Retry for a slot whose file was not picked yet', async () => {
+        const el = mount();
+        const actions = [];
+        el.addEventListener('uploadoperation', (event) => {
+            actions.push(event.detail.operation);
+            event.detail.resolve(
+                event.detail.operation.action === 'reserve' ? slot : {}
+            );
+        });
+        el.shadowRoot.querySelector('[data-add]').click();
+        await flush();
+        const root = el.shadowRoot;
+        expect(root.querySelector('lightning-file-upload')).not.toBeNull();
+        expect(root.querySelector('lightning-file-upload').label).toBe(
+            undefined
+        );
+        expect(
+            root
+                .querySelector('lightning-file-upload')
+                .closest('[role="group"]')
+                .getAttribute('aria-label')
+        ).toBe('Documents');
+        expect(root.querySelectorAll('.fu-row')).toHaveLength(0);
+        expect(root.querySelector('[role="status"]')).toBeNull();
+        const buttons = [...root.querySelectorAll('lightning-button')];
+        expect(buttons.map((b) => b.label)).not.toContain('Retry');
+        const cancel = root.querySelector('.fu-cancel');
+        expect(cancel.label).toBe('Cancel this upload');
+        cancel.click();
+        await flush();
+        expect(actions[1]).toMatchObject({
+            action: 'remove',
+            slotToken: slot.slotToken
+        });
+        expect(el.value).toHaveLength(0);
+        expect(root.querySelector('lightning-file-upload')).toBeNull();
+        expect(root.querySelector('.fu-cancel')).toBeNull();
+    });
+    it('shows the row with Retry once a sent file is still unconfirmed', async () => {
+        const el = mount();
+        el.addEventListener('uploadoperation', (event) =>
+            event.detail.resolve(
+                event.detail.operation.action === 'reserve'
+                    ? slot
+                    : {
+                          files: [
+                              {
+                                  key: slot.slotKey,
+                                  state: 'RESERVED',
+                                  name: 'sample.txt'
+                              }
+                          ]
+                      }
+            )
+        );
+        el.shadowRoot.querySelector('[data-add]').click();
+        await flush();
+        el.shadowRoot
+            .querySelector('lightning-file-upload')
+            .dispatchEvent(new CustomEvent('uploadfinished'));
+        await flush();
+        const root = el.shadowRoot;
+        expect(root.querySelectorAll('.fu-row')).toHaveLength(1);
+        expect(root.querySelector('[role="status"]').textContent).toBe(
+            'Checking upload…'
+        );
+        const buttons = [...root.querySelectorAll('lightning-button')];
+        expect(buttons.map((b) => b.label)).toContain('Retry');
+        expect(root.querySelector('.fu-cancel')).toBeNull();
+    });
     it('ignores a reserve response after the control unmounts', async () => {
         const el = mount();
         const changed = jest.fn();
