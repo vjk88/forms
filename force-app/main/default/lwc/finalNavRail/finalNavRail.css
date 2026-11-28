@@ -169,9 +169,10 @@
 }
 
 .rail-link.active .rail-num {
-    border-color: var(--c-accent);
-    background: var(--c-accent);
-    color: var(--c-on-accent);
+    /* readable accent pair (DEFERRED 44) */
+    border-color: var(--c-accent-fill, var(--c-accent));
+    background: var(--c-accent-fill, var(--c-accent));
+    color: var(--c-on-accent-fill, var(--c-on-accent));
 }
 
 .rail-label {
@@ -198,7 +199,7 @@
     width: 100%;
     height: 100%;
     border-radius: inherit;
-    background: var(--c-accent);
+    background: var(--c-accent-mark, var(--c-accent));
     transform-origin: left center;
     transition: transform 0.3s ease;
 }

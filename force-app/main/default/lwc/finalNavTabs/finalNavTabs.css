@@ -88,7 +88,8 @@
 }
 
 .style-underline .tab.active {
-    border-bottom-color: var(--c-accent);
+    /* readable accent (DEFERRED 44) */
+    border-bottom-color: var(--c-accent-mark, var(--c-accent));
 }
 
 /* — Pills — */
@@ -97,8 +98,8 @@
 }
 
 .style-pills .tab.active {
-    background: var(--c-accent);
-    color: var(--c-on-accent);
+    background: var(--c-accent-fill, var(--c-accent));
+    color: var(--c-on-accent-fill, var(--c-on-accent));
 }
 
 /* — Enclosed — */

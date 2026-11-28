@@ -262,6 +262,8 @@ image fit, corner rounding, mesh, texture, density, pane side, pane width, progr
 brand pane), small-screen progress, tab style, tab alignment, rail side, button position. Stay as selects or
 segmented: intensities (Subtle / Medium / Strong), glass blur, max content width, step access, flow.
 
+**Chosen answers (2026-11-28, DEFERRED 44):** a respondent's chosen or active state paints the readable accent, never raw `--c-accent`: fills with words read the `--c-accent-fill` / `--c-on-accent-fill` pair, lines and dots read `--c-accent-mark` (ARCHITECTURE §3.2). A step still to come is a ring and a reached one a filled dot, the same rule as idle stars. Guard: `finalThemeEngine/__tests__/selectedStateContrast.test.js`.
+
 **File uploads (2026-11-25):** `finalFileUpload` is a respondent control using native `lightning-file-upload`, a text attachment list, verified/pending status, Retry, and named Remove actions. It reads only respondent tokens. The embedded `finalUploadSettings` section reuses Studio settings fields/actions and Studio tokens; guest defaults are separate from signed-in restrictions.
 
 ## 6. States

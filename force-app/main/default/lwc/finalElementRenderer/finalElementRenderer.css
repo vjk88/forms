@@ -807,12 +807,16 @@
     border-color: var(--c-accent);
     transform: translateY(-2px);
 }
+/* chosen states paint the readable accent (DEFERRED 44): a fill and the
+   words on it come as one pair; a line or dot with no words takes the
+   mark colour. Both fall back to today's accent on an older snapshot. */
 .scale-chip.selected {
-    background: var(--c-accent);
-    border-color: var(--c-accent);
-    color: var(--c-on-accent);
+    background: var(--c-accent-fill, var(--c-accent));
+    border-color: var(--c-accent-fill, var(--c-accent));
+    color: var(--c-on-accent-fill, var(--c-on-accent));
     font-weight: 700;
-    box-shadow: 0 2px 0 color-mix(in srgb, var(--c-accent) 55%, black);
+    box-shadow: 0 2px 0
+        color-mix(in srgb, var(--c-accent-fill, var(--c-accent)) 55%, black);
 }
 
 /* emoji scale: big bare faces — grayscale until they matter, alive when
@@ -844,7 +848,7 @@
 .scale-chip.emoji-chip.selected {
     filter: none;
     transform: scale(1.1);
-    border-color: var(--c-accent);
+    border-color: var(--c-accent-mark, var(--c-accent));
     background: color-mix(in srgb, var(--c-accent) 12%, transparent);
     box-shadow: none;
 }
@@ -935,15 +939,17 @@
 .scale-row:not(:hover) .scale-icon.emoji-glyph:not(.filled):focus-visible {
     filter: var(--c-focus-idle-filter, none);
 }
-/* classic NPS semantic tones — opt-in only (config.coloring='classic') */
+/* classic NPS semantic tones — opt-in only (config.coloring='classic').
+   The passive orange is #a96404 (was #fe9339, 2.2 : 1): all three tones read
+   the same, 4.65 : 1 under white words and on a white card (DEFERRED 44) */
 .scale-chip.nps-detractor.selected {
     background: #ea001e;
     border-color: #ea001e;
     color: #fff;
 }
 .scale-chip.nps-passive.selected {
-    background: #fe9339;
-    border-color: #fe9339;
+    background: #a96404;
+    border-color: #a96404;
     color: #fff;
 }
 .scale-chip.nps-promoter.selected {
@@ -955,7 +961,7 @@
     border-color: #ea001e;
 }
 .scale-chip.nps-passive:hover {
-    border-color: #fe9339;
+    border-color: #a96404;
 }
 .scale-chip.nps-promoter:hover {
     border-color: #2e844a;
@@ -1034,15 +1040,15 @@
 }
 .choice-chip.selected,
 .yn-btn.selected {
-    background: var(--c-accent);
-    border-color: var(--c-accent);
-    color: var(--c-on-accent);
+    background: var(--c-accent-fill, var(--c-accent));
+    border-color: var(--c-accent-fill, var(--c-accent));
+    color: var(--c-on-accent-fill, var(--c-on-accent));
     font-weight: 700;
 }
 .choice-card.selected,
 .ic-tile.selected {
-    border-color: var(--c-accent);
-    box-shadow: 0 0 0 1.5px var(--c-accent) inset;
+    border-color: var(--c-accent-mark, var(--c-accent));
+    box-shadow: 0 0 0 1.5px var(--c-accent-mark, var(--c-accent)) inset;
 }
 .choice-card.selected .choice-desc {
     color: inherit;
@@ -1148,8 +1154,8 @@
     display: grid;
     place-items: center;
     border-radius: 50%;
-    background: var(--c-accent);
-    color: var(--c-on-accent);
+    background: var(--c-accent-fill, var(--c-accent));
+    color: var(--c-on-accent-fill, var(--c-on-accent));
     font-size: var(--c-fs-secondary);
     font-weight: 700;
 }
@@ -1251,8 +1257,8 @@
     border-color: var(--c-accent);
 }
 .mx-dot.selected::before {
-    background: var(--c-accent);
-    border-color: var(--c-accent);
+    background: var(--c-accent-mark, var(--c-accent));
+    border-color: var(--c-accent-mark, var(--c-accent));
 }
 .mx-dot:focus-visible {
     outline: 2px solid transparent;
@@ -1288,8 +1294,8 @@
         border-color: var(--c-accent);
     }
     .mx-dot.selected {
-        background: var(--c-accent);
-        border-color: var(--c-accent);
+        background: var(--c-accent-fill, var(--c-accent));
+        border-color: var(--c-accent-fill, var(--c-accent));
     }
     .mx-dot:focus-visible {
         box-shadow: var(--c-focus-ring);
@@ -1298,7 +1304,7 @@
         display: inline;
     }
     .mx-dot.selected .mx-point-label {
-        color: var(--c-on-accent);
+        color: var(--c-on-accent-fill, var(--c-on-accent));
         font-weight: 700;
     }
 }
@@ -1413,7 +1419,7 @@
     border-radius: 999px;
     background: linear-gradient(
         to right,
-        var(--c-accent) var(--sl-pct, 50%),
+        var(--c-accent-mark, var(--c-accent)) var(--sl-pct, 50%),
         color-mix(in srgb, var(--c-text) 14%, transparent) var(--sl-pct, 50%)
     );
 }
@@ -1423,7 +1429,7 @@
     height: 22px;
     margin-top: -7px; /* (thumb 22 − track 8) / 2 */
     border-radius: 50%;
-    background: var(--c-accent);
+    background: var(--c-accent-mark, var(--c-accent));
     border: 3px solid var(--c-field-bg, #fff);
     box-shadow: 0 1px 4px rgba(15, 23, 42, 0.35);
 }
@@ -1445,13 +1451,13 @@
 .slider-input::-moz-range-progress {
     height: 8px;
     border-radius: 999px;
-    background: var(--c-accent);
+    background: var(--c-accent-mark, var(--c-accent));
 }
 .slider-input::-moz-range-thumb {
     width: 22px;
     height: 22px;
     border-radius: 50%;
-    background: var(--c-accent);
+    background: var(--c-accent-mark, var(--c-accent));
     border: 3px solid var(--c-field-bg, #fff);
     box-shadow: 0 1px 4px rgba(15, 23, 42, 0.35);
 }

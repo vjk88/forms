@@ -170,6 +170,7 @@ documents that mess). Grouped by surface per [SURFACE_MODEL_SPEC.md](../redesign
 |---|---|
 | `--c-text` / `--c-text-weak` | Body + muted text |
 | `--c-accent` / `--c-on-accent` | Brand color + text on it |
+| `--c-accent-mark` / `--c-accent-fill` + `--c-on-accent-fill` | Readable accent (text-contrast treatment, eligible looks only): the accent moved toward the main text until it reaches 3:1 on every card surface. A **chosen or active state** never paints raw `--c-accent` (DEFERRED 44, 2026-11-28): a line or dot with no words (chosen card border, matrix dot, Underline bar, slider, progress) reads `--c-accent-mark`; a fill with words on it (chosen chip, yes/no, scale chip, rank badge, active step or Pills tab) reads the PAIR `--c-accent-fill` + `--c-on-accent-fill`, written together or not at all, so an older snapshot keeps today's fill AND ink. Each falls back to `--c-accent` / `--c-on-accent`. Open page: `-page` twins, swapped in by the viewer |
 | `--c-focus-ring` | Focus outline shadow |
 
 **Header** (consumed by `formHeader`)

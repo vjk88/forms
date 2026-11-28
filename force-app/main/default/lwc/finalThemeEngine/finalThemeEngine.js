@@ -874,7 +874,8 @@ function readableTextTokens(input) {
         input.labelStyle,
         input.cardRange,
         input.pageRange,
-        input.fieldFills
+        input.fieldFills,
+        input.onAccent
     ]);
     if (!READABLE_CACHE.has(key)) {
         if (READABLE_CACHE.size > 50) {
@@ -892,7 +893,8 @@ function computeReadableText({
     labelStyle,
     cardRange,
     pageRange,
-    fieldFills
+    fieldFills,
+    onAccent
 }) {
     if (!eligible || !parseColor(pal.text)) {
         return {};
@@ -940,7 +942,8 @@ function computeReadableText({
                   pal.sectionBg
                 : null,
             fieldFills,
-            roles
+            roles,
+            onAccent
         });
     // Where main text can't read (a white glass card over a photo or a glow,
     // the open page over a photo), the text gets a backing: the look's card
@@ -1708,7 +1711,8 @@ export function resolveTokens(themeProps, formOverrides) {
                     cardRange
                 ) || cardRange,
             pageRange,
-            fieldFills: [shell.bg, outlineBg]
+            fieldFills: [shell.bg, outlineBg],
+            onAccent: tokens['--c-on-accent']
         })
     );
 

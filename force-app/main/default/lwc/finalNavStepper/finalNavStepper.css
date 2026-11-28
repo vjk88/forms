@@ -119,9 +119,10 @@
 }
 
 .step-btn.active .step-marker {
-    border-color: var(--c-accent);
-    background: var(--c-accent);
-    color: var(--c-on-accent);
+    /* readable accent pair (DEFERRED 44) */
+    border-color: var(--c-accent-fill, var(--c-accent));
+    background: var(--c-accent-fill, var(--c-accent));
+    color: var(--c-on-accent-fill, var(--c-on-accent));
 }
 
 .step-btn.active .step-label {
@@ -130,7 +131,7 @@
 }
 
 .step-btn.done .step-marker {
-    border-color: var(--c-accent);
+    border-color: var(--c-accent-mark, var(--c-accent));
     color: var(--c-accent-mark, var(--c-accent));
 }
 
@@ -139,13 +140,20 @@
     width: 12px;
     height: 12px;
     font-size: 0;
-    background: color-mix(in srgb, var(--c-text) 22%, transparent);
+    /* a step still to come is a readable ring, a reached one a filled dot
+       (DEFERRED 44; same rule as idle stars). Old snapshots: today's dot */
+    background: var(
+        --c-mark-idle-fill,
+        color-mix(in srgb, var(--c-text) 22%, transparent)
+    );
+    box-shadow: inset 0 0 0 var(--c-mark-idle-stroke, 0 transparent);
     border: none;
 }
 
 .mode-dots .step-btn.active .step-marker,
 .mode-dots .step-btn.done .step-marker {
     background: var(--c-accent-mark, var(--c-accent));
+    box-shadow: none;
 }
 
 .mode-dots .step-label {
@@ -174,7 +182,7 @@
     width: 100%;
     height: 100%;
     border-radius: inherit;
-    background: var(--c-accent);
+    background: var(--c-accent-mark, var(--c-accent));
     transform-origin: left center;
     transition: transform 0.3s ease;
 }
@@ -229,13 +237,18 @@
     width: 12px;
     height: 12px;
     font-size: 0;
-    background: color-mix(in srgb, var(--c-text) 22%, transparent);
+    background: var(
+        --c-mark-idle-fill,
+        color-mix(in srgb, var(--c-text) 22%, transparent)
+    );
+    box-shadow: inset 0 0 0 var(--c-mark-idle-stroke, 0 transparent);
     border: none;
 }
 
 .fit-collapse.narrow-dots .step-btn.active .step-marker,
 .fit-collapse.narrow-dots .step-btn.done .step-marker {
     background: var(--c-accent-mark, var(--c-accent));
+    box-shadow: none;
 }
 
 .fit-collapse.narrow-dots .step-label {
@@ -267,13 +280,18 @@
         width: 12px;
         height: 12px;
         font-size: 0;
-        background: color-mix(in srgb, var(--c-text) 22%, transparent);
+        background: var(
+            --c-mark-idle-fill,
+            color-mix(in srgb, var(--c-text) 22%, transparent)
+        );
+        box-shadow: inset 0 0 0 var(--c-mark-idle-stroke, 0 transparent);
         border: none;
     }
 
     .narrow-dots .step-btn.active .step-marker,
     .narrow-dots .step-btn.done .step-marker {
         background: var(--c-accent-mark, var(--c-accent));
+        box-shadow: none;
     }
 
     .narrow-dots .step-label {
