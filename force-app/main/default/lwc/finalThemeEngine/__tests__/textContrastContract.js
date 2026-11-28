@@ -55,7 +55,13 @@ export const TEXT_TREATMENT_TOKENS = [
     '--c-header-plate-banner',
     '--c-pane-text-fade',
     '--c-header-text-src',
-    '--c-header-text-weak-src'
+    '--c-header-text-weak-src',
+    // DEFERRED 44: a chosen chip's fill and the words on it, one pair (card
+    // and open page)
+    '--c-accent-fill',
+    '--c-on-accent-fill',
+    '--c-accent-fill-page',
+    '--c-on-accent-fill-page'
 ];
 
 /**

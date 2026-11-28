@@ -54,24 +54,41 @@ Published forms opt into native Salesforce Files uploads in Studio. The browser 
 `lightning-file-upload`, without a record ID. Apex receives metadata and receipt references, not
 Base64. Existing forms retain the legacy inline path until explicitly switched and republished.
 
-- One private `Form_Upload__c` holds the attempt and all file entries in `Files_JSON__c`.
-  Raw attempt/file secrets stay in browser memory; only their hashes are persisted.
-- `FinalUploadGuard` validates native correlation, clears the secret marker, and stamps a nonsecret
-  attempt key. The viewer trusts server status rather than IDs returned by `uploadfinished`.
-- Final submission validates exact file versions and creates business records, inserts
-  `ContentDocumentLink` rows, and consumes the attempt in the same transaction. Reusing the same
-  submission key returns the saved receipt without creating another record.
+- **Nothing is saved until a file arrives** (PR 495, `specs/IMPL_PLAN_UPLOAD_RECORDS_ON_ARRIVAL.md`).
+  The session and each file question's tag are signed tokens (`FinalUploadToken`: HMAC bound to the
+  caller's user Id); page loads and Upload Files write no records.
+- The first accepted file creates the one private `Form_Upload__c` for the visit; every later file
+  adds an entry to its `Files_JSON__c` under a random server-made key.
+- `FinalUploadGuard` checks the tag and every limit on arrival, clears the marker and stamps the
+  attempt key. The viewer trusts server status, never `uploadfinished` (it also fires after a
+  refused or cancelled upload).
+- Final submission validates the files named by key, creates business records, inserts
+  `ContentDocumentLink` rows (guests `AllUsers`), and consumes the attempt in one transaction.
+  A retry with the same submission key returns the saved result. With no file ever uploaded there
+  is no attempt and none is created.
 - Guests initially get 10 MiB per file, 5 files and 25 MiB total per attempt, plus 20 lifetime
   file entries. Administrators can change these defaults. Signed-in users have no application
   default size/count/total limits; explicit published restrictions still apply.
 - There is no usage object or shared storage cap. Salesforce enforces org storage limits.
   The JSON manifest has a technical 64,000-character budget.
-- Grants last 10 minutes and attempts last 2 hours. Removal/abandonment permits cleanup of
+- Sessions, tags and attempts last 2 hours. Removal/abandonment permits cleanup of
   unconsumed, unshared files; consumed or independently shared files are retained.
-  `FinalUploadCleanupScheduler` must be scheduled for hourly cleanup.
-- Guest admission requires the Salesforce guest/LWR upload settings, an enrolled guest identity in
-  `Final_Upload_Policy__mdt`, and the application upload switch. Guests get no direct access to the
-  attempt object or internal form records. Narrow system-context helpers enforce the public gates.
+- Guests get no direct access to the attempt object or internal form records. Narrow
+  system-context helpers enforce the public gates.
+
+**Setup checklist (each one is required):**
+1. App setting: uploads switched on (`Final_Settings__c.Uploads_Enabled__c`).
+2. Salesforce Files → General Settings: **Allow site guest users to upload files**, and **Use the
+   File Upload Lightning web component for LWR sites**.
+3. Guests only: enroll the site guest user in `Final_Upload_Policy__mdt` (Guest_User_Id__c,
+   Admission_Enabled__c).
+4. Guests only, the step most often missed: Experience Workspaces → Administration → Preferences
+   → **Allow guest users to access public APIs**, then click **Save**. Without it the native
+   uploader gets a 401 ("This feature is not currently enabled for this user") before any of our
+   code runs.
+5. Schedule hourly cleanup once (Developer Console → Execute Anonymous):
+   `System.schedule('Final upload cleanup', '0 0 * * * ?', new FinalUploadCleanupScheduler());`
+6. Republish the site after changing it.
 - Studio previews simulate selection; Lightning Out does not persist native uploads. Signature
   generation remains on its existing path; this change adds no new signature transport.
 

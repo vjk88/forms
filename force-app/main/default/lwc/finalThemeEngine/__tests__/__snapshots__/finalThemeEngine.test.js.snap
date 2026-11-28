@@ -3,6 +3,8 @@
 exports[`c-final-theme-engine robustness & determinism full-theme snapshot — any change here is a deliberate contract event 1`] = `
 {
   "--c-accent": "#0f766e",
+  "--c-accent-fill": "#0f766e",
+  "--c-accent-fill-page": "#0f766e",
   "--c-accent-mark": "#0f766e",
   "--c-accent-mark-page": "#0f766e",
   "--c-accent-text": "#0f766e",
@@ -83,6 +85,8 @@ exports[`c-final-theme-engine robustness & determinism full-theme snapshot — a
   "--c-mesh-blend": "normal",
   "--c-mesh-filter": "none",
   "--c-on-accent": "#ffffff",
+  "--c-on-accent-fill": "#ffffff",
+  "--c-on-accent-fill-page": "#ffffff",
   "--c-page-bg": "#f6f4ee",
   "--c-page-bg-gradient": "none",
   "--c-page-bg-image": "none",

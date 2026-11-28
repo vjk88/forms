@@ -158,6 +158,13 @@ const rgbaOf = (hex, alpha) => {
     return c ? `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${alpha})` : null;
 };
 
+/** The words on a fill: `preferred` where it reads, else the readable ink. */
+export function fillInk(preferred, fill) {
+    return parseHex(preferred) && ratio(preferred, fill) >= TEXT_AIM
+        ? preferred
+        : inkFor(fill);
+}
+
 /**
  * The surfaces text can sit on inside one container (the card, or the open
  * page), as ranges. Built from what the form actually paints:
@@ -268,6 +275,8 @@ export const CAP_STEPS = 25;
  * backing, or a section with its own background), as tokens.
  *   roles   { muted, label }: which theme colours may be adjusted (an
  *           author's own muted or label colour never is)
+ *   onAccent the ink the look writes on its accent; kept on the selected
+ *           fill when it reads there, else the readable ink (DEFERRED 44)
  * `{ ok, tokens, italic, mutedSteps, wordsSteps }`; ok=false means main
  * text itself can't read here, and nothing is promised.
  */
@@ -278,7 +287,8 @@ export function scopeColours({
     accent,
     sectionFill,
     fieldFills,
-    roles
+    roles,
+    onAccent
 }) {
     const scope = textScope({
         container,
@@ -307,6 +317,11 @@ export function scopeColours({
     }
     if (marks.ok) {
         tokens['--c-accent-mark'] = marks.color;
+        // A chosen chip, the active step, a rank badge: the fill and the
+        // words on it travel as one pair, so a snapshot published before
+        // keeps today's fill AND ink (never a new fill under the old ink).
+        tokens['--c-accent-fill'] = marks.color;
+        tokens['--c-on-accent-fill'] = fillInk(onAccent, marks.color);
     }
     if (idle.ok) {
         tokens['--c-mark-idle'] = idle.color;
@@ -412,6 +427,8 @@ export const PAGE_TEXT_TOKENS = [
     '--c-label-color',
     '--c-accent-text',
     '--c-accent-mark',
+    '--c-accent-fill',
+    '--c-on-accent-fill',
     '--c-mark-idle',
     '--c-mark-idle-stroke',
     '--c-idle-value-style',
@@ -469,7 +486,8 @@ export function sectionTextStyle(tokens, surfaceBg) {
         accent: t['--c-accent'],
         sectionFill: null,
         fieldFills: [t['--c-input-bg'], t['--c-field-bg']],
-        roles: { muted, label: treatment.includes('label') }
+        roles: { muted, label: treatment.includes('label') },
+        onAccent: t['--c-on-accent']
     });
     if (!r.ok) {
         return '';

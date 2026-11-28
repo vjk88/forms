@@ -113,6 +113,9 @@ const CONTRACT_V1 = [
     '--c-toast-ink',
     '--c-accent-text',
     '--c-accent-mark',
+    // DEFERRED 44: a chosen fill and the words on it, one pair
+    '--c-accent-fill',
+    '--c-on-accent-fill',
     '--c-mark-idle',
     '--c-mark-idle-opacity',
     '--c-mark-idle-fill',
@@ -128,6 +131,8 @@ const CONTRACT_V1 = [
     '--c-text-weak-page',
     '--c-accent-text-page',
     '--c-accent-mark-page',
+    '--c-accent-fill-page',
+    '--c-on-accent-fill-page',
     '--c-mark-idle-page',
     '--c-mark-idle-stroke-page',
     '--c-idle-value-style-page',
